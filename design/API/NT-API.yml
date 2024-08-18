@@ -694,7 +694,7 @@ paths:
                 x-stoplight:
                   id: zp1goqu7fzjss
       tags: []
-      operationId: put-team
+      operationId: patch-team
       summary: Update Team
       x-stoplight:
         id: 6f4e855dosj7n
