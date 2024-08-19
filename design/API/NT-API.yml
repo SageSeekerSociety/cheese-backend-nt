@@ -120,6 +120,7 @@ paths:
       tags: []
       operationId: patch-space
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -169,6 +170,7 @@ paths:
       tags: []
       operationId: post-space
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -303,6 +305,7 @@ paths:
       tags: []
       operationId: patch-task
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -368,6 +371,7 @@ paths:
       tags: []
       operationId: post-task
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -502,6 +506,7 @@ paths:
       tags: []
       operationId: patch-task-member
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -552,6 +557,7 @@ paths:
       tags: []
       operationId: post-task-member
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -687,6 +693,7 @@ paths:
       tags: []
       operationId: patch-team
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -736,6 +743,7 @@ paths:
       tags: []
       operationId: post-team
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -850,6 +858,7 @@ paths:
       tags: []
       operationId: patch-team-member
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -900,6 +909,7 @@ paths:
       tags: []
       operationId: post-team-member
       requestBody:
+        required: true
         content:
           application/json:
             schema:

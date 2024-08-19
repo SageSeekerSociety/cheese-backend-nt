@@ -19,25 +19,25 @@ class TeamController : TeamApi {
         return super.getTeam(team)
     }
 
-    override fun patchTeam(team: Int, patchTeamRequest: PatchTeamRequest?): ResponseEntity<GetTeam200Response> {
+    override fun patchTeam(team: Int, patchTeamRequest: PatchTeamRequest): ResponseEntity<GetTeam200Response> {
         return super.patchTeam(team, patchTeamRequest)
     }
 
     override fun patchTeamMember(
             team: Int,
             user: Int,
-            patchTeamMemberRequest: PatchTeamMemberRequest?
+            patchTeamMemberRequest: PatchTeamMemberRequest
     ): ResponseEntity<GetTeam200Response> {
         return super.patchTeamMember(team, user, patchTeamMemberRequest)
     }
 
-    override fun postTeam(postTeamRequest: PostTeamRequest?): ResponseEntity<GetTeam200Response> {
+    override fun postTeam(postTeamRequest: PostTeamRequest): ResponseEntity<GetTeam200Response> {
         return super.postTeam(postTeamRequest)
     }
 
     override fun postTeamMember(
             team: Int,
-            postTeamMemberRequest: PostTeamMemberRequest?
+            postTeamMemberRequest: PostTeamMemberRequest
     ): ResponseEntity<GetTeam200Response> {
         return super.postTeamMember(team, postTeamMemberRequest)
     }

@@ -19,7 +19,7 @@ class TaskController : TaskApi {
         return super.getTask(task)
     }
 
-    override fun patchTask(task: Int, patchTaskRequest: PatchTaskRequest?): ResponseEntity<GetTask200Response> {
+    override fun patchTask(task: Int, patchTaskRequest: PatchTaskRequest): ResponseEntity<GetTask200Response> {
         return super.patchTask(task, patchTaskRequest)
     }
 
@@ -27,18 +27,18 @@ class TaskController : TaskApi {
             task: Int,
             memberType: String,
             member: Int,
-            patchTaskMemberRequest: PatchTaskMemberRequest?
+            patchTaskMemberRequest: PatchTaskMemberRequest
     ): ResponseEntity<GetTask200Response> {
         return super.patchTaskMember(task, memberType, member, patchTaskMemberRequest)
     }
 
-    override fun postTask(postTaskRequest: PostTaskRequest?): ResponseEntity<GetTask200Response> {
+    override fun postTask(postTaskRequest: PostTaskRequest): ResponseEntity<GetTask200Response> {
         return super.postTask(postTaskRequest)
     }
 
     override fun postTaskMember(
             task: Int,
-            postTaskMemberRequest: PostTaskMemberRequest?
+            postTaskMemberRequest: PostTaskMemberRequest
     ): ResponseEntity<GetTask200Response> {
         return super.postTaskMember(task, postTaskMemberRequest)
     }

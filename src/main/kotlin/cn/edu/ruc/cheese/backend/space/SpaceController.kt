@@ -18,11 +18,11 @@ class SpaceController : SpaceApi {
         return super.getSpace(space)
     }
 
-    override fun patchSpace(space: Int, patchSpaceRequest: PatchSpaceRequest?): ResponseEntity<GetSpace200Response> {
+    override fun patchSpace(space: Int, patchSpaceRequest: PatchSpaceRequest): ResponseEntity<GetSpace200Response> {
         return super.patchSpace(space, patchSpaceRequest)
     }
 
-    override fun postSpace(postSpaceRequest: PostSpaceRequest?): ResponseEntity<GetSpace200Response> {
+    override fun postSpace(postSpaceRequest: PostSpaceRequest): ResponseEntity<GetSpace200Response> {
         return super.postSpace(postSpaceRequest)
     }
 }
