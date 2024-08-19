@@ -7,36 +7,39 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 class TaskController : TaskApi {
-    override fun deleteTask(task: Int?): ResponseEntity<InlineResponse2003> {
+    override fun deleteTask(task: Int): ResponseEntity<DeleteTask200Response> {
         return super.deleteTask(task)
     }
 
-    override fun deleteTaskMember(task: Int?, memberType: String?, member: Int?): ResponseEntity<InlineResponse2002> {
+    override fun deleteTaskMember(task: Int, memberType: String, member: Int): ResponseEntity<GetTask200Response> {
         return super.deleteTaskMember(task, memberType, member)
     }
 
-    override fun getTask(task: Int?): ResponseEntity<InlineResponse2002> {
+    override fun getTask(task: Int): ResponseEntity<GetTask200Response> {
         return super.getTask(task)
     }
 
-    override fun patchTask(task: Int?, body: TaskBody1?): ResponseEntity<InlineResponse2002> {
-        return super.patchTask(task, body)
+    override fun patchTask(task: Int, patchTaskRequest: PatchTaskRequest?): ResponseEntity<GetTask200Response> {
+        return super.patchTask(task, patchTaskRequest)
     }
 
     override fun patchTaskMember(
-            task: Int?,
-            memberType: String?,
-            member: Int?,
-            body: TaskMemberBody1?
-    ): ResponseEntity<InlineResponse2002> {
-        return super.patchTaskMember(task, memberType, member, body)
+            task: Int,
+            memberType: String,
+            member: Int,
+            patchTaskMemberRequest: PatchTaskMemberRequest?
+    ): ResponseEntity<GetTask200Response> {
+        return super.patchTaskMember(task, memberType, member, patchTaskMemberRequest)
     }
 
-    override fun postTask(body: TaskBody?): ResponseEntity<InlineResponse2002> {
-        return super.postTask(body)
+    override fun postTask(postTaskRequest: PostTaskRequest?): ResponseEntity<GetTask200Response> {
+        return super.postTask(postTaskRequest)
     }
 
-    override fun postTaskMember(task: Int?, body: TaskMemberBody?): ResponseEntity<InlineResponse2002> {
-        return super.postTaskMember(task, body)
+    override fun postTaskMember(
+            task: Int,
+            postTaskMemberRequest: PostTaskMemberRequest?
+    ): ResponseEntity<GetTask200Response> {
+        return super.postTaskMember(task, postTaskMemberRequest)
     }
 }

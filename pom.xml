@@ -99,6 +99,11 @@
             <artifactId>swagger-annotations</artifactId>
             <version>2.2.22</version>
         </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-models</artifactId>
+            <version>2.2.22</version>
+        </dependency>
     </dependencies>
 
     <!-- Build Configuration -->
@@ -128,9 +133,9 @@
                 </dependencies>
             </plugin>
             <plugin>
-                <groupId>io.swagger.codegen.v3</groupId>
-                <artifactId>swagger-codegen-maven-plugin</artifactId>
-                <version>3.0.61</version>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>7.7.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -138,15 +143,31 @@
                         </goals>
                         <configuration>
                             <inputSpec>./design/API/NT-API.yml</inputSpec>
-                            <language>spring</language>
+                            <generatorName>kotlin-spring</generatorName>
+                            <addCompileSourceRoot>true</addCompileSourceRoot>
                             <configOptions>
-                                <sourceFolder>swagger</sourceFolder>
                                 <java8>true</java8>
                                 <interfaceOnly>true</interfaceOnly>
                                 <modelPackage>cn.edu.ruc.cheese.backend.model</modelPackage>
                                 <apiPackage>cn.edu.ruc.cheese.backend.api</apiPackage>
                                 <useBeanValidation>true</useBeanValidation>
                             </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <sources>target/generated-sources/openapi/src</sources>
                         </configuration>
                     </execution>
                 </executions>
