@@ -1076,27 +1076,18 @@ components:
       x-stoplight:
         id: 5f28hwh1gfr6u
     User:
+      type: object
+      x-stoplight:
+        id: db1qnmy49o19b
+      required:
+        - avatarId
+        - id
+        - intro
+        - nickname
+        - username
       properties:
-        answer_count:
-          description: 回答数量
-          example: 810
-          format: int64
-          minimum: 0
-          type: integer
         avatarId:
           description: 头像 id
-          type: integer
-        fans_count:
-          description: 粉丝数量
-          example: 514
-          format: int64
-          minimum: 0
-          type: integer
-        follow_count:
-          description: 关注用户的数量
-          example: 114
-          format: int64
-          minimum: 0
           type: integer
         id:
           description: 用户 ID
@@ -1107,36 +1098,14 @@ components:
           default: This user has not set an introduction yet.
           description: 个人简介
           type: string
-        is_follow:
-          description: 当前登录用户是否关注该用户
-          type: boolean
         nickname:
           description: 昵称
           example: 芝士
           type: string
-        question_count:
-          description: 提问数量
-          example: 1919
-          format: int64
-          minimum: 0
-          type: integer
         username:
           description: 用户名
           example: cheese
           type: string
-      required:
-        - id
-        - username
-        - nickname
-        - avatarId
-        - intro
-        - follow_count
-        - fans_count
-        - question_count
-        - answer_count
-      type: object
-      x-stoplight:
-        id: db1qnmy49o19b
   securitySchemes:
     bearerAuth:
       description: The access token is used in this way.
