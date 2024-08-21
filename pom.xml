@@ -154,6 +154,7 @@
                             <inputSpec>./design/API/NT-API.yml</inputSpec>
                             <generatorName>kotlin-spring</generatorName>
                             <addCompileSourceRoot>true</addCompileSourceRoot>
+                            <skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>
                             <configOptions>
                                 <java8>true</java8>
                                 <interfaceOnly>true</interfaceOnly>
@@ -208,6 +209,8 @@
                                     <arg value="--spring.jpa.properties.jakarta.persistence.schema-generation.scripts.create-source=metadata"/>
                                     <!-- Stop application after creating the CREATE.sql file. -->
                                     <arg value="--spring.main.web-application-type=none"/>
+                                    <!-- Avoid long logs -->
+                                    <arg value="--logging.level.root=WARN"/>
                                 </java>
                             </target>
                         </configuration>
