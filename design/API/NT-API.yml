@@ -14,6 +14,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -46,6 +47,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -88,6 +90,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -199,6 +202,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -231,6 +235,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -273,6 +278,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -312,6 +318,7 @@ paths:
               properties:
                 deadline:
                   type: integer
+                  format: int64
                   x-stoplight:
                     id: wj7yxfw7y74jt
                 has_deadline:
@@ -332,6 +339,7 @@ paths:
                     id: cqjfpanliesrt
                 space_id:
                   type: integer
+                  format: int64
                   x-stoplight:
                     id: ng9yusn2894ro
               type: object
@@ -378,6 +386,7 @@ paths:
               properties:
                 deadline:
                   type: integer
+                  format: int64
                   x-stoplight:
                     id: wj7yxfw7y74jt
                 intro:
@@ -390,6 +399,7 @@ paths:
                     id: cqjfpanliesrt
                 space_id:
                   type: integer
+                  format: int64
                   x-stoplight:
                     id: ng9yusn2894ro
               required:
@@ -408,6 +418,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
         - description: '"USER" or "TEAM"'
           in: query
           name: member_type
@@ -420,6 +431,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -462,6 +474,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
         - description: '"USER" or "TEAM"'
           in: query
           name: member_type
@@ -474,6 +487,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -525,6 +539,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -564,6 +579,7 @@ paths:
               properties:
                 member_id:
                   type: integer
+                  format: int64
                   x-stoplight:
                     id: 1r8s7arybars8
                 role:
@@ -587,6 +603,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -619,6 +636,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -661,6 +679,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -772,12 +791,14 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
         - description: Member User ID
           in: query
           name: user
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -820,12 +841,14 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
         - description: Member User ID
           in: query
           name: user
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -877,6 +900,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           content:
@@ -918,6 +942,7 @@ paths:
                   $ref: '#/components/schemas/TeamMemberRoleType'
                 user_id:
                   type: integer
+                  format: int64
                   x-stoplight:
                     id: wdxfg6sq0yrj5
               required:
@@ -933,6 +958,7 @@ components:
       properties:
         id:
           type: integer
+          format: int64
           x-stoplight:
             id: 52nmixpoapf5m
         intro:
@@ -955,10 +981,12 @@ components:
       properties:
         deadline:
           type: integer
+          format: int64
           x-stoplight:
             id: b1yizo35ccdr5
         id:
           type: integer
+          format: int64
           x-stoplight:
             id: 34pdr2ppu7b1x
         intro:
@@ -1027,6 +1055,7 @@ components:
       properties:
         id:
           type: integer
+          format: int64
           x-stoplight:
             id: kp7arkckpma4u
         intro:
@@ -1089,6 +1118,7 @@ components:
         avatarId:
           description: 头像 id
           type: integer
+          format: int64
         id:
           description: 用户 ID
           format: int64

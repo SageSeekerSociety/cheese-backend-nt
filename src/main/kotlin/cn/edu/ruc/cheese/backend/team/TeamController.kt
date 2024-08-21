@@ -7,38 +7,41 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 class TeamController : TeamApi {
-    override fun deleteTeam(team: Int): ResponseEntity<DeleteTeam200Response> {
+    override fun deleteTeam(team: Long): ResponseEntity<DeleteTeam200ResponseDTO> {
         return super.deleteTeam(team)
     }
 
-    override fun deleteTeamMember(team: Int, user: Int): ResponseEntity<GetTeam200Response> {
+    override fun deleteTeamMember(team: Long, user: Long): ResponseEntity<GetTeam200ResponseDTO> {
         return super.deleteTeamMember(team, user)
     }
 
-    override fun getTeam(team: Int): ResponseEntity<GetTeam200Response> {
+    override fun patchTeam(
+            team: Long,
+            patchTeamRequestDTO: PatchTeamRequestDTO
+    ): ResponseEntity<GetTeam200ResponseDTO> {
+        return super.patchTeam(team, patchTeamRequestDTO)
+    }
+
+    override fun getTeam(team: Long): ResponseEntity<GetTeam200ResponseDTO> {
         return super.getTeam(team)
     }
 
-    override fun patchTeam(team: Int, patchTeamRequest: PatchTeamRequest): ResponseEntity<GetTeam200Response> {
-        return super.patchTeam(team, patchTeamRequest)
-    }
-
     override fun patchTeamMember(
-            team: Int,
-            user: Int,
-            patchTeamMemberRequest: PatchTeamMemberRequest
-    ): ResponseEntity<GetTeam200Response> {
-        return super.patchTeamMember(team, user, patchTeamMemberRequest)
+            team: Long,
+            user: Long,
+            patchTeamMemberRequestDTO: PatchTeamMemberRequestDTO
+    ): ResponseEntity<GetTeam200ResponseDTO> {
+        return super.patchTeamMember(team, user, patchTeamMemberRequestDTO)
     }
 
-    override fun postTeam(postTeamRequest: PostTeamRequest): ResponseEntity<GetTeam200Response> {
-        return super.postTeam(postTeamRequest)
+    override fun postTeam(postTeamRequestDTO: PostTeamRequestDTO): ResponseEntity<GetTeam200ResponseDTO> {
+        return super.postTeam(postTeamRequestDTO)
     }
 
     override fun postTeamMember(
-            team: Int,
-            postTeamMemberRequest: PostTeamMemberRequest
-    ): ResponseEntity<GetTeam200Response> {
-        return super.postTeamMember(team, postTeamMemberRequest)
+            team: Long,
+            postTeamMemberRequestDTO: PostTeamMemberRequestDTO
+    ): ResponseEntity<GetTeam200ResponseDTO> {
+        return super.postTeamMember(team, postTeamMemberRequestDTO)
     }
 }

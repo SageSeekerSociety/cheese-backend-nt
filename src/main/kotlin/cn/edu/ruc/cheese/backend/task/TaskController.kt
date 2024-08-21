@@ -7,39 +7,42 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 class TaskController : TaskApi {
-    override fun deleteTask(task: Int): ResponseEntity<DeleteTask200Response> {
+    override fun deleteTask(task: Long): ResponseEntity<DeleteTask200ResponseDTO> {
         return super.deleteTask(task)
     }
 
-    override fun deleteTaskMember(task: Int, memberType: String, member: Int): ResponseEntity<GetTask200Response> {
+    override fun deleteTaskMember(task: Long, memberType: String, member: Long): ResponseEntity<GetTask200ResponseDTO> {
         return super.deleteTaskMember(task, memberType, member)
     }
 
-    override fun getTask(task: Int): ResponseEntity<GetTask200Response> {
+    override fun getTask(task: Long): ResponseEntity<GetTask200ResponseDTO> {
         return super.getTask(task)
     }
 
-    override fun patchTask(task: Int, patchTaskRequest: PatchTaskRequest): ResponseEntity<GetTask200Response> {
-        return super.patchTask(task, patchTaskRequest)
+    override fun patchTask(
+            task: Long,
+            patchTaskRequestDTO: PatchTaskRequestDTO
+    ): ResponseEntity<GetTask200ResponseDTO> {
+        return super.patchTask(task, patchTaskRequestDTO)
     }
 
     override fun patchTaskMember(
-            task: Int,
+            task: Long,
             memberType: String,
-            member: Int,
-            patchTaskMemberRequest: PatchTaskMemberRequest
-    ): ResponseEntity<GetTask200Response> {
-        return super.patchTaskMember(task, memberType, member, patchTaskMemberRequest)
+            member: Long,
+            patchTaskMemberRequestDTO: PatchTaskMemberRequestDTO
+    ): ResponseEntity<GetTask200ResponseDTO> {
+        return super.patchTaskMember(task, memberType, member, patchTaskMemberRequestDTO)
     }
 
-    override fun postTask(postTaskRequest: PostTaskRequest): ResponseEntity<GetTask200Response> {
-        return super.postTask(postTaskRequest)
+    override fun postTask(postTaskRequestDTO: PostTaskRequestDTO): ResponseEntity<GetTask200ResponseDTO> {
+        return super.postTask(postTaskRequestDTO)
     }
 
     override fun postTaskMember(
-            task: Int,
-            postTaskMemberRequest: PostTaskMemberRequest
-    ): ResponseEntity<GetTask200Response> {
-        return super.postTaskMember(task, postTaskMemberRequest)
+            task: Long,
+            postTaskMemberRequestDTO: PostTaskMemberRequestDTO
+    ): ResponseEntity<GetTask200ResponseDTO> {
+        return super.postTaskMember(task, postTaskMemberRequestDTO)
     }
 }

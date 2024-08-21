@@ -155,6 +155,7 @@
                             <generatorName>kotlin-spring</generatorName>
                             <addCompileSourceRoot>true</addCompileSourceRoot>
                             <skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>
+                            <modelNameSuffix>DTO</modelNameSuffix>
                             <configOptions>
                                 <java8>true</java8>
                                 <interfaceOnly>true</interfaceOnly>

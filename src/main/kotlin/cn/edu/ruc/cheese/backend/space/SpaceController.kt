@@ -1,28 +1,29 @@
 package cn.edu.ruc.cheese.backend.space
 
 import cn.edu.ruc.cheese.backend.api.SpaceApi
-import cn.edu.ruc.cheese.backend.model.DeleteSpace200Response
-import cn.edu.ruc.cheese.backend.model.GetSpace200Response
-import cn.edu.ruc.cheese.backend.model.PatchSpaceRequest
-import cn.edu.ruc.cheese.backend.model.PostSpaceRequest
+import cn.edu.ruc.cheese.backend.model.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-class SpaceController : SpaceApi {
-    override fun deleteSpace(space: Int): ResponseEntity<DeleteSpace200Response> {
+class SpaceController(private val spaceService: SpaceService) : SpaceApi {
+    override fun deleteSpace(space: Long): ResponseEntity<DeleteSpace200ResponseDTO> {
         return super.deleteSpace(space)
     }
 
-    override fun getSpace(space: Int): ResponseEntity<GetSpace200Response> {
-        return super.getSpace(space)
+    override fun getSpace(space: Long): ResponseEntity<GetSpace200ResponseDTO> {
+        val spaceDto = spaceService.getSpaceDto(space)
+        return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDto), "OK"))
     }
 
-    override fun patchSpace(space: Int, patchSpaceRequest: PatchSpaceRequest): ResponseEntity<GetSpace200Response> {
-        return super.patchSpace(space, patchSpaceRequest)
+    override fun patchSpace(
+            space: Long,
+            patchSpaceRequestDTO: PatchSpaceRequestDTO
+    ): ResponseEntity<GetSpace200ResponseDTO> {
+        return super.patchSpace(space, patchSpaceRequestDTO)
     }
 
-    override fun postSpace(postSpaceRequest: PostSpaceRequest): ResponseEntity<GetSpace200Response> {
-        return super.postSpace(postSpaceRequest)
+    override fun postSpace(postSpaceRequestDTO: PostSpaceRequestDTO): ResponseEntity<GetSpace200ResponseDTO> {
+        return super.postSpace(postSpaceRequestDTO)
     }
 }
