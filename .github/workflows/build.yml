@@ -1,0 +1,55 @@
+name: Build
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    services:
+      # See: https://docs.github.com/en/actions/using-containerized-services/creating-postgresql-service-containers
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:latest
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --name my_postgres_container
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+      elasticsearch: # See: https://discuss.elastic.co/t/set-password-and-user-with-docker-compose/225075
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: true
+          ELASTIC_USERNAME: elastic
+          ELASTIC_PASSWORD: elastic
+        options: >-
+          --health-cmd "curl http://localhost:9200/_cluster/health"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          # Maps tcp port 9200 on service container to the host
+          - 9200:9200
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          settings-path: ${{ github.workspace }} # location for the settings.xml file
+
+      - name: Build with Maven
+        run: mvn install
