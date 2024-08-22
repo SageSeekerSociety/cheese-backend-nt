@@ -1,8 +1,8 @@
-package cn.edu.ruc.cheese.backend.space
+package org.rucca.cheese.space
 
-import cn.edu.ruc.cheese.backend.common.BaseEntity
-import cn.edu.ruc.cheese.backend.common.IdType
 import jakarta.persistence.*
+import org.rucca.cheese.common.BaseEntity
+import org.rucca.cheese.common.IdType
 import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity

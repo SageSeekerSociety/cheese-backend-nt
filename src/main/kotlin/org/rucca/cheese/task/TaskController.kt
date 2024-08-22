@@ -1,7 +1,7 @@
-package cn.edu.ruc.cheese.backend.task
+package org.rucca.cheese.task
 
-import cn.edu.ruc.cheese.backend.api.TaskApi
-import cn.edu.ruc.cheese.backend.model.*
+import org.rucca.cheese.api.TaskApi
+import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 

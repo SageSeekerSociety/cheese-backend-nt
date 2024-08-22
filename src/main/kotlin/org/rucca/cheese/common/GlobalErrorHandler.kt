@@ -1,4 +1,4 @@
-package cn.edu.ruc.cheese.backend.common
+package org.rucca.cheese.common
 
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -13,9 +13,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 class GlobalErrorHandler() {
     private val logger = LoggerFactory.getLogger(GlobalErrorHandler::class.java)
 
-    @ExceptionHandler(BaseError::class)
+    @ExceptionHandler(org.rucca.cheese.common.BaseError::class)
     @ResponseBody
-    fun handleBaseError(e: BaseError): ResponseEntity<BaseError> {
+    fun handleBaseError(e: org.rucca.cheese.common.BaseError): ResponseEntity<org.rucca.cheese.common.BaseError> {
         return ResponseEntity.status(e.status).body(e)
     }
 
@@ -23,20 +23,22 @@ class GlobalErrorHandler() {
     @ResponseBody
     fun handleMissingServletRequestParameterException(
             e: MissingServletRequestParameterException
-    ): ResponseEntity<BaseError> {
+    ): ResponseEntity<org.rucca.cheese.common.BaseError> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(BadRequestError(e.message))
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
     @ResponseBody
-    fun handleMethodArgumentTypeMismatchException(e: MethodArgumentTypeMismatchException): ResponseEntity<BaseError> {
+    fun handleMethodArgumentTypeMismatchException(
+            e: MethodArgumentTypeMismatchException
+    ): ResponseEntity<org.rucca.cheese.common.BaseError> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(BadRequestError(e.message ?: "Method argument type mismatch"))
     }
 
     @ExceptionHandler(Exception::class)
     @ResponseBody
-    fun handleException(e: Exception): ResponseEntity<BaseError> {
+    fun handleException(e: Exception): ResponseEntity<org.rucca.cheese.common.BaseError> {
         logger.error("Unexpected error", e)
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(InternalServerError())
     }

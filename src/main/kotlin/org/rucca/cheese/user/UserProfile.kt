@@ -21,7 +21,7 @@
  *
  */
 
-package cn.edu.ruc.cheese.backend.user
+package org.rucca.cheese.user
 
 import jakarta.persistence.*
 import java.time.OffsetDateTime
@@ -29,25 +29,19 @@ import org.hibernate.annotations.ColumnDefault
 
 @Entity
 @Table(
-        name = "\"user\"",
+        name = "user_profile",
         schema = "public",
-        indexes =
-                [
-                        Index(name = "IDX_78a916df40e02a9deb1c4b75ed", columnList = "username", unique = true),
-                        Index(name = "IDX_e12875dfb3b1d92d7d7c5377e2", columnList = "email", unique = true)])
-open class User {
+        indexes = [Index(name = "IDX_51cb79b5555effaf7d69ba1cff", columnList = "id", unique = true)])
+open class UserProfile {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_id_gen")
-    @SequenceGenerator(name = "user_id_gen", sequenceName = "user_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_profile_id_gen")
+    @SequenceGenerator(name = "user_profile_id_gen", sequenceName = "user_profile_id_seq", allocationSize = 1)
     @Column(name = "id", nullable = false)
     open var id: Int? = null
 
-    @Column(name = "username", nullable = false, length = Integer.MAX_VALUE) open var username: String? = null
+    @Column(name = "nickname", nullable = false, length = Integer.MAX_VALUE) open var nickname: String? = null
 
-    @Column(name = "hashed_password", nullable = false, length = Integer.MAX_VALUE)
-    open var hashedPassword: String? = null
-
-    @Column(name = "email", nullable = false, length = Integer.MAX_VALUE) open var email: String? = null
+    @Column(name = "intro", nullable = false, length = Integer.MAX_VALUE) open var intro: String? = null
 
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)

@@ -1,7 +1,7 @@
-package cn.edu.ruc.cheese.backend.space
+package org.rucca.cheese.space
 
-import cn.edu.ruc.cheese.backend.api.SpaceApi
-import cn.edu.ruc.cheese.backend.model.*
+import org.rucca.cheese.api.SpaceApi
+import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 

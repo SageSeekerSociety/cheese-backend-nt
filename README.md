@@ -51,7 +51,7 @@ OpenAPI specification in ```design/API/NT-API.yml```, compile the project, and r
 
 ### Run
 After the previous step, you will find the jar file in the ```target``` directory. Run
-```java -jar ./target/backend-0.0.1-SNAPSHOT.jar``` (replace the jar file name with the actual one) to run this project.
+```java -jar ./target/cheese-0.0.1-SNAPSHOT.jar``` (replace the jar file name with the actual one) to run this project.
 
 ### Format
 To format the code, run ```./mvnw spotless:apply``` in Unix shell or PowerShell.

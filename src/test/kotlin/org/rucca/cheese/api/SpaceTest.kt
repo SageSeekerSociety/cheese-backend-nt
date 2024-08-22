@@ -1,4 +1,4 @@
-package cn.edu.ruc.cheese.backend.api
+package org.rucca.cheese.api
 
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired

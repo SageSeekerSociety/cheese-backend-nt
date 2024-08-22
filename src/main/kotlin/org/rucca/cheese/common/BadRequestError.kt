@@ -1,9 +1,9 @@
-package cn.edu.ruc.cheese.backend.common
+package org.rucca.cheese.common
 
 import org.springframework.http.HttpStatus
 
 class BadRequestError(message: String) :
-        BaseError(
+        org.rucca.cheese.common.BaseError(
                 HttpStatus.BAD_REQUEST,
                 "BadRequestError",
                 message,

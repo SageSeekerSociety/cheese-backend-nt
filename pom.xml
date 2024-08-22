@@ -11,8 +11,8 @@
     </parent>
 
     <!-- Project Info -->
-    <groupId>cn.edu.ruc.cheese</groupId>
-    <artifactId>backend</artifactId>
+    <groupId>org.rucca</groupId>
+    <artifactId>cheese</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>backend</name>
     <description>Backend for Cheese Web Application</description>
@@ -159,8 +159,8 @@
                             <configOptions>
                                 <java8>true</java8>
                                 <interfaceOnly>true</interfaceOnly>
-                                <modelPackage>cn.edu.ruc.cheese.backend.model</modelPackage>
-                                <apiPackage>cn.edu.ruc.cheese.backend.api</apiPackage>
+                                <modelPackage>org.rucca.cheese.model</modelPackage>
+                                <apiPackage>org.rucca.cheese.api</apiPackage>
                                 <useBeanValidation>true</useBeanValidation>
                             </configOptions>
                         </configuration>

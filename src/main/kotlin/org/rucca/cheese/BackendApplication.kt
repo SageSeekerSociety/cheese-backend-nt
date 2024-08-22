@@ -1,4 +1,4 @@
-package cn.edu.ruc.cheese.backend
+package org.rucca.cheese
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication

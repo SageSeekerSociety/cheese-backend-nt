@@ -1,12 +1,12 @@
-package cn.edu.ruc.cheese.backend.common
+package org.rucca.cheese.common
 
 import org.springframework.http.HttpStatus
 
 class NotFoundError(
         type: String,
-        id: IdType,
+        id: org.rucca.cheese.common.IdType,
 ) :
-        BaseError(
+        org.rucca.cheese.common.BaseError(
                 status = HttpStatus.NOT_FOUND,
                 name = "NotFoundError",
                 message = "$type with id $id was not found",

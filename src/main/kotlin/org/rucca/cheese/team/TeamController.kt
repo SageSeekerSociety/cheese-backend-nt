@@ -1,7 +1,7 @@
-package cn.edu.ruc.cheese.backend.team
+package org.rucca.cheese.team
 
-import cn.edu.ruc.cheese.backend.api.TeamApi
-import cn.edu.ruc.cheese.backend.model.*
+import org.rucca.cheese.api.TeamApi
+import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
