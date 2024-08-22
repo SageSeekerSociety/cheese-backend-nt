@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
 @ControllerAdvice
-class GlobalErrorHandler() {
+class GlobalErrorHandler {
     private val logger = LoggerFactory.getLogger(GlobalErrorHandler::class.java)
 
     @ExceptionHandler(org.rucca.cheese.common.BaseError::class)
