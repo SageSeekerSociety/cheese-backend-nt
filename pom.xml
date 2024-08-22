@@ -162,6 +162,7 @@
                                 <modelPackage>org.rucca.cheese.model</modelPackage>
                                 <apiPackage>org.rucca.cheese.api</apiPackage>
                                 <useBeanValidation>true</useBeanValidation>
+                                <exceptionHandler>false</exceptionHandler>
                             </configOptions>
                         </configuration>
                     </execution>
