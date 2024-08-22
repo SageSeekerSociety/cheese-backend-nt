@@ -1,0 +1,1150 @@
+openapi: 3.0.0
+info:
+  title: Cheese Community API
+  version: '1.0'
+servers:
+  - url: 'http://localhost:7777/api/v1'
+paths:
+  /space:
+    delete:
+      parameters:
+        - description: Space ID
+          in: query
+          name: space
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: fr61caeks4gxw
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: 8ylo3xkd1jmiq
+                required:
+                  - code
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: delete-space
+      summary: Delete Space
+      x-stoplight:
+        id: y5t7k7vw6v5lj
+    get:
+      parameters:
+        - description: Space ID
+          in: query
+          name: space
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: fr61caeks4gxw
+                  data:
+                    properties:
+                      space:
+                        $ref: '#/components/schemas/Space'
+                    required:
+                      - space
+                    type: object
+                    x-stoplight:
+                      id: aq9k2n1lkyybd
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: 8ylo3xkd1jmiq
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: get-space
+      summary: Query Space
+      x-stoplight:
+        id: sa76mapokoxdw
+    patch:
+      parameters:
+        - description: Space ID
+          in: query
+          name: space
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: fr61caeks4gxw
+                  data:
+                    properties:
+                      space:
+                        $ref: '#/components/schemas/Space'
+                    required:
+                      - space
+                    type: object
+                    x-stoplight:
+                      id: aq9k2n1lkyybd
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: 8ylo3xkd1jmiq
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: patch-space
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                intro:
+                  type: string
+                  x-stoplight:
+                    id: o0xbwqyvvlxbw
+                name:
+                  type: string
+                  x-stoplight:
+                    id: nvrbufaetpfgt
+              type: object
+      summary: Update Space
+      x-stoplight:
+        id: 0f71c5ul8igvq
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: fr61caeks4gxw
+                  data:
+                    properties:
+                      space:
+                        $ref: '#/components/schemas/Space'
+                    required:
+                      - space
+                    type: object
+                    x-stoplight:
+                      id: aq9k2n1lkyybd
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: 8ylo3xkd1jmiq
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: post-space
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                intro:
+                  type: string
+                  x-stoplight:
+                    id: 7k1r7n9xll0k2
+                name:
+                  type: string
+                  x-stoplight:
+                    id: ters5hblboh72
+              required:
+                - intro
+                - name
+              type: object
+      summary: Create Space
+      x-stoplight:
+        id: pg0dllezwwg9w
+  /task:
+    delete:
+      parameters:
+        - description: Task ID
+          in: query
+          name: task
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: 5h4i9qnxtzkyc
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: yakrhf5tw2k0o
+                required:
+                  - code
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: delete-task
+      summary: Delete Task
+      x-stoplight:
+        id: zjib7afl5gujp
+    get:
+      parameters:
+        - description: Task ID
+          in: query
+          name: task
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: ehv14gy4oxg6y
+                  data:
+                    properties:
+                      task:
+                        $ref: '#/components/schemas/Task'
+                    required:
+                      - task
+                    type: object
+                    x-stoplight:
+                      id: nkg36f022iluq
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: avsxy26ifxoca
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: get-task
+      summary: Query Task
+      x-stoplight:
+        id: fuv3w7t9i0rmo
+    patch:
+      parameters:
+        - description: Task ID
+          in: query
+          name: task
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: ehv14gy4oxg6y
+                  data:
+                    properties:
+                      task:
+                        $ref: '#/components/schemas/Task'
+                    required:
+                      - task
+                    type: object
+                    x-stoplight:
+                      id: nkg36f022iluq
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: avsxy26ifxoca
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: patch-task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                deadline:
+                  type: integer
+                  format: int64
+                  x-stoplight:
+                    id: wj7yxfw7y74jt
+                has_deadline:
+                  type: boolean
+                  x-stoplight:
+                    id: ki4esb34t5egb
+                has_space_id:
+                  type: boolean
+                  x-stoplight:
+                    id: uzl8bfetl8xic
+                intro:
+                  type: string
+                  x-stoplight:
+                    id: vhpalzkv4yw1j
+                name:
+                  type: string
+                  x-stoplight:
+                    id: cqjfpanliesrt
+                space_id:
+                  type: integer
+                  format: int64
+                  x-stoplight:
+                    id: ng9yusn2894ro
+              type: object
+      summary: Update Task
+      x-stoplight:
+        id: sy7yhfh83myt0
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: ehv14gy4oxg6y
+                  data:
+                    properties:
+                      task:
+                        $ref: '#/components/schemas/Task'
+                    required:
+                      - task
+                    type: object
+                    x-stoplight:
+                      id: nkg36f022iluq
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: avsxy26ifxoca
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: post-task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                deadline:
+                  type: integer
+                  format: int64
+                  x-stoplight:
+                    id: wj7yxfw7y74jt
+                intro:
+                  type: string
+                  x-stoplight:
+                    id: vhpalzkv4yw1j
+                name:
+                  type: string
+                  x-stoplight:
+                    id: cqjfpanliesrt
+                space_id:
+                  type: integer
+                  format: int64
+                  x-stoplight:
+                    id: ng9yusn2894ro
+              required:
+                - intro
+                - name
+              type: object
+      summary: Create Task
+      x-stoplight:
+        id: ai79622xpxp6v
+  /task/member:
+    delete:
+      parameters:
+        - description: Task ID
+          in: query
+          name: task
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: '"USER" or "TEAM"'
+          in: query
+          name: member_type
+          required: true
+          schema:
+            type: string
+        - description: Member ID
+          in: query
+          name: member
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: ehv14gy4oxg6y
+                  data:
+                    properties:
+                      task:
+                        $ref: '#/components/schemas/Task'
+                    required:
+                      - task
+                    type: object
+                    x-stoplight:
+                      id: nkg36f022iluq
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: avsxy26ifxoca
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: delete-task-member
+      summary: Kick Out Task Member
+      x-stoplight:
+        id: a3mg97p7csitv
+    patch:
+      parameters:
+        - description: Task ID
+          in: query
+          name: task
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: '"USER" or "TEAM"'
+          in: query
+          name: member_type
+          required: true
+          schema:
+            type: string
+        - description: Member ID
+          in: query
+          name: member
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: ehv14gy4oxg6y
+                  data:
+                    properties:
+                      task:
+                        $ref: '#/components/schemas/Task'
+                    required:
+                      - task
+                    type: object
+                    x-stoplight:
+                      id: nkg36f022iluq
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: avsxy26ifxoca
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: patch-task-member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                role:
+                  $ref: '#/components/schemas/TaskMemberRoleType'
+              type: object
+      summary: Update Task Member Info
+      x-stoplight:
+        id: tc7uqwv28y2y3
+    post:
+      parameters:
+        - description: Task ID
+          in: query
+          name: task
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: ehv14gy4oxg6y
+                  data:
+                    properties:
+                      task:
+                        $ref: '#/components/schemas/Task'
+                    required:
+                      - task
+                    type: object
+                    x-stoplight:
+                      id: nkg36f022iluq
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: avsxy26ifxoca
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: post-task-member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                member_id:
+                  type: integer
+                  format: int64
+                  x-stoplight:
+                    id: 1r8s7arybars8
+                role:
+                  $ref: '#/components/schemas/TaskMemberRoleType'
+                type:
+                  $ref: '#/components/schemas/TaskMemberType'
+              required:
+                - member_id
+                - role
+                - type
+              type: object
+      summary: Add Task Member
+      x-stoplight:
+        id: 0ecf6ar0lufhc
+  /team:
+    delete:
+      parameters:
+        - description: Team ID
+          in: query
+          name: team
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: d3x5wr67b0uvq
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: 1tqn6nvv2twh3
+                required:
+                  - code
+                  - message
+                type: object
+          description: No Content
+      tags: []
+      operationId: delete-team
+      summary: Delete Team
+      x-stoplight:
+        id: cszkqabi3y737
+    get:
+      parameters:
+        - description: Team ID
+          in: query
+          name: team
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: tlgjum86pp2qc
+                  data:
+                    properties:
+                      team:
+                        $ref: '#/components/schemas/Team'
+                    required:
+                      - team
+                    type: object
+                    x-stoplight:
+                      id: uc32cpg2k5x68
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: zp1goqu7fzjss
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: get-team
+      summary: Query Team
+      x-stoplight:
+        id: kvkav72t81xwo
+    patch:
+      parameters:
+        - description: Team ID
+          in: query
+          name: team
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: tlgjum86pp2qc
+                  data:
+                    properties:
+                      team:
+                        $ref: '#/components/schemas/Team'
+                    required:
+                      - team
+                    type: object
+                    x-stoplight:
+                      id: uc32cpg2k5x68
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: zp1goqu7fzjss
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: patch-team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                intro:
+                  type: string
+                  x-stoplight:
+                    id: 8ctriovz0q68i
+                name:
+                  type: string
+                  x-stoplight:
+                    id: w0qplzea4vc28
+              type: object
+      summary: Update Team
+      x-stoplight:
+        id: 6f4e855dosj7n
+    post:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: tlgjum86pp2qc
+                  data:
+                    properties:
+                      team:
+                        $ref: '#/components/schemas/Team'
+                    required:
+                      - team
+                    type: object
+                    x-stoplight:
+                      id: uc32cpg2k5x68
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: zp1goqu7fzjss
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: post-team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                intro:
+                  type: string
+                  x-stoplight:
+                    id: ld5e4eauav2h5
+                name:
+                  type: string
+                  x-stoplight:
+                    id: fjmkk5mgsmm7u
+              required:
+                - intro
+                - name
+              type: object
+      summary: Create Team
+      x-stoplight:
+        id: b30d0d09hir43
+  /team/member:
+    delete:
+      parameters:
+        - description: Team ID
+          in: query
+          name: team
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Member User ID
+          in: query
+          name: user
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: tlgjum86pp2qc
+                  data:
+                    properties:
+                      team:
+                        $ref: '#/components/schemas/Team'
+                    required:
+                      - team
+                    type: object
+                    x-stoplight:
+                      id: uc32cpg2k5x68
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: zp1goqu7fzjss
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: delete-team-member
+      summary: Kick Out Team Member
+      x-stoplight:
+        id: 2d36c06ks5t0y
+    patch:
+      parameters:
+        - description: Team ID
+          in: query
+          name: team
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Member User ID
+          in: query
+          name: user
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: tlgjum86pp2qc
+                  data:
+                    properties:
+                      team:
+                        $ref: '#/components/schemas/Team'
+                    required:
+                      - team
+                    type: object
+                    x-stoplight:
+                      id: uc32cpg2k5x68
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: zp1goqu7fzjss
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: patch-team-member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                role:
+                  $ref: '#/components/schemas/TeamMemberRoleType'
+              type: object
+      summary: Update Team Membership Info
+      x-stoplight:
+        id: 5kzla05sox4wy
+    post:
+      parameters:
+        - description: Team ID
+          in: query
+          name: team
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: tlgjum86pp2qc
+                  data:
+                    properties:
+                      team:
+                        $ref: '#/components/schemas/Team'
+                    required:
+                      - team
+                    type: object
+                    x-stoplight:
+                      id: uc32cpg2k5x68
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: zp1goqu7fzjss
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: []
+      operationId: post-team-member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                role:
+                  $ref: '#/components/schemas/TeamMemberRoleType'
+                user_id:
+                  type: integer
+                  format: int64
+                  x-stoplight:
+                    id: wdxfg6sq0yrj5
+              required:
+                - role
+                - user_id
+              type: object
+      summary: Add Team Member
+      x-stoplight:
+        id: qpmnix1tpjoiy
+components:
+  schemas:
+    Space:
+      properties:
+        id:
+          type: integer
+          format: int64
+          x-stoplight:
+            id: 52nmixpoapf5m
+        intro:
+          type: string
+          x-stoplight:
+            id: 63zv59n5mly94
+        name:
+          type: string
+          x-stoplight:
+            id: 5nbcfqkp85xhz
+      required:
+        - id
+        - intro
+        - name
+      title: Space
+      type: object
+      x-stoplight:
+        id: m94sek8uqj951
+    Task:
+      properties:
+        deadline:
+          type: integer
+          format: int64
+          x-stoplight:
+            id: b1yizo35ccdr5
+        id:
+          type: integer
+          format: int64
+          x-stoplight:
+            id: 34pdr2ppu7b1x
+        intro:
+          type: string
+          x-stoplight:
+            id: j39pzwuexe2hy
+        members:
+          items:
+            $ref: '#/components/schemas/TaskMember'
+          type: array
+          x-stoplight:
+            id: 0u5jpgv2an5wr
+        name:
+          type: string
+          x-stoplight:
+            id: rbj58vdb6mhrx
+        space:
+          $ref: '#/components/schemas/Space'
+      required:
+        - id
+        - intro
+        - members
+        - name
+      title: Task
+      type: object
+      x-stoplight:
+        id: 3spbmywj9wzkf
+    TaskMember:
+      properties:
+        member:
+          anyOf:
+            - $ref: '#/components/schemas/User'
+            - $ref: '#/components/schemas/Team'
+          type: object
+          x-stoplight:
+            id: n50h65la9eeur
+        role:
+          $ref: '#/components/schemas/TaskMemberRoleType'
+        type:
+          $ref: '#/components/schemas/TaskMemberType'
+      required:
+        - member
+        - role
+        - type
+      title: TaskMember
+      type: object
+      x-stoplight:
+        id: pazj46hbk73rw
+    TaskMemberRoleType:
+      description: 小组角色
+      enum:
+        - OWNER
+        - ADMIN
+        - MEMBER
+      type: string
+      x-stoplight:
+        id: v685avb1jcocu
+    TaskMemberType:
+      enum:
+        - USER
+        - TEAM
+      title: TaskMemberType
+      x-stoplight:
+        id: 1y8uxlhtys1nv
+    Team:
+      properties:
+        id:
+          type: integer
+          format: int64
+          x-stoplight:
+            id: kp7arkckpma4u
+        intro:
+          type: string
+          x-stoplight:
+            id: c81sns2k5brz6
+        members:
+          items:
+            $ref: '#/components/schemas/TeamMember'
+          type: array
+          x-stoplight:
+            id: tixv6labywvr0
+        name:
+          type: string
+          x-stoplight:
+            id: js77va9xsq4gg
+      required:
+        - id
+        - intro
+        - members
+        - name
+      title: Team
+      type: object
+      x-internal: false
+      x-stoplight:
+        id: 3imsmwy6ayqfw
+    TeamMember:
+      properties:
+        role:
+          $ref: '#/components/schemas/TeamMemberRoleType'
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+        - role
+        - user
+      title: TeamMember
+      type: object
+      x-stoplight:
+        id: razh52jtnx59o
+    TeamMemberRoleType:
+      description: 小组角色
+      enum:
+        - OWNER
+        - ADMIN
+        - MEMBER
+      type: string
+      x-stoplight:
+        id: 5f28hwh1gfr6u
+    User:
+      type: object
+      x-stoplight:
+        id: db1qnmy49o19b
+      required:
+        - avatarId
+        - id
+        - intro
+        - nickname
+        - username
+      properties:
+        avatarId:
+          description: 头像 id
+          type: integer
+          format: int64
+        id:
+          description: 用户 ID
+          format: int64
+          minimum: 1
+          type: integer
+        intro:
+          default: This user has not set an introduction yet.
+          description: 个人简介
+          type: string
+        nickname:
+          description: 昵称
+          example: 芝士
+          type: string
+        username:
+          description: 用户名
+          example: cheese
+          type: string
+  securitySchemes:
+    bearerAuth:
+      description: The access token is used in this way.
+      in: header
+      name: Authorization
+      type: apiKey
+security:
+  - bearerAuth: []
+x-components:
+  parameters: {}
+x-stoplight:
+  id: x4r8qoe9jcv7l
