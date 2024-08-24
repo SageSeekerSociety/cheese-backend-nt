@@ -1,4 +1,4 @@
-package org.rucca.cheese.common
+package org.rucca.cheese.common.persistent
 
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
