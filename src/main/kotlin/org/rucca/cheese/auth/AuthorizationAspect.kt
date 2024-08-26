@@ -57,11 +57,10 @@ class AuthorizationAspect(
                 }
             }
 
-            var token: String? = null
-            val requestAttributes = RequestContextHolder.currentRequestAttributes()
-            if (requestAttributes is ServletRequestAttributes) {
-                token = requestAttributes.request.getHeader("Authorization")
-            }
+            val token: String? =
+                    (RequestContextHolder.currentRequestAttributes() as ServletRequestAttributes)
+                            .request
+                            .getHeader("Authorization")
 
             authorizationService.audit(
                     token,

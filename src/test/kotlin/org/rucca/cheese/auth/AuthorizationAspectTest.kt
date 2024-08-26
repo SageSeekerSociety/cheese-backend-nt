@@ -77,8 +77,14 @@ constructor(
     }
 
     @Test
+    fun testNoAuth() {
+        mockMvc.perform(MockMvcRequestBuilders.get("/example/6"))
+        verify(exactly = 0) { authorizationService.audit(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun testMvcController() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/example/6?id=123").header("authorization", "Bearer token Xxx"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/example2/1?id=123").header("authorization", "Bearer token Xxx"))
         verify { authorizationService.audit("Bearer token Xxx", "query", "example", 123) }
     }
 }

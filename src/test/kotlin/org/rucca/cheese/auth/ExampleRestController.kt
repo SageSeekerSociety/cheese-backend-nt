@@ -1,6 +1,7 @@
 package org.rucca.cheese.auth
 
 import org.rucca.cheese.auth.annotation.Guard
+import org.rucca.cheese.auth.annotation.NoAuth
 import org.rucca.cheese.auth.annotation.ResourceId
 import org.rucca.cheese.common.persistent.IdType
 import org.springframework.web.bind.annotation.GetMapping
@@ -43,5 +44,11 @@ class ExampleRestController {
             @RequestParam("id") @ResourceId id: IdType,
     ): String {
         return "example_5"
+    }
+
+    @GetMapping("/example/6")
+    @NoAuth
+    fun noAuth(): String {
+        return "example_6"
     }
 }
