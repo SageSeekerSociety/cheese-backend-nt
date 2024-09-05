@@ -11,6 +11,12 @@ class SpaceService(private val spaceRepository: SpaceRepository) {
                 spaceRepository.findById(spaceId).orElseThrow {
                     org.rucca.cheese.common.NotFoundError("space", spaceId)
                 }
-        return SpaceDTO(id = space.id, intro = space.description, name = space.name)
+        return SpaceDTO(
+                id = space.id,
+                intro = space.description,
+                name = space.name,
+                avatarId = TODO(),
+                admins = TODO(),
+        )
     }
 }

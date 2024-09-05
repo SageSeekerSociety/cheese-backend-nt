@@ -15,15 +15,19 @@ class TeamController : TeamApi {
         return super.deleteTeamMember(team, user)
     }
 
+    override fun getTeam(team: Long): ResponseEntity<GetTeam200ResponseDTO> {
+        return super.getTeam(team)
+    }
+
+    override fun getTeamMembers(team: Long): ResponseEntity<GetTeamMembers200ResponseDTO> {
+        return super.getTeamMembers(team)
+    }
+
     override fun patchTeam(
             team: Long,
             patchTeamRequestDTO: PatchTeamRequestDTO
     ): ResponseEntity<GetTeam200ResponseDTO> {
         return super.patchTeam(team, patchTeamRequestDTO)
-    }
-
-    override fun getTeam(team: Long): ResponseEntity<GetTeam200ResponseDTO> {
-        return super.getTeam(team)
     }
 
     override fun patchTeamMember(

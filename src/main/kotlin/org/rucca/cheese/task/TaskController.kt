@@ -11,12 +11,35 @@ class TaskController : TaskApi {
         return super.deleteTask(task)
     }
 
-    override fun deleteTaskMember(task: Long, memberType: String, member: Long): ResponseEntity<GetTask200ResponseDTO> {
-        return super.deleteTaskMember(task, memberType, member)
+    override fun deleteTaskMember(task: Long, member: Long): ResponseEntity<GetTask200ResponseDTO> {
+        return super.deleteTaskMember(task, member)
     }
 
     override fun getTask(task: Long): ResponseEntity<GetTask200ResponseDTO> {
         return super.getTask(task)
+    }
+
+    override fun getTaskSubmissions(
+            task: Long?,
+            user: Long?,
+            version: Int?,
+            pageSize: Int,
+            pageStart: Int?,
+            sortBy: String,
+            sortOrder: String
+    ): ResponseEntity<GetTaskSubmissions200ResponseDTO> {
+        return super.getTaskSubmissions(task, user, version, pageSize, pageStart, sortBy, sortOrder)
+    }
+
+    override fun getTasks(
+            space: Long?,
+            team: Int?,
+            pageSize: Int,
+            pageStart: Int?,
+            sortBy: String,
+            sortOrder: String
+    ): ResponseEntity<GetTasks200ResponseDTO> {
+        return super.getTasks(space, team, pageSize, pageStart, sortBy, sortOrder)
     }
 
     override fun patchTask(
@@ -26,13 +49,13 @@ class TaskController : TaskApi {
         return super.patchTask(task, patchTaskRequestDTO)
     }
 
-    override fun patchTaskMember(
+    override fun patchTaskSubmission(
             task: Long,
-            memberType: String,
-            member: Long,
-            patchTaskMemberRequestDTO: PatchTaskMemberRequestDTO
-    ): ResponseEntity<GetTask200ResponseDTO> {
-        return super.patchTaskMember(task, memberType, member, patchTaskMemberRequestDTO)
+            user: Long,
+            version: Int,
+            postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>?
+    ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
+        return super.patchTaskSubmission(task, user, version, postTaskSubmissionRequestInnerDTO)
     }
 
     override fun postTask(postTaskRequestDTO: PostTaskRequestDTO): ResponseEntity<GetTask200ResponseDTO> {
@@ -44,5 +67,13 @@ class TaskController : TaskApi {
             postTaskMemberRequestDTO: PostTaskMemberRequestDTO
     ): ResponseEntity<GetTask200ResponseDTO> {
         return super.postTaskMember(task, postTaskMemberRequestDTO)
+    }
+
+    override fun postTaskSubmission(
+            task: Long,
+            user: Long,
+            postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>?
+    ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
+        return super.postTaskSubmission(task, user, postTaskSubmissionRequestInnerDTO)
     }
 }
