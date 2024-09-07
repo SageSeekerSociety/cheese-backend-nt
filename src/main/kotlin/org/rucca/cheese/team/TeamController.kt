@@ -1,41 +1,41 @@
 package org.rucca.cheese.team
 
-import org.rucca.cheese.api.TeamApi
+import org.rucca.cheese.api.TeamsApi
 import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-class TeamController : TeamApi {
-    override fun deleteTeam(team: Long): ResponseEntity<DeleteTeam200ResponseDTO> {
-        return super.deleteTeam(team)
+class TeamController : TeamsApi {
+    override fun deleteTeam(teamId: Long): ResponseEntity<DeleteTeam200ResponseDTO> {
+        return super.deleteTeam(teamId)
     }
 
-    override fun deleteTeamMember(team: Long, user: Long): ResponseEntity<GetTeam200ResponseDTO> {
-        return super.deleteTeamMember(team, user)
+    override fun deleteTeamMember(teamId: Long, userId: Long): ResponseEntity<GetTeam200ResponseDTO> {
+        return super.deleteTeamMember(teamId, userId)
     }
 
-    override fun getTeam(team: Long): ResponseEntity<GetTeam200ResponseDTO> {
-        return super.getTeam(team)
+    override fun getTeam(teamId: Long): ResponseEntity<GetTeam200ResponseDTO> {
+        return super.getTeam(teamId)
     }
 
-    override fun getTeamMembers(team: Long): ResponseEntity<GetTeamMembers200ResponseDTO> {
-        return super.getTeamMembers(team)
+    override fun getTeamMembers(teamId: Long): ResponseEntity<GetTeamMembers200ResponseDTO> {
+        return super.getTeamMembers(teamId)
     }
 
     override fun patchTeam(
-            team: Long,
+            teamId: Long,
             patchTeamRequestDTO: PatchTeamRequestDTO
     ): ResponseEntity<GetTeam200ResponseDTO> {
-        return super.patchTeam(team, patchTeamRequestDTO)
+        return super.patchTeam(teamId, patchTeamRequestDTO)
     }
 
     override fun patchTeamMember(
-            team: Long,
-            user: Long,
+            teamId: Long,
+            userId: Long,
             patchTeamMemberRequestDTO: PatchTeamMemberRequestDTO
     ): ResponseEntity<GetTeam200ResponseDTO> {
-        return super.patchTeamMember(team, user, patchTeamMemberRequestDTO)
+        return super.patchTeamMember(teamId, userId, patchTeamMemberRequestDTO)
     }
 
     override fun postTeam(postTeamRequestDTO: PostTeamRequestDTO): ResponseEntity<GetTeam200ResponseDTO> {
@@ -43,9 +43,9 @@ class TeamController : TeamApi {
     }
 
     override fun postTeamMember(
-            team: Long,
+            teamId: Long,
             postTeamMemberRequestDTO: PostTeamMemberRequestDTO
     ): ResponseEntity<GetTeam200ResponseDTO> {
-        return super.postTeamMember(team, postTeamMemberRequestDTO)
+        return super.postTeamMember(teamId, postTeamMemberRequestDTO)
     }
 }

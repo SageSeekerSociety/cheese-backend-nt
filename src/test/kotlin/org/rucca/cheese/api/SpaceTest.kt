@@ -13,7 +13,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 class SpaceTest @Autowired constructor(private val mockMvc: MockMvc) {
     @Test
     fun testGetSpaceAndNotFound() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/space?space=-1"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/spaces/-1"))
                 .andExpect(MockMvcResultMatchers.status().isNotFound)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("NotFoundError"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.type").value("space"))
