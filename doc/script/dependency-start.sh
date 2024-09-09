@@ -35,6 +35,7 @@ sudo docker exec -i postgres bash << EOF
 EOF
 sudo docker restart --time 0 postgres
 
+sudo docker pull ghcr.io/sageseekersociety/cheese-backend-dev:dev # Update local image
 sudo docker run -d \
     --name cheese_legacy \
     --network cheese_network \
