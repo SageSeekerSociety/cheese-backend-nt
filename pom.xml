@@ -119,6 +119,16 @@
             <version>4.0.2</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>at.favre.lib</groupId>
+            <artifactId>bcrypt</artifactId>
+            <version>0.10.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>3.1.8</version>
+        </dependency>
     </dependencies>
 
     <!-- Build Configuration -->

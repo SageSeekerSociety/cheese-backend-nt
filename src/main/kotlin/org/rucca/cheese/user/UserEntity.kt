@@ -26,6 +26,7 @@ package org.rucca.cheese.user
 import jakarta.persistence.*
 import java.time.OffsetDateTime
 import org.hibernate.annotations.ColumnDefault
+import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
 @Table(
@@ -35,7 +36,7 @@ import org.hibernate.annotations.ColumnDefault
                 [
                         Index(name = "IDX_78a916df40e02a9deb1c4b75ed", columnList = "username", unique = true),
                         Index(name = "IDX_e12875dfb3b1d92d7d7c5377e2", columnList = "email", unique = true)])
-open class User {
+open class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_id_gen")
     @SequenceGenerator(name = "user_id_gen", sequenceName = "user_id_seq", allocationSize = 1)
@@ -50,12 +51,14 @@ open class User {
     @Column(name = "email", nullable = false, length = Integer.MAX_VALUE) open var email: String? = null
 
     @ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, insertable = false)
     open var createdAt: OffsetDateTime? = null
 
     @ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at", nullable = false, insertable = false)
     open var updatedAt: OffsetDateTime? = null
 
     @Column(name = "deleted_at") open var deletedAt: OffsetDateTime? = null
 }
+
+interface UserRepository : JpaRepository<UserEntity, Int>

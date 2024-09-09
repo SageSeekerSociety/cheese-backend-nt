@@ -26,6 +26,13 @@ package org.rucca.cheese.user
 import jakarta.persistence.*
 import java.time.OffsetDateTime
 import org.hibernate.annotations.ColumnDefault
+import org.springframework.data.jpa.repository.JpaRepository
+
+@Entity
+@Table(name = "avatar")
+open class Avatar {
+    @Id @ColumnDefault("nextval('avatar_id_seq')") @Column(name = "id", nullable = false) open var id: Int? = null
+}
 
 @Entity
 @Table(
@@ -44,12 +51,22 @@ open class UserProfile {
     @Column(name = "intro", nullable = false, length = Integer.MAX_VALUE) open var intro: String? = null
 
     @ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, insertable = false)
     open var createdAt: OffsetDateTime? = null
 
     @ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at", nullable = false, insertable = false)
     open var updatedAt: OffsetDateTime? = null
 
     @Column(name = "deleted_at") open var deletedAt: OffsetDateTime? = null
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    open var userEntity: UserEntity? = null
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "avatar_id", nullable = false)
+    open var avatar: Avatar? = null
 }
+
+interface UserProfileRepository : JpaRepository<UserProfile, Int>
