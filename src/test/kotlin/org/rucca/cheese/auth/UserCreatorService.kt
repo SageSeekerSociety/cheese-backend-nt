@@ -70,7 +70,7 @@ class UserCreatorService(
     }
 
     fun testUsername(): String {
-        return "NTTestUsername-${floor(Math.random() * 10000000000).toInt()}"
+        return "NTTestUsername-${floor(Math.random() * 10000000000).toLong()}"
     }
 
     fun testPassword(): String {
@@ -78,7 +78,7 @@ class UserCreatorService(
     }
 
     fun testEmail(): String {
-        return "test-${floor(Math.random() * 10000000000).toInt()}@ruc.edu.cn"
+        return "test-${floor(Math.random() * 10000000000).toLong()}@ruc.edu.cn"
     }
 
     fun testNickname(): String {
