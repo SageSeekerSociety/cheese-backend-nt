@@ -7,4 +7,5 @@ import org.springframework.stereotype.Component
 @ConfigurationProperties(prefix = "application")
 class ApplicationConfig {
     lateinit var legacyUrl: String
+    lateinit var jwtSecret: String
 }
