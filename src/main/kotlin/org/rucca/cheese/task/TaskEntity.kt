@@ -1,6 +1,9 @@
 package org.rucca.cheese.task
 
+import jakarta.persistence.ElementCollection
+import jakarta.persistence.Embeddable
 import jakarta.persistence.Entity
+import jakarta.persistence.ManyToOne
 import java.sql.Date
 import org.rucca.cheese.common.BaseEntity
 import org.rucca.cheese.common.IdType
@@ -13,14 +16,16 @@ import org.springframework.data.jpa.repository.JpaRepository
 class Task(
         val name: String,
         val submitterType: IdType,
-        val creator: User,
+        @ManyToOne val creator: User,
         val deadline: Date,
         val resubmittable: Boolean,
         val editable: Boolean,
-        val team: Team?,
-        val space: Space?,
+        @ManyToOne val team: Team?,
+        @ManyToOne val space: Space?,
         val description: String,
-        val submissionSchema: List<Pair<String, Int>>,
+        @ElementCollection val submissionSchema: List<SubmissionSchema>,
 ) : BaseEntity()
+
+@Embeddable class SubmissionSchema(val key: String, val value: Int)
 
 interface TaskRepository : JpaRepository<Task, IdType>
