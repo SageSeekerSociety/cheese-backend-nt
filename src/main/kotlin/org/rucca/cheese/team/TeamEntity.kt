@@ -1,16 +1,17 @@
-package org.rucca.cheese.space
+package org.rucca.cheese.team
 
-import jakarta.persistence.*
+import jakarta.persistence.Entity
+import jakarta.persistence.ManyToOne
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.user.Avatar
 import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
-class Space(
+class Team(
         val name: String,
         val description: String,
         @ManyToOne val avatar: Avatar,
 ) : BaseEntity()
 
-interface SpaceRepository : JpaRepository<Space, IdType>
+interface TeamRepository : JpaRepository<Team, IdType>

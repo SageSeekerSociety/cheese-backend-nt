@@ -62,7 +62,7 @@ open class UserProfile {
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    open var userEntity: UserEntity? = null
+    open var userEntity: User? = null
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "avatar_id", nullable = false)

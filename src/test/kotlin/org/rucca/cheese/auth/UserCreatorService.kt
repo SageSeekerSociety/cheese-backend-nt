@@ -35,7 +35,7 @@ class UserCreatorService(
             avatarId: IdType = testAvatarId(),
             intro: String = testIntro(),
     ): CreateUserResponse {
-        val userEntity = UserEntity()
+        val userEntity = User()
         userEntity.username = username
         userEntity.hashedPassword = BCrypt.withDefaults().hashToString(12, password.toCharArray())
         userEntity.email = email
