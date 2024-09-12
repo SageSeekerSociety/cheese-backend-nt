@@ -9,14 +9,21 @@ import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.space.Space
 import org.rucca.cheese.team.Team
-import org.rucca.cheese.user.UserEntity
+import org.rucca.cheese.user.User
 import org.springframework.data.jpa.repository.JpaRepository
+
+enum class TaskSubmitterType {
+    USER,
+    TEAM,
+}
+
+@Embeddable class TaskSubmissionSchema(val key: String, val value: Int)
 
 @Entity
 class Task(
         val name: String,
         val submitterType: TaskSubmitterType,
-        @ManyToOne val creator: UserEntity,
+        @ManyToOne val creator: User,
         val deadline: Date,
         val resubmittable: Boolean,
         val editable: Boolean,
@@ -25,12 +32,5 @@ class Task(
         val description: String,
         @ElementCollection val submissionSchema: List<TaskSubmissionSchema>,
 ) : BaseEntity()
-
-enum class TaskSubmitterType {
-    USER,
-    TEAM,
-}
-
-@Embeddable class TaskSubmissionSchema(val key: String, val value: Int)
 
 interface TaskRepository : JpaRepository<Task, IdType>

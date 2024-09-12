@@ -1,12 +1,11 @@
-package org.rucca.cheese.SpaceAdminRelation
+package org.rucca.cheese.space
 
 import jakarta.persistence.Entity
 import jakarta.persistence.ManyToOne
 import org.rucca.cheese.common.persistent.BaseEntity
-import org.rucca.cheese.space.Space
-import org.rucca.cheese.user.UserEntity
+import org.rucca.cheese.user.User
 
-enum class MemberRole {
+enum class SpaceMemberRole {
     ADMIN,
     MEMBER
 }
@@ -14,6 +13,6 @@ enum class MemberRole {
 @Entity
 class SpaceAdminRelationEntity(
         @ManyToOne val space: Space,
-        @ManyToOne val user: UserEntity,
-        val memberRole: MemberRole,
+        @ManyToOne val user: User,
+        val role: SpaceMemberRole,
 ) : BaseEntity()

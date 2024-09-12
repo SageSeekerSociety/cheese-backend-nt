@@ -33,6 +33,11 @@ CREATE
         );
 
 CREATE
+    SEQUENCE attachment_id_seq
+START WITH
+    1 INCREMENT BY 1;
+
+CREATE
     SEQUENCE space_admin_relation_entity_seq
 START WITH
     1 INCREMENT BY 50;
@@ -63,6 +68,11 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
+    SEQUENCE team_user_relation_entity_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE user_id_seq
 START WITH
     1 INCREMENT BY 1;
@@ -71,6 +81,18 @@ CREATE
     SEQUENCE user_profile_id_seq
 START WITH
     1 INCREMENT BY 1;
+
+CREATE
+    TABLE
+        attachment(
+            id INTEGER NOT NULL,
+            TYPE AttachmentType NOT NULL CHECK(
+                TYPE BETWEEN 0 AND 3
+            ),
+            meta jsonb NOT NULL,
+            url text NOT NULL,
+            PRIMARY KEY(id)
+        );
 
 CREATE
     TABLE
@@ -95,8 +117,8 @@ CREATE
 CREATE
     TABLE
         space_admin_relation_entity(
-            member_role SMALLINT CHECK(
-                member_role BETWEEN 0 AND 1
+            ROLE SMALLINT CHECK(
+                ROLE BETWEEN 0 AND 1
             ),
             "user_id" INTEGER,
             created_at TIMESTAMP(6),
@@ -151,10 +173,15 @@ CREATE
 CREATE
     TABLE
         task_submission(
+            content_attachment_id INTEGER,
+            INDEX INTEGER NOT NULL,
+            version INTEGER NOT NULL,
             created_at TIMESTAMP(6),
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
+            membership_id BIGINT,
             updated_at TIMESTAMP(6),
+            content_text VARCHAR(255),
             PRIMARY KEY(id)
         );
 
@@ -168,6 +195,21 @@ CREATE
             updated_at TIMESTAMP(6),
             description VARCHAR(255),
             name VARCHAR(255),
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        team_user_relation_entity(
+            ROLE SMALLINT CHECK(
+                ROLE BETWEEN 0 AND 2
+            ),
+            "user_id" INTEGER,
+            created_at TIMESTAMP(6),
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            team_id BIGINT,
+            updated_at TIMESTAMP(6),
             PRIMARY KEY(id)
         );
 
@@ -202,4 +244,16 @@ ALTER TABLE
     IF EXISTS task_membership ADD CONSTRAINT FK6jngswgv5k77n9pj70f18a49y FOREIGN KEY(task_id) REFERENCES task;
 
 ALTER TABLE
+    IF EXISTS task_submission ADD CONSTRAINT FKsxb3wfk0vxfadbe2pam2dxr0f FOREIGN KEY(content_attachment_id) REFERENCES attachment;
+
+ALTER TABLE
+    IF EXISTS task_submission ADD CONSTRAINT FK7p8ct6x90ypn5ubixkg9a5cf3 FOREIGN KEY(membership_id) REFERENCES task_membership;
+
+ALTER TABLE
     IF EXISTS team ADD CONSTRAINT FKjv1k745e89swu3gj896pxcq3y FOREIGN KEY(avatar_id) REFERENCES avatar;
+
+ALTER TABLE
+    IF EXISTS team_user_relation_entity ADD CONSTRAINT FKs18d9htyhcfo06kaylpbkxy6b FOREIGN KEY(team_id) REFERENCES team;
+
+ALTER TABLE
+    IF EXISTS team_user_relation_entity ADD CONSTRAINT FKgjlxin5w5wkehc90abts0a4cp FOREIGN KEY("user_id") REFERENCES public."user";
