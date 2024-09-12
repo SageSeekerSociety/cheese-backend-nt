@@ -1,6 +1,7 @@
 package org.rucca.cheese.space
 
 import org.rucca.cheese.api.SpacesApi
+import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -15,6 +16,7 @@ class SpaceController(private val spaceService: SpaceService) : SpacesApi {
         return super.deleteSpaceAdmin(spaceId, user)
     }
 
+    @Guard("query", "space")
     override fun getSpace(spaceId: Long): ResponseEntity<GetSpace200ResponseDTO> {
         val spaceDto = spaceService.getSpaceDto(spaceId)
         return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDto), "OK"))

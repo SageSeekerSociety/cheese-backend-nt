@@ -1,4 +1,4 @@
-package org.rucca.cheese.common
+package org.rucca.cheese.common.persistent
 
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -11,6 +11,8 @@ import org.hibernate.annotations.SQLRestriction
 import org.hibernate.annotations.UpdateTimestamp
 
 typealias IdType = Long
+
+typealias IdGetter = () -> IdType
 
 /*
  * A base entity that provides common fields for all entities,
