@@ -38,7 +38,7 @@ START WITH
     1 INCREMENT BY 1;
 
 CREATE
-    SEQUENCE space_admin_relation_entity_seq
+    SEQUENCE space_admin_relation_seq
 START WITH
     1 INCREMENT BY 50;
 
@@ -68,7 +68,7 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
-    SEQUENCE team_user_relation_entity_seq
+    SEQUENCE team_user_relation_seq
 START WITH
     1 INCREMENT BY 50;
 
@@ -116,7 +116,7 @@ CREATE
 
 CREATE
     TABLE
-        space_admin_relation_entity(
+        space_admin_relation(
             ROLE SMALLINT CHECK(
                 ROLE BETWEEN 0 AND 1
             ),
@@ -200,7 +200,7 @@ CREATE
 
 CREATE
     TABLE
-        team_user_relation_entity(
+        team_user_relation(
             ROLE SMALLINT CHECK(
                 ROLE BETWEEN 0 AND 2
             ),
@@ -223,10 +223,10 @@ ALTER TABLE
     IF EXISTS SPACE ADD CONSTRAINT FK77tn26hq1ml6ri82fp970we8n FOREIGN KEY(avatar_id) REFERENCES avatar;
 
 ALTER TABLE
-    IF EXISTS space_admin_relation_entity ADD CONSTRAINT FKis29cde4wcpmo0qna07kw461c FOREIGN KEY(space_id) REFERENCES SPACE;
+    IF EXISTS space_admin_relation ADD CONSTRAINT FKhkpyunhmsubl1gvahyk9e9lff FOREIGN KEY(space_id) REFERENCES SPACE;
 
 ALTER TABLE
-    IF EXISTS space_admin_relation_entity ADD CONSTRAINT FKkxce7dsvbv4dvfiad43lmxuin FOREIGN KEY("user_id") REFERENCES public."user";
+    IF EXISTS space_admin_relation ADD CONSTRAINT FKd3x1m946orup61b4f4wu6h2xn FOREIGN KEY("user_id") REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS task ADD CONSTRAINT FK67uenor8d9f8lq7wjv7h56n2o FOREIGN KEY("creator_id") REFERENCES public."user";
@@ -253,7 +253,7 @@ ALTER TABLE
     IF EXISTS team ADD CONSTRAINT FKjv1k745e89swu3gj896pxcq3y FOREIGN KEY(avatar_id) REFERENCES avatar;
 
 ALTER TABLE
-    IF EXISTS team_user_relation_entity ADD CONSTRAINT FKs18d9htyhcfo06kaylpbkxy6b FOREIGN KEY(team_id) REFERENCES team;
+    IF EXISTS team_user_relation ADD CONSTRAINT FKtf9y6q1stv6vpqtlclj1okjxs FOREIGN KEY(team_id) REFERENCES team;
 
 ALTER TABLE
-    IF EXISTS team_user_relation_entity ADD CONSTRAINT FKgjlxin5w5wkehc90abts0a4cp FOREIGN KEY("user_id") REFERENCES public."user";
+    IF EXISTS team_user_relation ADD CONSTRAINT FK8rg61fyticaiphplc6wb3o68p FOREIGN KEY("user_id") REFERENCES public."user";

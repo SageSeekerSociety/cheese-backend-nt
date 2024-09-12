@@ -11,7 +11,7 @@ enum class SpaceMemberRole {
 }
 
 @Entity
-class SpaceAdminRelationEntity(
+class SpaceAdminRelation(
         @ManyToOne val space: Space,
         @ManyToOne val user: User,
         val role: SpaceMemberRole,

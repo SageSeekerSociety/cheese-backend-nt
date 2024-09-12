@@ -12,7 +12,7 @@ enum class TeamMemberRole {
 }
 
 @Entity
-class TeamUserRelationEntity(
+class TeamUserRelation(
         @ManyToOne val user: User,
         @ManyToOne val team: Team,
         val role: TeamMemberRole,
