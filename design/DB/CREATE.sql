@@ -114,11 +114,13 @@ CREATE
             deadline DATE,
             editable BOOLEAN NOT NULL,
             resubmittable BOOLEAN NOT NULL,
+            submitter_type SMALLINT CHECK(
+                submitter_type BETWEEN 0 AND 1
+            ),
             created_at TIMESTAMP(6),
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             space_id BIGINT,
-            submitter_type BIGINT NOT NULL,
             team_id BIGINT,
             updated_at TIMESTAMP(6),
             description VARCHAR(255),
@@ -137,7 +139,7 @@ CREATE
 CREATE
     TABLE
         task_membership(
-            member_id INTEGER,
+            member_id INTEGER NOT NULL,
             created_at TIMESTAMP(6),
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
@@ -176,6 +178,9 @@ ALTER TABLE
     IF EXISTS public.user_profile ADD CONSTRAINT FKqcd5nmg7d7ement27tt9sf3bi FOREIGN KEY(user_id) REFERENCES public."user";
 
 ALTER TABLE
+    IF EXISTS SPACE ADD CONSTRAINT FK77tn26hq1ml6ri82fp970we8n FOREIGN KEY(avatar_id) REFERENCES avatar;
+
+ALTER TABLE
     IF EXISTS space_admin_relation_entity ADD CONSTRAINT FKis29cde4wcpmo0qna07kw461c FOREIGN KEY(space_id) REFERENCES SPACE;
 
 ALTER TABLE
@@ -195,3 +200,6 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS task_membership ADD CONSTRAINT FK6jngswgv5k77n9pj70f18a49y FOREIGN KEY(task_id) REFERENCES task;
+
+ALTER TABLE
+    IF EXISTS team ADD CONSTRAINT FKjv1k745e89swu3gj896pxcq3y FOREIGN KEY(avatar_id) REFERENCES avatar;

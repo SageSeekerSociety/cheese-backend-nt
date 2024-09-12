@@ -1,4 +1,4 @@
-package org.rucca.cheese.TaskSubmission
+package org.rucca.cheese.task
 
 import jakarta.persistence.Entity
 import org.rucca.cheese.common.persistent.BaseEntity

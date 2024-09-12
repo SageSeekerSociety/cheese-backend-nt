@@ -15,7 +15,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 @Entity
 class Task(
         val name: String,
-        val submitterType: IdType,
+        val submitterType: TaskSubmitterType,
         @ManyToOne val creator: UserEntity,
         val deadline: Date,
         val resubmittable: Boolean,
@@ -23,9 +23,14 @@ class Task(
         @ManyToOne val team: Team?,
         @ManyToOne val space: Space?,
         val description: String,
-        @ElementCollection val submissionSchema: List<SubmissionSchema>,
+        @ElementCollection val submissionSchema: List<TaskSubmissionSchema>,
 ) : BaseEntity()
 
-@Embeddable class SubmissionSchema(val key: String, val value: Int)
+enum class TaskSubmitterType {
+    USER,
+    TEAM,
+}
+
+@Embeddable class TaskSubmissionSchema(val key: String, val value: Int)
 
 interface TaskRepository : JpaRepository<Task, IdType>
