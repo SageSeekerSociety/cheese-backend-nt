@@ -21,7 +21,9 @@ CREATE
 CREATE
     TABLE
         public.user_profile(
+            avatar_id INTEGER NOT NULL,
             id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL UNIQUE,
             created_at TIMESTAMP(6) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             deleted_at TIMESTAMP(6) WITH TIME ZONE,
             updated_at TIMESTAMP(6) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -69,6 +71,13 @@ CREATE
     SEQUENCE user_profile_id_seq
 START WITH
     1 INCREMENT BY 1;
+
+CREATE
+    TABLE
+        avatar(
+            id INTEGER DEFAULT nextval('avatar_id_seq') NOT NULL,
+            PRIMARY KEY(id)
+        );
 
 CREATE
     TABLE
@@ -159,6 +168,12 @@ CREATE
             name VARCHAR(255),
             PRIMARY KEY(id)
         );
+
+ALTER TABLE
+    IF EXISTS public.user_profile ADD CONSTRAINT FKo5dcemd97atrmjapi9x4s1j32 FOREIGN KEY(avatar_id) REFERENCES avatar;
+
+ALTER TABLE
+    IF EXISTS public.user_profile ADD CONSTRAINT FKqcd5nmg7d7ement27tt9sf3bi FOREIGN KEY(user_id) REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS space_admin_relation_entity ADD CONSTRAINT FKis29cde4wcpmo0qna07kw461c FOREIGN KEY(space_id) REFERENCES SPACE;

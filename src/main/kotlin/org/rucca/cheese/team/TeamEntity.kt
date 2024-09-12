@@ -1,8 +1,8 @@
 package org.rucca.cheese.team
 
 import jakarta.persistence.Entity
-import org.rucca.cheese.common.BaseEntity
-import org.rucca.cheese.common.IdType
+import org.rucca.cheese.common.persistent.BaseEntity
+import org.rucca.cheese.common.persistent.IdType
 import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
