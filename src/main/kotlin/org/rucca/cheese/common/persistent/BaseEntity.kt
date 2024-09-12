@@ -12,6 +12,8 @@ import org.hibernate.annotations.UpdateTimestamp
 
 typealias IdType = Long
 
+typealias IdGetter = () -> IdType
+
 /*
  * A base entity that provides common fields for all entities,
  * and enables soft deletion.

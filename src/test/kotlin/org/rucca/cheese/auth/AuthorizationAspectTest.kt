@@ -1,6 +1,6 @@
 package org.rucca.cheese.auth
 
-import com.ninjasquad.springmockk.MockkBean
+import com.ninjasquad.springmockk.SpykBean
 import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
@@ -24,11 +24,14 @@ class AuthorizationAspectTest
 @Autowired
 constructor(
         private val mockMvc: MockMvc,
-        @MockkBean private val globalErrorHandler: GlobalErrorHandler,
-        @MockkBean private val authorizationService: AuthorizationService,
+        @SpykBean private val authorizationService: AuthorizationService,
+        @SpykBean private val globalErrorHandler: GlobalErrorHandler,
 ) {
     @BeforeEach
     fun prepare() {
+        // Prevent the actual audit method from being called
+        every { authorizationService.audit(String(), any(), any(), any()) }
+
         // Avoid error logging in the console
         every { globalErrorHandler.handleException(any()) } returns
                 ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(InternalServerError())
@@ -79,7 +82,7 @@ constructor(
     @Test
     fun testNoAuth() {
         mockMvc.perform(MockMvcRequestBuilders.get("/example/6"))
-        verify(exactly = 0) { authorizationService.audit(any(), any(), any(), any()) }
+        verify(exactly = 0) { authorizationService.audit(String(), any(), any(), any()) }
     }
 
     @Test

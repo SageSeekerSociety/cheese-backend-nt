@@ -5,17 +5,17 @@ import org.rucca.cheese.common.persistent.IdType
 typealias AuthorizedAction = String
 
 data class AuthorizedResource(
-        val ownedByUser: IdType?,
-        val types: List<String>?,
-        val resourceIds: List<IdType>?,
-        val data: Any?,
+        val ownedByUser: IdType? = null,
+        val types: List<String>? = null,
+        val resourceIds: List<IdType>? = null,
+        val data: Any? = null,
 )
 
 data class Permission(
-        val authorizedActions: List<AuthorizedAction>?,
+        val authorizedActions: List<AuthorizedAction>? = null,
         val authorizedResource: AuthorizedResource,
-        val customLogic: String?,
-        val customLogicData: Any?,
+        val customLogic: String? = null,
+        val customLogicData: Any? = null,
 )
 
 data class Authorization(
