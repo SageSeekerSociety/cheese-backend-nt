@@ -126,7 +126,11 @@ CREATE
             id BIGINT NOT NULL,
             space_id BIGINT,
             updated_at TIMESTAMP(6),
-            PRIMARY KEY(id)
+            PRIMARY KEY(id),
+            UNIQUE(
+                user_id,
+                ROLE
+            )
         );
 
 CREATE
@@ -212,6 +216,10 @@ CREATE
             updated_at TIMESTAMP(6),
             PRIMARY KEY(id)
         );
+
+CREATE
+    INDEX IDXfmekoev1y1edqr9achyy8jp3b ON
+    space_admin_relation(space_id);
 
 ALTER TABLE
     IF EXISTS public.user_profile ADD CONSTRAINT FKo5dcemd97atrmjapi9x4s1j32 FOREIGN KEY(avatar_id) REFERENCES avatar;
