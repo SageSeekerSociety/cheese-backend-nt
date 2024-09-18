@@ -6,7 +6,6 @@ import jakarta.persistence.Index
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import java.util.Optional
-import org.hibernate.annotations.SQLDelete
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
@@ -19,7 +18,6 @@ enum class SpaceAdminRole {
 }
 
 @Entity
-@SQLDelete(sql = "UPDATE ${'$'}{hbm_dialect.table_name} SET deleted_at = current_timestamp WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 @Table(
         indexes =

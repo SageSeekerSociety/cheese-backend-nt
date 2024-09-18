@@ -6,7 +6,6 @@ import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.ManyToOne
 import java.sql.Date
-import org.hibernate.annotations.SQLDelete
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
@@ -23,7 +22,6 @@ enum class TaskSubmitterType {
 @Embeddable class TaskSubmissionSchema(val key: String, val value: Int)
 
 @Entity
-@SQLDelete(sql = "UPDATE ${'$'}{hbm_dialect.table_name} SET deleted_at = current_timestamp WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 class Task(
         val name: String,

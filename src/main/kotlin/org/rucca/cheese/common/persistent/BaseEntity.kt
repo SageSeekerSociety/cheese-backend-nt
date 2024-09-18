@@ -22,10 +22,9 @@ typealias IdGetter = () -> IdType
  *   - updatedAt: The timestamp when the entity was last updated.
  *   - deletedAt: The timestamp when the entity was deleted.
  *
- * Add the following lines to your entities to implement soft deletion:
- *      @SQLDelete(sql = "UPDATE ${'$'}{hbm_dialect.table_name} SET deleted_at = current_timestamp WHERE id = ?")
+ * Add the following line to your entities to implement soft deletion:
  *      @SQLRestriction("deleted_at IS NULL")
- * Unfortunately, adding these lines to BaseEntity does not work.
+ * Unfortunately, adding this line to BaseEntity does not work.
  */
 @MappedSuperclass
 abstract class BaseEntity(
@@ -34,5 +33,5 @@ abstract class BaseEntity(
         @Id @GeneratedValue(strategy = GenerationType.SEQUENCE) var id: IdType = 0,
         @CreationTimestamp val createdAt: LocalDateTime = LocalDateTime.MIN,
         @UpdateTimestamp val updatedAt: LocalDateTime = LocalDateTime.MIN,
-        val deletedAt: LocalDateTime? = null,
+        var deletedAt: LocalDateTime? = null,
 )
