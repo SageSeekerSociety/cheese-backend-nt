@@ -69,4 +69,23 @@ class SpaceService(
                         space = space, role = SpaceAdminRole.OWNER, user = User().apply { id = ownerId.toInt() }))
         return space.id
     }
+
+    fun updateSpaceName(spaceId: IdType, name: String) {
+        ensureSpaceNameNotExists(name)
+        val space = spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
+        space.name = name
+        spaceRepository.save(space)
+    }
+
+    fun updateSpaceDescription(spaceId: IdType, description: String) {
+        val space = spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
+        space.description = description
+        spaceRepository.save(space)
+    }
+
+    fun updateSpaceAvatar(spaceId: IdType, avatarId: IdType) {
+        val space = spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
+        space.avatar = Avatar().apply { id = avatarId.toInt() }
+        spaceRepository.save(space)
+    }
 }

@@ -65,7 +65,17 @@ class SpaceController(
             @ResourceId spaceId: Long,
             patchSpaceRequestDTO: PatchSpaceRequestDTO
     ): ResponseEntity<GetSpace200ResponseDTO> {
-        return super.patchSpace(spaceId, patchSpaceRequestDTO)
+        if (patchSpaceRequestDTO.name != null) {
+            spaceService.updateSpaceName(spaceId, patchSpaceRequestDTO.name)
+        }
+        if (patchSpaceRequestDTO.intro != null) {
+            spaceService.updateSpaceDescription(spaceId, patchSpaceRequestDTO.intro)
+        }
+        if (patchSpaceRequestDTO.avatarId != null) {
+            spaceService.updateSpaceAvatar(spaceId, patchSpaceRequestDTO.avatarId)
+        }
+        val spaceDTO = spaceService.getSpaceDto(spaceId)
+        return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK"))
     }
 
     @Guard("modify-admin", "space")
