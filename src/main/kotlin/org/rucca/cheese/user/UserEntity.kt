@@ -26,7 +26,6 @@ package org.rucca.cheese.user
 import jakarta.persistence.*
 import java.time.OffsetDateTime
 import org.hibernate.annotations.ColumnDefault
-import org.hibernate.annotations.SQLDelete
 import org.hibernate.annotations.SQLRestriction
 import org.springframework.data.jpa.repository.JpaRepository
 
@@ -38,7 +37,6 @@ import org.springframework.data.jpa.repository.JpaRepository
                 [
                         Index(name = "IDX_78a916df40e02a9deb1c4b75ed", columnList = "username", unique = true),
                         Index(name = "IDX_e12875dfb3b1d92d7d7c5377e2", columnList = "email", unique = true)])
-@SQLDelete(sql = "UPDATE ${'$'}{hbm_dialect.table_name} SET deleted_at = current_timestamp WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 open class User {
     @Id

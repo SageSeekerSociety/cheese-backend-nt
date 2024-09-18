@@ -36,12 +36,14 @@ class SpaceController(
 
     @Guard("delete", "space")
     override fun deleteSpace(@ResourceId spaceId: Long): ResponseEntity<DeleteSpace200ResponseDTO> {
-        return super.deleteSpace(spaceId)
+        spaceService.deleteSpace(spaceId)
+        return ResponseEntity.ok(DeleteSpace200ResponseDTO(200, "OK"))
     }
 
     @Guard("remove-admin", "space")
-    override fun deleteSpaceAdmin(@ResourceId spaceId: Long, user: Long): ResponseEntity<DeleteSpace200ResponseDTO> {
-        return super.deleteSpaceAdmin(spaceId, user)
+    override fun deleteSpaceAdmin(@ResourceId spaceId: Long, userId: Long): ResponseEntity<DeleteSpace200ResponseDTO> {
+        spaceService.removeSpaceAdmin(spaceId, userId)
+        return ResponseEntity.ok(DeleteSpace200ResponseDTO(200, "OK"))
     }
 
     @Guard("query", "space")
@@ -81,10 +83,22 @@ class SpaceController(
     @Guard("modify-admin", "space")
     override fun patchSpaceAdmin(
             @ResourceId spaceId: Long,
-            user: Long,
-            patchSpaceAdminRequestDTO: PatchSpaceAdminRequestDTO?
+            userId: Long,
+            patchSpaceAdminRequestDTO: PatchSpaceAdminRequestDTO
     ): ResponseEntity<GetSpace200ResponseDTO> {
-        return super.patchSpaceAdmin(spaceId, user, patchSpaceAdminRequestDTO)
+        if (patchSpaceAdminRequestDTO.role != null) {
+            when (patchSpaceAdminRequestDTO.role) {
+                SpaceAdminRoleTypeDTO.OWNER -> {
+                    authorizationService.audit("ship-ownership", "space", spaceId)
+                    spaceService.shipSpaceOwnership(spaceId, userId)
+                }
+                SpaceAdminRoleTypeDTO.ADMIN -> {
+                    /* do nothing */
+                }
+            }
+        }
+        val spaceDTO = spaceService.getSpaceDto(spaceId)
+        return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK"))
     }
 
     @Guard("create", "space")

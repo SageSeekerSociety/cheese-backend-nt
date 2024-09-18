@@ -1,5 +1,6 @@
 package org.rucca.cheese.space
 
+import java.time.LocalDateTime
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.persistent.IdType
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional
 class SpaceService(
         private val spaceRepository: SpaceRepository,
         private val spaceAdminRelationRepository: SpaceAdminRelationRepository,
@@ -92,6 +94,21 @@ class SpaceService(
         spaceRepository.save(space)
     }
 
+    fun ensureSpaceExists(spaceId: IdType) {
+        if (!spaceRepository.existsById(spaceId)) {
+            throw NotFoundError("space", spaceId)
+        }
+    }
+
+    fun deleteSpace(spaceId: IdType) {
+        val relations = spaceAdminRelationRepository.findAllBySpaceId(spaceId)
+        relations.forEach { it.deletedAt = LocalDateTime.now() }
+        val space = spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
+        space.deletedAt = LocalDateTime.now()
+        spaceAdminRelationRepository.saveAll(relations)
+        spaceRepository.save(space)
+    }
+
     fun ensureNotSpaceAdmin(spaceId: IdType, userId: IdType) {
         if (spaceAdminRelationRepository.existsBySpaceIdAndUserId(spaceId, userId)) {
             throw AlreadyBeSpaceAdminError(spaceId, userId)
@@ -114,7 +131,6 @@ class SpaceService(
         }
     }
 
-    @Transactional
     fun shipSpaceOwnership(spaceId: IdType, userId: IdType) {
         ensureNotSpaceOwner(spaceId, userId)
         val oldRelation =
@@ -129,5 +145,14 @@ class SpaceService(
         newRelation.role = SpaceAdminRole.OWNER
         spaceAdminRelationRepository.save(oldRelation)
         spaceAdminRelationRepository.save(newRelation)
+    }
+
+    fun removeSpaceAdmin(spaceId: IdType, userId: IdType) {
+        val relation =
+                spaceAdminRelationRepository.findBySpaceIdAndUserId(spaceId, userId).orElseThrow {
+                    NotSpaceAdminYetError(spaceId, userId)
+                }
+        relation.deletedAt = LocalDateTime.now()
+        spaceAdminRelationRepository.save(relation)
     }
 }
