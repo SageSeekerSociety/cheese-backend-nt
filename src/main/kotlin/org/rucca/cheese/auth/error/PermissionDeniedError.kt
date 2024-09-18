@@ -12,5 +12,9 @@ class PermissionDeniedError(
 ) :
         BaseError(
                 HttpStatus.FORBIDDEN,
-                "PermissionDeniedError",
-                "The attempt to perform action '$action' on resource (resourceType: '$resourceType', resourceId: $resourceId) is not permitted by the given token.")
+                "The attempt to perform action '$action' on resource (resourceType: '$resourceType', resourceId: $resourceId) is not permitted by the given token.",
+                mapOf(
+                        "action" to action,
+                        "resourceType" to resourceType,
+                        "resourceId" to resourceId,
+                ))

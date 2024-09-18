@@ -8,12 +8,13 @@ import org.springframework.http.HttpStatus
 
 private class ErrorSerializer : JsonSerializer<BaseError>() {
     override fun serialize(err: BaseError, gen: JsonGenerator, serializer: SerializerProvider) {
+        val name = err::class.simpleName
         gen.writeStartObject()
         gen.writeNumberField("code", err.status.value())
-        gen.writeStringField("message", "${err.name}: ${err.message}")
+        gen.writeStringField("message", "$name: ${err.message}")
         gen.writeFieldName("error")
         gen.writeStartObject()
-        gen.writeStringField("name", err.name)
+        gen.writeStringField("name", name)
         gen.writeStringField("message", err.message)
         if (err.data != null) {
             gen.writeObjectField("data", err.data)
@@ -26,7 +27,6 @@ private class ErrorSerializer : JsonSerializer<BaseError>() {
 @JsonSerialize(using = ErrorSerializer::class)
 abstract class BaseError(
         val status: HttpStatus,
-        val name: String,
         override val message: String,
         val data: Any? = null,
-) : Exception("$name: $message")
+) : Exception(message)

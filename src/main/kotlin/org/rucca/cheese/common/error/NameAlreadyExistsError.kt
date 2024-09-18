@@ -8,7 +8,6 @@ class NameAlreadyExistsError(
 ) :
         BaseError(
                 status = HttpStatus.CONFLICT,
-                name = "NameAlreadyExistsError",
                 message = "$type with name $name already exists",
                 data =
                         mapOf(

@@ -9,7 +9,6 @@ class NotFoundError(
 ) :
         BaseError(
                 status = HttpStatus.NOT_FOUND,
-                name = "NotFoundError",
                 message = "$type with id $id was not found",
                 data =
                         mapOf(
