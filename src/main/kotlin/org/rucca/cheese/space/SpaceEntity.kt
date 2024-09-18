@@ -11,10 +11,17 @@ import org.springframework.data.jpa.repository.JpaRepository
 @Entity
 @SQLDelete(sql = "UPDATE ${'$'}{hbm_dialect.table_name} SET deleted_at = current_timestamp WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
+@Table(
+        indexes =
+                [
+                        Index(columnList = "name", unique = true),
+                ])
 class Space(
         val name: String,
         val description: String,
         @ManyToOne(fetch = FetchType.LAZY) val avatar: Avatar,
 ) : BaseEntity()
 
-interface SpaceRepository : JpaRepository<Space, IdType>
+interface SpaceRepository : JpaRepository<Space, IdType> {
+    fun existsByName(name: String): Boolean
+}

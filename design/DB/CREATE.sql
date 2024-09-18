@@ -111,7 +111,8 @@ CREATE
             updated_at TIMESTAMP(6),
             description VARCHAR(255),
             name VARCHAR(255),
-            PRIMARY KEY(id)
+            PRIMARY KEY(id),
+            UNIQUE(name)
         );
 
 CREATE

@@ -2,9 +2,11 @@ package org.rucca.cheese.space
 
 import javax.annotation.PostConstruct
 import org.rucca.cheese.api.SpacesApi
+import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
 import org.rucca.cheese.auth.AuthorizedAction
 import org.rucca.cheese.auth.annotation.Guard
+import org.rucca.cheese.auth.annotation.ResourceId
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*
 class SpaceController(
         private val spaceService: SpaceService,
         private val authorizationService: AuthorizationService,
+        private val authenticationService: AuthenticationService,
 ) : SpacesApi {
     @PostConstruct
     fun initialize() {
@@ -32,19 +35,19 @@ class SpaceController(
     }
 
     @Guard("delete", "space")
-    override fun deleteSpace(spaceId: Long): ResponseEntity<DeleteSpace200ResponseDTO> {
+    override fun deleteSpace(@ResourceId spaceId: Long): ResponseEntity<DeleteSpace200ResponseDTO> {
         return super.deleteSpace(spaceId)
     }
 
     @Guard("remove-admin", "space")
-    override fun deleteSpaceAdmin(spaceId: Long, user: Long): ResponseEntity<DeleteSpace200ResponseDTO> {
+    override fun deleteSpaceAdmin(@ResourceId spaceId: Long, user: Long): ResponseEntity<DeleteSpace200ResponseDTO> {
         return super.deleteSpaceAdmin(spaceId, user)
     }
 
     @Guard("query", "space")
-    override fun getSpace(spaceId: Long): ResponseEntity<GetSpace200ResponseDTO> {
-        val spaceDto = spaceService.getSpaceDto(spaceId)
-        return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDto), "OK"))
+    override fun getSpace(@ResourceId spaceId: Long): ResponseEntity<GetSpace200ResponseDTO> {
+        val spaceDTO = spaceService.getSpaceDto(spaceId)
+        return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK"))
     }
 
     @Guard("enumerate", "space")
@@ -59,7 +62,7 @@ class SpaceController(
 
     @Guard("modify", "space")
     override fun patchSpace(
-            spaceId: Long,
+            @ResourceId spaceId: Long,
             patchSpaceRequestDTO: PatchSpaceRequestDTO
     ): ResponseEntity<GetSpace200ResponseDTO> {
         return super.patchSpace(spaceId, patchSpaceRequestDTO)
@@ -67,7 +70,7 @@ class SpaceController(
 
     @Guard("modify-admin", "space")
     override fun patchSpaceAdmin(
-            spaceId: Long,
+            @ResourceId spaceId: Long,
             user: Long,
             patchSpaceAdminRequestDTO: PatchSpaceAdminRequestDTO?
     ): ResponseEntity<GetSpace200ResponseDTO> {
@@ -76,12 +79,19 @@ class SpaceController(
 
     @Guard("create", "space")
     override fun postSpace(postSpaceRequestDTO: PostSpaceRequestDTO): ResponseEntity<GetSpace200ResponseDTO> {
-        return super.postSpace(postSpaceRequestDTO)
+        val spaceId =
+                spaceService.createSpace(
+                        postSpaceRequestDTO.name,
+                        postSpaceRequestDTO.intro,
+                        postSpaceRequestDTO.avatarId,
+                        authenticationService.getCurrentUserId())
+        val spaceDTO = spaceService.getSpaceDto(spaceId)
+        return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK"))
     }
 
     @Guard("add-admin", "space")
     override fun postSpaceAdmin(
-            spaceId: Long,
+            @ResourceId spaceId: Long,
             postSpaceAdminRequestDTO: PostSpaceAdminRequestDTO?
     ): ResponseEntity<GetSpace200ResponseDTO> {
         return super.postSpaceAdmin(spaceId, postSpaceAdminRequestDTO)
