@@ -109,8 +109,8 @@ CREATE
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             updated_at TIMESTAMP(6),
-            description VARCHAR(255),
-            name VARCHAR(255),
+            description VARCHAR(255) NOT NULL,
+            name VARCHAR(255) NOT NULL,
             PRIMARY KEY(id),
             UNIQUE(name)
         );

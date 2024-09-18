@@ -102,8 +102,19 @@ class SpaceController(
     @Guard("add-admin", "space")
     override fun postSpaceAdmin(
             @ResourceId spaceId: Long,
-            postSpaceAdminRequestDTO: PostSpaceAdminRequestDTO?
+            postSpaceAdminRequestDTO: PostSpaceAdminRequestDTO
     ): ResponseEntity<GetSpace200ResponseDTO> {
-        return super.postSpaceAdmin(spaceId, postSpaceAdminRequestDTO)
+        spaceService.addSpaceAdmin(spaceId, postSpaceAdminRequestDTO.userId)
+        when (postSpaceAdminRequestDTO.role) {
+            SpaceAdminRoleTypeDTO.OWNER -> {
+                authorizationService.audit("ship-ownership", "space", spaceId)
+                spaceService.shipSpaceOwnership(spaceId, postSpaceAdminRequestDTO.userId)
+            }
+            SpaceAdminRoleTypeDTO.ADMIN -> {
+                /* do nothing */
+            }
+        }
+        val spaceDTO = spaceService.getSpaceDto(spaceId)
+        return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK"))
     }
 }

@@ -407,6 +407,7 @@ paths:
           description: Space ID
           required: true
       requestBody:
+        required: true
         content:
           application/json:
             schema:

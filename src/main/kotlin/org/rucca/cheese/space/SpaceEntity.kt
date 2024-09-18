@@ -17,9 +17,9 @@ import org.springframework.data.jpa.repository.JpaRepository
                         Index(columnList = "name", unique = true),
                 ])
 class Space(
-        var name: String,
-        var description: String,
-        @ManyToOne(fetch = FetchType.LAZY) var avatar: Avatar,
+        @Column(nullable = false) var name: String?,
+        @Column(nullable = false) var description: String?,
+        @ManyToOne(fetch = FetchType.LAZY) var avatar: Avatar?,
 ) : BaseEntity()
 
 interface SpaceRepository : JpaRepository<Space, IdType> {

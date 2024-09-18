@@ -24,7 +24,8 @@ class RolePermissionService {
                 permissions =
                         listOf(
                                 Permission(
-                                        authorizedActions = listOf("add-admin", "modify-admin", "remove-admin"),
+                                        authorizedActions =
+                                                listOf("ship-ownership", "add-admin", "modify-admin", "remove-admin"),
                                         authorizedResource =
                                                 AuthorizedResource(
                                                         types = listOf("space"),

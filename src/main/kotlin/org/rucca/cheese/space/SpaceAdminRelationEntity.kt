@@ -30,7 +30,7 @@ enum class SpaceAdminRole {
 class SpaceAdminRelation(
         @ManyToOne(fetch = FetchType.LAZY) val space: Space,
         @ManyToOne(fetch = FetchType.LAZY) val user: User,
-        val role: SpaceAdminRole,
+        var role: SpaceAdminRole,
 ) : BaseEntity()
 
 interface SpaceAdminRelationRepository : JpaRepository<SpaceAdminRelation, IdType> {
@@ -38,5 +38,9 @@ interface SpaceAdminRelationRepository : JpaRepository<SpaceAdminRelation, IdTyp
 
     fun findBySpaceIdAndRole(spaceId: IdType, role: SpaceAdminRole): Optional<SpaceAdminRelation>
 
+    fun findBySpaceIdAndUserId(spaceId: IdType, userId: IdType): Optional<SpaceAdminRelation>
+
     fun existsBySpaceIdAndUserId(spaceId: IdType, userId: IdType): Boolean
+
+    fun existsBySpaceIdAndUserIdAndRole(spaceId: IdType, userId: IdType, role: SpaceAdminRole): Boolean
 }

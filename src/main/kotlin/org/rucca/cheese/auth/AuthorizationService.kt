@@ -15,6 +15,8 @@ import org.rucca.cheese.common.config.ApplicationConfig
 import org.rucca.cheese.common.persistent.IdType
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.web.context.request.RequestContextHolder
+import org.springframework.web.context.request.ServletRequestAttributes
 
 @Service
 class AuthorizationService(
@@ -25,6 +27,18 @@ class AuthorizationService(
     val ownerIds = OwnerIds()
     private val verifier: JWTVerifier = JWT.require(Algorithm.HMAC256(applicationConfig.jwtSecret)).build()
     private val logger = LoggerFactory.getLogger(AuthorizationService::class.java)
+
+    fun audit(
+            action: String,
+            resourceType: String,
+            resourceId: IdType?,
+    ) {
+        val token: String? =
+                (RequestContextHolder.currentRequestAttributes() as ServletRequestAttributes)
+                        .request
+                        .getHeader("Authorization")
+        audit(token, action, resourceType, resourceId)
+    }
 
     fun audit(
             token: String?,

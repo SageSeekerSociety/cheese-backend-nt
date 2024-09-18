@@ -31,7 +31,7 @@ typealias IdGetter = () -> IdType
 abstract class BaseEntity(
         // Default value for id, createdAt and updatedAt DO NOT have any effect.
         // They are only set to avoid compilation errors when deriving an entity from BaseEntity.
-        @Id @GeneratedValue(strategy = GenerationType.SEQUENCE) val id: IdType = 0,
+        @Id @GeneratedValue(strategy = GenerationType.SEQUENCE) var id: IdType = 0,
         @CreationTimestamp val createdAt: LocalDateTime = LocalDateTime.MIN,
         @UpdateTimestamp val updatedAt: LocalDateTime = LocalDateTime.MIN,
         val deletedAt: LocalDateTime? = null,

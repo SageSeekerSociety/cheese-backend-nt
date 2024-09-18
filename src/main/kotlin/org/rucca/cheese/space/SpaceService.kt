@@ -6,10 +6,13 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.SpaceAdminDTO
 import org.rucca.cheese.model.SpaceAdminRoleTypeDTO
 import org.rucca.cheese.model.SpaceDTO
+import org.rucca.cheese.space.error.AlreadyBeSpaceAdminError
+import org.rucca.cheese.space.error.NotSpaceAdminYetError
 import org.rucca.cheese.user.Avatar
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class SpaceService(
@@ -22,9 +25,9 @@ class SpaceService(
         val admins = spaceAdminRelationRepository.findAllBySpaceId(spaceId)
         return SpaceDTO(
                 id = space.id,
-                intro = space.description,
-                name = space.name,
-                avatarId = space.avatar.id!!.toLong(),
+                intro = space.description!!,
+                name = space.name!!,
+                avatarId = space.avatar!!.id!!.toLong(),
                 admins =
                         admins.map {
                             SpaceAdminDTO(convertAdminRole(it.role), userService.getUserDto(it.user.id!!.toLong()))
@@ -87,5 +90,44 @@ class SpaceService(
         val space = spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
         space.avatar = Avatar().apply { id = avatarId.toInt() }
         spaceRepository.save(space)
+    }
+
+    fun ensureNotSpaceAdmin(spaceId: IdType, userId: IdType) {
+        if (spaceAdminRelationRepository.existsBySpaceIdAndUserId(spaceId, userId)) {
+            throw AlreadyBeSpaceAdminError(spaceId, userId)
+        }
+    }
+
+    fun addSpaceAdmin(spaceId: IdType, userId: IdType) {
+        ensureNotSpaceAdmin(spaceId, userId)
+        val relation =
+                SpaceAdminRelation(
+                        space = Space(null, null, null).apply { id = spaceId },
+                        user = User().apply { id = userId.toInt() },
+                        role = SpaceAdminRole.ADMIN)
+        spaceAdminRelationRepository.save(relation)
+    }
+
+    fun ensureNotSpaceOwner(spaceId: IdType, userId: IdType) {
+        if (spaceAdminRelationRepository.existsBySpaceIdAndUserIdAndRole(spaceId, userId, SpaceAdminRole.OWNER)) {
+            throw AlreadyBeSpaceAdminError(spaceId, userId)
+        }
+    }
+
+    @Transactional
+    fun shipSpaceOwnership(spaceId: IdType, userId: IdType) {
+        ensureNotSpaceOwner(spaceId, userId)
+        val oldRelation =
+                spaceAdminRelationRepository.findBySpaceIdAndRole(spaceId, SpaceAdminRole.OWNER).orElseThrow {
+                    NotFoundError("space", spaceId)
+                }
+        val newRelation =
+                spaceAdminRelationRepository.findBySpaceIdAndUserId(spaceId, userId).orElseThrow {
+                    NotSpaceAdminYetError(spaceId, userId)
+                }
+        oldRelation.role = SpaceAdminRole.ADMIN
+        newRelation.role = SpaceAdminRole.OWNER
+        spaceAdminRelationRepository.save(oldRelation)
+        spaceAdminRelationRepository.save(newRelation)
     }
 }
