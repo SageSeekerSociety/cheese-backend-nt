@@ -1,18 +1,17 @@
 package org.rucca.cheese.common.error
 
-import org.rucca.cheese.common.persistent.IdType
 import org.springframework.http.HttpStatus
 
-class NotFoundError(
+class NameAlreadyExistsError(
         type: String,
-        id: IdType,
+        name: String,
 ) :
         BaseError(
-                status = HttpStatus.NOT_FOUND,
-                message = "$type with id $id was not found",
+                status = HttpStatus.CONFLICT,
+                message = "$type with name $name already exists",
                 data =
                         mapOf(
                                 "type" to type,
-                                "id" to id,
+                                "name" to name,
                         ),
         )

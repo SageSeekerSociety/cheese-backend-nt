@@ -6,8 +6,6 @@ import jakarta.persistence.Id
 import jakarta.persistence.MappedSuperclass
 import java.time.LocalDateTime
 import org.hibernate.annotations.CreationTimestamp
-import org.hibernate.annotations.SQLDelete
-import org.hibernate.annotations.SQLRestriction
 import org.hibernate.annotations.UpdateTimestamp
 
 typealias IdType = Long
@@ -23,15 +21,17 @@ typealias IdGetter = () -> IdType
  *   - createdAt: The timestamp when the entity was created.
  *   - updatedAt: The timestamp when the entity was last updated.
  *   - deletedAt: The timestamp when the entity was deleted.
+ *
+ * Add the following line to your entities to implement soft deletion:
+ *      @SQLRestriction("deleted_at IS NULL")
+ * Unfortunately, adding this line to BaseEntity does not work.
  */
-@SQLDelete(sql = "UPDATE ${'$'}{hbm_dialect.table_name} SET deleted_at = current_timestamp WHERE id = ?")
-@SQLRestriction("deleted_at IS NULL")
 @MappedSuperclass
 abstract class BaseEntity(
         // Default value for id, createdAt and updatedAt DO NOT have any effect.
         // They are only set to avoid compilation errors when deriving an entity from BaseEntity.
-        @Id @GeneratedValue(strategy = GenerationType.SEQUENCE) val id: IdType = 0,
+        @Id @GeneratedValue(strategy = GenerationType.SEQUENCE) var id: IdType = 0,
         @CreationTimestamp val createdAt: LocalDateTime = LocalDateTime.MIN,
         @UpdateTimestamp val updatedAt: LocalDateTime = LocalDateTime.MIN,
-        val deletedAt: LocalDateTime? = null,
+        var deletedAt: LocalDateTime? = null,
 )

@@ -35,16 +35,16 @@ class UserCreatorService(
             avatarId: IdType = testAvatarId(),
             intro: String = testIntro(),
     ): CreateUserResponse {
-        val userEntity = User()
-        userEntity.username = username
-        userEntity.hashedPassword = BCrypt.withDefaults().hashToString(12, password.toCharArray())
-        userEntity.email = email
-        val userId = userRepository.save(userEntity).id!!
+        val user = User()
+        user.username = username
+        user.hashedPassword = BCrypt.withDefaults().hashToString(12, password.toCharArray())
+        user.email = email
+        val userId = userRepository.save(user).id!!
         val userProfile = UserProfile()
         userProfile.nickname = nickname
         userProfile.avatar = Avatar().also { it.id = avatarId.toInt() }
         userProfile.intro = intro
-        userProfile.userEntity = userEntity
+        userProfile.user = user
         userProfileRepository.save(userProfile)
         return CreateUserResponse(userId.toLong(), username, password, email, nickname, avatarId, intro)
     }

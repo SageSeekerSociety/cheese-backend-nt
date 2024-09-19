@@ -184,12 +184,12 @@ paths:
       parameters:
         - schema:
             type: integer
-            format: int64
           in: query
           name: page_size
           description: Page Size
         - schema:
             type: integer
+            format: int64
           in: query
           name: page_start
           description: ID of First Element
@@ -264,7 +264,7 @@ paths:
       summary: Create Space
       x-stoplight:
         id: pg0dllezwwg9w
-  /spaces/{spaceId}/managers:
+  /spaces/{spaceId}/managers/{userId}:
     delete:
       summary: Disqualify Space Admin
       tags: []
@@ -301,8 +301,8 @@ paths:
         - schema:
             type: integer
             format: int64
-          in: query
-          name: user
+          in: path
+          name: userId
           description: Admin User ID
           required: true
     patch:
@@ -351,11 +351,12 @@ paths:
         - schema:
             type: integer
             format: int64
-          in: query
-          name: user
+          in: path
+          name: userId
           description: Admin User ID
           required: true
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -363,6 +364,7 @@ paths:
               properties:
                 role:
                   $ref: "#/components/schemas/SpaceAdminRoleType"
+  /spaces/{spaceId}/managers:
     post:
       summary: Add Space Admin
       tags: []
@@ -407,6 +409,7 @@ paths:
           description: Space ID
           required: true
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -632,6 +635,7 @@ paths:
           description: Page Size
         - schema:
             type: integer
+            format: int64
           in: query
           name: page_start
           description: ID of First Element
@@ -903,6 +907,7 @@ paths:
           description: Page Size
         - schema:
             type: integer
+            format: int64
           in: query
           name: page_start
           description: ID of First Element
@@ -1853,7 +1858,6 @@ components:
           description: 该页第一个 item 的 ID
         page_size:
           type: integer
-          format: int64
           description: 每页 item 数量
         has_prev:
           type: boolean

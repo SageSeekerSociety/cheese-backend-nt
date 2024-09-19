@@ -25,7 +25,9 @@ package org.rucca.cheese.user
 
 import jakarta.persistence.*
 import java.time.OffsetDateTime
+import java.util.Optional
 import org.hibernate.annotations.ColumnDefault
+import org.hibernate.annotations.SQLRestriction
 import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
@@ -39,6 +41,7 @@ open class Avatar {
         name = "user_profile",
         schema = "public",
         indexes = [Index(name = "IDX_51cb79b5555effaf7d69ba1cff", columnList = "id", unique = true)])
+@SQLRestriction("deleted_at IS NULL")
 open class UserProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_profile_id_gen")
@@ -62,11 +65,13 @@ open class UserProfile {
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    open var userEntity: User? = null
+    open var user: User? = null
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "avatar_id", nullable = false)
     open var avatar: Avatar? = null
 }
 
-interface UserProfileRepository : JpaRepository<UserProfile, Int>
+interface UserProfileRepository : JpaRepository<UserProfile, Int> {
+    fun findByUserId(userId: Int): Optional<UserProfile>
+}

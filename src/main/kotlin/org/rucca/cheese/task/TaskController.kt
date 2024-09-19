@@ -24,7 +24,7 @@ class TaskController : TasksApi {
             user: Long?,
             version: Int?,
             pageSize: Int,
-            pageStart: Int?,
+            pageStart: Long?,
             sortBy: String,
             sortOrder: String
     ): ResponseEntity<GetTaskSubmissions200ResponseDTO> {
@@ -35,7 +35,7 @@ class TaskController : TasksApi {
             space: Long?,
             team: Int?,
             pageSize: Int,
-            pageStart: Int?,
+            pageStart: Long?,
             sortBy: String,
             sortOrder: String
     ): ResponseEntity<GetTasks200ResponseDTO> {

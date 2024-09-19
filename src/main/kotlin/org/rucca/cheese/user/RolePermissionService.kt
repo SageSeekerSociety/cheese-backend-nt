@@ -24,11 +24,29 @@ class RolePermissionService {
                 permissions =
                         listOf(
                                 Permission(
-                                        authorizedActions = listOf("query"),
+                                        authorizedActions =
+                                                listOf("ship-ownership", "add-admin", "modify-admin", "remove-admin"),
+                                        authorizedResource =
+                                                AuthorizedResource(
+                                                        types = listOf("space"),
+                                                        ownedByUser = userId,
+                                                ),
+                                ),
+                                Permission(
+                                        authorizedActions = listOf("modify", "delete"),
                                         authorizedResource =
                                                 AuthorizedResource(
                                                         types = listOf("space"),
                                                 ),
-                                )))
+                                        customLogic = "is-space-admin",
+                                ),
+                                Permission(
+                                        authorizedActions = listOf("query", "create", "enumerate"),
+                                        authorizedResource =
+                                                AuthorizedResource(
+                                                        types = listOf("space"),
+                                                ),
+                                ),
+                        ))
     }
 }
