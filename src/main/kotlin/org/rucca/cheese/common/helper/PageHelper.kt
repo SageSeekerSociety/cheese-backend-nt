@@ -74,7 +74,7 @@ object PageHelper {
             errorIfNotFound: ((IdType) -> Unit)?
     ): Pair<List<TData>, PageDTO> {
         if (pageStart == null) {
-            return pageStart(allData.subList(0, min(pageSize + 1, allData.size - 1)), pageSize, idGetter)
+            return pageStart(allData.subList(0, min(pageSize + 1, allData.size)), pageSize, idGetter)
         } else {
             val pageStartIndex = allData.indexOfFirst { idGetter(it) == pageStart }
             if (pageStartIndex == -1) {
@@ -85,7 +85,7 @@ object PageHelper {
                 }
             }
             val prev = allData.subList(max(pageStartIndex - pageSize, 0), pageStartIndex).reversed()
-            val data = allData.subList(pageStartIndex, min(pageStartIndex + pageSize + 1, allData.size - 1))
+            val data = allData.subList(pageStartIndex, min(pageStartIndex + pageSize + 1, allData.size))
             return pageMiddle(prev, data, pageSize, idGetter, idGetter)
         }
     }
