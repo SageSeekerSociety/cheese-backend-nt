@@ -103,6 +103,7 @@ constructor(
     @Test
     @Order(20)
     fun testCreateSpace() {
+        createSpace(creatorToken, "$spaceName previous", spaceIntro, spaceAvatarId)
         spaceId = createSpace(creatorToken, spaceName, spaceIntro, spaceAvatarId)
         spaceIdOfSecond = createSpace(creatorToken, "$spaceName 01", spaceIntro, spaceAvatarId)
         createSpace(creatorToken, "$spaceName 02", spaceIntro, spaceAvatarId)
