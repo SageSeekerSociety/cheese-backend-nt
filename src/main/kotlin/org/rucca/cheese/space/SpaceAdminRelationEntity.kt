@@ -22,8 +22,9 @@ enum class SpaceAdminRole {
 @Table(
         indexes =
                 [
-                        Index(columnList = "user_id, role", unique = true),
                         Index(columnList = "space_id"),
+                        Index(columnList = "user_id"),
+                        Index(columnList = "space_id, user_id", unique = true),
                 ])
 class SpaceAdminRelation(
         @ManyToOne(fetch = FetchType.LAZY) val space: Space,
