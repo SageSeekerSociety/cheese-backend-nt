@@ -8,6 +8,7 @@ import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.user.User
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 
 enum class TeamMemberRole {
@@ -28,4 +29,12 @@ interface TeamUserRelationRepository : JpaRepository<TeamUserRelation, IdType> {
     fun findByTeamIdAndRole(teamId: IdType, role: TeamMemberRole): Optional<TeamUserRelation>
 
     fun findByTeamIdAndUserId(teamId: IdType, userId: IdType): Optional<TeamUserRelation>
+
+    fun countByTeamIdAndRole(teamId: IdType, role: TeamMemberRole): Int
+
+    fun findAllByTeamIdAndRoleOrderByUpdatedAtDesc(
+            teamId: IdType,
+            role: TeamMemberRole,
+            pageable: Pageable,
+    ): List<TeamUserRelation>
 }
