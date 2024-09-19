@@ -1,6 +1,7 @@
 package org.rucca.cheese.space
 
 import javax.annotation.PostConstruct
+import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.SpacesApi
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
@@ -54,12 +55,25 @@ class SpaceController(
 
     @Guard("enumerate", "space")
     override fun getSpaces(
-            pageSize: Long?,
-            pageStart: Int?,
+            pageSize: Int?,
+            pageStart: Long?,
             sortBy: String,
             sortOrder: String
     ): ResponseEntity<GetSpaces200ResponseDTO> {
-        return super.getSpaces(pageSize, pageStart, sortBy, sortOrder)
+        val by =
+                when (sortBy) {
+                    "updatedAt" -> SpaceService.SpacesSortBy.UPDATED_AT
+                    "createdAt" -> SpaceService.SpacesSortBy.CREATED_AT
+                    else -> throw IllegalArgumentException("Invalid sortBy: $sortBy")
+                }
+        val order =
+                when (sortOrder) {
+                    "asc" -> SortDirection.ASCENDING
+                    "desc" -> SortDirection.DESCENDING
+                    else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
+                }
+        val (spaces, page) = spaceService.enumerateSpaces(by, order, pageSize ?: 10, pageStart)
+        return ResponseEntity.ok(GetSpaces200ResponseDTO(200, GetSpaces200ResponseDataDTO(spaces, page), "OK"))
     }
 
     @Guard("modify", "space")

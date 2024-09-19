@@ -184,12 +184,12 @@ paths:
       parameters:
         - schema:
             type: integer
-            format: int64
           in: query
           name: page_size
           description: Page Size
         - schema:
             type: integer
+            format: int64
           in: query
           name: page_start
           description: ID of First Element
@@ -635,6 +635,7 @@ paths:
           description: Page Size
         - schema:
             type: integer
+            format: int64
           in: query
           name: page_start
           description: ID of First Element
@@ -906,6 +907,7 @@ paths:
           description: Page Size
         - schema:
             type: integer
+            format: int64
           in: query
           name: page_start
           description: ID of First Element
@@ -1856,7 +1858,6 @@ components:
           description: 该页第一个 item 的 ID
         page_size:
           type: integer
-          format: int64
           description: 每页 item 数量
         has_prev:
           type: boolean

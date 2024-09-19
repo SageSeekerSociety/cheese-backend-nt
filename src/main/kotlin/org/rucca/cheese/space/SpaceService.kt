@@ -1,9 +1,13 @@
 package org.rucca.cheese.space
 
+import jakarta.persistence.EntityManager
 import java.time.LocalDateTime
+import org.hibernate.query.SortDirection
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
+import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.model.PageDTO
 import org.rucca.cheese.model.SpaceAdminDTO
 import org.rucca.cheese.model.SpaceAdminRoleTypeDTO
 import org.rucca.cheese.model.SpaceDTO
@@ -21,6 +25,7 @@ class SpaceService(
         private val spaceRepository: SpaceRepository,
         private val spaceAdminRelationRepository: SpaceAdminRelationRepository,
         private val userService: UserService,
+        private val entityManager: EntityManager,
 ) {
     fun getSpaceDto(spaceId: IdType): SpaceDTO {
         val space = spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
@@ -154,5 +159,52 @@ class SpaceService(
                 }
         relation.deletedAt = LocalDateTime.now()
         spaceAdminRelationRepository.save(relation)
+    }
+
+    enum class SpacesSortBy {
+        CREATED_AT,
+        UPDATED_AT,
+    }
+
+    fun enumerateSpaces(
+            sortBy: SpacesSortBy,
+            sortOrder: SortDirection,
+            pageSize: Int,
+            pageStart: Long?,
+    ): Pair<List<SpaceDTO>, PageDTO> {
+        val criteriaBuilder = entityManager.criteriaBuilder
+        val cq = criteriaBuilder.createQuery(Space::class.java)
+        val root = cq.from(Space::class.java)
+        val by =
+                when (sortBy) {
+                    SpacesSortBy.CREATED_AT -> root.get<LocalDateTime>("createdAt")
+                    SpacesSortBy.UPDATED_AT -> root.get<LocalDateTime>("updatedAt")
+                }
+        val order =
+                when (sortOrder) {
+                    SortDirection.ASCENDING -> criteriaBuilder.asc(by)
+                    SortDirection.DESCENDING -> criteriaBuilder.desc(by)
+                }
+        cq.orderBy(order)
+        val query = entityManager.createQuery(cq)
+        val result = query.resultList
+        val (curr, page) =
+                PageHelper.pageFromAll(
+                        result, pageStart, pageSize, { it.id }, { id -> throw NotFoundError("space", id) })
+        return Pair(
+                curr.map {
+                    SpaceDTO(
+                            id = it.id,
+                            intro = it.description!!,
+                            name = it.name!!,
+                            avatarId = it.avatar!!.id!!.toLong(),
+                            admins =
+                                    spaceAdminRelationRepository.findAllBySpaceId(it.id).map {
+                                        SpaceAdminDTO(
+                                                convertAdminRole(it.role),
+                                                userService.getUserDto(it.user.id!!.toLong()))
+                                    })
+                },
+                page)
     }
 }
