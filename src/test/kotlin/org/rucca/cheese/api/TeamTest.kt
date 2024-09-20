@@ -334,4 +334,91 @@ constructor(
                                         "$.data.members[?(@.user.id == ${member.userId} && @.role == 'MEMBER')]")
                                 .exists())
     }
+
+    @Test
+    @Order(120)
+    fun testShipOwnership() {
+        val request =
+                MockMvcRequestBuilders.patch("/teams/$teamId/members/${creator.userId}")
+                        .header("Authorization", "Bearer $newOwnerToken")
+                        .contentType("application/json")
+                        .content("""{ "role": "OWNER" }""")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(3))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id").value(creator.userId))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[?(@.id == ${newOwner.userId})]")
+                                .exists())
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[?(@.id == ${admin.userId})]")
+                                .exists())
+    }
+
+    @Test
+    @Order(130)
+    fun testChangeNormalMemberToAdmin() {
+        val request =
+                MockMvcRequestBuilders.patch("/teams/$teamId/members/${member.userId}")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .contentType("application/json")
+                        .content("""{ "role": "ADMIN" }""")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(4))
+    }
+
+    @Test
+    @Order(140)
+    fun testChangeAdminToNormalMember() {
+        val request =
+                MockMvcRequestBuilders.patch("/teams/$teamId/members/${member.userId}")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .contentType("application/json")
+                        .content("""{ "role": "MEMBER" }""")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(3))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id").value(creator.userId))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[?(@.id == ${admin.userId})]")
+                                .exists())
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[?(@.id == ${newOwner.userId})]")
+                                .exists())
+    }
+
+    @Test
+    @Order(150)
+    fun testRemoveMember() {
+        val request =
+                MockMvcRequestBuilders.delete("/teams/$teamId/members/${member.userId}")
+                        .header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.members.total").value(0))
+    }
+
+    @Test
+    @Order(160)
+    fun testRemoveAdmin() {
+        val request =
+                MockMvcRequestBuilders.delete("/teams/$teamId/members/${admin.userId}")
+                        .header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[1].id").value(newOwner.userId))
+    }
+
+    @Test
+    @Order(170)
+    fun testDeleteTeam() {
+        val request = MockMvcRequestBuilders.delete("/teams/$teamId").header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+
+        val getRequest = MockMvcRequestBuilders.get("/teams/$teamId").header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(getRequest).andExpect(MockMvcResultMatchers.status().isNotFound)
+    }
 }

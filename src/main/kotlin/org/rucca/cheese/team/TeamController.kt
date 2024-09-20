@@ -37,13 +37,26 @@ class TeamController(
 
     @Guard("delete", "team")
     override fun deleteTeam(@ResourceId teamId: Long): ResponseEntity<DeleteTeam200ResponseDTO> {
-        return super.deleteTeam(teamId)
+        teamService.deleteTeam(teamId)
+        return ResponseEntity.ok(DeleteTeam200ResponseDTO(200, "OK"))
     }
 
     @NoAuth
     override fun deleteTeamMember(@ResourceId teamId: Long, userId: Long): ResponseEntity<GetTeam200ResponseDTO> {
-        // TODO: Validate "remove-admin" or "remove-member" permission
-        return super.deleteTeamMember(teamId, userId)
+        val role = teamService.getTeamMemberRole(teamId, userId)
+        when (role) {
+            TeamMemberRoleTypeDTO.OWNER -> throw IllegalArgumentException("Cannot remove team owner")
+            TeamMemberRoleTypeDTO.ADMIN -> {
+                authorizationService.audit("remove-admin", "team", teamId)
+                teamService.removeTeamMember(teamId, userId)
+            }
+            TeamMemberRoleTypeDTO.MEMBER -> {
+                authorizationService.audit("remove-normal-member", "team", teamId)
+                teamService.removeTeamMember(teamId, userId)
+            }
+        }
+        val teamDTO = teamService.getTeamDto(teamId)
+        return ResponseEntity.ok(GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK"))
     }
 
     @Guard("query", "team")
@@ -76,14 +89,33 @@ class TeamController(
         return ResponseEntity.ok(GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK"))
     }
 
-    @Guard("modify-member", "team")
+    @NoAuth
     override fun patchTeamMember(
             @ResourceId teamId: Long,
             userId: Long,
             patchTeamMemberRequestDTO: PatchTeamMemberRequestDTO
     ): ResponseEntity<GetTeam200ResponseDTO> {
-        // TODO: Validate "ship-ownership" permission
-        return super.patchTeamMember(teamId, userId, patchTeamMemberRequestDTO)
+        if (patchTeamMemberRequestDTO.role != null) {
+            when (patchTeamMemberRequestDTO.role) {
+                TeamMemberRoleTypeDTO.OWNER -> {
+                    authorizationService.audit("ship-ownership", "team", teamId)
+                    teamService.removeTeamMember(teamId, userId)
+                    teamService.shipTeamOwnershipToNoneMember(teamId, userId)
+                }
+                TeamMemberRoleTypeDTO.ADMIN -> {
+                    authorizationService.audit("add-admin", "team", teamId)
+                    teamService.removeTeamMember(teamId, userId)
+                    teamService.addTeamAdmin(teamId, userId)
+                }
+                TeamMemberRoleTypeDTO.MEMBER -> {
+                    authorizationService.audit("add-normal-member", "team", teamId)
+                    teamService.removeTeamMember(teamId, userId)
+                    teamService.addTeamNormalMember(teamId, userId)
+                }
+            }
+        }
+        val teamDTO = teamService.getTeamDto(teamId)
+        return ResponseEntity.ok(GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK"))
     }
 
     @Guard("create", "team")
@@ -106,7 +138,7 @@ class TeamController(
         when (postTeamMemberRequestDTO.role) {
             TeamMemberRoleTypeDTO.OWNER -> {
                 authorizationService.audit("ship-ownership", "team", teamId)
-                teamService.shipTeamOwnership(teamId, postTeamMemberRequestDTO.userId)
+                teamService.shipTeamOwnershipToNoneMember(teamId, postTeamMemberRequestDTO.userId)
             }
             TeamMemberRoleTypeDTO.ADMIN -> {
                 authorizationService.audit("add-admin", "team", teamId)

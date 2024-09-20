@@ -1,9 +1,11 @@
 package org.rucca.cheese.team
 
+import java.time.LocalDateTime
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.team.error.NotTeamMemberYetError
 import org.rucca.cheese.team.error.TeamRoleConflictError
 import org.rucca.cheese.user.Avatar
 import org.rucca.cheese.user.User
@@ -117,12 +119,29 @@ class TeamService(
         teamRepository.save(team)
     }
 
+    fun deleteTeam(teamId: IdType) {
+        val relations = teamUserRelationRepository.findAllByTeamId(teamId)
+        relations.forEach { it.deletedAt = LocalDateTime.now() }
+        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        team.deletedAt = LocalDateTime.now()
+        teamUserRelationRepository.saveAll(relations)
+        teamRepository.save(team)
+    }
+
     fun convertMemberRole(role: TeamMemberRole): TeamMemberRoleTypeDTO {
         return when (role) {
             TeamMemberRole.OWNER -> TeamMemberRoleTypeDTO.OWNER
             TeamMemberRole.ADMIN -> TeamMemberRoleTypeDTO.ADMIN
             TeamMemberRole.MEMBER -> TeamMemberRoleTypeDTO.MEMBER
         }
+    }
+
+    fun getTeamMemberRole(teamId: IdType, userId: IdType): TeamMemberRoleTypeDTO {
+        val relation =
+                teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId).orElseThrow {
+                    NotTeamMemberYetError(teamId, userId)
+                }
+        return convertMemberRole(relation.role!!)
     }
 
     fun getTeamMembers(teamId: IdType): List<TeamMemberDTO> {
@@ -149,19 +168,17 @@ class TeamService(
         }
     }
 
-    fun shipTeamOwnership(teamId: IdType, userId: IdType) {
+    fun shipTeamOwnershipToNoneMember(teamId: IdType, userId: IdType) {
         val ownershipOriginal =
                 teamUserRelationRepository.findByTeamIdAndRole(teamId, TeamMemberRole.OWNER).orElseThrow {
                     NotFoundError("team", teamId)
                 }
         ownershipOriginal.role = TeamMemberRole.ADMIN
-        teamUserRelationRepository.save(ownershipOriginal)
         val ownershipNewOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId)
         if (ownershipNewOptional.isPresent) {
-            val ownershipNew = ownershipNewOptional.get()
-            ownershipNew.role = TeamMemberRole.OWNER
-            teamUserRelationRepository.save(ownershipNew)
+            throw TeamRoleConflictError(teamId, userId, ownershipNewOptional.get().role!!, TeamMemberRole.OWNER)
         } else {
+            teamUserRelationRepository.save(ownershipOriginal)
             addTeamMember(teamId, userId, TeamMemberRole.OWNER)
         }
     }
@@ -172,5 +189,14 @@ class TeamService(
 
     fun addTeamNormalMember(teamId: IdType, userId: IdType) {
         addTeamMember(teamId, userId, TeamMemberRole.MEMBER)
+    }
+
+    fun removeTeamMember(teamId: IdType, userId: IdType) {
+        val relation =
+                teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId).orElseThrow {
+                    NotTeamMemberYetError(teamId, userId)
+                }
+        relation.deletedAt = LocalDateTime.now()
+        teamUserRelationRepository.save(relation)
     }
 }
