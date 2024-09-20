@@ -92,7 +92,21 @@ class TeamController(
             @ResourceId teamId: Long,
             postTeamMemberRequestDTO: PostTeamMemberRequestDTO
     ): ResponseEntity<GetTeam200ResponseDTO> {
-        // TODO: Validate "ship-ownership", "add-admin" or "add-normal-member" permission
-        return super.postTeamMember(teamId, postTeamMemberRequestDTO)
+        when (postTeamMemberRequestDTO.role) {
+            TeamMemberRoleTypeDTO.OWNER -> {
+                authorizationService.audit("ship-ownership", "team", teamId)
+                teamService.shipTeamOwnership(teamId, postTeamMemberRequestDTO.userId)
+            }
+            TeamMemberRoleTypeDTO.ADMIN -> {
+                authorizationService.audit("add-admin", "team", teamId)
+                teamService.addTeamAdmin(teamId, postTeamMemberRequestDTO.userId)
+            }
+            TeamMemberRoleTypeDTO.MEMBER -> {
+                authorizationService.audit("add-normal-member", "team", teamId)
+                teamService.addTeamNormalMember(teamId, postTeamMemberRequestDTO.userId)
+            }
+        }
+        val teamDTO = teamService.getTeamDto(teamId)
+        return ResponseEntity.ok(GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK"))
     }
 }

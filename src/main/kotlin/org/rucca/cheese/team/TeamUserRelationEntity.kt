@@ -20,7 +20,7 @@ enum class TeamMemberRole {
 class TeamUserRelation(
         @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val user: User? = null,
         @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val team: Team? = null,
-        @Column(nullable = false) val role: TeamMemberRole,
+        @Column(nullable = false) var role: TeamMemberRole? = null,
 ) : BaseEntity()
 
 interface TeamUserRelationRepository : JpaRepository<TeamUserRelation, IdType> {

@@ -6,6 +6,7 @@ import org.rucca.cheese.model.TeamAdminsDTO
 import org.rucca.cheese.model.TeamDTO
 import org.rucca.cheese.model.TeamMembersDTO
 import org.rucca.cheese.model.UserDTO
+import org.rucca.cheese.team.error.TeamRoleConflictError
 import org.rucca.cheese.user.Avatar
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
@@ -90,5 +91,44 @@ class TeamService(
                 TeamUserRelation(
                         team = team, role = TeamMemberRole.OWNER, user = User().apply { id = ownerId.toInt() }))
         return team.id!!
+    }
+
+    private fun addTeamMember(teamId: IdType, userId: IdType, role: TeamMemberRole) {
+        val relationOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId)
+        if (relationOptional.isPresent) {
+            throw TeamRoleConflictError(teamId, userId, relationOptional.get().role!!, role)
+        } else {
+            teamUserRelationRepository.save(
+                    TeamUserRelation(
+                            team = Team().apply { id = teamId },
+                            role = role,
+                            user = User().apply { id = userId.toInt() },
+                    ))
+        }
+    }
+
+    fun shipTeamOwnership(teamId: IdType, userId: IdType) {
+        val ownershipOriginal =
+                teamUserRelationRepository.findByTeamIdAndRole(teamId, TeamMemberRole.OWNER).orElseThrow {
+                    NotFoundError("team", teamId)
+                }
+        ownershipOriginal.role = TeamMemberRole.ADMIN
+        teamUserRelationRepository.save(ownershipOriginal)
+        val ownershipNewOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId)
+        if (ownershipNewOptional.isPresent) {
+            val ownershipNew = ownershipNewOptional.get()
+            ownershipNew.role = TeamMemberRole.OWNER
+            teamUserRelationRepository.save(ownershipNew)
+        } else {
+            addTeamMember(teamId, userId, TeamMemberRole.OWNER)
+        }
+    }
+
+    fun addTeamAdmin(teamId: IdType, userId: IdType) {
+        addTeamMember(teamId, userId, TeamMemberRole.ADMIN)
+    }
+
+    fun addTeamNormalMember(teamId: IdType, userId: IdType) {
+        addTeamMember(teamId, userId, TeamMemberRole.MEMBER)
     }
 }
