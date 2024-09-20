@@ -111,8 +111,7 @@ CREATE
             updated_at TIMESTAMP(6) NOT NULL,
             description VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
-            PRIMARY KEY(id),
-            UNIQUE(name)
+            PRIMARY KEY(id)
         );
 
 CREATE
@@ -127,11 +126,7 @@ CREATE
             id BIGINT NOT NULL,
             space_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            PRIMARY KEY(id),
-            UNIQUE(
-                space_id,
-                user_id
-            )
+            PRIMARY KEY(id)
         );
 
 CREATE
@@ -203,8 +198,7 @@ CREATE
             updated_at TIMESTAMP(6) NOT NULL,
             description VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
-            PRIMARY KEY(id),
-            UNIQUE(name)
+            PRIMARY KEY(id)
         );
 
 CREATE
@@ -223,12 +217,28 @@ CREATE
         );
 
 CREATE
+    INDEX IDXmllyu96n9vj606vm9w0gp3obx ON
+    SPACE(name);
+
+CREATE
     INDEX IDXfmekoev1y1edqr9achyy8jp3b ON
     space_admin_relation(space_id);
 
 CREATE
     INDEX IDX9kayuwile36o13jipo63b10sb ON
     space_admin_relation(user_id);
+
+CREATE
+    INDEX IDXg2l9qqsoeuynt4r5ofdt1x2td ON
+    team(name);
+
+CREATE
+    INDEX IDXd45hsmkordpydcytq25ahcnby ON
+    team_user_relation(team_id);
+
+CREATE
+    INDEX IDXquiqutq8cnj700u982xlo8bsm ON
+    team_user_relation(user_id);
 
 ALTER TABLE
     IF EXISTS public.user_profile ADD CONSTRAINT FKo5dcemd97atrmjapi9x4s1j32 FOREIGN KEY(avatar_id) REFERENCES avatar;

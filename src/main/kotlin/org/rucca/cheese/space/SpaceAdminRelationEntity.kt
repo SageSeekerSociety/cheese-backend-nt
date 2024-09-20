@@ -20,7 +20,6 @@ enum class SpaceAdminRole {
                 [
                         Index(columnList = "space_id"),
                         Index(columnList = "user_id"),
-                        Index(columnList = "space_id, user_id", unique = true),
                 ])
 class SpaceAdminRelation(
         @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val space: Space? = null,

@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 @Table(
         indexes =
                 [
-                        Index(columnList = "name", unique = true),
+                        Index(columnList = "name"),
                 ])
 class Team(
         @Column(nullable = false) var name: String? = null,
