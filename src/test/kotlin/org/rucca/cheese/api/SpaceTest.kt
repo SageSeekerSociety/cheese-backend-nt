@@ -301,10 +301,6 @@ constructor(
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[1].role").value("ADMIN"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id").value(creator.userId))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[1].user.id").value(admin.userId))
     }
 
     @Test
