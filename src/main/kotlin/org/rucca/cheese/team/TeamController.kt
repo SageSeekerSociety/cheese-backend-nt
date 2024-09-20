@@ -54,7 +54,8 @@ class TeamController(
 
     @Guard("enumerate-members", "team")
     override fun getTeamMembers(@ResourceId teamId: Long): ResponseEntity<GetTeamMembers200ResponseDTO> {
-        return super.getTeamMembers(teamId)
+        val memberDTOs = teamService.getTeamMembers(teamId)
+        return ResponseEntity.ok(GetTeamMembers200ResponseDTO(200, GetTeamMembers200ResponseDataDTO(memberDTOs), "OK"))
     }
 
     @Guard("modify", "team")

@@ -3,10 +3,7 @@ package org.rucca.cheese.team
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.model.TeamAdminsDTO
-import org.rucca.cheese.model.TeamDTO
-import org.rucca.cheese.model.TeamMembersDTO
-import org.rucca.cheese.model.UserDTO
+import org.rucca.cheese.model.*
 import org.rucca.cheese.team.error.TeamRoleConflictError
 import org.rucca.cheese.user.Avatar
 import org.rucca.cheese.user.User
@@ -118,6 +115,24 @@ class TeamService(
         val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
         team.avatar = Avatar().apply { id = avatarId.toInt() }
         teamRepository.save(team)
+    }
+
+    fun convertMemberRole(role: TeamMemberRole): TeamMemberRoleTypeDTO {
+        return when (role) {
+            TeamMemberRole.OWNER -> TeamMemberRoleTypeDTO.OWNER
+            TeamMemberRole.ADMIN -> TeamMemberRoleTypeDTO.ADMIN
+            TeamMemberRole.MEMBER -> TeamMemberRoleTypeDTO.MEMBER
+        }
+    }
+
+    fun getTeamMembers(teamId: IdType): List<TeamMemberDTO> {
+        val relations = teamUserRelationRepository.findAllByTeamId(teamId)
+        return relations.map {
+            TeamMemberDTO(
+                    role = convertMemberRole(it.role!!),
+                    user = userService.getUserDto(it.user!!.id!!.toLong()),
+            )
+        }
     }
 
     private fun addTeamMember(teamId: IdType, userId: IdType, role: TeamMemberRole) {

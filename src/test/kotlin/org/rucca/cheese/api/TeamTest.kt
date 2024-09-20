@@ -309,4 +309,29 @@ constructor(
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.intro").value(teamIntro))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.avatarId").value(teamAvatarId))
     }
+
+    @Test
+    @Order(110)
+    fun testGetTeamMembers() {
+        val request =
+                MockMvcRequestBuilders.get("/teams/$teamId/members").header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath(
+                                        "$.data.members[?(@.user.id == ${newOwner.userId} && @.role == 'OWNER')]")
+                                .exists())
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath(
+                                        "$.data.members[?(@.user.id == ${admin.userId} && @.role == 'ADMIN')]")
+                                .exists())
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath(
+                                        "$.data.members[?(@.user.id == ${creator.userId} && @.role == 'ADMIN')]")
+                                .exists())
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath(
+                                        "$.data.members[?(@.user.id == ${member.userId} && @.role == 'MEMBER')]")
+                                .exists())
+    }
 }
