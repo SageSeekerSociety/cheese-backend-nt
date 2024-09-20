@@ -47,6 +47,36 @@ class RolePermissionService {
                                                         types = listOf("space"),
                                                 ),
                                 ),
+                                Permission(
+                                        authorizedActions =
+                                                listOf(
+                                                        "ship-ownership",
+                                                        "add-admin",
+                                                        "remove-admin",
+                                                        "modify-member",
+                                                        "delete"),
+                                        authorizedResource =
+                                                AuthorizedResource(
+                                                        types = listOf("team"),
+                                                        ownedByUser = userId,
+                                                ),
+                                ),
+                                Permission(
+                                        authorizedActions =
+                                                listOf("add-normal-member", "remove-normal-member", "modify"),
+                                        authorizedResource =
+                                                AuthorizedResource(
+                                                        types = listOf("team"),
+                                                ),
+                                        customLogic = "is-team-admin",
+                                ),
+                                Permission(
+                                        authorizedActions = listOf("query", "create", "enumerate-members"),
+                                        authorizedResource =
+                                                AuthorizedResource(
+                                                        types = listOf("team"),
+                                                ),
+                                ),
                         ))
     }
 }

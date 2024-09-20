@@ -25,11 +25,11 @@ class SpaceController(
         authorizationService.ownerIds.register("space", spaceService::getSpaceOwner)
         authorizationService.customAuthLogics.register("is-space-admin") {
                 userId: IdType,
-                action: AuthorizedAction,
-                resourceType: String,
+                _: AuthorizedAction,
+                _: String,
                 resourceId: IdType?,
-                resourceOwnerIdGetter: IdGetter?,
-                customLogicData: Any?,
+                _: IdGetter?,
+                _: Any?,
             ->
             spaceService.isSpaceAdmin(resourceId ?: throw IllegalArgumentException("resourceId is null"), userId)
         }

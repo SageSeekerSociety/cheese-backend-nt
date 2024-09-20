@@ -1,10 +1,6 @@
 package org.rucca.cheese.task
 
-import jakarta.persistence.ElementCollection
-import jakarta.persistence.Embeddable
-import jakarta.persistence.Entity
-import jakarta.persistence.FetchType
-import jakarta.persistence.ManyToOne
+import jakarta.persistence.*
 import java.sql.Date
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
@@ -19,21 +15,31 @@ enum class TaskSubmitterType {
     TEAM,
 }
 
-@Embeddable class TaskSubmissionSchema(val key: String, val value: Int)
+enum class TaskSubmissionEntryType {
+    TEXT,
+    ATTACHMENT,
+}
+
+@Embeddable
+class TaskSubmissionSchema(
+        @Column(nullable = false) val index: Int? = null,
+        @Column(nullable = false) val description: String? = null,
+        @Column(nullable = false) val type: TaskSubmissionEntryType? = null,
+)
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 class Task(
-        val name: String,
-        val submitterType: TaskSubmitterType,
-        @ManyToOne(fetch = FetchType.LAZY) val creator: User,
-        val deadline: Date,
-        val resubmittable: Boolean,
-        val editable: Boolean,
-        @ManyToOne(fetch = FetchType.LAZY) val team: Team?,
-        @ManyToOne(fetch = FetchType.LAZY) val space: Space?,
-        val description: String,
-        @ElementCollection val submissionSchema: List<TaskSubmissionSchema>,
+        @Column(nullable = false) val name: String? = null,
+        @Column(nullable = false) val submitterType: TaskSubmitterType? = null,
+        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val creator: User? = null,
+        @Column(nullable = false) val deadline: Date? = null,
+        @Column(nullable = false) val resubmittable: Boolean? = null,
+        @Column(nullable = false) val editable: Boolean? = null,
+        @ManyToOne(fetch = FetchType.LAZY) val team: Team? = null, // nullable
+        @ManyToOne(fetch = FetchType.LAZY) val space: Space? = null, // nullable
+        @Column(nullable = false) val description: String? = null,
+        @ElementCollection val submissionSchema: List<TaskSubmissionSchema>? = null,
 ) : BaseEntity()
 
 interface TaskRepository : JpaRepository<Task, IdType>
