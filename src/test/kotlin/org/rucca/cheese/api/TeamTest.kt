@@ -229,4 +229,84 @@ constructor(
                 .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceType").value("team"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceId").value(teamId))
     }
+
+    @Test
+    @Order(75)
+    fun testUpdateTeamUseAnonymousAndGetPermissionDeniedError() {
+        val request =
+                MockMvcRequestBuilders.patch("/teams/$teamId")
+                        .header("Authorization", "Bearer $anotherUserToken")
+                        .contentType("application/json")
+                        .content("{}")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isForbidden)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.action").value("modify"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceType").value("team"))
+    }
+
+    @Test
+    @Order(80)
+    fun testUpdateTeamUseMemberAndGetPermissionDeniedError() {
+        val request =
+                MockMvcRequestBuilders.patch("/teams/$teamId")
+                        .header("Authorization", "Bearer $memberToken")
+                        .contentType("application/json")
+                        .content("{}")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isForbidden)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.action").value("modify"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceType").value("team"))
+    }
+
+    @Test
+    @Order(90)
+    fun testUpdateTeamUseAdmin() {
+        teamName = "$teamName (2)"
+        teamIntro = "$teamIntro (2)"
+        teamAvatarId += 1
+        val request =
+                MockMvcRequestBuilders.patch("/teams/$teamId")
+                        .header("Authorization", "Bearer $adminToken")
+                        .contentType("application/json")
+                        .content(
+                                """
+                {
+                  "name": "$teamName",
+                  "intro": "$teamIntro",
+                  "avatarId": $teamAvatarId
+                }
+            """)
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.name").value(teamName))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.intro").value(teamIntro))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.avatarId").value(teamAvatarId))
+    }
+
+    @Test
+    @Order(100)
+    fun testUpdateTeamUseOwner() {
+        teamName = "$teamName (2)"
+        teamIntro = "$teamIntro (2)"
+        teamAvatarId += 1
+        val request =
+                MockMvcRequestBuilders.patch("/teams/$teamId")
+                        .header("Authorization", "Bearer $newOwnerToken")
+                        .contentType("application/json")
+                        .content(
+                                """
+                {
+                  "name": "$teamName",
+                  "intro": "$teamIntro",
+                  "avatarId": $teamAvatarId
+                }
+            """)
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.name").value(teamName))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.intro").value(teamIntro))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.avatarId").value(teamAvatarId))
+    }
 }

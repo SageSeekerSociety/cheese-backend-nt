@@ -62,7 +62,17 @@ class TeamController(
             @ResourceId teamId: Long,
             patchTeamRequestDTO: PatchTeamRequestDTO
     ): ResponseEntity<GetTeam200ResponseDTO> {
-        return super.patchTeam(teamId, patchTeamRequestDTO)
+        if (patchTeamRequestDTO.name != null) {
+            teamService.updateTeamName(teamId, patchTeamRequestDTO.name)
+        }
+        if (patchTeamRequestDTO.intro != null) {
+            teamService.updateTeamDescription(teamId, patchTeamRequestDTO.intro)
+        }
+        if (patchTeamRequestDTO.avatarId != null) {
+            teamService.updateTeamAvatar(teamId, patchTeamRequestDTO.avatarId)
+        }
+        val teamDTO = teamService.getTeamDto(teamId)
+        return ResponseEntity.ok(GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK"))
     }
 
     @Guard("modify-member", "team")

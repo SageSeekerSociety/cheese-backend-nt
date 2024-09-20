@@ -1,5 +1,6 @@
 package org.rucca.cheese.team
 
+import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.TeamAdminsDTO
@@ -83,7 +84,14 @@ class TeamService(
         return relations.map { userService.getUserDto(it.user!!.id!!.toLong()) }
     }
 
+    fun ensureTeamNameNotExists(name: String) {
+        if (teamRepository.existsByName(name)) {
+            throw NameAlreadyExistsError("team", name)
+        }
+    }
+
     fun createTeam(name: String, description: String, avatarId: IdType, ownerId: IdType): IdType {
+        ensureTeamNameNotExists(name)
         val team =
                 teamRepository.save(
                         Team(name = name, description = description, avatar = Avatar().apply { id = avatarId.toInt() }))
@@ -91,6 +99,25 @@ class TeamService(
                 TeamUserRelation(
                         team = team, role = TeamMemberRole.OWNER, user = User().apply { id = ownerId.toInt() }))
         return team.id!!
+    }
+
+    fun updateTeamName(teamId: IdType, name: String) {
+        ensureTeamNameNotExists(name)
+        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        team.name = name
+        teamRepository.save(team)
+    }
+
+    fun updateTeamDescription(teamId: IdType, description: String) {
+        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        team.description = description
+        teamRepository.save(team)
+    }
+
+    fun updateTeamAvatar(teamId: IdType, avatarId: IdType) {
+        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        team.avatar = Avatar().apply { id = avatarId.toInt() }
+        teamRepository.save(team)
     }
 
     private fun addTeamMember(teamId: IdType, userId: IdType, role: TeamMemberRole) {

@@ -203,7 +203,8 @@ CREATE
             updated_at TIMESTAMP(6) NOT NULL,
             description VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
-            PRIMARY KEY(id)
+            PRIMARY KEY(id),
+            UNIQUE(name)
         );
 
 CREATE
