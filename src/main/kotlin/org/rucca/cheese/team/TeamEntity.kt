@@ -1,7 +1,9 @@
 package org.rucca.cheese.team
 
+import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
+import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
@@ -12,9 +14,9 @@ import org.springframework.data.jpa.repository.JpaRepository
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 class Team(
-        val name: String,
-        val description: String,
-        @ManyToOne(fetch = FetchType.LAZY) val avatar: Avatar,
+        @Column(nullable = false) val name: String? = null,
+        @Column(nullable = false) val description: String? = null,
+        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val avatar: Avatar? = null,
 ) : BaseEntity()
 
 interface TeamRepository : JpaRepository<Team, IdType>

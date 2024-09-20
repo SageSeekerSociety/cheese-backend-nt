@@ -104,11 +104,11 @@ CREATE
 CREATE
     TABLE
         SPACE(
-            avatar_id INTEGER,
-            created_at TIMESTAMP(6),
+            avatar_id INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
-            updated_at TIMESTAMP(6),
+            updated_at TIMESTAMP(6) NOT NULL,
             description VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
             PRIMARY KEY(id),
@@ -118,15 +118,15 @@ CREATE
 CREATE
     TABLE
         space_admin_relation(
-            ROLE SMALLINT CHECK(
+            ROLE SMALLINT NOT NULL CHECK(
                 ROLE BETWEEN 0 AND 1
             ),
-            "user_id" INTEGER,
-            created_at TIMESTAMP(6),
+            "user_id" INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
-            space_id BIGINT,
-            updated_at TIMESTAMP(6),
+            space_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
             PRIMARY KEY(id),
             UNIQUE(
                 space_id,
@@ -137,41 +137,44 @@ CREATE
 CREATE
     TABLE
         task(
-            "creator_id" INTEGER,
-            deadline DATE,
+            "creator_id" INTEGER NOT NULL,
+            deadline DATE NOT NULL,
             editable BOOLEAN NOT NULL,
             resubmittable BOOLEAN NOT NULL,
-            submitter_type SMALLINT CHECK(
+            submitter_type SMALLINT NOT NULL CHECK(
                 submitter_type BETWEEN 0 AND 1
             ),
-            created_at TIMESTAMP(6),
+            created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             space_id BIGINT,
             team_id BIGINT,
-            updated_at TIMESTAMP(6),
-            description VARCHAR(255),
-            name VARCHAR(255),
+            updated_at TIMESTAMP(6) NOT NULL,
+            description VARCHAR(255) NOT NULL,
+            name VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
 
 CREATE
     TABLE
         task_submission_schema(
-            value INTEGER,
+            INDEX INTEGER NOT NULL,
+            TYPE SMALLINT NOT NULL CHECK(
+                TYPE BETWEEN 0 AND 1
+            ),
             task_id BIGINT NOT NULL,
-            KEY VARCHAR(255)
+            description VARCHAR(255) NOT NULL
         );
 
 CREATE
     TABLE
         task_membership(
             member_id INTEGER NOT NULL,
-            created_at TIMESTAMP(6),
+            created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
-            task_id BIGINT,
-            updated_at TIMESTAMP(6),
+            task_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
             PRIMARY KEY(id)
         );
 
@@ -181,11 +184,11 @@ CREATE
             content_attachment_id INTEGER,
             INDEX INTEGER NOT NULL,
             version INTEGER NOT NULL,
-            created_at TIMESTAMP(6),
+            created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
-            membership_id BIGINT,
-            updated_at TIMESTAMP(6),
+            membership_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
             content_text VARCHAR(255),
             PRIMARY KEY(id)
         );
@@ -193,28 +196,28 @@ CREATE
 CREATE
     TABLE
         team(
-            avatar_id INTEGER,
-            created_at TIMESTAMP(6),
+            avatar_id INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
-            updated_at TIMESTAMP(6),
-            description VARCHAR(255),
-            name VARCHAR(255),
+            updated_at TIMESTAMP(6) NOT NULL,
+            description VARCHAR(255) NOT NULL,
+            name VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
 
 CREATE
     TABLE
         team_user_relation(
-            ROLE SMALLINT CHECK(
+            ROLE SMALLINT NOT NULL CHECK(
                 ROLE BETWEEN 0 AND 2
             ),
-            "user_id" INTEGER,
-            created_at TIMESTAMP(6),
+            "user_id" INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
-            team_id BIGINT,
-            updated_at TIMESTAMP(6),
+            team_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
             PRIMARY KEY(id)
         );
 

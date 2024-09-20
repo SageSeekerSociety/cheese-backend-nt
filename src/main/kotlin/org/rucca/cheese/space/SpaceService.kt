@@ -31,13 +31,13 @@ class SpaceService(
         val space = spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
         val admins = spaceAdminRelationRepository.findAllBySpaceId(spaceId)
         return SpaceDTO(
-                id = space.id,
+                id = space.id!!,
                 intro = space.description!!,
                 name = space.name!!,
                 avatarId = space.avatar!!.id!!.toLong(),
                 admins =
                         admins.map {
-                            SpaceAdminDTO(convertAdminRole(it.role), userService.getUserDto(it.user.id!!.toLong()))
+                            SpaceAdminDTO(convertAdminRole(it.role!!), userService.getUserDto(it.user!!.id!!.toLong()))
                         })
     }
 
@@ -46,7 +46,7 @@ class SpaceService(
                 spaceAdminRelationRepository.findBySpaceIdAndRole(spaceId, SpaceAdminRole.OWNER).orElseThrow {
                     NotFoundError("space", spaceId)
                 }
-        return spaceAdminRelation.user.id!!.toLong()
+        return spaceAdminRelation.user!!.id!!.toLong()
     }
 
     fun isSpaceAdmin(spaceId: IdType, userId: IdType): Boolean {
@@ -77,7 +77,7 @@ class SpaceService(
         spaceAdminRelationRepository.save(
                 SpaceAdminRelation(
                         space = space, role = SpaceAdminRole.OWNER, user = User().apply { id = ownerId.toInt() }))
-        return space.id
+        return space.id!!
     }
 
     fun updateSpaceName(spaceId: IdType, name: String) {
@@ -124,7 +124,7 @@ class SpaceService(
         ensureNotSpaceAdmin(spaceId, userId)
         val relation =
                 SpaceAdminRelation(
-                        space = Space(null, null, null).apply { id = spaceId },
+                        space = Space().apply { id = spaceId },
                         user = User().apply { id = userId.toInt() },
                         role = SpaceAdminRole.ADMIN)
         spaceAdminRelationRepository.save(relation)
@@ -190,19 +190,19 @@ class SpaceService(
         val result = query.resultList
         val (curr, page) =
                 PageHelper.pageFromAll(
-                        result, pageStart, pageSize, { it.id }, { id -> throw NotFoundError("space", id) })
+                        result, pageStart, pageSize, { it.id!! }, { id -> throw NotFoundError("space", id) })
         return Pair(
                 curr.map {
                     SpaceDTO(
-                            id = it.id,
+                            id = it.id!!,
                             intro = it.description!!,
                             name = it.name!!,
                             avatarId = it.avatar!!.id!!.toLong(),
                             admins =
-                                    spaceAdminRelationRepository.findAllBySpaceId(it.id).map {
+                                    spaceAdminRelationRepository.findAllBySpaceId(it.id!!).map {
                                         SpaceAdminDTO(
-                                                convertAdminRole(it.role),
-                                                userService.getUserDto(it.user.id!!.toLong()))
+                                                convertAdminRole(it.role!!),
+                                                userService.getUserDto(it.user!!.id!!.toLong()))
                                     })
                 },
                 page)

@@ -21,10 +21,10 @@ class TeamService(
     fun getTeamDto(teamId: IdType): TeamDTO {
         val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
         return TeamDTO(
-                id = team.id,
-                name = team.name,
-                intro = team.description,
-                avatarId = team.avatar.id!!.toLong(),
+                id = team.id!!,
+                name = team.name!!,
+                intro = team.description!!,
+                avatarId = team.avatar!!.id!!.toLong(),
                 admins =
                         TeamAdminsDTO(
                                 total = countTeamAdmins(teamId),
@@ -43,7 +43,7 @@ class TeamService(
                 teamUserRelationRepository.findByTeamIdAndRole(teamId, TeamMemberRole.OWNER).orElseThrow {
                     NotFoundError("team", teamId)
                 }
-        return relation.user.id!!.toLong()
+        return relation.user!!.id!!.toLong()
     }
 
     fun isTeamAdmin(teamId: IdType, userId: IdType): Boolean {
@@ -69,7 +69,7 @@ class TeamService(
                         PageRequest.of(0, 2),
                 )
         return listOf(userService.getUserDto(getTeamOwner(teamId))) +
-                relations.map { userService.getUserDto(it.user.id!!.toLong()) }
+                relations.map { userService.getUserDto(it.user!!.id!!.toLong()) }
     }
 
     fun getTeamMemberExamples(teamId: IdType): List<UserDTO> {
@@ -79,7 +79,7 @@ class TeamService(
                         TeamMemberRole.MEMBER,
                         PageRequest.of(0, 3),
                 )
-        return relations.map { userService.getUserDto(it.user.id!!.toLong()) }
+        return relations.map { userService.getUserDto(it.user!!.id!!.toLong()) }
     }
 
     fun createTeam(name: String, description: String, avatarId: IdType, ownerId: IdType): IdType {
@@ -89,6 +89,6 @@ class TeamService(
         teamUserRelationRepository.save(
                 TeamUserRelation(
                         team = team, role = TeamMemberRole.OWNER, user = User().apply { id = ownerId.toInt() }))
-        return team.id
+        return team.id!!
     }
 }

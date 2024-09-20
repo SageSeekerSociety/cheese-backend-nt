@@ -1,10 +1,6 @@
 package org.rucca.cheese.space
 
-import jakarta.persistence.Entity
-import jakarta.persistence.FetchType
-import jakarta.persistence.Index
-import jakarta.persistence.ManyToOne
-import jakarta.persistence.Table
+import jakarta.persistence.*
 import java.util.Optional
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
@@ -27,9 +23,9 @@ enum class SpaceAdminRole {
                         Index(columnList = "space_id, user_id", unique = true),
                 ])
 class SpaceAdminRelation(
-        @ManyToOne(fetch = FetchType.LAZY) val space: Space,
-        @ManyToOne(fetch = FetchType.LAZY) val user: User,
-        var role: SpaceAdminRole,
+        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val space: Space? = null,
+        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val user: User? = null,
+        @Column(nullable = false) var role: SpaceAdminRole? = null,
 ) : BaseEntity()
 
 interface SpaceAdminRelationRepository : JpaRepository<SpaceAdminRelation, IdType> {

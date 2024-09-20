@@ -1,8 +1,6 @@
 package org.rucca.cheese.team
 
-import jakarta.persistence.Entity
-import jakarta.persistence.FetchType
-import jakarta.persistence.ManyToOne
+import jakarta.persistence.*
 import java.util.Optional
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
@@ -20,9 +18,9 @@ enum class TeamMemberRole {
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 class TeamUserRelation(
-        @ManyToOne(fetch = FetchType.LAZY) val user: User,
-        @ManyToOne(fetch = FetchType.LAZY) val team: Team,
-        val role: TeamMemberRole,
+        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val user: User? = null,
+        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val team: Team? = null,
+        @Column(nullable = false) val role: TeamMemberRole,
 ) : BaseEntity()
 
 interface TeamUserRelationRepository : JpaRepository<TeamUserRelation, IdType> {
