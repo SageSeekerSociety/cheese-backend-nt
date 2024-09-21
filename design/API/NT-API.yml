@@ -727,6 +727,14 @@ paths:
                     id: a08xra4phvwqx
                   items:
                     $ref: "#/components/schemas/TaskSubmissionSchemaEntry"
+                team:
+                  type: integer
+                  format: int64
+                  x-stoplight:
+                space:
+                    type: integer
+                    format: int64
+                    x-stoplight:
       summary: Create Task
       x-stoplight:
         id: ai79622xpxp6v

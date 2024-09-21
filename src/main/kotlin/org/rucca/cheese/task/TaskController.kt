@@ -2,6 +2,7 @@ package org.rucca.cheese.task
 
 import javax.annotation.PostConstruct
 import org.rucca.cheese.api.TasksApi
+import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
 import org.rucca.cheese.auth.AuthorizedAction
 import org.rucca.cheese.auth.annotation.AuthInfo
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*
 class TaskController(
         private val taskService: TaskService,
         private val authorizationService: AuthorizationService,
+        private val authenticationService: AuthenticationService,
 ) : TasksApi {
     @PostConstruct
     fun initialize() {
@@ -101,7 +103,24 @@ class TaskController(
 
     @Guard("create", "task")
     override fun postTask(postTaskRequestDTO: PostTaskRequestDTO): ResponseEntity<GetTask200ResponseDTO> {
-        return super.postTask(postTaskRequestDTO)
+        val taskId =
+                taskService.createTask(
+                        name = postTaskRequestDTO.name,
+                        submitterType = taskService.convertTaskSubmitterType(postTaskRequestDTO.submitterType),
+                        deadline = postTaskRequestDTO.deadline,
+                        resubmittable = postTaskRequestDTO.resubmittable,
+                        editable = postTaskRequestDTO.editable,
+                        description = postTaskRequestDTO.description,
+                        submissionSchema =
+                                postTaskRequestDTO.submissionSchema.withIndex().map { (index, entry) ->
+                                    TaskSubmissionSchema(
+                                            index, entry.prompt, taskService.convertTaskSubmissionEntryType(entry.type))
+                                },
+                        creatorId = authenticationService.getCurrentUserId(),
+                        teamId = postTaskRequestDTO.team,
+                        spaceId = postTaskRequestDTO.space)
+        val taskDTO = taskService.getTaskDto(taskId)
+        return ResponseEntity.ok(GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK"))
     }
 
     @Guard("add-member", "task")
