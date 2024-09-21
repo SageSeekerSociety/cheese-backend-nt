@@ -88,7 +88,31 @@ class TaskController(
             @ResourceId taskId: Long,
             patchTaskRequestDTO: PatchTaskRequestDTO
     ): ResponseEntity<GetTask200ResponseDTO> {
-        return super.patchTask(taskId, patchTaskRequestDTO)
+        if (patchTaskRequestDTO.name != null) {
+            taskService.updateTaskName(taskId, patchTaskRequestDTO.name)
+        }
+        if (patchTaskRequestDTO.deadline != null) {
+            taskService.updateTaskDeadline(taskId, patchTaskRequestDTO.deadline)
+        }
+        if (patchTaskRequestDTO.resubmittable != null) {
+            taskService.updateTaskResubmittable(taskId, patchTaskRequestDTO.resubmittable)
+        }
+        if (patchTaskRequestDTO.editable != null) {
+            taskService.updateTaskEditable(taskId, patchTaskRequestDTO.editable)
+        }
+        if (patchTaskRequestDTO.description != null) {
+            taskService.updateTaskDescription(taskId, patchTaskRequestDTO.description)
+        }
+        if (patchTaskRequestDTO.submissionSchema != null) {
+            taskService.updateTaskSubmissionSchema(
+                    taskId,
+                    patchTaskRequestDTO.submissionSchema.withIndex().map {
+                        TaskSubmissionSchema(
+                                it.index, it.value.prompt, taskService.convertTaskSubmissionEntryType(it.value.type))
+                    })
+        }
+        val taskDTO = taskService.getTaskDto(taskId)
+        return ResponseEntity.ok(GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK"))
     }
 
     @Guard("modify-submission", "task")
@@ -112,9 +136,11 @@ class TaskController(
                         editable = postTaskRequestDTO.editable,
                         description = postTaskRequestDTO.description,
                         submissionSchema =
-                                postTaskRequestDTO.submissionSchema.withIndex().map { (index, entry) ->
+                                postTaskRequestDTO.submissionSchema.withIndex().map {
                                     TaskSubmissionSchema(
-                                            index, entry.prompt, taskService.convertTaskSubmissionEntryType(entry.type))
+                                            it.index,
+                                            it.value.prompt,
+                                            taskService.convertTaskSubmissionEntryType(it.value.type))
                                 },
                         creatorId = authenticationService.getCurrentUserId(),
                         teamId = postTaskRequestDTO.team,

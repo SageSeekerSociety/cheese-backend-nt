@@ -218,4 +218,57 @@ constructor(
             assert(found!!.getString("type") == entry.second)
         }
     }
+
+    @Test
+    @Order(30)
+    fun testUpdateTaskWithEmptyRequest() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.patch("/tasks/$taskId")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .contentType("application/json")
+                        .content("{}")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(40)
+    fun testUpdateTaskWithFullRequest() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.patch("/tasks/$taskId")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .contentType("application/json")
+                        .content(
+                                """
+                {
+                  "name": "$taskName (1) (updated)",
+                  "deadline": "2024-09-26",
+                  "resubmittable": false,
+                  "editable": false,
+                  "description": "This is an updated test task.",
+                  "submissionSchema": [
+                    {
+                      "prompt": "Text Entry",
+                      "type": "TEXT"
+                    }
+                  ]
+                }
+            """)
+        val response =
+                mockMvc.perform(request)
+                        .andExpect(MockMvcResultMatchers.status().isOk)
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.name").value("$taskName (1) (updated)"))
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.creator.id").value(creator.userId))
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.deadline").value("2024-09-26"))
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.resubmittable").value(false))
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.editable").value(false))
+                        .andExpect(
+                                MockMvcResultMatchers.jsonPath("$.data.task.description")
+                                        .value("This is an updated test task."))
+                        .andExpect(
+                                MockMvcResultMatchers.jsonPath("$.data.task.submissionSchema[0].prompt")
+                                        .value("Text Entry"))
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submissionSchema[0].type").value("TEXT"))
+    }
 }

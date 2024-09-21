@@ -110,4 +110,40 @@ class TaskService(
                                 submissionSchema = submissionSchema))
         return task.id!!
     }
+
+    fun updateTaskName(taskId: IdType, name: String) {
+        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        task.name = name
+        taskRepository.save(task)
+    }
+
+    fun updateTaskDeadline(taskId: IdType, deadline: LocalDate) {
+        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        task.deadline = deadline
+        taskRepository.save(task)
+    }
+
+    fun updateTaskResubmittable(taskId: IdType, resubmittable: Boolean) {
+        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        task.resubmittable = resubmittable
+        taskRepository.save(task)
+    }
+
+    fun updateTaskEditable(taskId: IdType, editable: Boolean) {
+        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        task.editable = editable
+        taskRepository.save(task)
+    }
+
+    fun updateTaskDescription(taskId: IdType, description: String) {
+        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        task.description = description
+        taskRepository.save(task)
+    }
+
+    fun updateTaskSubmissionSchema(taskId: IdType, submissionSchema: List<TaskSubmissionSchema>) {
+        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        task.submissionSchema = submissionSchema
+        taskRepository.save(task)
+    }
 }
