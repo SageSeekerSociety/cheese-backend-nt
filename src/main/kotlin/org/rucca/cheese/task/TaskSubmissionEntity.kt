@@ -8,6 +8,8 @@ import jakarta.persistence.ManyToOne
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.attachment.Attachment
 import org.rucca.cheese.common.persistent.BaseEntity
+import org.rucca.cheese.common.persistent.IdType
+import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
@@ -18,3 +20,5 @@ class TaskSubmission(
         val contentText: String? = null, // nullable
         @ManyToOne(fetch = FetchType.LAZY) val contentAttachment: Attachment? = null, // nullable
 ) : BaseEntity()
+
+interface taskSubmissionRepository : JpaRepository<TaskSubmission, IdType> {}

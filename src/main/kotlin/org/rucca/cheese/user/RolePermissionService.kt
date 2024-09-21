@@ -23,6 +23,7 @@ class RolePermissionService {
                 userId = userId,
                 permissions =
                         listOf(
+                                // Space permissions
                                 Permission(
                                         authorizedActions =
                                                 listOf("ship-ownership", "add-admin", "modify-admin", "remove-admin"),
@@ -47,6 +48,8 @@ class RolePermissionService {
                                                         types = listOf("space"),
                                                 ),
                                 ),
+
+                                // Team permissions
                                 Permission(
                                         authorizedActions =
                                                 listOf(
@@ -75,6 +78,32 @@ class RolePermissionService {
                                         authorizedResource =
                                                 AuthorizedResource(
                                                         types = listOf("team"),
+                                                ),
+                                ),
+
+                                // Task permissions
+                                Permission(
+                                        authorizedActions = listOf("modify", "delete", "add-member", "remove-member"),
+                                        authorizedResource =
+                                                AuthorizedResource(
+                                                        types = listOf("task"),
+                                                        ownedByUser = userId,
+                                                ),
+                                ),
+                                Permission(
+                                        authorizedActions = listOf("submit", "modify-submission"),
+                                        authorizedResource =
+                                                AuthorizedResource(
+                                                        types = listOf("task"),
+                                                ),
+                                        customLogic = "is-task-participant",
+                                ),
+                                Permission(
+                                        authorizedActions =
+                                                listOf("create", "query", "enumerate", "enumerate-submissions"),
+                                        authorizedResource =
+                                                AuthorizedResource(
+                                                        types = listOf("task"),
                                                 ),
                                 ),
                         ))

@@ -54,6 +54,11 @@ class TeamService(
                         relationOptional.get().role == TeamMemberRole.OWNER)
     }
 
+    fun isTeamMember(teamId: IdType, userId: IdType): Boolean {
+        val relationOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId)
+        return relationOptional.isPresent
+    }
+
     fun countTeamAdmins(teamId: IdType): Int {
         return teamUserRelationRepository.countByTeamIdAndRole(teamId, TeamMemberRole.ADMIN) + 1
     }

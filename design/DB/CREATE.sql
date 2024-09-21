@@ -229,6 +229,14 @@ CREATE
     space_admin_relation(user_id);
 
 CREATE
+    INDEX IDX70x5oq6omtraaie2fttiv25rd ON
+    task_membership(task_id);
+
+CREATE
+    INDEX IDXh685vv2ufp7ohjnfw6hw231tv ON
+    task_membership(member_id);
+
+CREATE
     INDEX IDXg2l9qqsoeuynt4r5ofdt1x2td ON
     team(name);
 

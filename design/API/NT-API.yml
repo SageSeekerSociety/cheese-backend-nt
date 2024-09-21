@@ -554,10 +554,10 @@ paths:
                   x-stoplight:
                     id: 4eatfhceym142
                 deadline:
-                  type: integer
+                  type: string
                   x-stoplight:
                     id: angj9jp5o4om1
-                  format: int64
+                  format: date
                 resubmittable:
                   type: boolean
                   x-stoplight:
@@ -705,10 +705,10 @@ paths:
                 submitterType:
                   $ref: "#/components/schemas/TaskSubmitterType"
                 deadline:
-                  type: integer
+                  type: string
                   x-stoplight:
                     id: er9kqvy8gr243
-                  format: int64
+                  format: date
                 resubmittable:
                   type: boolean
                   x-stoplight:
@@ -892,8 +892,8 @@ paths:
             type: integer
             format: int64
           in: query
-          name: user
-          description: Submitter's User ID
+          name: member
+          description: Submitter's User/Team ID
         - schema:
             type: integer
           in: query
@@ -970,8 +970,8 @@ paths:
             type: integer
             format: int64
           in: query
-          name: user
-          description: User ID
+          name: member
+          description: Member's User/Group ID
           required: true
       requestBody:
         content:
@@ -1040,8 +1040,8 @@ paths:
             type: integer
             format: int64
           in: query
-          name: user
-          description: User ID
+          name: member
+          description: Member's User/Group ID
           required: true
         - schema:
             type: integer
@@ -1574,10 +1574,10 @@ components:
         creator:
           $ref: "#/components/schemas/User"
         deadline:
-          type: integer
+          type: string
           x-stoplight:
             id: q2y8s19bfmwjn
-          format: int64
+          format: date
         resubmittable:
           type: boolean
           x-stoplight:
@@ -1609,8 +1609,8 @@ components:
         - submitters
       properties:
         deadline:
-          type: integer
-          format: int64
+          type: string
+          format: date
           x-stoplight:
             id: b1yizo35ccdr5
         id:
