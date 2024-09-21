@@ -5,6 +5,7 @@ import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.rucca.cheese.auth.exception.DuplicatedAuthInfoKeyException
 import org.rucca.cheese.auth.exception.DuplicatedResourceIdAnnotationException
 import org.rucca.cheese.auth.exception.NoGuardOrNoAuthAnnotationException
 import org.rucca.cheese.auth.exception.ResourceIdTypeMismatchException
@@ -30,7 +31,7 @@ constructor(
     @BeforeEach
     fun prepare() {
         // Prevent the actual audit method from being called
-        every { authorizationService.audit(String(), any(), any(), any()) }
+        every { authorizationService.audit(String(), any(), String(), any()) }
 
         // Avoid error logging in the console
         every { globalErrorHandler.handleException(any()) } returns
@@ -69,25 +70,44 @@ constructor(
 
     @Test
     fun testNoIdTokenNotInCapital() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/example/4").header("authorization", "Bearer token Xxx"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/example/4").header("Authorization", "Bearer token Xxx"))
         verify { authorizationService.audit("Bearer token Xxx", "query", "example", null) }
     }
 
     @Test
     fun testWithId() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/example/5?id=123").header("authorization", "Bearer token Xxx"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/example/5?id=123").header("Authorization", "Bearer token Xxx"))
         verify { authorizationService.audit("Bearer token Xxx", "query", "example", 123) }
     }
 
     @Test
     fun testNoAuth() {
         mockMvc.perform(MockMvcRequestBuilders.get("/example/6"))
-        verify(exactly = 0) { authorizationService.audit(String(), any(), any(), any()) }
+        verify(exactly = 0) { authorizationService.audit(String(), any(), String(), any()) }
     }
 
     @Test
     fun testMvcController() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/example2/1?id=123").header("authorization", "Bearer token Xxx"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/example2/1?id=123").header("Authorization", "Bearer token Xxx"))
         verify { authorizationService.audit("Bearer token Xxx", "query", "example", 123) }
+    }
+
+    @Test
+    fun testWithIdAndAdditional() {
+        mockMvc.perform(
+                MockMvcRequestBuilders.get("/example/7?id=123&additional_str=abc&additional_id=456")
+                        .header("Authorization", "Bearer token Xxx"))
+        verify {
+            authorizationService.audit(
+                    "Bearer token Xxx", "query", "example", 123, mapOf("str" to "abc", "id" to 456.toLong()))
+        }
+    }
+
+    @Test
+    fun testDuplicatedAuthInfo() {
+        mockMvc.perform(
+                MockMvcRequestBuilders.get("/example/8?additional_1=abc&additional_2=123")
+                        .header("Authorization", "Bearer token Xxx"))
+        verify { globalErrorHandler.handleException(ofType<DuplicatedAuthInfoKeyException>()) }
     }
 }

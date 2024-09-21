@@ -9,6 +9,7 @@ typealias CustomAuthLogicHandler =
                 action: AuthorizedAction,
                 resourceType: String,
                 resourceId: IdType?,
+                authInfo: Map<String, Any>,
                 resourceOwnerIdGetter: IdGetter?,
                 customLogicData: Any?,
         ) -> Boolean
@@ -30,10 +31,11 @@ class CustomAuthLogics {
             action: AuthorizedAction,
             resourceType: String,
             resourceId: IdType?,
+            authInfo: Map<String, Any>,
             resourceOwnerIdGetter: IdGetter?,
             customLogicData: Any?,
     ): Boolean {
         val handler = logics[name] ?: throw RuntimeException("Custom auth logic '$name' not found.")
-        return handler(userId, action, resourceType, resourceId, resourceOwnerIdGetter, customLogicData)
+        return handler(userId, action, resourceType, resourceId, authInfo, resourceOwnerIdGetter, customLogicData)
     }
 }

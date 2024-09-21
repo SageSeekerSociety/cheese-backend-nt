@@ -32,12 +32,13 @@ class AuthorizationService(
             action: String,
             resourceType: String,
             resourceId: IdType?,
+            authInfo: Map<String, Any> = emptyMap(),
     ) {
         val token: String? =
                 (RequestContextHolder.currentRequestAttributes() as ServletRequestAttributes)
                         .request
                         .getHeader("Authorization")
-        audit(token, action, resourceType, resourceId)
+        audit(token, action, resourceType, resourceId, authInfo)
     }
 
     fun audit(
@@ -45,8 +46,9 @@ class AuthorizationService(
             action: String,
             resourceType: String,
             resourceId: IdType?,
+            authInfo: Map<String, Any> = emptyMap(),
     ) {
-        audit(verify(token), action, resourceType, resourceId)
+        audit(verify(token), action, resourceType, resourceId, authInfo)
     }
 
     fun audit(
@@ -54,6 +56,7 @@ class AuthorizationService(
             action: String,
             resourceType: String,
             resourceId: IdType?,
+            authInfo: Map<String, Any> = emptyMap(),
     ) {
         val userId = authorization.userId
         val ownerIdGetter = if (resourceId != null) ownerIds.getOwnerIdGetter(resourceType, resourceId) else null
@@ -76,17 +79,18 @@ class AuthorizationService(
                                 action,
                                 resourceType,
                                 resourceId,
+                                authInfo,
                                 ownerIdGetter,
                                 permission.customLogicData)
                 if (!result) continue
             }
             logger.info(
-                    "Operation permitted: '$action' on resource (resourceType: '$resourceType', resourceId: $resourceId)." +
+                    "Operation permitted: '$action' on resource (resourceType: '$resourceType', resourceId: $resourceId, authInfo: $authInfo)." +
                             " Authorization: $authorization")
             return
         }
         logger.warn(
-                "Operation denied: '$action' on resource (resourceType: '$resourceType', resourceId: $resourceId)." +
+                "Operation denied: '$action' on resource (resourceType: '$resourceType', resourceId: $resourceId, authInfo: $authInfo)." +
                         " Authorization: $authorization")
         throw PermissionDeniedError(action, resourceType, resourceId)
     }
