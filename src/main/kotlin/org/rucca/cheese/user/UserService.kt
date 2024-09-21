@@ -24,4 +24,9 @@ class UserService(
                 username = user.username!!,
         )
     }
+
+    fun getUserAvatarId(userId: IdType): IdType {
+        val profile = userProfileRepository.findByUserId(userId.toInt()).orElseThrow { NotFoundError("user", userId) }
+        return profile.avatar!!.id!!.toLong()
+    }
 }

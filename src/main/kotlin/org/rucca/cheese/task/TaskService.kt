@@ -1,12 +1,13 @@
 package org.rucca.cheese.task
 
+import jakarta.persistence.EntityManager
 import java.time.LocalDate
+import java.time.LocalDateTime
+import org.hibernate.query.SortDirection
 import org.rucca.cheese.common.error.NotFoundError
+import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.model.TaskDTO
-import org.rucca.cheese.model.TaskSubmissionSchemaEntryDTO
-import org.rucca.cheese.model.TaskSubmissionTypeDTO
-import org.rucca.cheese.model.TaskSubmitterTypeDTO
+import org.rucca.cheese.model.*
 import org.rucca.cheese.space.Space
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamService
@@ -20,6 +21,8 @@ class TaskService(
         private val teamService: TeamService,
         private val taskRepository: TaskRepository,
         private val taskMembershipRepository: taskMembershipRepository,
+        private val taskSubmissionRepository: taskSubmissionRepository,
+        private val entityManager: EntityManager,
 ) {
     fun getTaskDto(taskId: IdType): TaskDTO {
         val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
@@ -104,8 +107,8 @@ class TaskService(
                                 deadline = deadline,
                                 resubmittable = resubmittable,
                                 editable = editable,
-                                team = Team().apply { id = teamId },
-                                space = Space().apply { id = spaceId },
+                                team = if (teamId != null) Team().apply { id = teamId } else null,
+                                space = if (spaceId != null) Space().apply { id = spaceId } else null,
                                 description = description,
                                 submissionSchema = submissionSchema))
         return task.id!!
@@ -145,5 +148,73 @@ class TaskService(
         val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
         task.submissionSchema = submissionSchema
         taskRepository.save(task)
+    }
+
+    enum class TasksSortBy {
+        DEADLINE,
+        CREATED_AT,
+        UPDATED_AT,
+    }
+
+    fun getTaskSumbitterType(taskId: IdType): TaskSubmitterTypeDTO {
+        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        return convertTaskSubmitterType(task.submitterType!!)
+    }
+
+    fun getTaskSubmitterSummary(taskId: IdType): TaskSummarySubmittersDTO {
+        val submitters = taskMembershipRepository.findByTaskIdWhereMemberHasSubmitted(taskId)
+        val examples = submitters.sortedBy { it.updatedAt }.reversed().take(3)
+        val exampleDTOs =
+                when (getTaskSumbitterType(taskId)) {
+                    TaskSubmitterTypeDTO.USER -> examples.map { userService.getUserAvatarId(it.memberId!!) }
+                    TaskSubmitterTypeDTO.TEAM -> examples.map { teamService.getTeamAvatarId(it.memberId!!) }
+                }.map { TaskSummarySubmittersExamplesInnerDTO(it) }
+        return TaskSummarySubmittersDTO(total = submitters.size, examples = exampleDTOs)
+    }
+
+    fun enumerateTasks(
+            space: IdType?,
+            team: Int?,
+            pageSize: Int,
+            pageStart: IdType?,
+            sortBy: TasksSortBy,
+            sortOrder: SortDirection,
+    ): Pair<List<TaskSummaryDTO>, PageDTO> {
+        val cb = entityManager.criteriaBuilder
+        val cq = cb.createQuery(Task::class.java)
+        val root = cq.from(Task::class.java)
+        if (space != null) {
+            cq.where(cb.equal(root.get<Space>("space").get<IdType>("id"), space))
+        }
+        if (team != null) {
+            cq.where(cb.equal(root.get<Team>("team").get<IdType>("id"), team))
+        }
+        val by =
+                when (sortBy) {
+                    TasksSortBy.CREATED_AT -> root.get<LocalDateTime>("createdAt")
+                    TasksSortBy.UPDATED_AT -> root.get<LocalDateTime>("updatedAt")
+                    TasksSortBy.DEADLINE -> root.get<LocalDate>("deadline")
+                }
+        val order =
+                when (sortOrder) {
+                    SortDirection.ASCENDING -> cb.asc(by)
+                    SortDirection.DESCENDING -> cb.desc(by)
+                }
+        cq.orderBy(order)
+        val query = entityManager.createQuery(cq)
+        val result = query.resultList
+        val (curr, page) =
+                PageHelper.pageFromAll(
+                        result, pageStart, pageSize, { it.id!! }, { id -> throw NotFoundError("task", id) })
+        return Pair(
+                curr.map {
+                    TaskSummaryDTO(
+                            deadline = it.deadline!!,
+                            id = it.id!!,
+                            intro = it.description!!,
+                            name = it.name!!,
+                            submitters = getTaskSubmitterSummary(it.id!!))
+                },
+                page)
     }
 }

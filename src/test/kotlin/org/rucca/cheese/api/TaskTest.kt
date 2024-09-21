@@ -1,6 +1,5 @@
 package org.rucca.cheese.api
 
-import io.mockk.InternalPlatformDsl.toArray
 import kotlin.math.floor
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeAll
@@ -193,6 +192,50 @@ constructor(
                 team = teamId,
                 space = spaceId,
         )
+        createTask(
+                name = "$taskName (2)",
+                submitterType = "USER",
+                deadline = taskDeadline,
+                resubmittable = true,
+                editable = true,
+                description = taskDescription,
+                submissionSchema = taskSubmissionSchema,
+                team = teamId,
+                space = spaceId,
+        )
+        createTask(
+                name = "$taskName (3)",
+                submitterType = "USER",
+                deadline = taskDeadline,
+                resubmittable = true,
+                editable = true,
+                description = taskDescription,
+                submissionSchema = taskSubmissionSchema,
+                team = null,
+                space = spaceId,
+        )
+        createTask(
+                name = "$taskName (4)",
+                submitterType = "USER",
+                deadline = taskDeadline,
+                resubmittable = true,
+                editable = true,
+                description = taskDescription,
+                submissionSchema = taskSubmissionSchema,
+                team = teamId,
+                space = null,
+        )
+        createTask(
+                name = "$taskName (5)",
+                submitterType = "USER",
+                deadline = taskDeadline,
+                resubmittable = true,
+                editable = true,
+                description = taskDescription,
+                submissionSchema = taskSubmissionSchema,
+                team = null,
+                space = null,
+        )
     }
 
     @Test
@@ -255,20 +298,111 @@ constructor(
                   ]
                 }
             """)
-        val response =
-                mockMvc.perform(request)
-                        .andExpect(MockMvcResultMatchers.status().isOk)
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.name").value("$taskName (1) (updated)"))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.creator.id").value(creator.userId))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.deadline").value("2024-09-26"))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.resubmittable").value(false))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.editable").value(false))
-                        .andExpect(
-                                MockMvcResultMatchers.jsonPath("$.data.task.description")
-                                        .value("This is an updated test task."))
-                        .andExpect(
-                                MockMvcResultMatchers.jsonPath("$.data.task.submissionSchema[0].prompt")
-                                        .value("Text Entry"))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submissionSchema[0].type").value("TEXT"))
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.name").value("$taskName (1) (updated)"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.creator.id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.deadline").value("2024-09-26"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.resubmittable").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.editable").value(false))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.task.description")
+                                .value("This is an updated test task."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submissionSchema[0].prompt").value("Text Entry"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submissionSchema[0].type").value("TEXT"))
+    }
+
+    @Test
+    @Order(50)
+    fun testEnumerateTasksByDefault() {
+        val request = MockMvcRequestBuilders.get("/tasks").header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].id").value(taskIds[0]))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.tasks[0].intro").value("This is an updated test task."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].deadline").value("2024-09-26"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].submitters.total").value(0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].submitters.examples").isArray)
+    }
+
+    @Test
+    @Order(55)
+    fun testEnumerateTasksByTeam() {
+        val request =
+                MockMvcRequestBuilders.get("/tasks")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .param("team", teamId.toString())
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[1].name").value("$taskName (4)"))
+    }
+
+    @Test
+    @Order(60)
+    fun testEnumerateTasksBySpace() {
+        val request =
+                MockMvcRequestBuilders.get("/tasks")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .param("space", spaceId.toString())
+                        .param("page_size", "2")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].id").value(taskIds[0]))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[1].name").value("$taskName (3)"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(taskIds[0]))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").value(null))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.next_start").value(taskIds[1]))
+    }
+
+    @Test
+    @Order(65)
+    fun testEnumerateTasksBySpace2() {
+        val request =
+                MockMvcRequestBuilders.get("/tasks")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .param("space", spaceId.toString())
+                        .param("page_size", "2")
+                        .param("page_start", "${taskIds[2]}")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].name").value("$taskName (3)"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[1].name").value("$taskName (2)"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(taskIds[2]))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").value(taskIds[0]))
+    }
+
+    @Test
+    @Order(70)
+    fun testEnumerateTasksBySpaceAndSortByCreatedAtAsc() {
+        val request =
+                MockMvcRequestBuilders.get("/tasks")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .param("space", spaceId.toString())
+                        .param("sort_by", "createdAt")
+                        .param("sort_order", "asc")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].id").value(taskIds[0]))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
+    }
+
+    @Test
+    @Order(80)
+    fun testEnumerateTasksByDeadlineDesc() {
+        val request =
+                MockMvcRequestBuilders.get("/tasks")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .param("sort_by", "deadline")
+                        .param("sort_order", "desc")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 }

@@ -1,6 +1,7 @@
 package org.rucca.cheese.task
 
 import javax.annotation.PostConstruct
+import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.TasksApi
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
@@ -80,7 +81,29 @@ class TaskController(
             sortBy: String,
             sortOrder: String
     ): ResponseEntity<GetTasks200ResponseDTO> {
-        return super.getTasks(space, team, pageSize, pageStart, sortBy, sortOrder)
+        val by =
+                when (sortBy) {
+                    "createdAt" -> TaskService.TasksSortBy.CREATED_AT
+                    "updatedAt" -> TaskService.TasksSortBy.UPDATED_AT
+                    "deadline" -> TaskService.TasksSortBy.DEADLINE
+                    else -> throw IllegalArgumentException("Invalid sortBy: $sortBy")
+                }
+        val order =
+                when (sortOrder) {
+                    "asc" -> SortDirection.ASCENDING
+                    "desc" -> SortDirection.DESCENDING
+                    else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
+                }
+        val (taskSummaryDTOs, page) =
+                taskService.enumerateTasks(
+                        space = space,
+                        team = team,
+                        pageSize = pageSize,
+                        pageStart = pageStart,
+                        sortBy = by,
+                        sortOrder = order,
+                )
+        return ResponseEntity.ok(GetTasks200ResponseDTO(200, GetTasks200ResponseDataDTO(taskSummaryDTOs, page), "OK"))
     }
 
     @Guard("modify", "task")

@@ -39,6 +39,11 @@ class TeamService(
         )
     }
 
+    fun getTeamAvatarId(teamId: IdType): IdType {
+        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        return team.avatar!!.id!!.toLong()
+    }
+
     fun getTeamOwner(teamId: IdType): IdType {
         val relation =
                 teamUserRelationRepository.findByTeamIdAndRole(teamId, TeamMemberRole.OWNER).orElseThrow {

@@ -164,10 +164,10 @@ CREATE
 CREATE
     TABLE
         task_membership(
-            member_id INTEGER NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
+            member_id BIGINT NOT NULL,
             task_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
             PRIMARY KEY(id)
@@ -235,6 +235,10 @@ CREATE
 CREATE
     INDEX IDXh685vv2ufp7ohjnfw6hw231tv ON
     task_membership(member_id);
+
+CREATE
+    INDEX IDXglmpyfy44ju9tr2tm5h6j8u3t ON
+    task_submission(membership_id);
 
 CREATE
     INDEX IDXg2l9qqsoeuynt4r5ofdt1x2td ON

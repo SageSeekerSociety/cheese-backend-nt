@@ -641,13 +641,13 @@ paths:
           description: ID of First Element
         - schema:
             type: string
-            default: deadline
+            default: updatedAt
           in: query
           name: sort_by
-          description: '"deadline" or "createdAt"'
+          description: '"updatedAt", "deadline" or "createdAt"'
         - schema:
             type: string
-            default: asc
+            default: desc
           in: query
           name: sort_order
           description: '"asc" or "desc"'
@@ -1651,7 +1651,11 @@ components:
               x-stoplight:
                 id: aje2w7sfdbvh5
               items:
-                $ref: "#/components/schemas/User"
+                type: object
+                properties:
+                  avatarId:
+                    type: integer
+                    format: int64
     TaskSubmitterType:
       title: TaskSubmitterType
       x-stoplight:
