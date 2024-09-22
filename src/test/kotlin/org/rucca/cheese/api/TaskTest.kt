@@ -788,4 +788,12 @@ constructor(
                         MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].contentText")
                                 .value("This is a test submission. (Version 2)"))
     }
+
+    @Test
+    @Order(230)
+    fun testDeleteTask() {
+        val taskId = taskIds[1]
+        val request = MockMvcRequestBuilders.delete("/tasks/$taskId").header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
 }

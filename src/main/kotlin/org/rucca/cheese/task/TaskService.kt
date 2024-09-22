@@ -250,6 +250,22 @@ class TaskService(
                 page)
     }
 
+    fun deleteTask(taskId: IdType) {
+        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        task.deletedAt = LocalDateTime.now()
+        val participants = taskMembershipRepository.findAllByTaskId(taskId)
+        for (participant in participants) {
+            participant.deletedAt = LocalDateTime.now()
+            val submissions = taskSubmissionRepository.findAllByMembershipId(participant.id!!)
+            for (submission in submissions) {
+                submission.deletedAt = LocalDateTime.now()
+            }
+            taskSubmissionRepository.saveAll(submissions)
+        }
+        taskMembershipRepository.saveAll(participants)
+        taskRepository.save(task)
+    }
+
     fun getTaskParticipantDtos(taskId: IdType): List<TaskParticipantSummaryDTO> {
         val participants = taskMembershipRepository.findAllByTaskId(taskId)
         return when (getTaskSumbitterType(taskId)) {

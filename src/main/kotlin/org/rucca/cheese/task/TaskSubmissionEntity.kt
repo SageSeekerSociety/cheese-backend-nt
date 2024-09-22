@@ -25,6 +25,8 @@ class TaskSubmission(
 ) : BaseEntity()
 
 interface taskSubmissionRepository : JpaRepository<TaskSubmission, IdType> {
+    fun findAllByMembershipId(membershipId: IdType): List<TaskSubmission>
+
     fun findAllByMembershipIdAndVersion(membershipId: IdType, version: Int): List<TaskSubmission>
 
     @Query("SELECT MAX(ts.version) FROM TaskSubmission ts WHERE ts.membership.id = :membershipId")
