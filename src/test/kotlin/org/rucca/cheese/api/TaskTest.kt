@@ -598,4 +598,138 @@ constructor(
                 .andExpect(
                         MockMvcResultMatchers.jsonPath("$.data.submission[1].contentAttachment.id").value(attachmentId))
     }
+
+    @Test
+    @Order(150)
+    fun testSubmitAgainAndGetNotResubmittableError() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+                        .header("Authorization", "Bearer $participantToken")
+                        .param("member", participant.userId.toString())
+                        .contentType("application/json")
+                        .content(
+                                """
+                        [
+                          {
+                            "contentText": "This is a test submission."
+                          }
+                        ]
+                    """)
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isBadRequest)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("TaskNotResubmittableError"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.taskId").value(taskId))
+    }
+
+    @Test
+    @Order(160)
+    fun updateToResubmittable() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.patch("/tasks/$taskId")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .contentType("application/json")
+                        .content(
+                                """
+                {
+                  "resubmittable": true
+                }
+            """)
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(170)
+    fun testResubmitTaskTeam() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+                        .header("Authorization", "Bearer $participantToken")
+                        .param("member", participant.userId.toString())
+                        .contentType("application/json")
+                        .content(
+                                """
+                        [
+                          {
+                            "contentText": "This is a test submission. (Version 2)"
+                          }
+                        ]
+                    """)
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].memberId").value(participant.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].version").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].index").value(0))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submission[0].contentText")
+                                .value("This is a test submission. (Version 2)"))
+    }
+
+    @Test
+    @Order(180)
+    fun testUpdateSubmissionAndGetNotEditableError() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.patch("/tasks/$taskId/submissions/1")
+                        .header("Authorization", "Bearer $participantToken")
+                        .param("member", participant.userId.toString())
+                        .contentType("application/json")
+                        .content(
+                                """
+                      [
+                        {
+                          "contentText": "This is a test submission. (Version 1) (edited)"
+                        }
+                      ]
+                    """)
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isBadRequest)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("TaskSubmissionNotEditableError"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.taskId").value(taskId))
+    }
+
+    @Test
+    @Order(185)
+    fun updateToEditable() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.patch("/tasks/$taskId")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .contentType("application/json")
+                        .content(
+                                """
+                {
+                  "editable": true
+                }
+            """)
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(190)
+    fun testUpdateSubmission() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.patch("/tasks/$taskId/submissions/1")
+                        .header("Authorization", "Bearer $participantToken")
+                        .param("member", participant.userId.toString())
+                        .contentType("application/json")
+                        .content(
+                                """
+                      [
+                        {
+                          "contentText": "This is a test submission. (Version 2) (edited)"
+                        }
+                      ]
+                    """)
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].memberId").value(participant.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].version").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].index").value(0))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submission[0].contentText")
+                                .value("This is a test submission. (Version 2) (edited)"))
+    }
 }

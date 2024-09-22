@@ -12,8 +12,7 @@ import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.Space
-import org.rucca.cheese.task.error.NotTaskParticipantYetError
-import org.rucca.cheese.task.error.TaskSubmissionNotMatchSchemaError
+import org.rucca.cheese.task.error.*
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.user.User
@@ -174,6 +173,16 @@ class TaskService(
         return convertTaskSubmitterType(task.submitterType!!)
     }
 
+    fun isTaskResubmittable(taskId: IdType): Boolean {
+        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        return task.resubmittable!!
+    }
+
+    fun isTaskEditable(taskId: IdType): Boolean {
+        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        return task.editable!!
+    }
+
     fun getTaskSubmitterSummary(taskId: IdType): TaskSubmittersDTO {
         val submitters = taskMembershipRepository.findByTaskIdWhereMemberHasSubmitted(taskId)
         val examples = submitters.sortedBy { it.updatedAt }.reversed().take(3)
@@ -272,11 +281,7 @@ class TaskService(
         data class Attachment(val attachmentId: IdType) : TaskSubmissionEntry()
     }
 
-    fun submitTask(
-            taskId: IdType,
-            memberId: IdType,
-            submission: List<TaskSubmissionEntry>
-    ): List<TaskSubmissionInnerDTO> {
+    fun validateSubmission(taskId: IdType, submission: List<TaskSubmissionEntry>) {
         val schema = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }.submissionSchema!!
         if (schema.size != submission.size) {
             throw TaskSubmissionNotMatchSchemaError()
@@ -296,12 +301,13 @@ class TaskService(
                 }
             }
         }
-        val participant =
-                taskMembershipRepository.findByTaskIdAndMemberId(taskId, memberId).orElseThrow {
-                    NotTaskParticipantYetError(taskId, memberId)
-                }
-        val oldVersion = taskSubmissionRepository.findVersionNumberByMembershipId(participant.id!!).orElse(0)
-        val newVersion = oldVersion + 1
+    }
+
+    private fun createTaskSubmission(
+            participant: TaskMembership,
+            version: Int,
+            submission: List<TaskSubmissionEntry>
+    ): List<TaskSubmissionInnerDTO> {
         val entriesUnsaved =
                 submission.withIndex().map {
                     val text =
@@ -317,7 +323,7 @@ class TaskService(
                             }
                     TaskSubmission(
                             membership = TaskMembership().apply { id = participant.id },
-                            version = newVersion,
+                            version = version,
                             index = it.index,
                             contentText = text,
                             contentAttachment = attachment,
@@ -326,8 +332,8 @@ class TaskService(
         val entries = taskSubmissionRepository.saveAll(entriesUnsaved)
         return entries.withIndex().map {
             TaskSubmissionInnerDTO(
-                    memberId,
-                    newVersion,
+                    participant.memberId!!,
+                    version,
                     it.index,
                     it.value.createdAt!!.toEpochMilli(),
                     it.value.updatedAt!!.toEpochMilli(),
@@ -336,5 +342,55 @@ class TaskService(
                             attachmentService.getAttachmentDto(it.value.contentAttachment!!.id!!.toLong())
                     else null)
         }
+    }
+
+    private fun deleteTaskSubmission(
+            participant: TaskMembership,
+            version: Int,
+    ) {
+        val entries = taskSubmissionRepository.findAllByMembershipIdAndVersion(participant.id!!, version)
+        if (entries.isEmpty()) {
+            throw TaskVersionNotSubmittedYetError(participant.task!!.id!!, participant.memberId!!, version)
+        }
+        for (entry in entries) {
+            entry.deletedAt = LocalDateTime.now()
+        }
+        taskSubmissionRepository.saveAll(entries)
+    }
+
+    fun submitTask(
+            taskId: IdType,
+            memberId: IdType,
+            submission: List<TaskSubmissionEntry>
+    ): List<TaskSubmissionInnerDTO> {
+        validateSubmission(taskId, submission)
+        val participant =
+                taskMembershipRepository.findByTaskIdAndMemberId(taskId, memberId).orElseThrow {
+                    NotTaskParticipantYetError(taskId, memberId)
+                }
+        val oldVersion = taskSubmissionRepository.findVersionNumberByMembershipId(participant.id!!).orElse(0)
+        if (oldVersion > 0 && !isTaskResubmittable(taskId)) {
+            throw TaskNotResubmittableError(taskId)
+        }
+        val newVersion = oldVersion + 1
+        return createTaskSubmission(participant, newVersion, submission)
+    }
+
+    fun modifySubmission(
+            taskId: IdType,
+            memberId: IdType,
+            version: Int,
+            submission: List<TaskSubmissionEntry>
+    ): List<TaskSubmissionInnerDTO> {
+        validateSubmission(taskId, submission)
+        val participant =
+                taskMembershipRepository.findByTaskIdAndMemberId(taskId, memberId).orElseThrow {
+                    NotTaskParticipantYetError(taskId, memberId)
+                }
+        if (!isTaskEditable(taskId)) {
+            throw TaskSubmissionNotEditableError(taskId)
+        }
+        deleteTaskSubmission(participant, version)
+        return createTaskSubmission(participant, version, submission)
     }
 }

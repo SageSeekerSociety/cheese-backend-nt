@@ -12,6 +12,7 @@ import org.rucca.cheese.auth.annotation.ResourceId
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.task.helper.toEntryList
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -166,9 +167,12 @@ class TaskController(
             @ResourceId taskId: Long,
             @AuthInfo("member") member: Long,
             version: Int,
-            postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>?
+            postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
-        return super.patchTaskSubmission(taskId, member, version, postTaskSubmissionRequestInnerDTO)
+        val contents = postTaskSubmissionRequestInnerDTO.toEntryList()
+        val submissions = taskService.modifySubmission(taskId, member, version, contents)
+        return ResponseEntity.ok(
+                PostTaskSubmission200ResponseDTO(200, PostTaskSubmission200ResponseDataDTO(submissions), "OK"))
     }
 
     @Guard("create", "task")
@@ -211,16 +215,7 @@ class TaskController(
             @AuthInfo("member") member: Long,
             postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
-        val contents =
-                postTaskSubmissionRequestInnerDTO.map {
-                    if (it.contentText != null) {
-                        TaskService.TaskSubmissionEntry.Text(it.contentText)
-                    } else if (it.contentAttachmentId != null) {
-                        TaskService.TaskSubmissionEntry.Attachment(it.contentAttachmentId)
-                    } else {
-                        throw IllegalArgumentException("Invalid PostTaskSubmissionRequestInnerDTO: $it")
-                    }
-                }
+        val contents = postTaskSubmissionRequestInnerDTO.toEntryList()
         val submissions = taskService.submitTask(taskId, member, contents)
         return ResponseEntity.ok(
                 PostTaskSubmission200ResponseDTO(200, PostTaskSubmission200ResponseDataDTO(submissions), "OK"))

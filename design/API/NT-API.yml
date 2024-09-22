@@ -1096,6 +1096,7 @@ paths:
           description: Version Index
           required: true
       requestBody:
+        required: true
         content:
           application/json:
             schema:
