@@ -8,4 +8,5 @@ import org.springframework.stereotype.Component
 class ApplicationConfig {
     lateinit var legacyUrl: String
     lateinit var jwtSecret: String
+    lateinit var corsOrigin: String
 }
