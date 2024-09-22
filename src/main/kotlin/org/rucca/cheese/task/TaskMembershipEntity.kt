@@ -1,6 +1,7 @@
 package org.rucca.cheese.task
 
 import jakarta.persistence.*
+import java.util.Optional
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
@@ -21,6 +22,10 @@ class TaskMembership(
 ) : BaseEntity()
 
 interface taskMembershipRepository : JpaRepository<TaskMembership, IdType> {
+    fun findAllByTaskId(taskId: IdType): List<TaskMembership>
+
+    fun findByTaskIdAndMemberId(taskId: IdType, memberId: IdType): Optional<TaskMembership>
+
     fun existsByTaskIdAndMemberId(taskId: IdType, memberId: IdType): Boolean
 
     @Query(

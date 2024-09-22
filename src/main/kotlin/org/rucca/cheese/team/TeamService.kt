@@ -44,6 +44,16 @@ class TeamService(
         return team.avatar!!.id!!.toLong()
     }
 
+    fun getTaskParticipantSummaryDto(teamId: IdType): TaskParticipantSummaryDTO {
+        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        return TaskParticipantSummaryDTO(
+                team.id!!,
+                team.description!!,
+                team.name!!,
+                team.avatar!!.id!!.toLong(),
+        )
+    }
+
     fun getTeamOwner(teamId: IdType): IdType {
         val relation =
                 teamUserRelationRepository.findByTeamIdAndRole(teamId, TeamMemberRole.OWNER).orElseThrow {
@@ -127,6 +137,12 @@ class TeamService(
         val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
         team.avatar = Avatar().apply { id = avatarId.toInt() }
         teamRepository.save(team)
+    }
+
+    fun ensureTeamExists(teamId: IdType) {
+        if (!teamRepository.existsById(teamId)) {
+            throw NotFoundError("team", teamId)
+        }
     }
 
     fun deleteTeam(teamId: IdType) {

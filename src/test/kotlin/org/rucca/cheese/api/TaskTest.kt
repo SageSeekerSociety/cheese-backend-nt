@@ -36,6 +36,8 @@ constructor(
     lateinit var teamCreatorToken: String
     lateinit var spaceCreator: UserCreatorService.CreateUserResponse
     lateinit var spaceCreatorToken: String
+    lateinit var participant: UserCreatorService.CreateUserResponse
+    lateinit var participantToken: String
     private var teamId: IdType = -1
     private var spaceId: IdType = -1
     private val taskIds = mutableListOf<IdType>()
@@ -100,6 +102,8 @@ constructor(
         teamCreatorToken = userCreatorService.login(teamCreator.username, teamCreator.password)
         spaceCreator = userCreatorService.createUser()
         spaceCreatorToken = userCreatorService.login(spaceCreator.username, spaceCreator.password)
+        participant = userCreatorService.createUser()
+        participantToken = userCreatorService.login(participant.username, participant.password)
         spaceId =
                 createSpace(
                         creatorToken = teamCreatorToken,
@@ -194,7 +198,7 @@ constructor(
         )
         createTask(
                 name = "$taskName (2)",
-                submitterType = "USER",
+                submitterType = "TEAM",
                 deadline = taskDeadline,
                 resubmittable = true,
                 editable = true,
@@ -321,7 +325,8 @@ constructor(
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].id").value(taskIds[0]))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
                 .andExpect(
-                        MockMvcResultMatchers.jsonPath("$.data.tasks[0].intro").value("This is an updated test task."))
+                        MockMvcResultMatchers.jsonPath("$.data.tasks[0].description")
+                                .value("This is an updated test task."))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].deadline").value("2024-09-26"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].submitters.total").value(0))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].submitters.examples").isArray)
@@ -404,5 +409,105 @@ constructor(
                         .param("sort_by", "deadline")
                         .param("sort_order", "desc")
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(90)
+    fun testAddTestParticipantUser() {
+        val request =
+                MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
+                        .header("Authorization", "Bearer $participantToken")
+                        .queryParam("member", participant.userId.toString())
+                        .contentType("application/json")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(95)
+    fun testAddTestParticipantTeam() {
+        val request =
+                MockMvcRequestBuilders.post("/tasks/${taskIds[1]}/participants")
+                        .header("Authorization", "Bearer $teamCreatorToken")
+                        .queryParam("member", teamId.toString())
+                        .contentType("application/json")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(100)
+    fun testGetTaskParticipantsUser() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId/participants")
+                        .header("Authorization", "Bearer $participantToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants[0].id").value(participant.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants[0].intro").isString)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants[0].name").isString)
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.participants[0].avatarId")
+                                .value(userCreatorService.testAvatarId()))
+    }
+
+    @Test
+    @Order(105)
+    fun testGetTaskParticipantsTeam() {
+        val taskId = taskIds[1]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId/participants")
+                        .header("Authorization", "Bearer $teamCreatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants[0].id").value(teamId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants[0].intro").isString)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants[0].name").isString)
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.participants[0].avatarId")
+                                .value(userCreatorService.testAvatarId()))
+    }
+
+    @Test
+    @Order(110)
+    fun testRemoveTestParticipantUser() {
+        val request =
+                MockMvcRequestBuilders.delete("/tasks/${taskIds[0]}/participants")
+                        .queryParam("member", participant.userId.toString())
+                        .header("Authorization", "Bearer $participantToken")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(115)
+    fun testRemoveTestParticipantTeam() {
+        val request =
+                MockMvcRequestBuilders.delete("/tasks/${taskIds[1]}/participants")
+                        .queryParam("member", teamId.toString())
+                        .header("Authorization", "Bearer $teamCreatorToken")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(120)
+    fun testGetTaskParticipantsAfterRemoveUser() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId/participants")
+                        .header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants").isEmpty)
+    }
+
+    @Test
+    @Order(125)
+    fun testGetTaskParticipantsAfterRemoveTeam() {
+        val taskId = taskIds[1]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId/participants")
+                        .header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants").isEmpty)
     }
 }

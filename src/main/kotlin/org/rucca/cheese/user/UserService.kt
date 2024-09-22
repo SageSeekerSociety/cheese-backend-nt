@@ -2,6 +2,7 @@ package org.rucca.cheese.user
 
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.model.TaskParticipantSummaryDTO
 import org.rucca.cheese.model.UserDTO
 import org.springframework.stereotype.Service
 
@@ -25,8 +26,22 @@ class UserService(
         )
     }
 
+    fun getTaskParticipantSummaryDto(userId: IdType): TaskParticipantSummaryDTO {
+        val dto = getUserDto(userId)
+        return TaskParticipantSummaryDTO(
+                id = dto.id,
+                intro = dto.intro,
+                name = dto.nickname,
+                avatarId = dto.avatarId,
+        )
+    }
+
     fun getUserAvatarId(userId: IdType): IdType {
         val profile = userProfileRepository.findByUserId(userId.toInt()).orElseThrow { NotFoundError("user", userId) }
         return profile.avatar!!.id!!.toLong()
+    }
+
+    fun ensureUserExists(userId: IdType) {
+        userRepository.findById(userId.toInt()).orElseThrow { NotFoundError("user", userId) }
     }
 }

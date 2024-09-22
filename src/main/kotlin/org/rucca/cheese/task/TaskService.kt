@@ -9,6 +9,7 @@ import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.Space
+import org.rucca.cheese.task.error.NotTaskParticipantYetError
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.user.User
@@ -39,7 +40,8 @@ class TaskService(
                         .sortedBy { it.index }
                         .map {
                             TaskSubmissionSchemaEntryDTO(it.description!!, convertTaskSubmissionEntryType(it.type!!))
-                        })
+                        },
+                getTaskSubmitterSummary(taskId))
     }
 
     fun getTaskOwner(taskId: IdType): IdType {
@@ -48,13 +50,19 @@ class TaskService(
     }
 
     fun isTaskParticipant(taskId: IdType, userId: IdType, memberId: IdType): Boolean {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
-        return when (task.submitterType!!) {
-            TaskSubmitterType.USER ->
+        return when (getTaskSumbitterType(taskId)) {
+            TaskSubmitterTypeDTO.USER ->
                     userId == memberId && taskMembershipRepository.existsByTaskIdAndMemberId(taskId, memberId)
-            TaskSubmitterType.TEAM ->
+            TaskSubmitterTypeDTO.TEAM ->
                     teamService.isTeamMember(memberId, userId) &&
                             taskMembershipRepository.existsByTaskIdAndMemberId(taskId, memberId)
+        }
+    }
+
+    fun participantIsSelf(taskId: IdType, userId: IdType, memberId: IdType): Boolean {
+        return when (getTaskSumbitterType(taskId)) {
+            TaskSubmitterTypeDTO.USER -> userId == memberId
+            TaskSubmitterTypeDTO.TEAM -> teamService.isTeamMember(memberId, userId)
         }
     }
 
@@ -161,15 +169,15 @@ class TaskService(
         return convertTaskSubmitterType(task.submitterType!!)
     }
 
-    fun getTaskSubmitterSummary(taskId: IdType): TaskSummarySubmittersDTO {
+    fun getTaskSubmitterSummary(taskId: IdType): TaskSubmittersDTO {
         val submitters = taskMembershipRepository.findByTaskIdWhereMemberHasSubmitted(taskId)
         val examples = submitters.sortedBy { it.updatedAt }.reversed().take(3)
         val exampleDTOs =
                 when (getTaskSumbitterType(taskId)) {
                     TaskSubmitterTypeDTO.USER -> examples.map { userService.getUserAvatarId(it.memberId!!) }
                     TaskSubmitterTypeDTO.TEAM -> examples.map { teamService.getTeamAvatarId(it.memberId!!) }
-                }.map { TaskSummarySubmittersExamplesInnerDTO(it) }
-        return TaskSummarySubmittersDTO(total = submitters.size, examples = exampleDTOs)
+                }.map { TaskSubmittersExamplesInnerDTO(it) }
+        return TaskSubmittersDTO(total = submitters.size, examples = exampleDTOs)
     }
 
     fun enumerateTasks(
@@ -179,7 +187,7 @@ class TaskService(
             pageStart: IdType?,
             sortBy: TasksSortBy,
             sortOrder: SortDirection,
-    ): Pair<List<TaskSummaryDTO>, PageDTO> {
+    ): Pair<List<TaskDTO>, PageDTO> {
         val cb = entityManager.criteriaBuilder
         val cq = cb.createQuery(Task::class.java)
         val root = cq.from(Task::class.java)
@@ -208,13 +216,48 @@ class TaskService(
                         result, pageStart, pageSize, { it.id!! }, { id -> throw NotFoundError("task", id) })
         return Pair(
                 curr.map {
-                    TaskSummaryDTO(
-                            deadline = it.deadline!!,
-                            id = it.id!!,
-                            intro = it.description!!,
-                            name = it.name!!,
-                            submitters = getTaskSubmitterSummary(it.id!!))
+                    TaskDTO(
+                            it.id!!,
+                            it.name!!,
+                            convertTaskSubmitterType(it.submitterType!!),
+                            userService.getUserDto(it.creator!!.id!!.toLong()),
+                            it.deadline!!,
+                            it.resubmittable!!,
+                            it.editable!!,
+                            it.description!!,
+                            it.submissionSchema!!
+                                    .sortedBy { it.index }
+                                    .map {
+                                        TaskSubmissionSchemaEntryDTO(
+                                                it.description!!, convertTaskSubmissionEntryType(it.type!!))
+                                    },
+                            getTaskSubmitterSummary(it.id!!))
                 },
                 page)
+    }
+
+    fun getTaskParticipantDtos(taskId: IdType): List<TaskParticipantSummaryDTO> {
+        val participants = taskMembershipRepository.findAllByTaskId(taskId)
+        return when (getTaskSumbitterType(taskId)) {
+            TaskSubmitterTypeDTO.USER -> participants.map { userService.getTaskParticipantSummaryDto(it.memberId!!) }
+            TaskSubmitterTypeDTO.TEAM -> participants.map { teamService.getTaskParticipantSummaryDto(it.memberId!!) }
+        }
+    }
+
+    fun addTaskParticipant(taskId: IdType, memberId: IdType) {
+        when (getTaskSumbitterType(taskId)) {
+            TaskSubmitterTypeDTO.USER -> userService.ensureUserExists(memberId)
+            TaskSubmitterTypeDTO.TEAM -> teamService.ensureTeamExists(memberId)
+        }
+        taskMembershipRepository.save(TaskMembership(task = Task().apply { id = taskId }, memberId = memberId))
+    }
+
+    fun removeTaskParticipant(taskId: IdType, memberId: IdType) {
+        val participant =
+                taskMembershipRepository.findByTaskIdAndMemberId(taskId, memberId).orElseThrow {
+                    NotTaskParticipantYetError(taskId, memberId)
+                }
+        participant.deletedAt = LocalDateTime.now()
+        taskMembershipRepository.save(participant)
     }
 }

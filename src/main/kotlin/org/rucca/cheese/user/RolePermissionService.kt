@@ -83,7 +83,8 @@ class RolePermissionService {
 
                                 // Task permissions
                                 Permission(
-                                        authorizedActions = listOf("modify", "delete", "add-member", "remove-member"),
+                                        authorizedActions =
+                                                listOf("modify", "delete", "add-participant", "remove-participant"),
                                         authorizedResource =
                                                 AuthorizedResource(
                                                         types = listOf("task"),
@@ -99,8 +100,21 @@ class RolePermissionService {
                                         customLogic = "is-task-participant",
                                 ),
                                 Permission(
+                                        authorizedActions = listOf("add-participant", "remove-participant"),
+                                        authorizedResource =
+                                                AuthorizedResource(
+                                                        types = listOf("task"),
+                                                ),
+                                        customLogic = "participant-is-self",
+                                ),
+                                Permission(
                                         authorizedActions =
-                                                listOf("create", "query", "enumerate", "enumerate-submissions"),
+                                                listOf(
+                                                        "create",
+                                                        "query",
+                                                        "enumerate",
+                                                        "enumerate-submissions",
+                                                        "enumerate-participants"),
                                         authorizedResource =
                                                 AuthorizedResource(
                                                         types = listOf("task"),

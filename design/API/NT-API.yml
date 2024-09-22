@@ -605,7 +605,7 @@ paths:
                         x-stoplight:
                           id: mmwrg6njl8i2e
                         items:
-                          $ref: "#/components/schemas/TaskSummary"
+                          $ref: "#/components/schemas/Task"
                       page:
                         $ref: "#/components/schemas/Page"
                   message:
@@ -739,6 +739,49 @@ paths:
       x-stoplight:
         id: ai79622xpxp6v
   /tasks/{taskId}/participants:
+    get:
+      summary: Get Participants
+      tags: [ ]
+      operationId: get-task-participants
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - data
+                  - message
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: ehv14gy4oxg6y
+                  data:
+                    type: object
+                    x-stoplight:
+                      id: nkg36f022iluq
+                    required:
+                      - participants
+                    properties:
+                      participants:
+                        x-stoplight:
+                          id: oew2z4ca5or7i
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskParticipantSummary'
+                  message:
+                    type: string
+          description: OK
     delete:
       parameters:
         - description: Task ID
@@ -785,7 +828,7 @@ paths:
                 type: object
           description: OK
       tags: []
-      operationId: delete-task-member
+      operationId: delete-task-participant
       summary: Leave Task
       x-stoplight:
         id: a3mg97p7csitv
@@ -794,6 +837,13 @@ paths:
         - description: Task ID
           in: path
           name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Member ID
+          in: query
+          name: member
           required: true
           schema:
             type: integer
@@ -828,20 +878,7 @@ paths:
                 type: object
           description: OK
       tags: []
-      operationId: post-task-member
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - memberId
-              properties:
-                memberId:
-                  type: integer
-                  x-stoplight:
-                    id: eftlwvrkslm9l
+      operationId: post-task-participant
       summary: Apply for Task
       x-stoplight:
         id: 0ecf6ar0lufhc
@@ -1567,6 +1604,7 @@ components:
         - editable
         - description
         - submissionSchema
+        - submitters
       properties:
         id:
           type: integer
@@ -1578,9 +1616,9 @@ components:
           x-stoplight:
             id: rbj58vdb6mhrx
         submitterType:
-          $ref: "#/components/schemas/TaskSubmitterType"
+          $ref: '#/components/schemas/TaskSubmitterType'
         creator:
-          $ref: "#/components/schemas/User"
+          $ref: '#/components/schemas/User'
         deadline:
           type: string
           x-stoplight:
@@ -1603,37 +1641,7 @@ components:
           x-stoplight:
             id: 4wisk71l5hfjp
           items:
-            $ref: "#/components/schemas/TaskSubmissionSchemaEntry"
-    TaskSummary:
-      title: TaskSummary
-      type: object
-      x-stoplight:
-        id: 3spbmywj9wzkf
-      required:
-        - deadline
-        - id
-        - intro
-        - name
-        - submitters
-      properties:
-        deadline:
-          type: string
-          format: date
-          x-stoplight:
-            id: b1yizo35ccdr5
-        id:
-          type: integer
-          format: int64
-          x-stoplight:
-            id: 34pdr2ppu7b1x
-        intro:
-          type: string
-          x-stoplight:
-            id: j39pzwuexe2hy
-        name:
-          type: string
-          x-stoplight:
-            id: rbj58vdb6mhrx
+            $ref: '#/components/schemas/TaskSubmissionSchemaEntry'
         submitters:
           type: object
           x-stoplight:
@@ -1652,9 +1660,13 @@ components:
                 id: aje2w7sfdbvh5
               items:
                 type: object
+                required:
+                  - avatarId
                 properties:
                   avatarId:
                     type: integer
+                    x-stoplight:
+                      id: 2uhgeb0nk8kh6
                     format: int64
     TaskSubmitterType:
       title: TaskSubmitterType
@@ -1799,6 +1811,25 @@ components:
                 id: 9ijkfpj25gbr7
               items:
                 $ref: "#/components/schemas/User"
+    TaskParticipantSummary:
+      title: TaskParticipantSummary
+      type: object
+      required:
+        - id
+        - intro
+        - name
+        - avatarId
+      properties:
+        id:
+          type: integer
+          format: int64
+        intro:
+          type: string
+        name:
+          type: string
+        avatarId:
+          type: integer
+          format: int64
     TeamMember:
       properties:
         role:

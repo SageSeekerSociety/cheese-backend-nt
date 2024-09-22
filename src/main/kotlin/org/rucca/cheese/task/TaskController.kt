@@ -38,6 +38,20 @@ class TaskController(
                     userId,
                     authInfo["member"] as? IdType ?: throw IllegalArgumentException("member is null"))
         }
+        authorizationService.customAuthLogics.register("participant-is-self") {
+                userId: IdType,
+                _: AuthorizedAction,
+                _: String,
+                resourceId: IdType?,
+                authInfo: Map<String, Any>,
+                _: IdGetter?,
+                _: Any?,
+            ->
+            taskService.participantIsSelf(
+                    resourceId ?: throw IllegalArgumentException("resourceId is null"),
+                    userId,
+                    authInfo["member"] as? IdType ?: throw IllegalArgumentException("member is null"))
+        }
     }
 
     @Guard("delete", "task")
@@ -45,18 +59,27 @@ class TaskController(
         return super.deleteTask(taskId)
     }
 
-    @Guard("remove-member", "task")
-    override fun deleteTaskMember(
+    @Guard("remove-participant", "task")
+    override fun deleteTaskParticipant(
             @ResourceId taskId: Long,
             @AuthInfo("member") member: Long
     ): ResponseEntity<GetTask200ResponseDTO> {
-        return super.deleteTaskMember(taskId, member)
+        taskService.removeTaskParticipant(taskId, member)
+        val taskDTO = taskService.getTaskDto(taskId)
+        return ResponseEntity.ok(GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK"))
     }
 
     @Guard("query", "task")
     override fun getTask(@ResourceId taskId: Long): ResponseEntity<GetTask200ResponseDTO> {
         val taskDTO = taskService.getTaskDto(taskId)
         return ResponseEntity.ok(GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK"))
+    }
+
+    @Guard("enumerate-participants", "task")
+    override fun getTaskParticipants(@ResourceId taskId: Long): ResponseEntity<GetTaskParticipants200ResponseDTO> {
+        val participants = taskService.getTaskParticipantDtos(taskId)
+        return ResponseEntity.ok(
+                GetTaskParticipants200ResponseDTO(200, GetTaskParticipants200ResponseDataDTO(participants), "OK"))
     }
 
     @Guard("enumerate-submissions", "task")
@@ -172,12 +195,14 @@ class TaskController(
         return ResponseEntity.ok(GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK"))
     }
 
-    @Guard("add-member", "task")
-    override fun postTaskMember(
+    @Guard("add-participant", "task")
+    override fun postTaskParticipant(
             @ResourceId taskId: Long,
-            postTaskMemberRequestDTO: PostTaskMemberRequestDTO
+            @AuthInfo("member") member: Long
     ): ResponseEntity<GetTask200ResponseDTO> {
-        return super.postTaskMember(taskId, postTaskMemberRequestDTO)
+        taskService.addTaskParticipant(taskId, member)
+        val taskDTO = taskService.getTaskDto(taskId)
+        return ResponseEntity.ok(GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK"))
     }
 
     @Guard("submit", "task")
