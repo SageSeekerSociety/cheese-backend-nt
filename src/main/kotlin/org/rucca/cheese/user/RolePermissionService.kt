@@ -71,7 +71,8 @@ class RolePermissionService {
                                         customLogic = "is-team-admin",
                                 ),
                                 Permission(
-                                        authorizedActions = listOf("query", "create", "enumerate-members"),
+                                        authorizedActions =
+                                                listOf("query", "create", "enumerate-my-teams", "enumerate-members"),
                                         authorizedResource =
                                                 AuthorizedResource(
                                                         types = listOf("team"),

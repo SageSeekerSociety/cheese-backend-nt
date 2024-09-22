@@ -1208,6 +1208,47 @@ paths:
       summary: Update Team
       x-stoplight:
         id: 6f4e855dosj7n
+  /teams/my-teams:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - data
+                  - message
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: tlgjum86pp2qc
+                  data:
+                    type: object
+                    x-stoplight:
+                      id: uc32cpg2k5x68
+                    required:
+                      - teams
+                    properties:
+                      teams:
+                        x-stoplight:
+                          id: hrqbg64zl0qbw
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Team'
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: zp1goqu7fzjss
+          description: OK
+      tags: [ ]
+      operationId: get-my-teams
+      summary: Query My Teams
+      x-stoplight:
+        id: a2xj7aw8g9ryd
+    parameters: [ ]
   /teams:
     post:
       responses:

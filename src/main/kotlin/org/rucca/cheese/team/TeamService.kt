@@ -47,6 +47,11 @@ class TeamService(
         return relation.user!!.id!!.toLong()
     }
 
+    fun getTeamsOfUser(userId: IdType): List<TeamDTO> {
+        val relations = teamUserRelationRepository.findAllByUserId(userId)
+        return relations.map { getTeamDto(it.team!!.id!!) }
+    }
+
     fun isTeamAdmin(teamId: IdType, userId: IdType): Boolean {
         val relationOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId)
         return relationOptional.isPresent &&
