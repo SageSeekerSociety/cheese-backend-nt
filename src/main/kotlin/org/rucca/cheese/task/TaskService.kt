@@ -330,16 +330,17 @@ class TaskService(
                     )
                 }
         val entries = taskSubmissionRepository.saveAll(entriesUnsaved)
-        return entries.withIndex().map {
+        return entries.map {
             TaskSubmissionInnerDTO(
+                    it.id!!,
                     participant.memberId!!,
-                    version,
-                    it.index,
-                    it.value.createdAt!!.toEpochMilli(),
-                    it.value.updatedAt!!.toEpochMilli(),
-                    it.value.contentText,
-                    if (it.value.contentAttachment != null)
-                            attachmentService.getAttachmentDto(it.value.contentAttachment!!.id!!.toLong())
+                    it.version!!,
+                    it.index!!,
+                    it.createdAt!!.toEpochMilli(),
+                    it.updatedAt!!.toEpochMilli(),
+                    it.contentText,
+                    if (it.contentAttachment != null)
+                            attachmentService.getAttachmentDto(it.contentAttachment.id!!.toLong())
                     else null)
         }
     }
@@ -392,5 +393,83 @@ class TaskService(
         }
         deleteTaskSubmission(participant, version)
         return createTaskSubmission(participant, version, submission)
+    }
+
+    enum class TaskSubmissionSortBy {
+        CREATED_AT,
+        UPDATED_AT,
+    }
+
+    private fun mergeEntries(entries: List<TaskSubmissionInnerDTO>): List<List<TaskSubmissionInnerDTO>> {
+        val result = mutableListOf<List<TaskSubmissionInnerDTO>>()
+        var currentSubList = mutableListOf(entries[0])
+        for (i in 1 until entries.size) {
+            if (entries[i].memberId == entries[i - 1].memberId && entries[i].version == entries[i - 1].version) {
+                currentSubList.add(entries[i])
+            } else {
+                result.add(currentSubList.sortedBy { it.index })
+                currentSubList = mutableListOf(entries[i])
+            }
+        }
+        return result
+    }
+
+    fun enumerateSubmissions(
+            taskId: IdType,
+            member: IdType?,
+            allVersions: Boolean,
+            pageSize: Int,
+            pageStart: IdType?,
+            sortBy: TaskSubmissionSortBy,
+            sortOrder: SortDirection,
+    ): Pair<List<List<TaskSubmissionInnerDTO>>, PageDTO> {
+        val cb = entityManager.criteriaBuilder
+        val cq = cb.createQuery(TaskSubmission::class.java)
+        val root = cq.from(TaskSubmission::class.java)
+        root.join<TaskSubmission, TaskMembership>("membership")
+        cq.where(cb.equal(root.get<TaskMembership>("membership").get<IdType>("task").get<IdType>("id"), taskId))
+        if (member != null) {
+            cq.where(cb.equal(root.get<TaskMembership>("membership").get<IdType>("memberId"), member))
+        }
+        if (!allVersions) {
+            val subquery = cq.subquery(Int::class.java)
+            val subRoot = subquery.from(TaskSubmission::class.java)
+            subquery
+                    .select(cb.max(subRoot.get<Int>("version")))
+                    .where(cb.equal(subRoot.get<TaskMembership>("membership"), root.get<TaskMembership>("membership")))
+            cq.where(cb.equal(root.get<Int>("version"), subquery))
+        }
+        val by =
+                when (sortBy) {
+                    TaskSubmissionSortBy.CREATED_AT -> root.get<LocalDateTime>("createdAt")
+                    TaskSubmissionSortBy.UPDATED_AT -> root.get<LocalDateTime>("updatedAt")
+                }
+        val order =
+                when (sortOrder) {
+                    SortDirection.ASCENDING -> cb.asc(by)
+                    SortDirection.DESCENDING -> cb.desc(by)
+                }
+        cq.orderBy(order)
+        val query = entityManager.createQuery(cq)
+        val result = query.resultList
+        val (curr, page) =
+                PageHelper.pageFromAll(
+                        result, pageStart, pageSize, { it.id!! }, { id -> throw NotFoundError("task submission", id) })
+        return Pair(
+                mergeEntries(
+                        curr.map {
+                            TaskSubmissionInnerDTO(
+                                    it.id!!,
+                                    it.membership!!.memberId!!,
+                                    it.version!!,
+                                    it.index!!,
+                                    it.createdAt!!.toEpochMilli(),
+                                    it.updatedAt!!.toEpochMilli(),
+                                    it.contentText,
+                                    if (it.contentAttachment != null)
+                                            attachmentService.getAttachmentDto(it.contentAttachment.id!!.toLong())
+                                    else null)
+                        }),
+                page)
     }
 }

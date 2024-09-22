@@ -719,7 +719,7 @@ constructor(
                                 """
                       [
                         {
-                          "contentText": "This is a test submission. (Version 2) (edited)"
+                          "contentText": "This is a test submission. (Version 1) (edited)"
                         }
                       ]
                     """)
@@ -730,6 +730,62 @@ constructor(
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].index").value(0))
                 .andExpect(
                         MockMvcResultMatchers.jsonPath("$.data.submission[0].contentText")
-                                .value("This is a test submission. (Version 2) (edited)"))
+                                .value("This is a test submission. (Version 1) (edited)"))
+    }
+
+    @Test
+    @Order(200)
+    fun testGetSubmissionsByDefault() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId/submissions").header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].memberId").value(participant.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].version").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].index").value(0))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].contentText")
+                                .value("This is a test submission. (Version 2)"))
+    }
+
+    @Test
+    @Order(210)
+    fun testGetSubmissionsWithAllVersions() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+                        .param("allVersions", "true")
+                        .header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].memberId").value(participant.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].version").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].index").value(0))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].contentText")
+                                .value("This is a test submission. (Version 1) (edited)"))
+    }
+
+    @Test
+    @Order(220)
+    fun testGetSubmissionsWithMemberId() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+                        .param("member", participant.userId.toString())
+                        .header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].memberId").value(participant.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].version").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].index").value(0))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submissions[0][0].contentText")
+                                .value("This is a test submission. (Version 2)"))
     }
 }

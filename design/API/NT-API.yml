@@ -940,10 +940,11 @@ paths:
           name: member
           description: Submitter's User/Team ID
         - schema:
-            type: integer
+            type: boolean
+            default: false
           in: query
-          name: version
-          description: Version Index, -1 for latest
+          name: allVersions
+          description: Include All Versions
         - schema:
             type: integer
             default: 9
@@ -1709,12 +1710,16 @@ components:
           id: 99ox03zyo2o3q
         type: object
         required:
+          - id
           - memberId
           - version
           - index
           - createdAt
           - updatedAt
         properties:
+          id:
+            type: integer
+            format: int64
           memberId:
             type: integer
             x-stoplight:

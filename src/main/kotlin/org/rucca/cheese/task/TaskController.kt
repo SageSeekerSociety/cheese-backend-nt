@@ -87,13 +87,35 @@ class TaskController(
     override fun getTaskSubmissions(
             @ResourceId taskId: Long,
             member: Long?,
-            version: Int?,
+            allVersions: Boolean,
             pageSize: Int,
             pageStart: Long?,
             sortBy: String,
             sortOrder: String
     ): ResponseEntity<GetTaskSubmissions200ResponseDTO> {
-        return super.getTaskSubmissions(taskId, member, version, pageSize, pageStart, sortBy, sortOrder)
+        val by =
+                when (sortBy) {
+                    "createdAt" -> TaskService.TaskSubmissionSortBy.CREATED_AT
+                    "updatedAt" -> TaskService.TaskSubmissionSortBy.UPDATED_AT
+                    else -> throw IllegalArgumentException("Invalid sortBy: $sortBy")
+                }
+        val order =
+                when (sortOrder) {
+                    "asc" -> SortDirection.ASCENDING
+                    "desc" -> SortDirection.DESCENDING
+                    else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
+                }
+        val (dtos, page) =
+                taskService.enumerateSubmissions(
+                        taskId = taskId,
+                        member = member,
+                        allVersions = allVersions,
+                        pageSize = pageSize,
+                        pageStart = pageStart,
+                        sortBy = by,
+                        sortOrder = order)
+        return ResponseEntity.ok(
+                GetTaskSubmissions200ResponseDTO(200, GetTaskSubmissions200ResponseDataDTO(dtos, page), "OK"))
     }
 
     @Guard("enumerate", "task")
