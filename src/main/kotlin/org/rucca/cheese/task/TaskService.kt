@@ -4,12 +4,16 @@ import jakarta.persistence.EntityManager
 import java.time.LocalDate
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
+import org.rucca.cheese.attachment.Attachment
+import org.rucca.cheese.attachment.AttachmentService
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
+import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.Space
 import org.rucca.cheese.task.error.NotTaskParticipantYetError
+import org.rucca.cheese.task.error.TaskSubmissionNotMatchSchemaError
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.user.User
@@ -24,6 +28,7 @@ class TaskService(
         private val taskMembershipRepository: taskMembershipRepository,
         private val taskSubmissionRepository: taskSubmissionRepository,
         private val entityManager: EntityManager,
+        private val attachmentService: AttachmentService,
 ) {
     fun getTaskDto(taskId: IdType): TaskDTO {
         val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
@@ -259,5 +264,77 @@ class TaskService(
                 }
         participant.deletedAt = LocalDateTime.now()
         taskMembershipRepository.save(participant)
+    }
+
+    sealed class TaskSubmissionEntry {
+        data class Text(val text: String) : TaskSubmissionEntry()
+
+        data class Attachment(val attachmentId: IdType) : TaskSubmissionEntry()
+    }
+
+    fun submitTask(
+            taskId: IdType,
+            memberId: IdType,
+            submission: List<TaskSubmissionEntry>
+    ): List<TaskSubmissionInnerDTO> {
+        val schema = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }.submissionSchema!!
+        if (schema.size != submission.size) {
+            throw TaskSubmissionNotMatchSchemaError()
+        }
+        for (schemaEntry in submission.withIndex()) {
+            val entry = submission[schemaEntry.index]
+            when (schema[schemaEntry.index].type!!) {
+                TaskSubmissionEntryType.TEXT -> {
+                    if (entry !is TaskSubmissionEntry.Text) {
+                        throw TaskSubmissionNotMatchSchemaError()
+                    }
+                }
+                TaskSubmissionEntryType.ATTACHMENT -> {
+                    if (entry !is TaskSubmissionEntry.Attachment) {
+                        throw TaskSubmissionNotMatchSchemaError()
+                    }
+                }
+            }
+        }
+        val participant =
+                taskMembershipRepository.findByTaskIdAndMemberId(taskId, memberId).orElseThrow {
+                    NotTaskParticipantYetError(taskId, memberId)
+                }
+        val oldVersion = taskSubmissionRepository.findVersionNumberByMembershipId(participant.id!!).orElse(0)
+        val newVersion = oldVersion + 1
+        val entriesUnsaved =
+                submission.withIndex().map {
+                    val text =
+                            when (val entry = submission[it.index]) {
+                                is TaskSubmissionEntry.Text -> entry.text
+                                is TaskSubmissionEntry.Attachment -> null
+                            }
+                    val attachment =
+                            when (val entry = submission[it.index]) {
+                                is TaskSubmissionEntry.Text -> null
+                                is TaskSubmissionEntry.Attachment ->
+                                        Attachment().apply { id = entry.attachmentId.toInt() }
+                            }
+                    TaskSubmission(
+                            membership = TaskMembership().apply { id = participant.id },
+                            version = newVersion,
+                            index = it.index,
+                            contentText = text,
+                            contentAttachment = attachment,
+                    )
+                }
+        val entries = taskSubmissionRepository.saveAll(entriesUnsaved)
+        return entries.withIndex().map {
+            TaskSubmissionInnerDTO(
+                    memberId,
+                    newVersion,
+                    it.index,
+                    it.value.createdAt!!.toEpochMilli(),
+                    it.value.updatedAt!!.toEpochMilli(),
+                    it.value.contentText,
+                    if (it.value.contentAttachment != null)
+                            attachmentService.getAttachmentDto(it.value.contentAttachment!!.id!!.toLong())
+                    else null)
+        }
     }
 }

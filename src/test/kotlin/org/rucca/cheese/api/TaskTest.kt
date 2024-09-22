@@ -10,6 +10,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
 import org.rucca.cheese.auth.UserCreatorService
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.utils.AttachmentCreatorService
 import org.rucca.cheese.utils.JsonArrayUtil
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -28,6 +29,7 @@ class TaskTest
 constructor(
         private val mockMvc: MockMvc,
         private val userCreatorService: UserCreatorService,
+        private val attachmentCreatorService: AttachmentCreatorService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     lateinit var creator: UserCreatorService.CreateUserResponse
@@ -40,6 +42,7 @@ constructor(
     lateinit var participantToken: String
     private var teamId: IdType = -1
     private var spaceId: IdType = -1
+    private var attachmentId: IdType = -1
     private val taskIds = mutableListOf<IdType>()
     private val taskName = "Test Task (${floor(Math.random() * 10000000000).toLong()})"
     private val taskDescription = "This is a test task."
@@ -118,6 +121,7 @@ constructor(
                         teamIntro = "This is a test team.",
                         teamAvatarId = userCreatorService.testAvatarId(),
                 )
+        attachmentId = attachmentCreatorService.createAttachment(creatorToken)
     }
 
     fun createTask(
@@ -509,5 +513,89 @@ constructor(
         mockMvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants").isEmpty)
+    }
+
+    @Test
+    @Order(126)
+    fun testAddTestParticipantUser2() {
+        val request =
+                MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
+                        .header("Authorization", "Bearer $participantToken")
+                        .queryParam("member", participant.userId.toString())
+                        .contentType("application/json")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(127)
+    fun testAddTestParticipantTeam2() {
+        val request =
+                MockMvcRequestBuilders.post("/tasks/${taskIds[1]}/participants")
+                        .header("Authorization", "Bearer $teamCreatorToken")
+                        .queryParam("member", teamId.toString())
+                        .contentType("application/json")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(130)
+    fun testSubmitTaskUser() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+                        .header("Authorization", "Bearer $participantToken")
+                        .param("member", participant.userId.toString())
+                        .contentType("application/json")
+                        .content(
+                                """
+                        [
+                          {
+                            "contentText": "This is a test submission."
+                          }
+                        ]
+                    """)
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].memberId").value(participant.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].version").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].index").value(0))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submission[0].contentText")
+                                .value("This is a test submission."))
+    }
+
+    @Test
+    @Order(140)
+    fun testSubmitTaskTeam() {
+        val taskId = taskIds[1]
+        val request =
+                MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+                        .header("Authorization", "Bearer $teamCreatorToken")
+                        .param("member", teamId.toString())
+                        .contentType("application/json")
+                        .content(
+                                """
+                        [
+                          {
+                            "contentText": "This is a test submission."
+                          },
+                          {
+                            "contentAttachmentId": $attachmentId
+                          }
+                        ]
+                    """)
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].memberId").value(teamId.toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].version").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[0].index").value(0))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submission[0].contentText")
+                                .value("This is a test submission."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[1].memberId").value(teamId.toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[1].version").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission[1].index").value(1))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submission[1].contentAttachment.id").value(attachmentId))
     }
 }

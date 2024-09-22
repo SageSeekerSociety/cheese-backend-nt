@@ -943,7 +943,7 @@ paths:
             type: integer
           in: query
           name: version
-          description: Version Index
+          description: Version Index, -1 for latest
         - schema:
             type: integer
             default: 9
@@ -1019,6 +1019,7 @@ paths:
           description: Member's User/Group ID
           required: true
       requestBody:
+        required: true
         content:
           application/json:
             schema:

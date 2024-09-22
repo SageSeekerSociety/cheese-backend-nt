@@ -209,8 +209,20 @@ class TaskController(
     override fun postTaskSubmission(
             @ResourceId taskId: Long,
             @AuthInfo("member") member: Long,
-            postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>?
+            postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
-        return super.postTaskSubmission(taskId, member, postTaskSubmissionRequestInnerDTO)
+        val contents =
+                postTaskSubmissionRequestInnerDTO.map {
+                    if (it.contentText != null) {
+                        TaskService.TaskSubmissionEntry.Text(it.contentText)
+                    } else if (it.contentAttachmentId != null) {
+                        TaskService.TaskSubmissionEntry.Attachment(it.contentAttachmentId)
+                    } else {
+                        throw IllegalArgumentException("Invalid PostTaskSubmissionRequestInnerDTO: $it")
+                    }
+                }
+        val submissions = taskService.submitTask(taskId, member, contents)
+        return ResponseEntity.ok(
+                PostTaskSubmission200ResponseDTO(200, PostTaskSubmission200ResponseDataDTO(submissions), "OK"))
     }
 }
