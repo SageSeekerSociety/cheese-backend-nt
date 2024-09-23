@@ -133,13 +133,13 @@ CREATE
     TABLE
         task(
             "creator_id" INTEGER NOT NULL,
-            deadline DATE NOT NULL,
             editable BOOLEAN NOT NULL,
             resubmittable BOOLEAN NOT NULL,
             submitter_type SMALLINT NOT NULL CHECK(
                 submitter_type BETWEEN 0 AND 1
             ),
             created_at TIMESTAMP(6) NOT NULL,
+            deadline TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             space_id BIGINT,

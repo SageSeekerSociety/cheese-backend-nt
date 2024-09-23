@@ -36,7 +36,7 @@ class TaskService(
                 task.name!!,
                 convertTaskSubmitterType(task.submitterType!!),
                 userService.getUserDto(task.creator!!.id!!.toLong()),
-                task.deadline!!,
+                task.deadline!!.toEpochMilli(),
                 task.resubmittable!!,
                 task.editable!!,
                 task.description!!,
@@ -103,7 +103,7 @@ class TaskService(
     fun createTask(
             name: String,
             submitterType: TaskSubmitterType,
-            deadline: LocalDate,
+            deadline: LocalDateTime,
             resubmittable: Boolean,
             editable: Boolean,
             description: String,
@@ -134,7 +134,7 @@ class TaskService(
         taskRepository.save(task)
     }
 
-    fun updateTaskDeadline(taskId: IdType, deadline: LocalDate) {
+    fun updateTaskDeadline(taskId: IdType, deadline: LocalDateTime) {
         val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
         task.deadline = deadline
         taskRepository.save(task)
@@ -237,7 +237,7 @@ class TaskService(
                             it.name!!,
                             convertTaskSubmitterType(it.submitterType!!),
                             userService.getUserDto(it.creator!!.id!!.toLong()),
-                            it.deadline!!,
+                            it.deadline!!.toEpochMilli(),
                             it.resubmittable!!,
                             it.editable!!,
                             it.description!!,

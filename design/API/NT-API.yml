@@ -554,10 +554,8 @@ paths:
                   x-stoplight:
                     id: 4eatfhceym142
                 deadline:
-                  type: string
-                  x-stoplight:
-                    id: angj9jp5o4om1
-                  format: date
+                  type: integer
+                  format: int64
                 resubmittable:
                   type: boolean
                   x-stoplight:
@@ -705,10 +703,8 @@ paths:
                 submitterType:
                   $ref: "#/components/schemas/TaskSubmitterType"
                 deadline:
-                  type: string
-                  x-stoplight:
-                    id: er9kqvy8gr243
-                  format: date
+                  type: integer
+                  format: int64
                 resubmittable:
                   type: boolean
                   x-stoplight:
@@ -1690,10 +1686,8 @@ components:
         creator:
           $ref: '#/components/schemas/User'
         deadline:
-          type: string
-          x-stoplight:
-            id: q2y8s19bfmwjn
-          format: date
+          type: integer
+          format: int64
         resubmittable:
           type: boolean
           x-stoplight:
