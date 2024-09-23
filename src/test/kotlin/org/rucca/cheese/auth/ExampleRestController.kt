@@ -1,5 +1,6 @@
 package org.rucca.cheese.auth
 
+import org.rucca.cheese.auth.annotation.AuthInfo
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.NoAuth
 import org.rucca.cheese.auth.annotation.ResourceId
@@ -50,5 +51,24 @@ class ExampleRestController {
     @NoAuth
     fun noAuth(): String {
         return "example_6"
+    }
+
+    @GetMapping("/example/7")
+    @Guard("query", "example")
+    fun withIdAndAdditional(
+            @RequestParam("id") @ResourceId id: IdType,
+            @RequestParam("additional_str") @AuthInfo("str") additionalStr: String,
+            @RequestParam("additional_id") @AuthInfo("id") additionalId: IdType
+    ): String {
+        return "example_7"
+    }
+
+    @GetMapping("/example/8")
+    @Guard("query", "example")
+    fun withDuplicatedAuthInfo(
+            @RequestParam("additional_1") @AuthInfo("key") additionalStr: String,
+            @RequestParam("additional_2") @AuthInfo("key") additionalId: IdType
+    ): String {
+        return "example_8"
     }
 }

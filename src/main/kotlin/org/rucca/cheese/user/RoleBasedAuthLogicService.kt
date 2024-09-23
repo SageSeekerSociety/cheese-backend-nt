@@ -20,6 +20,7 @@ class RoleBasedAuthLogicService(
                 action: AuthorizedAction,
                 resourceType: String,
                 resourceId: IdType?,
+                authInfo: Map<String, Any>,
                 resourceOwnerIdGetter: IdGetter?,
                 customLogicData: Any?,
             ->
@@ -28,6 +29,7 @@ class RoleBasedAuthLogicService(
                     action,
                     resourceType,
                     resourceId,
+                    authInfo,
                     resourceOwnerIdGetter,
                     customLogicData,
             )
@@ -39,6 +41,7 @@ class RoleBasedAuthLogicService(
             action: AuthorizedAction,
             resourceType: String,
             resourceId: IdType?,
+            authInfo: Map<String, Any>,
             resourceOwnerIdGetter: IdGetter?,
             customLogicData: Any?,
     ): Boolean {
@@ -53,6 +56,7 @@ class RoleBasedAuthLogicService(
                     action,
                     resourceType,
                     resourceId,
+                    authInfo,
             )
             return true
         } catch (e: PermissionDeniedError) {

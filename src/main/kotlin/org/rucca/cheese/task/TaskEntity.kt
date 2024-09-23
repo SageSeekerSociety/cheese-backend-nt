@@ -1,7 +1,7 @@
 package org.rucca.cheese.task
 
 import jakarta.persistence.*
-import java.sql.Date
+import java.time.LocalDate
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
@@ -30,16 +30,16 @@ class TaskSubmissionSchema(
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 class Task(
-        @Column(nullable = false) val name: String? = null,
+        @Column(nullable = false) var name: String? = null,
         @Column(nullable = false) val submitterType: TaskSubmitterType? = null,
         @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val creator: User? = null,
-        @Column(nullable = false) val deadline: Date? = null,
-        @Column(nullable = false) val resubmittable: Boolean? = null,
-        @Column(nullable = false) val editable: Boolean? = null,
+        @Column(nullable = false) var deadline: LocalDate? = null,
+        @Column(nullable = false) var resubmittable: Boolean? = null,
+        @Column(nullable = false) var editable: Boolean? = null,
         @ManyToOne(fetch = FetchType.LAZY) val team: Team? = null, // nullable
         @ManyToOne(fetch = FetchType.LAZY) val space: Space? = null, // nullable
-        @Column(nullable = false) val description: String? = null,
-        @ElementCollection val submissionSchema: List<TaskSubmissionSchema>? = null,
+        @Column(nullable = false) var description: String? = null,
+        @ElementCollection var submissionSchema: List<TaskSubmissionSchema>? = null,
 ) : BaseEntity()
 
 interface TaskRepository : JpaRepository<Task, IdType>

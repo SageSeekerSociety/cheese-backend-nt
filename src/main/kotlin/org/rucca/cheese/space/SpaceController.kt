@@ -28,6 +28,7 @@ class SpaceController(
                 _: AuthorizedAction,
                 _: String,
                 resourceId: IdType?,
+                _: Map<String, Any?>?,
                 _: IdGetter?,
                 _: Any?,
             ->

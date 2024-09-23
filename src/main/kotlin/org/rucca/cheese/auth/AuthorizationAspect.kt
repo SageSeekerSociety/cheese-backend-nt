@@ -4,16 +4,16 @@ import org.aspectj.lang.JoinPoint
 import org.aspectj.lang.annotation.Aspect
 import org.aspectj.lang.annotation.Before
 import org.aspectj.lang.reflect.MethodSignature
+import org.rucca.cheese.auth.annotation.AuthInfo
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.NoAuth
 import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.auth.exception.DuplicatedAuthInfoKeyException
 import org.rucca.cheese.auth.exception.DuplicatedResourceIdAnnotationException
 import org.rucca.cheese.auth.exception.NoGuardOrNoAuthAnnotationException
 import org.rucca.cheese.auth.exception.ResourceIdTypeMismatchException
 import org.rucca.cheese.common.persistent.IdType
 import org.springframework.stereotype.Component
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
 
 @Aspect
 @Component
@@ -35,6 +35,7 @@ class AuthorizationAspect(
                     )
 
             var resourceId: IdType? = null
+            val authInfo: MutableMap<String, Any> = mutableMapOf()
             val parameterAnnotations = method.parameterAnnotations
             for (i in parameterAnnotations.indices) {
                 for (annotation in parameterAnnotations[i]) {
@@ -53,20 +54,24 @@ class AuthorizationAspect(
                             )
                         }
                         resourceId = arg
+                    } else if (annotation is AuthInfo) {
+                        if (authInfo.containsKey(annotation.key)) {
+                            throw DuplicatedAuthInfoKeyException(
+                                    joinPoint.target.javaClass.name,
+                                    joinPoint.signature.name,
+                                    annotation.key,
+                            )
+                        }
+                        authInfo[annotation.key] = joinPoint.args[i]
                     }
                 }
             }
 
-            val token: String? =
-                    (RequestContextHolder.currentRequestAttributes() as ServletRequestAttributes)
-                            .request
-                            .getHeader("Authorization")
-
             authorizationService.audit(
-                    token,
                     guardAnnotation.action,
                     guardAnnotation.resourceType,
                     resourceId,
+                    authInfo,
             )
         }
     }

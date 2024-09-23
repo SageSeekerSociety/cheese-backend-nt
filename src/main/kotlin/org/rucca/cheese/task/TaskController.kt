@@ -1,36 +1,125 @@
 package org.rucca.cheese.task
 
+import javax.annotation.PostConstruct
+import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.TasksApi
+import org.rucca.cheese.auth.AuthenticationService
+import org.rucca.cheese.auth.AuthorizationService
+import org.rucca.cheese.auth.AuthorizedAction
+import org.rucca.cheese.auth.annotation.AuthInfo
+import org.rucca.cheese.auth.annotation.Guard
+import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.common.persistent.IdGetter
+import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.task.helper.toEntryList
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-class TaskController : TasksApi {
-    override fun deleteTask(taskId: Long): ResponseEntity<DeleteTask200ResponseDTO> {
-        return super.deleteTask(taskId)
+class TaskController(
+        private val taskService: TaskService,
+        private val authorizationService: AuthorizationService,
+        private val authenticationService: AuthenticationService,
+) : TasksApi {
+    @PostConstruct
+    fun initialize() {
+        authorizationService.ownerIds.register("task", taskService::getTaskOwner)
+        authorizationService.customAuthLogics.register("is-task-participant") {
+                userId: IdType,
+                _: AuthorizedAction,
+                _: String,
+                resourceId: IdType?,
+                authInfo: Map<String, Any>,
+                _: IdGetter?,
+                _: Any?,
+            ->
+            taskService.isTaskParticipant(
+                    resourceId ?: throw IllegalArgumentException("resourceId is null"),
+                    userId,
+                    authInfo["member"] as? IdType ?: throw IllegalArgumentException("member is null"))
+        }
+        authorizationService.customAuthLogics.register("participant-is-self") {
+                userId: IdType,
+                _: AuthorizedAction,
+                _: String,
+                resourceId: IdType?,
+                authInfo: Map<String, Any>,
+                _: IdGetter?,
+                _: Any?,
+            ->
+            taskService.participantIsSelf(
+                    resourceId ?: throw IllegalArgumentException("resourceId is null"),
+                    userId,
+                    authInfo["member"] as? IdType ?: throw IllegalArgumentException("member is null"))
+        }
     }
 
-    override fun deleteTaskMember(taskId: Long, member: Long): ResponseEntity<GetTask200ResponseDTO> {
-        return super.deleteTaskMember(taskId, member)
+    @Guard("delete", "task")
+    override fun deleteTask(@ResourceId taskId: Long): ResponseEntity<DeleteTask200ResponseDTO> {
+        taskService.deleteTask(taskId)
+        return ResponseEntity.ok(DeleteTask200ResponseDTO(200, "OK"))
     }
 
-    override fun getTask(taskId: Long): ResponseEntity<GetTask200ResponseDTO> {
-        return super.getTask(taskId)
+    @Guard("remove-participant", "task")
+    override fun deleteTaskParticipant(
+            @ResourceId taskId: Long,
+            @AuthInfo("member") member: Long
+    ): ResponseEntity<GetTask200ResponseDTO> {
+        taskService.removeTaskParticipant(taskId, member)
+        val taskDTO = taskService.getTaskDto(taskId)
+        return ResponseEntity.ok(GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK"))
     }
 
+    @Guard("query", "task")
+    override fun getTask(@ResourceId taskId: Long): ResponseEntity<GetTask200ResponseDTO> {
+        val taskDTO = taskService.getTaskDto(taskId)
+        return ResponseEntity.ok(GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK"))
+    }
+
+    @Guard("enumerate-participants", "task")
+    override fun getTaskParticipants(@ResourceId taskId: Long): ResponseEntity<GetTaskParticipants200ResponseDTO> {
+        val participants = taskService.getTaskParticipantDtos(taskId)
+        return ResponseEntity.ok(
+                GetTaskParticipants200ResponseDTO(200, GetTaskParticipants200ResponseDataDTO(participants), "OK"))
+    }
+
+    @Guard("enumerate-submissions", "task")
     override fun getTaskSubmissions(
-            taskId: Long,
-            user: Long?,
-            version: Int?,
+            @ResourceId taskId: Long,
+            member: Long?,
+            allVersions: Boolean,
             pageSize: Int,
             pageStart: Long?,
             sortBy: String,
             sortOrder: String
     ): ResponseEntity<GetTaskSubmissions200ResponseDTO> {
-        return super.getTaskSubmissions(taskId, user, version, pageSize, pageStart, sortBy, sortOrder)
+        val by =
+                when (sortBy) {
+                    "createdAt" -> TaskService.TaskSubmissionSortBy.CREATED_AT
+                    "updatedAt" -> TaskService.TaskSubmissionSortBy.UPDATED_AT
+                    else -> throw IllegalArgumentException("Invalid sortBy: $sortBy")
+                }
+        val order =
+                when (sortOrder) {
+                    "asc" -> SortDirection.ASCENDING
+                    "desc" -> SortDirection.DESCENDING
+                    else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
+                }
+        val (dtos, page) =
+                taskService.enumerateSubmissions(
+                        taskId = taskId,
+                        member = member,
+                        allVersions = allVersions,
+                        pageSize = pageSize,
+                        pageStart = pageStart,
+                        sortBy = by,
+                        sortOrder = order)
+        return ResponseEntity.ok(
+                GetTaskSubmissions200ResponseDTO(200, GetTaskSubmissions200ResponseDataDTO(dtos, page), "OK"))
     }
 
+    @Guard("enumerate", "task")
     override fun getTasks(
             space: Long?,
             team: Int?,
@@ -39,41 +128,119 @@ class TaskController : TasksApi {
             sortBy: String,
             sortOrder: String
     ): ResponseEntity<GetTasks200ResponseDTO> {
-        return super.getTasks(space, team, pageSize, pageStart, sortBy, sortOrder)
+        val by =
+                when (sortBy) {
+                    "createdAt" -> TaskService.TasksSortBy.CREATED_AT
+                    "updatedAt" -> TaskService.TasksSortBy.UPDATED_AT
+                    "deadline" -> TaskService.TasksSortBy.DEADLINE
+                    else -> throw IllegalArgumentException("Invalid sortBy: $sortBy")
+                }
+        val order =
+                when (sortOrder) {
+                    "asc" -> SortDirection.ASCENDING
+                    "desc" -> SortDirection.DESCENDING
+                    else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
+                }
+        val (taskSummaryDTOs, page) =
+                taskService.enumerateTasks(
+                        space = space,
+                        team = team,
+                        pageSize = pageSize,
+                        pageStart = pageStart,
+                        sortBy = by,
+                        sortOrder = order,
+                )
+        return ResponseEntity.ok(GetTasks200ResponseDTO(200, GetTasks200ResponseDataDTO(taskSummaryDTOs, page), "OK"))
     }
 
+    @Guard("modify", "task")
     override fun patchTask(
-            taskId: Long,
+            @ResourceId taskId: Long,
             patchTaskRequestDTO: PatchTaskRequestDTO
     ): ResponseEntity<GetTask200ResponseDTO> {
-        return super.patchTask(taskId, patchTaskRequestDTO)
+        if (patchTaskRequestDTO.name != null) {
+            taskService.updateTaskName(taskId, patchTaskRequestDTO.name)
+        }
+        if (patchTaskRequestDTO.deadline != null) {
+            taskService.updateTaskDeadline(taskId, patchTaskRequestDTO.deadline)
+        }
+        if (patchTaskRequestDTO.resubmittable != null) {
+            taskService.updateTaskResubmittable(taskId, patchTaskRequestDTO.resubmittable)
+        }
+        if (patchTaskRequestDTO.editable != null) {
+            taskService.updateTaskEditable(taskId, patchTaskRequestDTO.editable)
+        }
+        if (patchTaskRequestDTO.description != null) {
+            taskService.updateTaskDescription(taskId, patchTaskRequestDTO.description)
+        }
+        if (patchTaskRequestDTO.submissionSchema != null) {
+            taskService.updateTaskSubmissionSchema(
+                    taskId,
+                    patchTaskRequestDTO.submissionSchema.withIndex().map {
+                        TaskSubmissionSchema(
+                                it.index, it.value.prompt, taskService.convertTaskSubmissionEntryType(it.value.type))
+                    })
+        }
+        val taskDTO = taskService.getTaskDto(taskId)
+        return ResponseEntity.ok(GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK"))
     }
 
+    @Guard("modify-submission", "task")
     override fun patchTaskSubmission(
-            taskId: Long,
-            user: Long,
+            @ResourceId taskId: Long,
+            @AuthInfo("member") member: Long,
             version: Int,
-            postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>?
+            postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
-        return super.patchTaskSubmission(taskId, user, version, postTaskSubmissionRequestInnerDTO)
+        val contents = postTaskSubmissionRequestInnerDTO.toEntryList()
+        val submissions = taskService.modifySubmission(taskId, member, version, contents)
+        return ResponseEntity.ok(
+                PostTaskSubmission200ResponseDTO(200, PostTaskSubmission200ResponseDataDTO(submissions), "OK"))
     }
 
+    @Guard("create", "task")
     override fun postTask(postTaskRequestDTO: PostTaskRequestDTO): ResponseEntity<GetTask200ResponseDTO> {
-        return super.postTask(postTaskRequestDTO)
+        val taskId =
+                taskService.createTask(
+                        name = postTaskRequestDTO.name,
+                        submitterType = taskService.convertTaskSubmitterType(postTaskRequestDTO.submitterType),
+                        deadline = postTaskRequestDTO.deadline,
+                        resubmittable = postTaskRequestDTO.resubmittable,
+                        editable = postTaskRequestDTO.editable,
+                        description = postTaskRequestDTO.description,
+                        submissionSchema =
+                                postTaskRequestDTO.submissionSchema.withIndex().map {
+                                    TaskSubmissionSchema(
+                                            it.index,
+                                            it.value.prompt,
+                                            taskService.convertTaskSubmissionEntryType(it.value.type))
+                                },
+                        creatorId = authenticationService.getCurrentUserId(),
+                        teamId = postTaskRequestDTO.team,
+                        spaceId = postTaskRequestDTO.space)
+        val taskDTO = taskService.getTaskDto(taskId)
+        return ResponseEntity.ok(GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK"))
     }
 
-    override fun postTaskMember(
-            taskId: Long,
-            postTaskMemberRequestDTO: PostTaskMemberRequestDTO
+    @Guard("add-participant", "task")
+    override fun postTaskParticipant(
+            @ResourceId taskId: Long,
+            @AuthInfo("member") member: Long
     ): ResponseEntity<GetTask200ResponseDTO> {
-        return super.postTaskMember(taskId, postTaskMemberRequestDTO)
+        taskService.addTaskParticipant(taskId, member)
+        val taskDTO = taskService.getTaskDto(taskId)
+        return ResponseEntity.ok(GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK"))
     }
 
+    @Guard("submit", "task")
     override fun postTaskSubmission(
-            taskId: Long,
-            user: Long,
-            postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>?
+            @ResourceId taskId: Long,
+            @AuthInfo("member") member: Long,
+            postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
-        return super.postTaskSubmission(taskId, user, postTaskSubmissionRequestInnerDTO)
+        val contents = postTaskSubmissionRequestInnerDTO.toEntryList()
+        val submissions = taskService.submitTask(taskId, member, contents)
+        return ResponseEntity.ok(
+                PostTaskSubmission200ResponseDTO(200, PostTaskSubmission200ResponseDataDTO(submissions), "OK"))
     }
 }
