@@ -8,11 +8,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 class WebConfig(private val applicationConfig: ApplicationConfig) : WebMvcConfigurer {
     override fun addCorsMappings(registry: CorsRegistry) {
         registry
-                .addMapping("/**") // 允许所有路径
-                .allowedOrigins(applicationConfig.corsOrigin) // 允许所有源
-                .allowedMethods("*") // 允许所有 HTTP 方法
-                .allowedHeaders("*") // 允许所有请求头
-                .allowCredentials(true) // 允许发送 cookies
-                .maxAge(3600) // 预检请求缓存 3600 秒
+                .addMapping("/**") // Allow all paths
+                .allowedOrigins(applicationConfig.corsOrigin) // Allow the origin from the application config
+                .allowedMethods("*") // Allow all methods
+                .allowedHeaders("*") // Allow all headers
+                .allowCredentials(true) // Allow credentials
+                .maxAge(3600) // Set the max age to 1 hour
     }
 }
