@@ -45,7 +45,9 @@ class TaskService(
                         .map {
                             TaskSubmissionSchemaEntryDTO(it.description!!, convertTaskSubmissionEntryType(it.type!!))
                         },
-                getTaskSubmitterSummary(taskId))
+                getTaskSubmitterSummary(taskId),
+                updatedAt = task.updatedAt!!.toEpochMilli(),
+                createdAt = task.createdAt!!.toEpochMilli())
     }
 
     fun getTaskOwner(taskId: IdType): IdType {
@@ -245,7 +247,9 @@ class TaskService(
                                         TaskSubmissionSchemaEntryDTO(
                                                 it.description!!, convertTaskSubmissionEntryType(it.type!!))
                                     },
-                            getTaskSubmitterSummary(it.id!!))
+                            getTaskSubmitterSummary(it.id!!),
+                            updatedAt = it.updatedAt!!.toEpochMilli(),
+                            createdAt = it.createdAt!!.toEpochMilli())
                 },
                 page)
     }
