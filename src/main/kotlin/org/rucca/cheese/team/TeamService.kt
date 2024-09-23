@@ -3,6 +3,7 @@ package org.rucca.cheese.team
 import java.time.LocalDateTime
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
+import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.team.error.NotTeamMemberYetError
@@ -36,6 +37,8 @@ class TeamService(
                                 total = countTeamNormalMembers(teamId),
                                 examples = getTeamMemberExamples(teamId),
                         ),
+                updatedAt = team.updatedAt!!.toEpochMilli(),
+                createdAt = team.createdAt!!.toEpochMilli(),
         )
     }
 
@@ -181,6 +184,8 @@ class TeamService(
             TeamMemberDTO(
                     role = convertMemberRole(it.role!!),
                     user = userService.getUserDto(it.user!!.id!!.toLong()),
+                    updatedAt = it.updatedAt!!.toEpochMilli(),
+                    createdAt = it.createdAt!!.toEpochMilli(),
             )
         }
     }

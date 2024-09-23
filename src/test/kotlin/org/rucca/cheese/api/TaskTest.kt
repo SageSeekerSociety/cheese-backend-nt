@@ -1,5 +1,6 @@
 package org.rucca.cheese.api
 
+import java.time.LocalDateTime
 import kotlin.math.floor
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeAll
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
 import org.rucca.cheese.auth.UserCreatorService
+import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.utils.AttachmentCreatorService
 import org.rucca.cheese.utils.JsonArrayUtil
@@ -46,7 +48,7 @@ constructor(
     private val taskIds = mutableListOf<IdType>()
     private val taskName = "Test Task (${floor(Math.random() * 10000000000).toLong()})"
     private val taskDescription = "This is a test task."
-    private val taskDeadline = "2024-09-25"
+    private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
     private val taskSubmissionSchema =
             listOf(
                     Pair("Text Entry", "TEXT"),
@@ -127,7 +129,7 @@ constructor(
     fun createTask(
             name: String,
             submitterType: String,
-            deadline: String,
+            deadline: Long,
             resubmittable: Boolean,
             editable: Boolean,
             description: String,
@@ -294,7 +296,7 @@ constructor(
                                 """
                 {
                   "name": "$taskName (1) (updated)",
-                  "deadline": "2024-09-26",
+                  "deadline": ${taskDeadline + 1000000000},
                   "resubmittable": false,
                   "editable": false,
                   "description": "This is an updated test task.",
@@ -310,7 +312,7 @@ constructor(
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.name").value("$taskName (1) (updated)"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.creator.id").value(creator.userId))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.deadline").value("2024-09-26"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.deadline").value(taskDeadline + 1000000000))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.resubmittable").value(false))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.editable").value(false))
                 .andExpect(
@@ -331,7 +333,7 @@ constructor(
                 .andExpect(
                         MockMvcResultMatchers.jsonPath("$.data.tasks[0].description")
                                 .value("This is an updated test task."))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].deadline").value("2024-09-26"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].deadline").value(taskDeadline + 1000000000))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].submitters.total").value(0))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].submitters.examples").isArray)
     }

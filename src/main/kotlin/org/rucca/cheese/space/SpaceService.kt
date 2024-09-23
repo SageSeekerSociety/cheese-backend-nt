@@ -6,6 +6,7 @@ import org.hibernate.query.SortDirection
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
+import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.PageDTO
 import org.rucca.cheese.model.SpaceAdminDTO
@@ -37,8 +38,14 @@ class SpaceService(
                 avatarId = space.avatar!!.id!!.toLong(),
                 admins =
                         admins.map {
-                            SpaceAdminDTO(convertAdminRole(it.role!!), userService.getUserDto(it.user!!.id!!.toLong()))
-                        })
+                            SpaceAdminDTO(
+                                    convertAdminRole(it.role!!),
+                                    userService.getUserDto(it.user!!.id!!.toLong()),
+                                    createdAt = it.createdAt!!.toEpochMilli(),
+                                    updatedAt = it.updatedAt!!.toEpochMilli())
+                        },
+                updatedAt = space.updatedAt!!.toEpochMilli(),
+                createdAt = space.createdAt!!.toEpochMilli())
     }
 
     fun getSpaceOwner(spaceId: IdType): IdType {
@@ -202,8 +209,12 @@ class SpaceService(
                                     spaceAdminRelationRepository.findAllBySpaceId(it.id!!).map {
                                         SpaceAdminDTO(
                                                 convertAdminRole(it.role!!),
-                                                userService.getUserDto(it.user!!.id!!.toLong()))
-                                    })
+                                                userService.getUserDto(it.user!!.id!!.toLong()),
+                                                createdAt = it.createdAt!!.toEpochMilli(),
+                                                updatedAt = it.updatedAt!!.toEpochMilli())
+                                    },
+                            updatedAt = it.updatedAt!!.toEpochMilli(),
+                            createdAt = it.createdAt!!.toEpochMilli())
                 },
                 page)
     }

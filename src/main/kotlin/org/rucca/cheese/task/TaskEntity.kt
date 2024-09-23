@@ -1,7 +1,7 @@
 package org.rucca.cheese.task
 
 import jakarta.persistence.*
-import java.time.LocalDate
+import java.time.LocalDateTime
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
@@ -33,7 +33,7 @@ class Task(
         @Column(nullable = false) var name: String? = null,
         @Column(nullable = false) val submitterType: TaskSubmitterType? = null,
         @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val creator: User? = null,
-        @Column(nullable = false) var deadline: LocalDate? = null,
+        @Column(nullable = false) var deadline: LocalDateTime? = null,
         @Column(nullable = false) var resubmittable: Boolean? = null,
         @Column(nullable = false) var editable: Boolean? = null,
         @ManyToOne(fetch = FetchType.LAZY) val team: Team? = null, // nullable

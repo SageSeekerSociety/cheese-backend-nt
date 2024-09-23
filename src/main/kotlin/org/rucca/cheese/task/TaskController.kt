@@ -9,6 +9,7 @@ import org.rucca.cheese.auth.AuthorizedAction
 import org.rucca.cheese.auth.annotation.AuthInfo
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.common.helper.toLocalDateTime
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
@@ -162,7 +163,7 @@ class TaskController(
             taskService.updateTaskName(taskId, patchTaskRequestDTO.name)
         }
         if (patchTaskRequestDTO.deadline != null) {
-            taskService.updateTaskDeadline(taskId, patchTaskRequestDTO.deadline)
+            taskService.updateTaskDeadline(taskId, patchTaskRequestDTO.deadline.toLocalDateTime())
         }
         if (patchTaskRequestDTO.resubmittable != null) {
             taskService.updateTaskResubmittable(taskId, patchTaskRequestDTO.resubmittable)
@@ -204,7 +205,7 @@ class TaskController(
                 taskService.createTask(
                         name = postTaskRequestDTO.name,
                         submitterType = taskService.convertTaskSubmitterType(postTaskRequestDTO.submitterType),
-                        deadline = postTaskRequestDTO.deadline,
+                        deadline = postTaskRequestDTO.deadline.toLocalDateTime(),
                         resubmittable = postTaskRequestDTO.resubmittable,
                         editable = postTaskRequestDTO.editable,
                         description = postTaskRequestDTO.description,

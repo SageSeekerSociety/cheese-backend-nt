@@ -554,10 +554,8 @@ paths:
                   x-stoplight:
                     id: 4eatfhceym142
                 deadline:
-                  type: string
-                  x-stoplight:
-                    id: angj9jp5o4om1
-                  format: date
+                  type: integer
+                  format: int64
                 resubmittable:
                   type: boolean
                   x-stoplight:
@@ -705,10 +703,8 @@ paths:
                 submitterType:
                   $ref: "#/components/schemas/TaskSubmitterType"
                 deadline:
-                  type: string
-                  x-stoplight:
-                    id: er9kqvy8gr243
-                  format: date
+                  type: integer
+                  format: int64
                 resubmittable:
                   type: boolean
                   x-stoplight:
@@ -1588,6 +1584,8 @@ components:
         - name
         - avatarId
         - admins
+        - updatedAt
+        - createdAt
       properties:
         id:
           type: integer
@@ -1613,6 +1611,16 @@ components:
             id: yb2e4v8o2lboq
           items:
             $ref: "#/components/schemas/SpaceAdmin"
+        updatedAt:
+          type: integer
+          x-stoplight:
+            id: farniiu4ivtrv
+          format: int64
+        createdAt:
+          type: integer
+          x-stoplight:
+            id: ish0wypndvdar
+          format: int64
     SpaceAdmin:
       title: SpaceAdmin
       x-stoplight:
@@ -1621,11 +1629,23 @@ components:
       required:
         - role
         - user
+        - updatedAt
+        - createdAt
       properties:
         role:
           $ref: "#/components/schemas/SpaceAdminRoleType"
         user:
           $ref: "#/components/schemas/User"
+        updatedAt:
+          type: integer
+          x-stoplight:
+            id: farniiu4ivtrv
+          format: int64
+        createdAt:
+          type: integer
+          x-stoplight:
+            id: ish0wypndvdar
+          format: int64
     SpaceAdminRoleType:
       title: SpaceAdminRoleType
       x-stoplight:
@@ -1649,6 +1669,8 @@ components:
         - description
         - submissionSchema
         - submitters
+        - updatedAt
+        - createdAt
       properties:
         id:
           type: integer
@@ -1664,10 +1686,8 @@ components:
         creator:
           $ref: '#/components/schemas/User'
         deadline:
-          type: string
-          x-stoplight:
-            id: q2y8s19bfmwjn
-          format: date
+          type: integer
+          format: int64
         resubmittable:
           type: boolean
           x-stoplight:
@@ -1712,6 +1732,16 @@ components:
                     x-stoplight:
                       id: 2uhgeb0nk8kh6
                     format: int64
+        updatedAt:
+          type: integer
+          x-stoplight:
+            id: farniiu4ivtrv
+          format: int64
+        createdAt:
+          type: integer
+          x-stoplight:
+            id: ish0wypndvdar
+          format: int64
     TaskSubmitterType:
       title: TaskSubmitterType
       x-stoplight:
@@ -1803,6 +1833,8 @@ components:
         - avatarId
         - admins
         - members
+        - updatedAt
+        - createdAt
       properties:
         id:
           type: integer
@@ -1841,6 +1873,16 @@ components:
                 id: lk6mqsfxsq91p
               items:
                 $ref: "#/components/schemas/User"
+        updatedAt:
+          type: integer
+          x-stoplight:
+            id: farniiu4ivtrv
+          format: int64
+        createdAt:
+          type: integer
+          x-stoplight:
+            id: ish0wypndvdar
+          format: int64
         members:
           type: object
           x-stoplight:
@@ -1884,9 +1926,21 @@ components:
           $ref: "#/components/schemas/TeamMemberRoleType"
         user:
           $ref: "#/components/schemas/User"
+        updatedAt:
+          type: integer
+          x-stoplight:
+            id: farniiu4ivtrv
+          format: int64
+        createdAt:
+          type: integer
+          x-stoplight:
+            id: ish0wypndvdar
+          format: int64
       required:
         - role
         - user
+        - updatedAt
+        - createdAt
       title: TeamMember
       type: object
       x-stoplight:
