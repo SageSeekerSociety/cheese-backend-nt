@@ -104,6 +104,21 @@ constructor(
     }
 
     @Test
+    @Order(25)
+    fun testGetMyTeams() {
+        val request = MockMvcRequestBuilders.get("/teams/my-teams").header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].name").value(teamName))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].intro").value(teamIntro))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].avatarId").value(teamAvatarId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].admins.total").value(1))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.teams[0].admins.examples[0].id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].members.total").value(0))
+    }
+
+    @Test
     @Order(30)
     fun testShipTeamOwnership() {
         val request =
