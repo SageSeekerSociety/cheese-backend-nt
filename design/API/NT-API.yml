@@ -1831,6 +1831,7 @@ components:
         - intro
         - name
         - avatarId
+        - owner
         - admins
         - members
         - updatedAt
@@ -1854,6 +1855,8 @@ components:
           x-stoplight:
             id: u7o0iiyxuow4g
           format: int64
+        owner:
+          $ref: "#/components/schemas/User"
         admins:
           type: object
           x-stoplight:
