@@ -73,8 +73,8 @@ class TaskController(
     }
 
     @Guard("query", "task")
-    override fun getTask(@ResourceId taskId: Long): ResponseEntity<GetTask200ResponseDTO> {
-        val taskDTO = taskService.getTaskDto(taskId)
+    override fun getTask(@ResourceId taskId: Long, queryJoinability: Boolean): ResponseEntity<GetTask200ResponseDTO> {
+        val taskDTO = taskService.getTaskDto(taskId, queryJoinability)
         return ResponseEntity.ok(GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK"))
     }
 
@@ -127,7 +127,8 @@ class TaskController(
             pageSize: Int,
             pageStart: Long?,
             sortBy: String,
-            sortOrder: String
+            sortOrder: String,
+            queryJoinability: Boolean
     ): ResponseEntity<GetTasks200ResponseDTO> {
         val by =
                 when (sortBy) {
@@ -150,7 +151,7 @@ class TaskController(
                         pageStart = pageStart,
                         sortBy = by,
                         sortOrder = order,
-                )
+                        queryJoinability = queryJoinability)
         return ResponseEntity.ok(GetTasks200ResponseDTO(200, GetTasks200ResponseDataDTO(taskSummaryDTOs, page), "OK"))
     }
 

@@ -273,6 +273,48 @@ constructor(
     }
 
     @Test
+    @Order(25)
+    fun testGetTeamTaskWithJoinabilityUseTeamCreator() {
+        val taskId = taskIds[1]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId")
+                        .queryParam("queryJoinability", "true")
+                        .header("Authorization", "Bearer $teamCreatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam[0].id").value(teamId))
+    }
+
+    @Test
+    @Order(26)
+    fun testGetTeamTaskWithJoinabilityUseSpaceCreator() {
+        val taskId = taskIds[1]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId")
+                        .queryParam("queryJoinability", "true")
+                        .header("Authorization", "Bearer $spaceCreatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam").isEmpty)
+    }
+
+    @Test
+    @Order(27)
+    fun testGetUserTaskWithJoinabilityUseSpaceCreator() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId")
+                        .queryParam("queryJoinability", "true")
+                        .header("Authorization", "Bearer $spaceCreatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam").doesNotExist())
+    }
+
+    @Test
     @Order(30)
     fun testUpdateTaskWithEmptyRequest() {
         val taskId = taskIds[0]
@@ -474,6 +516,20 @@ constructor(
     }
 
     @Test
+    @Order(106)
+    fun testGetTeamTaskWithJoinabilityUseTeamCreatorAfterJoin() {
+        val taskId = taskIds[1]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId")
+                        .queryParam("queryJoinability", "true")
+                        .header("Authorization", "Bearer $teamCreatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam").isEmpty)
+    }
+
+    @Test
     @Order(110)
     fun testRemoveTestParticipantUser() {
         val request =
@@ -491,6 +547,20 @@ constructor(
                         .queryParam("member", teamId.toString())
                         .header("Authorization", "Bearer $teamCreatorToken")
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(25)
+    fun testGetTeamTaskWithJoinabilityUseTeamCreatorAfterExit() {
+        val taskId = taskIds[1]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId")
+                        .queryParam("queryJoinability", "true")
+                        .header("Authorization", "Bearer $teamCreatorToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam[0].id").value(teamId))
     }
 
     @Test

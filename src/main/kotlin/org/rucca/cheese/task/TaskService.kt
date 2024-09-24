@@ -6,6 +6,7 @@ import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.attachment.Attachment
 import org.rucca.cheese.attachment.AttachmentService
+import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
@@ -23,14 +24,30 @@ import org.springframework.stereotype.Service
 class TaskService(
         private val userService: UserService,
         private val teamService: TeamService,
+        private val authenticationService: AuthenticationService,
         private val taskRepository: TaskRepository,
         private val taskMembershipRepository: taskMembershipRepository,
         private val taskSubmissionRepository: taskSubmissionRepository,
         private val entityManager: EntityManager,
         private val attachmentService: AttachmentService,
 ) {
-    fun getTaskDto(taskId: IdType): TaskDTO {
+    fun getJoinability(taskId: IdType, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
+        val queryByUser = authenticationService.getCurrentUserId()
+        when (getTaskSumbitterType(taskId)) {
+            TaskSubmitterTypeDTO.USER ->
+                    return Pair(!taskMembershipRepository.existsByTaskIdAndMemberId(taskId, queryByUser), null)
+            TaskSubmitterTypeDTO.TEAM -> {
+                val teams = teamService.getTeamsThatUserCanUseToJoinTask(taskId, queryByUser)
+                return Pair(teams.isNotEmpty(), teams)
+            }
+        }
+    }
+
+    fun getTaskDto(taskId: IdType, queryJoinability: Boolean = false): TaskDTO {
         val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val joinability =
+                if (queryJoinability) getJoinability(taskId, authenticationService.getCurrentUserId())
+                else Pair(null, null)
         return TaskDTO(
                 task.id!!,
                 task.name!!,
@@ -47,7 +64,9 @@ class TaskService(
                         },
                 getTaskSubmitterSummary(taskId),
                 updatedAt = task.updatedAt!!.toEpochMilli(),
-                createdAt = task.createdAt!!.toEpochMilli())
+                createdAt = task.createdAt!!.toEpochMilli(),
+                joinable = joinability.first,
+                joinableAsTeam = joinability.second)
     }
 
     fun getTaskOwner(taskId: IdType): IdType {
@@ -203,6 +222,7 @@ class TaskService(
             pageStart: IdType?,
             sortBy: TasksSortBy,
             sortOrder: SortDirection,
+            queryJoinability: Boolean = false,
     ): Pair<List<TaskDTO>, PageDTO> {
         val cb = entityManager.criteriaBuilder
         val cq = cb.createQuery(Task::class.java)
@@ -232,6 +252,9 @@ class TaskService(
                         result, pageStart, pageSize, { it.id!! }, { id -> throw NotFoundError("task", id) })
         return Pair(
                 curr.map {
+                    val joinability =
+                            if (queryJoinability) getJoinability(it.id!!, authenticationService.getCurrentUserId())
+                            else Pair(null, null)
                     TaskDTO(
                             it.id!!,
                             it.name!!,
@@ -249,7 +272,9 @@ class TaskService(
                                     },
                             getTaskSubmitterSummary(it.id!!),
                             updatedAt = it.updatedAt!!.toEpochMilli(),
-                            createdAt = it.createdAt!!.toEpochMilli())
+                            createdAt = it.createdAt!!.toEpochMilli(),
+                            joinable = joinability.first,
+                            joinableAsTeam = joinability.second)
                 },
                 page)
     }
