@@ -70,6 +70,19 @@ class TeamService(
         return relations.map { getTeamDto(it.team!!.id!!) }
     }
 
+    fun getTeamsThatUserCanUseToJoinTask(taskId: IdType, userId: IdType): List<TeamSummaryDTO> {
+        return teamUserRelationRepository.getTeamsThatUserCanUseToJoinTask(taskId, userId).map {
+            TeamSummaryDTO(
+                    id = it.id!!,
+                    name = it.name!!,
+                    intro = it.description!!,
+                    avatarId = it.avatar!!.id!!.toLong(),
+                    updatedAt = it.updatedAt!!.toEpochMilli(),
+                    createdAt = it.createdAt!!.toEpochMilli(),
+            )
+        }
+    }
+
     fun isTeamAdmin(teamId: IdType, userId: IdType): Boolean {
         val relationOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId)
         return relationOptional.isPresent &&

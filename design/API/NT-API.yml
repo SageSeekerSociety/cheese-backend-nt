@@ -468,6 +468,12 @@ paths:
           schema:
             type: integer
             format: int64
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryJoinability
+          description: Check whether current user can join this task or using one of his/her team
       responses:
         "200":
           content:
@@ -649,6 +655,12 @@ paths:
           in: query
           name: sort_order
           description: '"asc" or "desc"'
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryJoinability
+          description: Check whether current user can join this task or using one of his/her team
     post:
       responses:
         "200":
@@ -1742,6 +1754,13 @@ components:
           x-stoplight:
             id: ish0wypndvdar
           format: int64
+        joinable:
+          type: boolean
+          description: 'Only has value when: ''queryJoinablity'' == true'
+        joinableAsTeam:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamSummary'
     TaskSubmitterType:
       title: TaskSubmitterType
       x-stoplight:
@@ -1901,6 +1920,31 @@ components:
                 id: 9ijkfpj25gbr7
               items:
                 $ref: "#/components/schemas/User"
+    TeamSummary:
+      title: TeamSummary
+      type: object
+      required:
+        - id
+        - name
+        - intro
+        - avatarId
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        intro:
+          type: string
+        avatarId:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+        createdAt:
+          type: integer
+          format: int64
     TaskParticipantSummary:
       title: TaskParticipantSummary
       type: object
