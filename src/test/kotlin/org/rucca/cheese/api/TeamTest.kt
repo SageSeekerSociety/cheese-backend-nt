@@ -77,10 +77,8 @@ constructor(
                         .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.name").value(teamName))
                         .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.intro").value(teamIntro))
                         .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.avatarId").value(teamAvatarId))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(1))
-                        .andExpect(
-                                MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id")
-                                        .value(creator.userId))
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.owner.id").value(creator.userId))
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(0))
                         .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.members.total").value(0))
         teamId =
                 JSONObject(response.andReturn().response.contentAsString)
@@ -98,8 +96,8 @@ constructor(
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.name").value(teamName))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.intro").value(teamIntro))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.avatarId").value(teamAvatarId))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.owner.id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(0))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.members.total").value(0))
     }
 
@@ -112,9 +110,8 @@ constructor(
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].name").value(teamName))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].intro").value(teamIntro))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].avatarId").value(teamAvatarId))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].admins.total").value(1))
-                .andExpect(
-                        MockMvcResultMatchers.jsonPath("$.data.teams[0].admins.examples[0].id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].owner.id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].admins.total").value(0))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].members.total").value(0))
     }
 
@@ -134,9 +131,9 @@ constructor(
             """)
         mockMvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id").value(newOwner.userId))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[1].id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.owner.id").value(newOwner.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id").value(creator.userId))
     }
 
     @Test
@@ -199,8 +196,8 @@ constructor(
             """)
         mockMvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(3))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id").value(newOwner.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.owner.id").value(newOwner.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(2))
     }
 
     @Test
@@ -360,8 +357,7 @@ constructor(
                         .content("""{ "role": "OWNER" }""")
         mockMvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(3))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(2))
                 .andExpect(
                         MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[?(@.id == ${newOwner.userId})]")
                                 .exists())
@@ -380,7 +376,7 @@ constructor(
                         .content("""{ "role": "ADMIN" }""")
         mockMvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(4))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(3))
     }
 
     @Test
@@ -393,8 +389,8 @@ constructor(
                         .content("""{ "role": "MEMBER" }""")
         mockMvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(3))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.owner.id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(2))
                 .andExpect(
                         MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[?(@.id == ${admin.userId})]")
                                 .exists())
@@ -422,9 +418,9 @@ constructor(
                         .header("Authorization", "Bearer $creatorToken")
         mockMvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id").value(creator.userId))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[1].id").value(newOwner.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.owner.id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id").value(newOwner.userId))
     }
 
     @Test

@@ -27,6 +27,7 @@ class TeamService(
                 name = team.name!!,
                 intro = team.description!!,
                 avatarId = team.avatar!!.id!!.toLong(),
+                owner = userService.getUserDto(getTeamOwner(teamId)),
                 admins =
                         TeamAdminsDTO(
                                 total = countTeamAdmins(teamId),
@@ -96,7 +97,7 @@ class TeamService(
     }
 
     fun countTeamAdmins(teamId: IdType): Int {
-        return teamUserRelationRepository.countByTeamIdAndRole(teamId, TeamMemberRole.ADMIN) + 1
+        return teamUserRelationRepository.countByTeamIdAndRole(teamId, TeamMemberRole.ADMIN)
     }
 
     fun countTeamNormalMembers(teamId: IdType): Int {
@@ -108,10 +109,9 @@ class TeamService(
                 teamUserRelationRepository.findAllByTeamIdAndRoleOrderByUpdatedAtDesc(
                         teamId,
                         TeamMemberRole.ADMIN,
-                        PageRequest.of(0, 2),
+                        PageRequest.of(0, 3),
                 )
-        return listOf(userService.getUserDto(getTeamOwner(teamId))) +
-                relations.map { userService.getUserDto(it.user!!.id!!.toLong()) }
+        return relations.map { userService.getUserDto(it.user!!.id!!.toLong()) }
     }
 
     fun getTeamMemberExamples(teamId: IdType): List<UserDTO> {
