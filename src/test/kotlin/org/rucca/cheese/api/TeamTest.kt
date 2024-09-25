@@ -102,6 +102,62 @@ constructor(
     }
 
     @Test
+    @Order(21)
+    fun testEnumerateTeams() {
+        val request =
+                MockMvcRequestBuilders.get("/teams")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .queryParam("query", teamName)
+                        .queryParam("page_size", "1")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].id").value(teamId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].name").value(teamName))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].intro").value(teamIntro))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].avatarId").value(teamAvatarId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].owner.id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].admins.total").value(0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].members.total").value(0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(teamId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").doesNotExist())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").isBoolean())
+    }
+
+    @Test
+    @Order(22)
+    fun testEnumerateTeams2() {
+        val request =
+                MockMvcRequestBuilders.get("/teams")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .queryParam("query", teamName)
+                        .queryParam("page_start", teamId.toString())
+                        .queryParam("page_size", "1")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].id").value(teamId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].name").value(teamName))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].intro").value(teamIntro))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].avatarId").value(teamAvatarId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].owner.id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].admins.total").value(0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].members.total").value(0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(teamId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").doesNotExist())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").isBoolean())
+    }
+
+    @Test
+    @Order(21)
+    fun testEnumerateTeamsByDefault() {
+        val request = MockMvcRequestBuilders.get("/teams").header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
     @Order(25)
     fun testGetMyTeams() {
         val request = MockMvcRequestBuilders.get("/teams/my-teams").header("Authorization", "Bearer $creatorToken")

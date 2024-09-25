@@ -1,14 +1,14 @@
-package org.rucca.cheese.task
+package org.rucca.cheese.team
 
 import jakarta.persistence.Id
 import org.rucca.cheese.common.persistent.IdType
 import org.springframework.data.elasticsearch.annotations.Document
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository
 
-@Document(indexName = "tasks")
-class TaskElasticSearch {
+@Document(indexName = "teams")
+class TeamElasticSearch {
     @Id var id: IdType? = null
     var name: String? = null
 }
 
-interface TaskElasticSearchRepository : ElasticsearchRepository<TaskElasticSearch, IdType>
+interface TeamElasticSearchRepository : ElasticsearchRepository<TeamElasticSearch, IdType>

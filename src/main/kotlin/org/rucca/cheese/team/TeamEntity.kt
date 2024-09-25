@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.JpaRepository
                 [
                         Index(columnList = "name"),
                 ])
+@EntityListeners(TeamElasticSearchSyncListener::class)
 class Team(
         @Column(nullable = false) var name: String? = null,
         @Column(nullable = false) var description: String? = null,
