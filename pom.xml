@@ -83,6 +83,10 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
@@ -248,7 +252,7 @@
                                     <arg value="--spring.jpa.properties.jakarta.persistence.schema-generation.scripts.create-target=design/DB/CREATE.sql"/>
                                     <arg value="--spring.jpa.properties.jakarta.persistence.schema-generation.scripts.create-source=metadata"/>
                                     <!-- Stop application after creating the CREATE.sql file. -->
-                                    <arg value="--spring.main.web-application-type=none"/>
+                                    <arg value="--application.shutdown-on-startup=true"/>
                                     <!-- Avoid long logs -->
                                     <arg value="--logging.level.root=WARN"/>
                                 </java>

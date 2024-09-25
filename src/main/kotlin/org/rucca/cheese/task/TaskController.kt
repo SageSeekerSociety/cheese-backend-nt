@@ -128,7 +128,8 @@ class TaskController(
             pageStart: Long?,
             sortBy: String,
             sortOrder: String,
-            queryJoinability: Boolean
+            queryJoinability: Boolean,
+            keywords: String?,
     ): ResponseEntity<GetTasks200ResponseDTO> {
         val by =
                 when (sortBy) {
@@ -147,6 +148,7 @@ class TaskController(
                 taskService.enumerateTasks(
                         space = space,
                         team = team,
+                        keywords = keywords,
                         pageSize = pageSize,
                         pageStart = pageStart,
                         sortBy = by,
