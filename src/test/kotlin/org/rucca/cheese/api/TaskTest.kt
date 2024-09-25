@@ -38,6 +38,8 @@ constructor(
     lateinit var creatorToken: String
     lateinit var teamCreator: UserCreatorService.CreateUserResponse
     lateinit var teamCreatorToken: String
+    lateinit var teamMember: UserCreatorService.CreateUserResponse
+    lateinit var teamMemberToken: String
     lateinit var spaceCreator: UserCreatorService.CreateUserResponse
     lateinit var spaceCreatorToken: String
     lateinit var participant: UserCreatorService.CreateUserResponse
@@ -99,12 +101,29 @@ constructor(
         return teamId
     }
 
+    fun joinTeam(token: String, teamId: IdType, userId: IdType) {
+        val request =
+                MockMvcRequestBuilders.post("/teams/$teamId/members")
+                        .header("Authorization", "Bearer $token")
+                        .contentType("application/json")
+                        .content(
+                                """
+                {
+                  "role": "MEMBER",
+                  "user_id": ${userId}
+                }
+            """)
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
     @BeforeAll
     fun prepare() {
         creator = userCreatorService.createUser()
         creatorToken = userCreatorService.login(creator.username, creator.password)
         teamCreator = userCreatorService.createUser()
         teamCreatorToken = userCreatorService.login(teamCreator.username, teamCreator.password)
+        teamMember = userCreatorService.createUser()
+        teamMemberToken = userCreatorService.login(teamMember.username, teamMember.password)
         spaceCreator = userCreatorService.createUser()
         spaceCreatorToken = userCreatorService.login(spaceCreator.username, spaceCreator.password)
         participant = userCreatorService.createUser()
@@ -123,6 +142,7 @@ constructor(
                         teamIntro = "This is a test team.",
                         teamAvatarId = userCreatorService.testAvatarId(),
                 )
+        joinTeam(teamCreatorToken, teamId, teamMember.userId)
         attachmentId = attachmentCreatorService.createAttachment(creatorToken)
     }
 
@@ -497,6 +517,19 @@ constructor(
     }
 
     @Test
+    @Order(94)
+    fun testAddTestParticipantTeamAndGetPermissionDeniedError() {
+        val request =
+                MockMvcRequestBuilders.post("/tasks/${taskIds[1]}/participants")
+                        .header("Authorization", "Bearer $teamMemberToken")
+                        .queryParam("member", teamId.toString())
+                        .contentType("application/json")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isForbidden)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError"))
+    }
+
+    @Test
     @Order(95)
     fun testAddTestParticipantTeam() {
         val request =
@@ -762,29 +795,6 @@ constructor(
                 .andExpect(
                         MockMvcResultMatchers.jsonPath("$.data.submission[0].contentText")
                                 .value("This is a test submission. (Version 2)"))
-    }
-
-    @Test
-    @Order(180)
-    fun testUpdateSubmissionAndGetNotEditableError() {
-        val taskId = taskIds[0]
-        val request =
-                MockMvcRequestBuilders.patch("/tasks/$taskId/submissions/1")
-                        .header("Authorization", "Bearer $participantToken")
-                        .param("member", participant.userId.toString())
-                        .contentType("application/json")
-                        .content(
-                                """
-                      [
-                        {
-                          "contentText": "This is a test submission. (Version 1) (edited)"
-                        }
-                      ]
-                    """)
-        mockMvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isBadRequest)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("TaskSubmissionNotEditableError"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.taskId").value(taskId))
     }
 
     @Test

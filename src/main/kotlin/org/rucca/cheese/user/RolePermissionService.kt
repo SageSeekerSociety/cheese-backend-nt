@@ -106,7 +106,7 @@ class RolePermissionService {
                                                 AuthorizedResource(
                                                         types = listOf("task"),
                                                 ),
-                                        customLogic = "participant-is-self",
+                                        customLogic = "participant-is-self-or-team-where-i-am-admin",
                                 ),
                                 Permission(
                                         authorizedActions =

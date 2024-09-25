@@ -89,10 +89,10 @@ class TaskService(
         }
     }
 
-    fun participantIsSelf(taskId: IdType, userId: IdType, memberId: IdType): Boolean {
+    fun participantIsSelfOrTeamWhereIAmAdmin(taskId: IdType, userId: IdType, memberId: IdType): Boolean {
         return when (getTaskSumbitterType(taskId)) {
             TaskSubmitterTypeDTO.USER -> userId == memberId
-            TaskSubmitterTypeDTO.TEAM -> teamService.isTeamMember(memberId, userId)
+            TaskSubmitterTypeDTO.TEAM -> teamService.isTeamAdmin(memberId, userId)
         }
     }
 
