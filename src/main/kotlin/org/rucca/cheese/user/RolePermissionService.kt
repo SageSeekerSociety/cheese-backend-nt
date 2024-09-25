@@ -74,6 +74,14 @@ class RolePermissionService {
                                         customLogic = "is-team-admin",
                                 ),
                                 Permission(
+                                        authorizedActions = listOf("add-normal-member", "remove-normal-member"),
+                                        authorizedResource =
+                                                AuthorizedResource(
+                                                        types = listOf("team"),
+                                                ),
+                                        customLogic = "member-is-self",
+                                ),
+                                Permission(
                                         authorizedActions =
                                                 listOf(
                                                         "query",

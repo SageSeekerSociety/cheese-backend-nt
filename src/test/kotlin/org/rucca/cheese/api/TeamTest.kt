@@ -314,7 +314,7 @@ constructor(
 
     @Test
     @Order(70)
-    fun testAddMemberUseMemberAndGetPermissionDeniedError() {
+    fun testAddMemberUseAnotherUserAndGetPermissionDeniedError() {
         val request =
                 MockMvcRequestBuilders.post("/teams/$teamId/members")
                         .header("Authorization", "Bearer $memberToken")
@@ -513,6 +513,39 @@ constructor(
 
     @Test
     @Order(150)
+    fun testRemoveMemberUseSelf() {
+        val request =
+                MockMvcRequestBuilders.delete("/teams/$teamId/members/${member.userId}")
+                        .header("Authorization", "Bearer $memberToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.members.total").value(0))
+    }
+
+    @Test
+    @Order(151)
+    fun testAddMemberUseSelf() {
+        val request =
+                MockMvcRequestBuilders.post("/teams/$teamId/members")
+                        .header("Authorization", "Bearer ${memberToken}")
+                        .contentType("application/json")
+                        .content(
+                                """
+                {
+                  "role": "MEMBER",
+                  "user_id": ${member.userId}
+                }
+            """)
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.members.total").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.members.examples[0].id").value(member.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.joined").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.role").value("MEMBER"))
+    }
+
+    @Test
+    @Order(152)
     fun testRemoveMember() {
         val request =
                 MockMvcRequestBuilders.delete("/teams/$teamId/members/${member.userId}")

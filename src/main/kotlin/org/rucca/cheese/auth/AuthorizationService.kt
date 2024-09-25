@@ -92,7 +92,7 @@ class AuthorizationService(
         logger.warn(
                 "Operation denied: '$action' on resource (resourceType: '$resourceType', resourceId: $resourceId, authInfo: $authInfo)." +
                         " Authorization: $authorization")
-        throw PermissionDeniedError(action, resourceType, resourceId)
+        throw PermissionDeniedError(action, resourceType, resourceId, authInfo)
     }
 
     fun verify(token: String?): Authorization {
