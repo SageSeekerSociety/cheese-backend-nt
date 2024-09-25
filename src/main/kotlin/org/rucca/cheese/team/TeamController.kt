@@ -34,6 +34,17 @@ class TeamController(
             ->
             teamService.isTeamAdmin(resourceId ?: throw IllegalArgumentException("resourceId is null"), userId)
         }
+        authorizationService.customAuthLogics.register("member-is-self") {
+                userId: IdType,
+                _: AuthorizedAction,
+                _: String,
+                _: IdType?,
+                authInfo: Map<String, Any?>?,
+                _: IdGetter?,
+                _: Any?,
+            ->
+            userId == authInfo?.get("member")
+        }
     }
 
     @Guard("delete", "team")
@@ -52,7 +63,7 @@ class TeamController(
                 teamService.removeTeamMember(teamId, userId)
             }
             TeamMemberRoleTypeDTO.MEMBER -> {
-                authorizationService.audit("remove-normal-member", "team", teamId)
+                authorizationService.audit("remove-normal-member", "team", teamId, mapOf("member" to userId))
                 teamService.removeTeamMember(teamId, userId)
             }
         }
@@ -121,7 +132,7 @@ class TeamController(
                     teamService.addTeamAdmin(teamId, userId)
                 }
                 TeamMemberRoleTypeDTO.MEMBER -> {
-                    authorizationService.audit("add-normal-member", "team", teamId)
+                    authorizationService.audit("add-normal-member", "team", teamId, mapOf("member" to userId))
                     teamService.removeTeamMember(teamId, userId)
                     teamService.addTeamNormalMember(teamId, userId)
                 }
@@ -158,7 +169,8 @@ class TeamController(
                 teamService.addTeamAdmin(teamId, postTeamMemberRequestDTO.userId)
             }
             TeamMemberRoleTypeDTO.MEMBER -> {
-                authorizationService.audit("add-normal-member", "team", teamId)
+                authorizationService.audit(
+                        "add-normal-member", "team", teamId, mapOf("member" to postTeamMemberRequestDTO.userId))
                 teamService.addTeamNormalMember(teamId, postTeamMemberRequestDTO.userId)
             }
         }
