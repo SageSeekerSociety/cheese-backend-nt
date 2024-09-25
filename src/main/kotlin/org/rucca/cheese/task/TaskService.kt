@@ -209,24 +209,22 @@ class TaskService(
     }
 
     fun getJoinability(taskId: IdType, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
-        val queryByUser = authenticationService.getCurrentUserId()
         when (getTaskSumbitterType(taskId)) {
             TaskSubmitterTypeDTO.USER ->
-                    return Pair(!taskMembershipRepository.existsByTaskIdAndMemberId(taskId, queryByUser), null)
+                    return Pair(!taskMembershipRepository.existsByTaskIdAndMemberId(taskId, userId), null)
             TaskSubmitterTypeDTO.TEAM -> {
-                val teams = teamService.getTeamsThatUserCanUseToJoinTask(taskId, queryByUser)
+                val teams = teamService.getTeamsThatUserCanUseToJoinTask(taskId, userId)
                 return Pair(teams.isNotEmpty(), teams)
             }
         }
     }
 
     fun getSubmittability(task: IdType, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
-        val queryByUser = authenticationService.getCurrentUserId()
         when (getTaskSumbitterType(task)) {
             TaskSubmitterTypeDTO.USER ->
-                    return Pair(taskMembershipRepository.existsByTaskIdAndMemberId(task, queryByUser), null)
+                    return Pair(taskMembershipRepository.existsByTaskIdAndMemberId(task, userId), null)
             TaskSubmitterTypeDTO.TEAM -> {
-                val teams = teamService.getTeamsThatUserCanUseToSubmitTask(task, queryByUser)
+                val teams = teamService.getTeamsThatUserCanUseToSubmitTask(task, userId)
                 return Pair(teams.isNotEmpty(), teams)
             }
         }
