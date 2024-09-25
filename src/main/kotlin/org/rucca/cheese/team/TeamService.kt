@@ -1,6 +1,7 @@
 package org.rucca.cheese.team
 
 import java.time.LocalDateTime
+import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.toEpochMilli
@@ -19,9 +20,12 @@ class TeamService(
         private val teamRepository: TeamRepository,
         private val teamUserRelationRepository: TeamUserRelationRepository,
         private val userService: UserService,
+        private val authenticateService: AuthenticationService,
 ) {
     fun getTeamDto(teamId: IdType): TeamDTO {
         val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        val currentUserId = authenticateService.getCurrentUserId()
+        val myRoleOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, currentUserId)
         return TeamDTO(
                 id = team.id!!,
                 name = team.name!!,
@@ -40,6 +44,8 @@ class TeamService(
                         ),
                 updatedAt = team.updatedAt!!.toEpochMilli(),
                 createdAt = team.createdAt!!.toEpochMilli(),
+                joined = myRoleOptional.isPresent,
+                role = myRoleOptional.map { convertMemberRole(it.role!!) }.orElse(null),
         )
     }
 
