@@ -73,6 +73,10 @@ class TeamService(
     }
 
     fun enumerateTeams(query: String, pageStart: IdType?, pageSize: Int): Pair<List<TeamDTO>, PageDTO> {
+        val id = query.toLongOrNull()
+        if (id != null) {
+            return Pair(listOf(getTeamDto(id)), PageDTO(id, 1, hasPrev = false, hasMore = false))
+        }
         val criteria = Criteria("name").matches(query)
         val query = CriteriaQuery(criteria)
         val hints = elasticsearchTemplate.search(query, TeamElasticSearch::class.java)
