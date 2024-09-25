@@ -8,6 +8,7 @@ import org.rucca.cheese.attachment.Attachment
 import org.rucca.cheese.attachment.AttachmentService
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NotFoundError
+import org.rucca.cheese.common.groupConsecutiveBy
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
@@ -31,7 +32,7 @@ class TaskService(
         private val authenticationService: AuthenticationService,
         private val taskRepository: TaskRepository,
         private val taskMembershipRepository: taskMembershipRepository,
-        private val taskSubmissionRepository: taskSubmissionRepository,
+        private val taskSubmissionRepository: TaskSubmissionRepository,
         private val entityManager: EntityManager,
         private val attachmentService: AttachmentService,
         private val elasticsearchTemplate: ElasticsearchTemplate,
@@ -352,6 +353,13 @@ class TaskService(
         }
     }
 
+    fun getTaskParticipantDtoByMembership(membership: TaskMembership): TaskParticipantSummaryDTO {
+        return when (getTaskSumbitterType(membership.task!!.id!!)) {
+            TaskSubmitterTypeDTO.USER -> userService.getTaskParticipantSummaryDto(membership.memberId!!)
+            TaskSubmitterTypeDTO.TEAM -> teamService.getTaskParticipantSummaryDto(membership.memberId!!)
+        }
+    }
+
     fun addTaskParticipant(taskId: IdType, memberId: IdType) {
         when (getTaskSumbitterType(taskId)) {
             TaskSubmitterTypeDTO.USER -> userService.ensureUserExists(memberId)
@@ -399,9 +407,10 @@ class TaskService(
 
     private fun createTaskSubmission(
             participant: TaskMembership,
+            submitterId: IdType,
             version: Int,
             submission: List<TaskSubmissionEntry>
-    ): List<TaskSubmissionInnerDTO> {
+    ): TaskSubmissionDTO {
         val entriesUnsaved =
                 submission.withIndex().map {
                     val text =
@@ -416,27 +425,16 @@ class TaskService(
                                         Attachment().apply { id = entry.attachmentId.toInt() }
                             }
                     TaskSubmission(
-                            membership = TaskMembership().apply { id = participant.id },
+                            membership = participant,
                             version = version,
                             index = it.index,
+                            submitter = User().apply { id = submitterId.toInt() },
                             contentText = text,
                             contentAttachment = attachment,
                     )
                 }
         val entries = taskSubmissionRepository.saveAll(entriesUnsaved)
-        return entries.map {
-            TaskSubmissionInnerDTO(
-                    it.id!!,
-                    participant.memberId!!,
-                    it.version!!,
-                    it.index!!,
-                    it.createdAt!!.toEpochMilli(),
-                    it.updatedAt!!.toEpochMilli(),
-                    it.contentText,
-                    if (it.contentAttachment != null)
-                            attachmentService.getAttachmentDto(it.contentAttachment.id!!.toLong())
-                    else null)
-        }
+        return mapEntriesToDto(entries)
     }
 
     private fun deleteTaskSubmission(
@@ -456,8 +454,9 @@ class TaskService(
     fun submitTask(
             taskId: IdType,
             memberId: IdType,
+            submitterId: IdType,
             submission: List<TaskSubmissionEntry>
-    ): List<TaskSubmissionInnerDTO> {
+    ): TaskSubmissionDTO {
         validateSubmission(taskId, submission)
         val participant =
                 taskMembershipRepository.findByTaskIdAndMemberId(taskId, memberId).orElseThrow {
@@ -468,15 +467,16 @@ class TaskService(
             throw TaskNotResubmittableError(taskId)
         }
         val newVersion = oldVersion + 1
-        return createTaskSubmission(participant, newVersion, submission)
+        return createTaskSubmission(participant, submitterId, newVersion, submission)
     }
 
     fun modifySubmission(
             taskId: IdType,
             memberId: IdType,
+            submitterId: IdType,
             version: Int,
             submission: List<TaskSubmissionEntry>
-    ): List<TaskSubmissionInnerDTO> {
+    ): TaskSubmissionDTO {
         validateSubmission(taskId, submission)
         val participant =
                 taskMembershipRepository.findByTaskIdAndMemberId(taskId, memberId).orElseThrow {
@@ -486,7 +486,7 @@ class TaskService(
             throw TaskSubmissionNotEditableError(taskId)
         }
         deleteTaskSubmission(participant, version)
-        return createTaskSubmission(participant, version, submission)
+        return createTaskSubmission(participant, submitterId, version, submission)
     }
 
     enum class TaskSubmissionSortBy {
@@ -494,18 +494,37 @@ class TaskService(
         UPDATED_AT,
     }
 
-    private fun mergeEntries(entries: List<TaskSubmissionInnerDTO>): List<List<TaskSubmissionInnerDTO>> {
-        val result = mutableListOf<List<TaskSubmissionInnerDTO>>()
-        var currentSubList = mutableListOf(entries[0])
-        for (i in 1 until entries.size) {
-            if (entries[i].memberId == entries[i - 1].memberId && entries[i].version == entries[i - 1].version) {
-                currentSubList.add(entries[i])
-            } else {
-                result.add(currentSubList.sortedBy { it.index })
-                currentSubList = mutableListOf(entries[i])
-            }
-        }
-        return result
+    private fun mapEntriesToDto(subList: List<TaskSubmission>): TaskSubmissionDTO {
+        val firstEntry = subList.first()
+        println("mapEntriesToDto: firstEntry = $firstEntry")
+        return TaskSubmissionDTO(
+                id = firstEntry.id!!,
+                version = firstEntry.version!!,
+                createdAt = firstEntry.createdAt!!.toEpochMilli(),
+                updatedAt = firstEntry.updatedAt!!.toEpochMilli(),
+                member =
+                        if (firstEntry.membership?.task != null)
+                                getTaskParticipantDtoByMembership(firstEntry.membership)
+                        else null,
+                submitter = userService.getUserDto(firstEntry.submitter!!.id!!.toLong()),
+                content =
+                        subList.map {
+                            TaskSubmissionContentEntryDTO(
+                                    title = it.membership!!.task!!.submissionSchema!![it.index!!].description!!,
+                                    type =
+                                            convertTaskSubmissionEntryType(
+                                                    it.membership.task!!.submissionSchema!![it.index].type!!),
+                                    contentText = it.contentText,
+                                    contentAttachment =
+                                            if (it.contentAttachment != null)
+                                                    attachmentService.getAttachmentDto(
+                                                            it.contentAttachment.id!!.toLong())
+                                            else null)
+                        })
+    }
+
+    private fun mergeEntries(entries: List<TaskSubmission>): List<TaskSubmissionDTO> {
+        return entries.groupConsecutiveBy { Pair(it.membership?.id, it.version) }.map { mapEntriesToDto(it) }
     }
 
     fun enumerateSubmissions(
@@ -516,7 +535,7 @@ class TaskService(
             pageStart: IdType?,
             sortBy: TaskSubmissionSortBy,
             sortOrder: SortDirection,
-    ): Pair<List<List<TaskSubmissionInnerDTO>>, PageDTO> {
+    ): Pair<List<TaskSubmissionDTO>, PageDTO> {
         val cb = entityManager.criteriaBuilder
         val cq = cb.createQuery(TaskSubmission::class.java)
         val root = cq.from(TaskSubmission::class.java)
@@ -549,21 +568,6 @@ class TaskService(
         val (curr, page) =
                 PageHelper.pageFromAll(
                         result, pageStart, pageSize, { it.id!! }, { id -> throw NotFoundError("task submission", id) })
-        return Pair(
-                mergeEntries(
-                        curr.map {
-                            TaskSubmissionInnerDTO(
-                                    it.id!!,
-                                    it.membership!!.memberId!!,
-                                    it.version!!,
-                                    it.index!!,
-                                    it.createdAt!!.toEpochMilli(),
-                                    it.updatedAt!!.toEpochMilli(),
-                                    it.contentText,
-                                    if (it.contentAttachment != null)
-                                            attachmentService.getAttachmentDto(it.contentAttachment.id!!.toLong())
-                                    else null)
-                        }),
-                page)
+        return Pair(mergeEntries(curr), page)
     }
 }

@@ -197,7 +197,9 @@ class TaskController(
             postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
         val contents = postTaskSubmissionRequestInnerDTO.toEntryList()
-        val submissions = taskService.modifySubmission(taskId, member, version, contents)
+        val submissions =
+                taskService.modifySubmission(
+                        taskId, member, authenticationService.getCurrentUserId(), version, contents)
         return ResponseEntity.ok(
                 PostTaskSubmission200ResponseDTO(200, PostTaskSubmission200ResponseDataDTO(submissions), "OK"))
     }
@@ -243,7 +245,7 @@ class TaskController(
             postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
         val contents = postTaskSubmissionRequestInnerDTO.toEntryList()
-        val submissions = taskService.submitTask(taskId, member, contents)
+        val submissions = taskService.submitTask(taskId, member, authenticationService.getCurrentUserId(), contents)
         return ResponseEntity.ok(
                 PostTaskSubmission200ResponseDTO(200, PostTaskSubmission200ResponseDataDTO(submissions), "OK"))
     }

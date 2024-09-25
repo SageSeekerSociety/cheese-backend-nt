@@ -1799,51 +1799,51 @@ components:
       title: TaskSubmission
       x-stoplight:
         id: 91u776sjgs8ok
-      type: array
-      items:
-        x-stoplight:
-          id: 99ox03zyo2o3q
-        type: object
-        required:
-          - id
-          - memberId
-          - version
-          - index
-          - createdAt
-          - updatedAt
-        properties:
-          id:
-            type: integer
-            format: int64
-          memberId:
-            type: integer
-            x-stoplight:
-              id: o4iozbl0ulowk
-            format: int64
-          version:
-            type: integer
-            x-stoplight:
-              id: 89v7nlohxnnmw
-          index:
-            type: integer
-            x-stoplight:
-              id: 4fw6y4vvhcs6w
-          createdAt:
-            type: integer
-            x-stoplight:
-              id: 9uvbde82liys1
-            format: int64
-          updatedAt:
-            type: integer
-            x-stoplight:
-              id: v075zyxrwkxxg
-            format: int64
-          contentText:
-            type: string
-            x-stoplight:
-              id: 3jylp7lpjh288
-          contentAttachment:
-            $ref: "#/components/schemas/Attachment"
+      type: object
+      required:
+        - id
+        - memberId
+        - version
+        - index
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        member:
+          $ref: "#/components/schemas/TaskParticipantSummary"
+        submitter:
+          $ref: "#/components/schemas/User"
+        version:
+          type: integer
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+        content:
+          type: array
+          items:
+              $ref: "#/components/schemas/TaskSubmissionContentEntry"
+    TaskSubmissionContentEntry:
+      title: TaskSubmissionContentEntry
+      type: object
+      required:
+        - title
+        - type
+      properties:
+        title:
+          type: string
+        type:
+          $ref: "#/components/schemas/TaskSubmissionType"
+        contentText:
+          type: string
+          x-stoplight:
+            id: 3jylp7lpjh288
+        contentAttachment:
+          $ref: "#/components/schemas/Attachment"
     Team:
       title: Team
       type: object
