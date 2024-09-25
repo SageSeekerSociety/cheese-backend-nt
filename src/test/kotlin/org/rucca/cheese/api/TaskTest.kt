@@ -44,6 +44,8 @@ constructor(
     lateinit var spaceCreatorToken: String
     lateinit var participant: UserCreatorService.CreateUserResponse
     lateinit var participantToken: String
+    lateinit var participant2: UserCreatorService.CreateUserResponse
+    lateinit var participantToken2: String
     private var teamId: IdType = -1
     private var spaceId: IdType = -1
     private var attachmentId: IdType = -1
@@ -128,6 +130,8 @@ constructor(
         spaceCreatorToken = userCreatorService.login(spaceCreator.username, spaceCreator.password)
         participant = userCreatorService.createUser()
         participantToken = userCreatorService.login(participant.username, participant.password)
+        participant2 = userCreatorService.createUser()
+        participantToken2 = userCreatorService.login(participant2.username, participant2.password)
         spaceId =
                 createSpace(
                         creatorToken = teamCreatorToken,
@@ -659,6 +663,17 @@ constructor(
 
     @Test
     @Order(127)
+    fun testAddTestParticipantUser3() {
+        val request =
+                MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
+                        .header("Authorization", "Bearer $participantToken2")
+                        .queryParam("member", participant2.userId.toString())
+                        .contentType("application/json")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(127)
     fun testAddTestParticipantTeam2() {
         val request =
                 MockMvcRequestBuilders.post("/tasks/${taskIds[1]}/participants")
@@ -698,6 +713,32 @@ constructor(
                 .andExpect(
                         MockMvcResultMatchers.jsonPath("$.data.submission.content[0].contentText")
                                 .value("This is a test submission."))
+    }
+
+    @Test
+    @Order(131)
+    fun testSubmitTaskUser2() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+                        .header("Authorization", "Bearer $participantToken2")
+                        .param("member", participant2.userId.toString())
+                        .contentType("application/json")
+                        .content(
+                                """
+                        [
+                          {
+                            "contentText": "This is a test submission."
+                          }
+                        ]
+                    """)
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.member.id").value(participant2.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.submitter.id").value(participant2.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.version").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.content[0].title").value("Text Entry"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.content[0].type").value("TEXT"))
     }
 
     @Test
@@ -957,6 +998,10 @@ constructor(
                 .andExpect(
                         MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].contentText")
                                 .value("This is a test submission. (Version 2) (edited)"))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath(
+                                        "$.data.submissions[?(@[0].memberId == ${participant2.userId})][0]")
+                                .doesNotExist())
     }
 
     @Test

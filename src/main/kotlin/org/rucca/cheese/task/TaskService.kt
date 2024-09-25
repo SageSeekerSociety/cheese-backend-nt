@@ -1,6 +1,7 @@
 package org.rucca.cheese.task
 
 import jakarta.persistence.EntityManager
+import jakarta.persistence.criteria.Predicate
 import java.time.LocalDate
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
@@ -540,9 +541,10 @@ class TaskService(
         val cq = cb.createQuery(TaskSubmission::class.java)
         val root = cq.from(TaskSubmission::class.java)
         root.join<TaskSubmission, TaskMembership>("membership")
-        cq.where(cb.equal(root.get<TaskMembership>("membership").get<IdType>("task").get<IdType>("id"), taskId))
+        val predicts: MutableList<Predicate> = mutableListOf()
+        predicts.add(cb.equal(root.get<TaskMembership>("membership").get<IdType>("task").get<IdType>("id"), taskId))
         if (member != null) {
-            cq.where(cb.equal(root.get<TaskMembership>("membership").get<IdType>("memberId"), member))
+            predicts.add(cb.equal(root.get<TaskMembership>("membership").get<IdType>("memberId"), member))
         }
         if (!allVersions) {
             val subquery = cq.subquery(Int::class.java)
@@ -550,8 +552,9 @@ class TaskService(
             subquery
                     .select(cb.max(subRoot.get<Int>("version")))
                     .where(cb.equal(subRoot.get<TaskMembership>("membership"), root.get<TaskMembership>("membership")))
-            cq.where(cb.equal(root.get<Int>("version"), subquery))
+            predicts.add(cb.equal(root.get<Int>("version"), subquery))
         }
+        cq.where(*predicts.toTypedArray())
         val by =
                 when (sortBy) {
                     TaskSubmissionSortBy.CREATED_AT -> root.get<LocalDateTime>("createdAt")
@@ -565,9 +568,14 @@ class TaskService(
         cq.orderBy(order)
         val query = entityManager.createQuery(cq)
         val result = query.resultList
+        val resultMerged = mergeEntries(result)
         val (curr, page) =
                 PageHelper.pageFromAll(
-                        result, pageStart, pageSize, { it.id!! }, { id -> throw NotFoundError("task submission", id) })
-        return Pair(mergeEntries(curr), page)
+                        resultMerged,
+                        pageStart,
+                        pageSize,
+                        { it.id!! },
+                        { id -> throw NotFoundError("task submission", id) })
+        return Pair(curr, page)
     }
 }
