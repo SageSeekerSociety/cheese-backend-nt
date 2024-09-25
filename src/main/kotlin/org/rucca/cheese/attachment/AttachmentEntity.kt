@@ -31,7 +31,29 @@ enum class AttachmentType {
     IMAGE,
     VIDEO,
     AUDIO,
-    FILE
+    FILE;
+
+    override fun toString(): String {
+        return name.lowercase()
+    }
+
+    companion object {
+        fun fromString(value: String): AttachmentType {
+            return entries.find { it.name.equals(value, ignoreCase = true) }
+                    ?: throw IllegalArgumentException("无效的 AttachmentType: $value")
+        }
+    }
+}
+
+@Converter(autoApply = true)
+class AttachmentTypeConverter : AttributeConverter<AttachmentType, String> {
+    override fun convertToDatabaseColumn(attribute: AttachmentType?): String? {
+        return attribute?.toString()
+    }
+
+    override fun convertToEntityAttribute(dbData: String?): AttachmentType? {
+        return dbData?.let { AttachmentType.fromString(it) }
+    }
 }
 
 @Entity
@@ -47,5 +69,7 @@ open class Attachment {
 
     @JdbcTypeCode(SqlTypes.JSON) @Column(name = "meta", nullable = false) open var meta: MutableMap<String, Any>? = null
 
-    @Column(name = "type", columnDefinition = "AttachmentType", nullable = false) open var type: AttachmentType? = null
+    @Column(name = "type", nullable = false)
+    @Convert(converter = AttachmentTypeConverter::class)
+    open var type: AttachmentType? = null
 }

@@ -86,9 +86,7 @@ CREATE
     TABLE
         attachment(
             id INTEGER NOT NULL,
-            TYPE AttachmentType NOT NULL CHECK(
-                TYPE BETWEEN 0 AND 3
-            ),
+            TYPE VARCHAR(255) NOT NULL,
             meta jsonb NOT NULL,
             url text NOT NULL,
             PRIMARY KEY(id)
@@ -178,6 +176,7 @@ CREATE
         task_submission(
             content_attachment_id INTEGER,
             INDEX INTEGER NOT NULL,
+            submitter_id INTEGER NOT NULL,
             version INTEGER NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
@@ -287,6 +286,9 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS task_submission ADD CONSTRAINT FK7p8ct6x90ypn5ubixkg9a5cf3 FOREIGN KEY(membership_id) REFERENCES task_membership;
+
+ALTER TABLE
+    IF EXISTS task_submission ADD CONSTRAINT FKgqx6epr8btfbjv5lneb6ayqu4 FOREIGN KEY(submitter_id) REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS team ADD CONSTRAINT FKjv1k745e89swu3gj896pxcq3y FOREIGN KEY(avatar_id) REFERENCES avatar;

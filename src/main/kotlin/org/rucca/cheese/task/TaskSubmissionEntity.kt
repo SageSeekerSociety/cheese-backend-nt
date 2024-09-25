@@ -1,11 +1,12 @@
 package org.rucca.cheese.task
 
 import jakarta.persistence.*
-import java.util.Optional
+import java.util.*
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.attachment.Attachment
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.user.User
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
@@ -16,15 +17,18 @@ import org.springframework.data.jpa.repository.Query
                 [
                         Index(columnList = "membership_id"),
                 ])
-class TaskSubmission(
-        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val membership: TaskMembership? = null,
+data class TaskSubmission(
+        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.EAGER) val membership: TaskMembership? = null,
         @Column(nullable = false) val version: Int? = null,
         @Column(nullable = false) val index: Int? = null,
-        val contentText: String? = null, // nullable
-        @ManyToOne(fetch = FetchType.LAZY) val contentAttachment: Attachment? = null, // nullable
+        @JoinColumn(name = "submitter_id", nullable = false)
+        @ManyToOne(fetch = FetchType.EAGER)
+        val submitter: User? = null,
+        val contentText: String? = null,
+        @ManyToOne(fetch = FetchType.EAGER) val contentAttachment: Attachment? = null, // nullable
 ) : BaseEntity()
 
-interface taskSubmissionRepository : JpaRepository<TaskSubmission, IdType> {
+interface TaskSubmissionRepository : JpaRepository<TaskSubmission, IdType> {
     fun findAllByMembershipId(membershipId: IdType): List<TaskSubmission>
 
     fun findAllByMembershipIdAndVersion(membershipId: IdType, version: Int): List<TaskSubmission>
