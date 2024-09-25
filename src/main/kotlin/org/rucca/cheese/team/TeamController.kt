@@ -66,6 +66,12 @@ class TeamController(
         return ResponseEntity.ok(GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK"))
     }
 
+    @Guard("enumerate", "team")
+    override fun getTeams(query: String, pageStart: Long?, pageSize: Int): ResponseEntity<GetTeams200ResponseDTO> {
+        val (teamDTOs, page) = teamService.enumerateTeams(query, pageStart, pageSize)
+        return ResponseEntity.ok(GetTeams200ResponseDTO(200, GetTeams200ResponseDataDTO(teamDTOs, page), "OK"))
+    }
+
     @Guard("enumerate-my-teams", "team")
     override fun getMyTeams(): ResponseEntity<GetMyTeams200ResponseDTO> {
         val teamDTOs = teamService.getTeamsOfUser(authenticationService.getCurrentUserId())

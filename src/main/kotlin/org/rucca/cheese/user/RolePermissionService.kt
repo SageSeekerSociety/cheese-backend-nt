@@ -75,7 +75,12 @@ class RolePermissionService {
                                 ),
                                 Permission(
                                         authorizedActions =
-                                                listOf("query", "create", "enumerate-my-teams", "enumerate-members"),
+                                                listOf(
+                                                        "query",
+                                                        "create",
+                                                        "enumerate",
+                                                        "enumerate-my-teams",
+                                                        "enumerate-members"),
                                         authorizedResource =
                                                 AuthorizedResource(
                                                         types = listOf("team"),
