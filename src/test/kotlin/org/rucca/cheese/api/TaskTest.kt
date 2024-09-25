@@ -38,6 +38,8 @@ constructor(
     lateinit var creatorToken: String
     lateinit var teamCreator: UserCreatorService.CreateUserResponse
     lateinit var teamCreatorToken: String
+    lateinit var teamMember: UserCreatorService.CreateUserResponse
+    lateinit var teamMemberToken: String
     lateinit var spaceCreator: UserCreatorService.CreateUserResponse
     lateinit var spaceCreatorToken: String
     lateinit var participant: UserCreatorService.CreateUserResponse
@@ -99,12 +101,29 @@ constructor(
         return teamId
     }
 
+    fun joinTeam(token: String, teamId: IdType, userId: IdType) {
+        val request =
+                MockMvcRequestBuilders.post("/teams/$teamId/members")
+                        .header("Authorization", "Bearer $token")
+                        .contentType("application/json")
+                        .content(
+                                """
+                {
+                  "role": "MEMBER",
+                  "user_id": ${userId}
+                }
+            """)
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
     @BeforeAll
     fun prepare() {
         creator = userCreatorService.createUser()
         creatorToken = userCreatorService.login(creator.username, creator.password)
         teamCreator = userCreatorService.createUser()
         teamCreatorToken = userCreatorService.login(teamCreator.username, teamCreator.password)
+        teamMember = userCreatorService.createUser()
+        teamMemberToken = userCreatorService.login(teamMember.username, teamMember.password)
         spaceCreator = userCreatorService.createUser()
         spaceCreatorToken = userCreatorService.login(spaceCreator.username, spaceCreator.password)
         participant = userCreatorService.createUser()
@@ -123,6 +142,7 @@ constructor(
                         teamIntro = "This is a test team.",
                         teamAvatarId = userCreatorService.testAvatarId(),
                 )
+        joinTeam(teamCreatorToken, teamId, teamMember.userId)
         attachmentId = attachmentCreatorService.createAttachment(creatorToken)
     }
 
@@ -494,6 +514,19 @@ constructor(
                         .queryParam("member", participant.userId.toString())
                         .contentType("application/json")
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(94)
+    fun testAddTestParticipantTeamAndGetPermissionDeniedError() {
+        val request =
+                MockMvcRequestBuilders.post("/tasks/${taskIds[1]}/participants")
+                        .header("Authorization", "Bearer $teamMemberToken")
+                        .queryParam("member", teamId.toString())
+                        .contentType("application/json")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isForbidden)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError"))
     }
 
     @Test

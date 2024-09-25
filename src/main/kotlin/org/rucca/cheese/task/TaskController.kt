@@ -40,7 +40,7 @@ class TaskController(
                     userId,
                     authInfo["member"] as? IdType ?: throw IllegalArgumentException("member is null"))
         }
-        authorizationService.customAuthLogics.register("participant-is-self") {
+        authorizationService.customAuthLogics.register("participant-is-self-or-team-where-i-am-admin") {
                 userId: IdType,
                 _: AuthorizedAction,
                 _: String,
@@ -49,7 +49,7 @@ class TaskController(
                 _: IdGetter?,
                 _: Any?,
             ->
-            taskService.participantIsSelf(
+            taskService.participantIsSelfOrTeamWhereIAmAdmin(
                     resourceId ?: throw IllegalArgumentException("resourceId is null"),
                     userId,
                     authInfo["member"] as? IdType ?: throw IllegalArgumentException("member is null"))
