@@ -1911,6 +1911,7 @@ components:
         - members
         - updatedAt
         - createdAt
+        - joined
       properties:
         id:
           type: integer
@@ -1979,6 +1980,10 @@ components:
                 id: 9ijkfpj25gbr7
               items:
                 $ref: "#/components/schemas/User"
+        joined:
+          type: boolean
+        role:
+            $ref: '#/components/schemas/TeamMemberRoleType'
     TeamSummary:
       title: TeamSummary
       type: object

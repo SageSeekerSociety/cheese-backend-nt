@@ -80,6 +80,8 @@ constructor(
                         .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.owner.id").value(creator.userId))
                         .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(0))
                         .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.members.total").value(0))
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.joined").value(true))
+                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.role").value("OWNER"))
         teamId =
                 JSONObject(response.andReturn().response.contentAsString)
                         .getJSONObject("data")
@@ -99,6 +101,8 @@ constructor(
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.owner.id").value(creator.userId))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(0))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.members.total").value(0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.joined").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.role").value("OWNER"))
     }
 
     @Test
@@ -169,6 +173,8 @@ constructor(
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].owner.id").value(creator.userId))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].admins.total").value(0))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].members.total").value(0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].joined").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].role").value("OWNER"))
     }
 
     @Test
@@ -190,6 +196,8 @@ constructor(
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.owner.id").value(newOwner.userId))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(1))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[0].id").value(creator.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.joined").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.role").value("ADMIN"))
     }
 
     @Test
@@ -254,6 +262,8 @@ constructor(
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.owner.id").value(newOwner.userId))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.admins.total").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.joined").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.role").value("OWNER"))
     }
 
     @Test
@@ -274,6 +284,8 @@ constructor(
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.members.total").value(1))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.members.examples[0].id").value(member.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.joined").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.role").value("ADMIN"))
     }
 
     @Test
@@ -453,6 +465,26 @@ constructor(
                 .andExpect(
                         MockMvcResultMatchers.jsonPath("$.data.team.admins.examples[?(@.id == ${newOwner.userId})]")
                                 .exists())
+    }
+
+    @Test
+    @Order(148)
+    fun testGetTeamUseMember() {
+        val request = MockMvcRequestBuilders.get("/teams/$teamId").header("Authorization", "Bearer $memberToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.joined").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.role").value("MEMBER"))
+    }
+
+    @Test
+    @Order(149)
+    fun testGetTeamUseAnotherUser() {
+        val request = MockMvcRequestBuilders.get("/teams/$teamId").header("Authorization", "Bearer $anotherUserToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.joined").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.role").doesNotExist())
     }
 
     @Test
