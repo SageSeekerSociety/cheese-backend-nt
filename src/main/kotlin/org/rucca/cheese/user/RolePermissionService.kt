@@ -85,7 +85,12 @@ class RolePermissionService {
                                 // Task permissions
                                 Permission(
                                         authorizedActions =
-                                                listOf("modify", "delete", "add-participant", "remove-participant"),
+                                                listOf(
+                                                        "enumerate-submissions",
+                                                        "modify",
+                                                        "delete",
+                                                        "add-participant",
+                                                        "remove-participant"),
                                         authorizedResource =
                                                 AuthorizedResource(
                                                         types = listOf("task"),
@@ -93,7 +98,8 @@ class RolePermissionService {
                                                 ),
                                 ),
                                 Permission(
-                                        authorizedActions = listOf("submit", "modify-submission"),
+                                        authorizedActions =
+                                                listOf("submit", "modify-submission", "enumerate-submissions"),
                                         authorizedResource =
                                                 AuthorizedResource(
                                                         types = listOf("task"),
@@ -110,12 +116,7 @@ class RolePermissionService {
                                 ),
                                 Permission(
                                         authorizedActions =
-                                                listOf(
-                                                        "create",
-                                                        "query",
-                                                        "enumerate",
-                                                        "enumerate-submissions",
-                                                        "enumerate-participants"),
+                                                listOf("create", "query", "enumerate", "enumerate-participants"),
                                         authorizedResource =
                                                 AuthorizedResource(
                                                         types = listOf("task"),

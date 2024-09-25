@@ -35,10 +35,12 @@ class TaskController(
                 _: IdGetter?,
                 _: Any?,
             ->
-            taskService.isTaskParticipant(
-                    resourceId ?: throw IllegalArgumentException("resourceId is null"),
-                    userId,
-                    authInfo["member"] as? IdType ?: throw IllegalArgumentException("member is null"))
+            val memberId = authInfo["member"] as? IdType
+            if (resourceId == null || memberId == null) {
+                false
+            } else {
+                taskService.isTaskParticipant(resourceId, userId, memberId)
+            }
         }
         authorizationService.customAuthLogics.register("participant-is-self-or-team-where-i-am-admin") {
                 userId: IdType,
@@ -49,10 +51,12 @@ class TaskController(
                 _: IdGetter?,
                 _: Any?,
             ->
-            taskService.participantIsSelfOrTeamWhereIAmAdmin(
-                    resourceId ?: throw IllegalArgumentException("resourceId is null"),
-                    userId,
-                    authInfo["member"] as? IdType ?: throw IllegalArgumentException("member is null"))
+            val memberId = authInfo["member"] as? IdType
+            if (resourceId == null || memberId == null) {
+                false
+            } else {
+                taskService.participantIsSelfOrTeamWhereIAmAdmin(resourceId, userId, memberId)
+            }
         }
     }
 
@@ -88,7 +92,7 @@ class TaskController(
     @Guard("enumerate-submissions", "task")
     override fun getTaskSubmissions(
             @ResourceId taskId: Long,
-            member: Long?,
+            @AuthInfo("member") member: Long?,
             allVersions: Boolean,
             pageSize: Int,
             pageStart: Long?,
