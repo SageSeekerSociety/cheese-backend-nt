@@ -449,6 +449,32 @@ constructor(
     }
 
     @Test
+    @Order(71)
+    fun testEnumerateTasksByIdInKeywords() {
+        val request =
+                MockMvcRequestBuilders.get("/tasks")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .param("keywords", taskIds[0].toString())
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].id").value(taskIds[0]))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
+    }
+
+    @Test
+    @Order(72)
+    fun testEnumerateTasksByNameInKeywords() {
+        val request =
+                MockMvcRequestBuilders.get("/tasks")
+                        .header("Authorization", "Bearer $creatorToken")
+                        .param("keywords", "$taskName (1) (updated)")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].id").value(taskIds[0]))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
+    }
+
+    @Test
     @Order(80)
     fun testEnumerateTasksByDeadlineDesc() {
         val request =

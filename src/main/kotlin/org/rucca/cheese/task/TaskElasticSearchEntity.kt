@@ -12,5 +12,7 @@ class TaskElasticSearch {
 }
 
 interface TaskElasticSearchRepository : ElasticsearchRepository<TaskElasticSearch, IdType> {
+    fun findByNameContaining(name: String): List<TaskElasticSearch>
+
     fun findByIdOrNameContaining(id: IdType, name: String): List<TaskElasticSearch>
 }

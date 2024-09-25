@@ -661,6 +661,11 @@ paths:
           in: query
           name: queryJoinability
           description: Check whether current user can join this task or using one of his/her team
+        - schema:
+            type: string
+          in: query
+          name: keywords
+          description: Use this to search
     post:
       responses:
         "200":

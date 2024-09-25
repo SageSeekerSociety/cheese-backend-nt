@@ -18,6 +18,10 @@ import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate
+import org.springframework.data.elasticsearch.core.SearchHitSupport
+import org.springframework.data.elasticsearch.core.query.Criteria
+import org.springframework.data.elasticsearch.core.query.CriteriaQuery
 import org.springframework.stereotype.Service
 
 @Service
@@ -30,6 +34,7 @@ class TaskService(
         private val taskSubmissionRepository: taskSubmissionRepository,
         private val entityManager: EntityManager,
         private val attachmentService: AttachmentService,
+        private val elasticsearchTemplate: ElasticsearchTemplate,
 ) {
     fun getJoinability(taskId: IdType, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
         val queryByUser = authenticationService.getCurrentUserId()
@@ -218,6 +223,34 @@ class TaskService(
     fun enumerateTasks(
             space: IdType?,
             team: Int?,
+            keywords: String?,
+            pageSize: Int,
+            pageStart: IdType?,
+            sortBy: TasksSortBy,
+            sortOrder: SortDirection,
+            queryJoinability: Boolean = false,
+    ): Pair<List<TaskDTO>, PageDTO> {
+        if (keywords == null) {
+            return enumerateTasksUseDatabase(space, team, pageSize, pageStart, sortBy, sortOrder, queryJoinability)
+        } else {
+            val id = keywords.toLongOrNull()
+            if (id != null) {
+                return Pair(
+                        listOf(getTaskDto(id, queryJoinability)),
+                        PageDTO(
+                                pageStart = id,
+                                pageSize = 1,
+                                hasPrev = false,
+                                hasMore = false,
+                        ))
+            }
+            return enumerateTasksUseElasticSearch(keywords, pageSize, pageStart, queryJoinability)
+        }
+    }
+
+    fun enumerateTasksUseDatabase(
+            space: IdType?,
+            team: Int?,
             pageSize: Int,
             pageStart: IdType?,
             sortBy: TasksSortBy,
@@ -277,6 +310,22 @@ class TaskService(
                             joinableAsTeam = joinability.second)
                 },
                 page)
+    }
+
+    fun enumerateTasksUseElasticSearch(
+            keywords: String,
+            pageSize: Int,
+            pageStart: IdType?,
+            queryJoinability: Boolean = false,
+    ): Pair<List<TaskDTO>, PageDTO> {
+        val criteria = Criteria("name").matches(keywords)
+        val query = CriteriaQuery(criteria)
+        val hints = elasticsearchTemplate.search(query, TaskElasticSearch::class.java)
+        val result = (SearchHitSupport.unwrapSearchHits(hints) as List<*>).filterIsInstance<TaskElasticSearch>()
+        val (tasks, page) =
+                PageHelper.pageFromAll(
+                        result, pageStart, pageSize, { it.id!! }, { id -> throw NotFoundError("task", id) })
+        return Pair(tasks.map { getTaskDto(it.id!!, queryJoinability) }, page)
     }
 
     fun deleteTask(taskId: IdType) {

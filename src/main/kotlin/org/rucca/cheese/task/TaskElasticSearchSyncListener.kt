@@ -33,7 +33,7 @@ class TaskElasticSearchSyncListener {
     @PreUpdate
     fun preUpdate(task: Task) {
         val taskElasticSearchRepository = taskElasticSearchRepositoryProvider.getObject()
-        if (task.deletedAt != null) {
+        if (task.deletedAt == null) {
             taskElasticSearchRepository.save(task.toElasticSearchDocument())
         } else {
             taskElasticSearchRepository.delete(task.toElasticSearchDocument())
