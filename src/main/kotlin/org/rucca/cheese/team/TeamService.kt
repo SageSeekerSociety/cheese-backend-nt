@@ -20,6 +20,16 @@ import org.springframework.data.elasticsearch.core.query.Criteria
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery
 import org.springframework.stereotype.Service
 
+fun Team.toTeamSummaryDTO() =
+        TeamSummaryDTO(
+                id = this.id!!,
+                name = this.name!!,
+                intro = this.description!!,
+                avatarId = this.avatar!!.id!!.toLong(),
+                updatedAt = this.updatedAt!!.toEpochMilli(),
+                createdAt = this.createdAt!!.toEpochMilli(),
+        )
+
 @Service
 class TeamService(
         private val teamRepository: TeamRepository,
@@ -99,16 +109,11 @@ class TeamService(
     }
 
     fun getTeamsThatUserCanUseToJoinTask(taskId: IdType, userId: IdType): List<TeamSummaryDTO> {
-        return teamUserRelationRepository.getTeamsThatUserCanUseToJoinTask(taskId, userId).map {
-            TeamSummaryDTO(
-                    id = it.id!!,
-                    name = it.name!!,
-                    intro = it.description!!,
-                    avatarId = it.avatar!!.id!!.toLong(),
-                    updatedAt = it.updatedAt!!.toEpochMilli(),
-                    createdAt = it.createdAt!!.toEpochMilli(),
-            )
-        }
+        return teamRepository.getTeamsThatUserCanUseToJoinTask(taskId, userId).map { it.toTeamSummaryDTO() }
+    }
+
+    fun getTeamsThatUserCanUseToSubmitTask(taskId: IdType, userId: IdType): List<TeamSummaryDTO> {
+        return teamRepository.getTeamsThatUserCanUseToSubmitTask(taskId, userId).map { it.toTeamSummaryDTO() }
     }
 
     fun isTeamAdmin(teamId: IdType, userId: IdType): Boolean {
