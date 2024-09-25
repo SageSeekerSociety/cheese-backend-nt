@@ -8,7 +8,6 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.user.User
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
 
 enum class TeamMemberRole {
     OWNER,
@@ -46,24 +45,4 @@ interface TeamUserRelationRepository : JpaRepository<TeamUserRelation, IdType> {
             role: TeamMemberRole,
             pageable: Pageable,
     ): List<TeamUserRelation>
-
-    @Query(
-            """
-            SELECT team
-            FROM Team team
-            JOIN TeamUserRelation relation ON team.id = relation.team.id
-            WHERE relation.user.id = :userId
-            AND relation.role = :joinableIfRole
-            AND NOT EXISTS (
-                SELECT 1
-                FROM TaskMembership membership
-                WHERE membership.task.id = :taskId
-                AND membership.memberId = team.id
-            )
-            """)
-    fun getTeamsThatUserCanUseToJoinTask(
-            taskId: IdType,
-            userId: IdType,
-            joinableIfRole: TeamMemberRole = TeamMemberRole.OWNER
-    ): List<Team>
 }

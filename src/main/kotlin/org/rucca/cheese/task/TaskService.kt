@@ -38,42 +38,9 @@ class TaskService(
         private val attachmentService: AttachmentService,
         private val elasticsearchTemplate: ElasticsearchTemplate,
 ) {
-    fun getJoinability(taskId: IdType, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
-        val queryByUser = authenticationService.getCurrentUserId()
-        when (getTaskSumbitterType(taskId)) {
-            TaskSubmitterTypeDTO.USER ->
-                    return Pair(!taskMembershipRepository.existsByTaskIdAndMemberId(taskId, queryByUser), null)
-            TaskSubmitterTypeDTO.TEAM -> {
-                val teams = teamService.getTeamsThatUserCanUseToJoinTask(taskId, queryByUser)
-                return Pair(teams.isNotEmpty(), teams)
-            }
-        }
-    }
-
-    fun getTaskDto(taskId: IdType, queryJoinability: Boolean = false): TaskDTO {
+    fun getTaskDto(taskId: IdType, queryJoinability: Boolean = false, querySubmittability: Boolean = false): TaskDTO {
         val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
-        val joinability =
-                if (queryJoinability) getJoinability(taskId, authenticationService.getCurrentUserId())
-                else Pair(null, null)
-        return TaskDTO(
-                task.id!!,
-                task.name!!,
-                convertTaskSubmitterType(task.submitterType!!),
-                userService.getUserDto(task.creator!!.id!!.toLong()),
-                task.deadline!!.toEpochMilli(),
-                task.resubmittable!!,
-                task.editable!!,
-                task.description!!,
-                task.submissionSchema!!
-                        .sortedBy { it.index }
-                        .map {
-                            TaskSubmissionSchemaEntryDTO(it.description!!, convertTaskSubmissionEntryType(it.type!!))
-                        },
-                getTaskSubmitterSummary(taskId),
-                updatedAt = task.updatedAt!!.toEpochMilli(),
-                createdAt = task.createdAt!!.toEpochMilli(),
-                joinable = joinability.first,
-                joinableAsTeam = joinability.second)
+        return task.toTaskDTO(queryJoinability, querySubmittability)
     }
 
     fun getTaskOwner(taskId: IdType): IdType {
@@ -124,6 +91,36 @@ class TaskService(
             TaskSubmissionTypeDTO.TEXT -> TaskSubmissionEntryType.TEXT
             TaskSubmissionTypeDTO.FILE -> TaskSubmissionEntryType.ATTACHMENT
         }
+    }
+
+    fun Task.toTaskDTO(queryJoinability: Boolean, querySubmittability: Boolean): TaskDTO {
+        val joinability =
+                if (queryJoinability) getJoinability(this.id!!, authenticationService.getCurrentUserId())
+                else Pair(null, null)
+        val submittability =
+                if (querySubmittability) getSubmittability(this.id!!, authenticationService.getCurrentUserId())
+                else Pair(null, null)
+        return TaskDTO(
+                this.id!!,
+                this.name!!,
+                convertTaskSubmitterType(this.submitterType!!),
+                userService.getUserDto(this.creator!!.id!!.toLong()),
+                this.deadline!!.toEpochMilli(),
+                this.resubmittable!!,
+                this.editable!!,
+                this.description!!,
+                this.submissionSchema!!
+                        .sortedBy { it.index }
+                        .map {
+                            TaskSubmissionSchemaEntryDTO(it.description!!, convertTaskSubmissionEntryType(it.type!!))
+                        },
+                getTaskSubmitterSummary(this.id!!),
+                updatedAt = this.updatedAt!!.toEpochMilli(),
+                createdAt = this.createdAt!!.toEpochMilli(),
+                joinable = joinability.first,
+                joinableAsTeam = joinability.second,
+                submittable = submittability.first,
+                submittableAsTeam = submittability.second)
     }
 
     fun createTask(
@@ -211,6 +208,30 @@ class TaskService(
         return task.editable!!
     }
 
+    fun getJoinability(taskId: IdType, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
+        val queryByUser = authenticationService.getCurrentUserId()
+        when (getTaskSumbitterType(taskId)) {
+            TaskSubmitterTypeDTO.USER ->
+                    return Pair(!taskMembershipRepository.existsByTaskIdAndMemberId(taskId, queryByUser), null)
+            TaskSubmitterTypeDTO.TEAM -> {
+                val teams = teamService.getTeamsThatUserCanUseToJoinTask(taskId, queryByUser)
+                return Pair(teams.isNotEmpty(), teams)
+            }
+        }
+    }
+
+    fun getSubmittability(task: IdType, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
+        val queryByUser = authenticationService.getCurrentUserId()
+        when (getTaskSumbitterType(task)) {
+            TaskSubmitterTypeDTO.USER ->
+                    return Pair(taskMembershipRepository.existsByTaskIdAndMemberId(task, queryByUser), null)
+            TaskSubmitterTypeDTO.TEAM -> {
+                val teams = teamService.getTeamsThatUserCanUseToSubmitTask(task, queryByUser)
+                return Pair(teams.isNotEmpty(), teams)
+            }
+        }
+    }
+
     fun getTaskSubmitterSummary(taskId: IdType): TaskSubmittersDTO {
         val submitters = taskMembershipRepository.findByTaskIdWhereMemberHasSubmitted(taskId)
         val examples = submitters.sortedBy { it.updatedAt }.reversed().take(3)
@@ -231,14 +252,16 @@ class TaskService(
             sortBy: TasksSortBy,
             sortOrder: SortDirection,
             queryJoinability: Boolean = false,
+            querySubmittability: Boolean = false,
     ): Pair<List<TaskDTO>, PageDTO> {
         if (keywords == null) {
-            return enumerateTasksUseDatabase(space, team, pageSize, pageStart, sortBy, sortOrder, queryJoinability)
+            return enumerateTasksUseDatabase(
+                    space, team, pageSize, pageStart, sortBy, sortOrder, queryJoinability, querySubmittability)
         } else {
             val id = keywords.toLongOrNull()
             if (id != null) {
                 return Pair(
-                        listOf(getTaskDto(id, queryJoinability)),
+                        listOf(getTaskDto(id, queryJoinability, querySubmittability)),
                         PageDTO(
                                 pageStart = id,
                                 pageSize = 1,
@@ -246,7 +269,7 @@ class TaskService(
                                 hasMore = false,
                         ))
             }
-            return enumerateTasksUseElasticSearch(keywords, pageSize, pageStart, queryJoinability)
+            return enumerateTasksUseElasticSearch(keywords, pageSize, pageStart, queryJoinability, querySubmittability)
         }
     }
 
@@ -258,6 +281,7 @@ class TaskService(
             sortBy: TasksSortBy,
             sortOrder: SortDirection,
             queryJoinability: Boolean = false,
+            querySubmittability: Boolean = false,
     ): Pair<List<TaskDTO>, PageDTO> {
         val cb = entityManager.criteriaBuilder
         val cq = cb.createQuery(Task::class.java)
@@ -285,33 +309,7 @@ class TaskService(
         val (curr, page) =
                 PageHelper.pageFromAll(
                         result, pageStart, pageSize, { it.id!! }, { id -> throw NotFoundError("task", id) })
-        return Pair(
-                curr.map {
-                    val joinability =
-                            if (queryJoinability) getJoinability(it.id!!, authenticationService.getCurrentUserId())
-                            else Pair(null, null)
-                    TaskDTO(
-                            it.id!!,
-                            it.name!!,
-                            convertTaskSubmitterType(it.submitterType!!),
-                            userService.getUserDto(it.creator!!.id!!.toLong()),
-                            it.deadline!!.toEpochMilli(),
-                            it.resubmittable!!,
-                            it.editable!!,
-                            it.description!!,
-                            it.submissionSchema!!
-                                    .sortedBy { it.index }
-                                    .map {
-                                        TaskSubmissionSchemaEntryDTO(
-                                                it.description!!, convertTaskSubmissionEntryType(it.type!!))
-                                    },
-                            getTaskSubmitterSummary(it.id!!),
-                            updatedAt = it.updatedAt!!.toEpochMilli(),
-                            createdAt = it.createdAt!!.toEpochMilli(),
-                            joinable = joinability.first,
-                            joinableAsTeam = joinability.second)
-                },
-                page)
+        return Pair(curr.map { it.toTaskDTO(queryJoinability, querySubmittability) }, page)
     }
 
     fun enumerateTasksUseElasticSearch(
@@ -319,6 +317,7 @@ class TaskService(
             pageSize: Int,
             pageStart: IdType?,
             queryJoinability: Boolean = false,
+            querySubmittability: Boolean = false,
     ): Pair<List<TaskDTO>, PageDTO> {
         val criteria = Criteria("name").matches(keywords)
         val query = CriteriaQuery(criteria)
@@ -327,7 +326,7 @@ class TaskService(
         val (tasks, page) =
                 PageHelper.pageFromAll(
                         result, pageStart, pageSize, { it.id!! }, { id -> throw NotFoundError("task", id) })
-        return Pair(tasks.map { getTaskDto(it.id!!, queryJoinability) }, page)
+        return Pair(tasks.map { getTaskDto(it.id!!, queryJoinability, querySubmittability) }, page)
     }
 
     fun deleteTask(taskId: IdType) {
