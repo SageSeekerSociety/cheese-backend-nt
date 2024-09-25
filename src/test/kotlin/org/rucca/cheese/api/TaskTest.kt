@@ -302,44 +302,53 @@ constructor(
 
     @Test
     @Order(25)
-    fun testGetTeamTaskWithJoinabilityUseTeamCreator() {
+    fun testGetTeamTaskWithJoinabilityAndSubmittabilityUseTeamCreator() {
         val taskId = taskIds[1]
         val request =
                 MockMvcRequestBuilders.get("/tasks/$taskId")
                         .queryParam("queryJoinability", "true")
+                        .queryParam("querySubmittability", "true")
                         .header("Authorization", "Bearer $teamCreatorToken")
         mockMvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(true))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam[0].id").value(teamId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittableAsTeam").isEmpty)
     }
 
     @Test
     @Order(26)
-    fun testGetTeamTaskWithJoinabilityUseSpaceCreator() {
+    fun testGetTeamTaskWithJoinabilityAndSubmittabilityUseSpaceCreator() {
         val taskId = taskIds[1]
         val request =
                 MockMvcRequestBuilders.get("/tasks/$taskId")
                         .queryParam("queryJoinability", "true")
+                        .queryParam("querySubmittability", "true")
                         .header("Authorization", "Bearer $spaceCreatorToken")
         mockMvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(false))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam").isEmpty)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittableAsTeam").isEmpty)
     }
 
     @Test
     @Order(27)
-    fun testGetUserTaskWithJoinabilityUseSpaceCreator() {
+    fun testGetUserTaskWithJoinabilityAndSubmittabilityUseSpaceCreator() {
         val taskId = taskIds[0]
         val request =
                 MockMvcRequestBuilders.get("/tasks/$taskId")
                         .queryParam("queryJoinability", "true")
+                        .queryParam("querySubmittability", "true")
                         .header("Authorization", "Bearer $spaceCreatorToken")
         mockMvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(true))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam").doesNotExist())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittableAsTeam").doesNotExist())
     }
 
     @Test
@@ -584,16 +593,19 @@ constructor(
 
     @Test
     @Order(106)
-    fun testGetTeamTaskWithJoinabilityUseTeamCreatorAfterJoin() {
+    fun testGetTeamTaskWithJoinabilityAndSubmittabilityUseTeamCreatorAfterJoin() {
         val taskId = taskIds[1]
         val request =
                 MockMvcRequestBuilders.get("/tasks/$taskId")
                         .queryParam("queryJoinability", "true")
+                        .queryParam("querySubmittability", "true")
                         .header("Authorization", "Bearer $teamCreatorToken")
         mockMvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(false))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam").isEmpty)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittableAsTeam[0].id").value(teamId))
     }
 
     @Test
@@ -618,16 +630,19 @@ constructor(
 
     @Test
     @Order(25)
-    fun testGetTeamTaskWithJoinabilityUseTeamCreatorAfterExit() {
+    fun testGetTeamTaskWithJoinabilityAndSubmittabilityUseTeamCreatorAfterExit() {
         val taskId = taskIds[1]
         val request =
                 MockMvcRequestBuilders.get("/tasks/$taskId")
                         .queryParam("queryJoinability", "true")
+                        .queryParam("querySubmittability", "true")
                         .header("Authorization", "Bearer $teamCreatorToken")
         mockMvc.perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(true))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam[0].id").value(teamId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittableAsTeam").isEmpty)
     }
 
     @Test
