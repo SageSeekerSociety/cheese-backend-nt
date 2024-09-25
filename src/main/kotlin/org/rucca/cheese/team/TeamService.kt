@@ -4,6 +4,7 @@ import java.time.LocalDateTime
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
+import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
@@ -13,6 +14,10 @@ import org.rucca.cheese.user.Avatar
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate
+import org.springframework.data.elasticsearch.core.SearchHitSupport
+import org.springframework.data.elasticsearch.core.query.Criteria
+import org.springframework.data.elasticsearch.core.query.CriteriaQuery
 import org.springframework.stereotype.Service
 
 @Service
@@ -20,6 +25,7 @@ class TeamService(
         private val teamRepository: TeamRepository,
         private val teamUserRelationRepository: TeamUserRelationRepository,
         private val userService: UserService,
+        private val elasticsearchTemplate: ElasticsearchTemplate,
         private val authenticateService: AuthenticationService,
 ) {
     fun getTeamDto(teamId: IdType): TeamDTO {
@@ -70,6 +76,17 @@ class TeamService(
                     NotFoundError("team", teamId)
                 }
         return relation.user!!.id!!.toLong()
+    }
+
+    fun enumerateTeams(query: String, pageStart: IdType?, pageSize: Int): Pair<List<TeamDTO>, PageDTO> {
+        val criteria = Criteria("name").matches(query)
+        val query = CriteriaQuery(criteria)
+        val hints = elasticsearchTemplate.search(query, TeamElasticSearch::class.java)
+        val result = (SearchHitSupport.unwrapSearchHits(hints) as List<*>).filterIsInstance<TeamElasticSearch>()
+        val (teams, page) =
+                PageHelper.pageFromAll(
+                        result, pageStart, pageSize, { it.id!! }, { id -> throw NotFoundError("team", id) })
+        return Pair(teams.map { getTeamDto(it.id!!) }, page)
     }
 
     fun getTeamsOfUser(userId: IdType): List<TeamDTO> {

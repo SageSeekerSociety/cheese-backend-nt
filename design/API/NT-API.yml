@@ -1370,6 +1370,57 @@ paths:
       summary: Create Team
       x-stoplight:
         id: b30d0d09hir43
+    get:
+      summary: Get Teams
+      tags: [ ]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - data
+                  - message
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    required:
+                      - teams
+                    properties:
+                      teams:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Team'
+                      page:
+                        $ref: '#/components/schemas/Page'
+                  message:
+                    type: string
+          description: OK
+      operationId: get-teams
+      x-stoplight:
+        id: o741q5kyy29oq
+      parameters:
+        - schema:
+            type: string
+            default: ""
+          in: query
+          name: query
+          description: ID or Search Term
+          allowEmptyValue: true
+        - schema:
+            type: integer
+            format: int64
+          in: query
+          name: page_start
+        - schema:
+            type: integer
+            default: 20
+          in: query
+          name: page_size
   /teams/{teamId}/members:
     get:
       summary: Enumerate Team Members
