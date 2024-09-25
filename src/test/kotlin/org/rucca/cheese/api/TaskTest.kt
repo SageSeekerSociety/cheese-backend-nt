@@ -46,6 +46,8 @@ constructor(
     lateinit var participantToken: String
     lateinit var participant2: UserCreatorService.CreateUserResponse
     lateinit var participantToken2: String
+    lateinit var irrelevantUser: UserCreatorService.CreateUserResponse
+    lateinit var irrelevantUserToken: String
     private var teamId: IdType = -1
     private var spaceId: IdType = -1
     private var attachmentId: IdType = -1
@@ -132,6 +134,8 @@ constructor(
         participantToken = userCreatorService.login(participant.username, participant.password)
         participant2 = userCreatorService.createUser()
         participantToken2 = userCreatorService.login(participant2.username, participant2.password)
+        irrelevantUser = userCreatorService.createUser()
+        irrelevantUserToken = userCreatorService.login(irrelevantUser.username, irrelevantUser.password)
         spaceId =
                 createSpace(
                         creatorToken = teamCreatorToken,
@@ -933,6 +937,30 @@ constructor(
     }
 
     @Test
+    @Order(198)
+    fun testGetSubmissionsUseIrrelevantUserAndGetPermissionDeniedError() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+                        .header("Authorization", "Bearer $irrelevantUserToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isForbidden)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError"))
+    }
+
+    @Test
+    @Order(199)
+    fun testGetSubmissionsUseParticipantAndGetPermissionDeniedError() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+                        .header("Authorization", "Bearer $participantToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isForbidden)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError"))
+    }
+
+    @Test
     @Order(200)
     fun testGetSubmissionsByDefault() {
         val taskId = taskIds[0]
@@ -976,6 +1004,45 @@ constructor(
                 .andExpect(
                         MockMvcResultMatchers.jsonPath("$.data.submissions[1].content[0].contentText")
                                 .value("This is a test submission."))
+    }
+
+    @Test
+    @Order(218)
+    fun testGetSubmissionsUseParticipant2WithMemberIdAndGetPermissionDeniedError() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+                        .param("member", participant.userId.toString())
+                        .header("Authorization", "Bearer $participantToken2")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isForbidden)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError"))
+    }
+
+    @Test
+    @Order(219)
+    fun testGetSubmissionsUseParticipantWithMemberId() {
+        val taskId = taskIds[0]
+        val request =
+                MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+                        .param("member", participant.userId.toString())
+                        .header("Authorization", "Bearer $participantToken")
+        mockMvc.perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].id").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].member.id").value(participant.userId))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submissions[0].submitter.id").value(participant.userId))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].version").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].title").value("Text Entry"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].type").value("TEXT"))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].contentText")
+                                .value("This is a test submission. (Version 2) (edited)"))
+                .andExpect(
+                        MockMvcResultMatchers.jsonPath(
+                                        "$.data.submissions[?(@[0].memberId == ${participant2.userId})][0]")
+                                .doesNotExist())
     }
 
     @Test
