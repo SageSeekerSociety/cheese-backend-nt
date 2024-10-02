@@ -17,7 +17,7 @@ import org.springframework.data.jpa.repository.Query
                         Index(columnList = "member_id"),
                 ])
 data class TaskMembership(
-        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.EAGER) val task: Task? = null,
+        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val task: Task? = null,
         @Column(nullable = false) val memberId: IdType? = null,
 ) : BaseEntity()
 
