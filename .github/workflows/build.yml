@@ -34,6 +34,7 @@ jobs:
       - name: Check uncommitted changes to ensure format applied
         run: |
           if [[ -n $(git status --porcelain) ]]; then
+            git status
             echo "There are uncommitted changes. Please run './mvnw spotless:apply' and commit the changes."
             exit 1
           else
