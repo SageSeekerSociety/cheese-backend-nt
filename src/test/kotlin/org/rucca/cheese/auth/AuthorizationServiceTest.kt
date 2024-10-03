@@ -13,8 +13,8 @@ import org.springframework.boot.test.context.SpringBootTest
 class AuthorizationServiceTest
 @Autowired
 constructor(
-        private val authorizationService: AuthorizationService,
-        private val userCreatorService: UserCreatorService,
+    private val authorizationService: AuthorizationService,
+    private val userCreatorService: UserCreatorService,
 ) {
     var userId: IdType = -1
     lateinit var token: String

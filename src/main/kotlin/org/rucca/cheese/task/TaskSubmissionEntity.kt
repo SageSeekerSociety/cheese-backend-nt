@@ -12,16 +12,19 @@ import org.springframework.data.jpa.repository.Query
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @Table(
-        indexes =
-                [
-                        Index(columnList = "membership_id"),
-                ])
+    indexes =
+        [
+            Index(columnList = "membership_id"),
+        ]
+)
 data class TaskSubmission(
-        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val membership: TaskMembership? = null,
-        @Column(nullable = false) val version: Int? = null,
-        @JoinColumn(name = "submitter_id", nullable = false)
-        @ManyToOne(fetch = FetchType.LAZY)
-        val submitter: User? = null,
+    @JoinColumn(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    val membership: TaskMembership? = null,
+    @Column(nullable = false) val version: Int? = null,
+    @JoinColumn(name = "submitter_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    val submitter: User? = null,
 ) : BaseEntity()
 
 interface TaskSubmissionRepository : JpaRepository<TaskSubmission, IdType> {

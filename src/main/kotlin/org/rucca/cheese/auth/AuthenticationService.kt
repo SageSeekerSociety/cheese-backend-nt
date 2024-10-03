@@ -8,12 +8,12 @@ import org.springframework.web.context.request.ServletRequestAttributes
 
 @Service
 class AuthenticationService(
-        private val authorizationService: AuthorizationService,
+    private val authorizationService: AuthorizationService,
 ) {
     fun getToken(): String {
         return (RequestContextHolder.currentRequestAttributes() as ServletRequestAttributes)
-                .request
-                .getHeader("Authorization") ?: throw AuthenticationRequiredError()
+            .request
+            .getHeader("Authorization") ?: throw AuthenticationRequiredError()
     }
 
     fun getCurrentUserId(): IdType {

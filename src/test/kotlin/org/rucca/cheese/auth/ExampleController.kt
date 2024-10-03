@@ -12,7 +12,7 @@ class ExampleController {
     @GetMapping("/example2/1")
     @Guard("query", "example")
     fun withId(
-            @RequestParam("id") @ResourceId id: IdType,
+        @RequestParam("id") @ResourceId id: IdType,
     ): String {
         return "example_1"
     }

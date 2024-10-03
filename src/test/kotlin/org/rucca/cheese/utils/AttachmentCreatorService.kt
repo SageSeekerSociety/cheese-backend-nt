@@ -13,25 +13,26 @@ import org.springframework.stereotype.Service
 
 @Service
 class AttachmentCreatorService(
-        private val applicationConfig: ApplicationConfig,
+    private val applicationConfig: ApplicationConfig,
 ) {
     fun createAttachment(token: String): IdType {
         val file = File.createTempFile("attachment", ".txt")
         file.writeText("This is a test attachment")
         file.deleteOnExit()
         val client =
-                ClientBuilder.newBuilder()
-                        .register(org.glassfish.jersey.media.multipart.MultiPartFeature::class.java)
-                        .build()
+            ClientBuilder.newBuilder()
+                .register(org.glassfish.jersey.media.multipart.MultiPartFeature::class.java)
+                .build()
         val target = client.target(applicationConfig.legacyUrl).path("/attachments")
         val multiPart =
-                FormDataMultiPart()
-                        .field("type", "file")
-                        .bodyPart(FileDataBodyPart("file", file, MediaType.APPLICATION_OCTET_STREAM_TYPE))
+            FormDataMultiPart()
+                .field("type", "file")
+                .bodyPart(FileDataBodyPart("file", file, MediaType.APPLICATION_OCTET_STREAM_TYPE))
         val response =
-                target.request(MediaType.MULTIPART_FORM_DATA_TYPE)
-                        .header("Authorization", "Bearer $token") // 替换为实际的 Bearer token
-                        .post(Entity.entity(multiPart, multiPart.mediaType))
+            target
+                .request(MediaType.MULTIPART_FORM_DATA_TYPE)
+                .header("Authorization", "Bearer $token") // 替换为实际的 Bearer token
+                .post(Entity.entity(multiPart, multiPart.mediaType))
         val json = JSONObject(response.readEntity(String::class.java))
         return json.getJSONObject("data").getLong("id")
     }
