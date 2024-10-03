@@ -1,3 +1,7 @@
+## This is a workaround for .github/workflows/build.yml
+settings.xml
+toolchains.xml
+
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
