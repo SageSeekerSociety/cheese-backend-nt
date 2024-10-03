@@ -195,7 +195,6 @@
                         <configuration>
                             <inputSpec>./design/API/NT-API.yml</inputSpec>
                             <generatorName>kotlin-spring</generatorName>
-                            <addCompileSourceRoot>true</addCompileSourceRoot>
                             <skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>
                             <modelNameSuffix>DTO</modelNameSuffix>
                             <configOptions>
@@ -206,22 +205,6 @@
                                 <useBeanValidation>true</useBeanValidation>
                                 <exceptionHandler>false</exceptionHandler>
                             </configOptions>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>add-source</goal>
-                        </goals>
-                        <phase>generate-sources</phase>
-                        <configuration>
-                            <sources>target/generated-sources/openapi/src</sources>
                         </configuration>
                     </execution>
                 </executions>
@@ -256,6 +239,26 @@
                                     <!-- Avoid long logs -->
                                     <arg value="--logging.level.root=WARN"/>
                                 </java>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-generated-api</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <target>
+                                <!-- Copy the generated API files to the correct package. -->
+                                <delete dir="src/main/kotlin/org/rucca/cheese/api"/>
+                                <delete dir="src/main/kotlin/org/rucca/cheese/model"/>
+                                <copy todir="src/main/kotlin/org/rucca/cheese/api">
+                                    <fileset dir="target/generated-sources/openapi/src/main/kotlin/org/rucca/cheese/api"/>
+                                </copy>
+                                <copy todir="src/main/kotlin/org/rucca/cheese/model">
+                                    <fileset dir="target/generated-sources/openapi/src/main/kotlin/org/rucca/cheese/model"/>
+                                </copy>
                             </target>
                         </configuration>
                     </execution>
