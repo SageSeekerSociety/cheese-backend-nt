@@ -971,6 +971,12 @@ paths:
           name: allVersions
           description: Include All Versions
         - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryReview
+          description: Query task owner's review
+        - schema:
             type: integer
             default: 9
           in: query
@@ -1141,6 +1147,140 @@ paths:
                     x-stoplight:
                       id: 6pybgx4byzj2l
                     format: int64
+  '/tasks/{taskId}/submissions/{version}/review':
+    post:
+      summary: Review Submission
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - data
+                  - message
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    required:
+                      - submission
+                    properties:
+                      submission:
+                        $ref: '#/components/schemas/TaskSubmission'
+                  message:
+                    type: string
+      operationId: post-task-submission-review
+      parameters:
+        - schema:
+            type: integer
+            format: int64
+          in: path
+          name: taskId
+          description: Task ID
+          required: true
+        - schema:
+            type: integer
+          in: path
+          name: version
+          description: Version Index
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - accepted
+                - score
+                - comment
+              properties:
+                accepted:
+                  type: boolean
+                score:
+                  type: integer
+                comment:
+                  type: string
+    patch:
+      summary: Re-Review Submission
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - data
+                  - message
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    required:
+                      - submission
+                    properties:
+                      submission:
+                        $ref: '#/components/schemas/TaskSubmission'
+                  message:
+                    type: string
+      operationId: patch-task-submission-review
+      parameters:
+        - schema:
+            type: integer
+            format: int64
+          in: path
+          name: taskId
+          description: Task ID
+          required: true
+        - schema:
+            type: integer
+          in: path
+          name: version
+          description: Version Index
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accepted:
+                  type: boolean
+                score:
+                  type: integer
+                comment:
+                  type: string
+    delete:
+      summary: Revert Review Submission
+      tags: []
+      responses:
+        '200':
+          description: OK
+      operationId: delete-task-submission-review
+      parameters:
+        - schema:
+            type: integer
+            format: int64
+          in: path
+          name: taskId
+          description: Task ID
+          required: true
+        - schema:
+            type: integer
+          in: path
+          name: version
+          description: Version Index
+          required: true
   /teams/{teamId}:
     delete:
       parameters:
@@ -1865,6 +2005,28 @@ components:
       enum:
         - TEXT
         - FILE
+    TaskSubmissionReview:
+      title: TaskSubmissionReview
+      type: object
+      required:
+        - reviewed
+      properties:
+        reviewed:
+          type: boolean
+        detail:
+          type: object
+          description: Has value only when 'reviewed' is true
+          required:
+            - accepted
+            - score
+            - comment
+          properties:
+            accepted:
+              type: boolean
+            score:
+              type: integer
+            comment:
+              type: string
     TaskSubmission:
       title: TaskSubmission
       x-stoplight:
@@ -1898,6 +2060,8 @@ components:
           type: array
           items:
               $ref: "#/components/schemas/TaskSubmissionContentEntry"
+        review:
+          $ref: '#/components/schemas/TaskSubmissionReview'
     TaskSubmissionContentEntry:
       title: TaskSubmissionContentEntry
       type: object

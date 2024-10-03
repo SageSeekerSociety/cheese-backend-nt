@@ -105,7 +105,10 @@ class RolePermissionService {
                                 "modify",
                                 "delete",
                                 "add-participant",
-                                "remove-participant"
+                                "remove-participant",
+                                "create-review",
+                                "modify-review",
+                                "delete-review"
                             ),
                         authorizedResource =
                             AuthorizedResource(

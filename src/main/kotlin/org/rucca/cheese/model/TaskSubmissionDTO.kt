@@ -12,6 +12,7 @@ import javax.validation.Valid
  * @param createdAt
  * @param updatedAt
  * @param content
+ * @param review
  */
 data class TaskSubmissionDTO(
     @Schema(example = "null", required = true, description = "")
@@ -37,5 +38,9 @@ data class TaskSubmissionDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
-    val content: kotlin.collections.List<TaskSubmissionContentEntryDTO>
+    val content: kotlin.collections.List<TaskSubmissionContentEntryDTO>,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("review")
+    val review: TaskSubmissionReviewDTO? = null
 ) {}

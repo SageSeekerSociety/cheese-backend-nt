@@ -111,6 +111,7 @@ class TaskController(
         @ResourceId taskId: Long,
         @AuthInfo("member") member: Long?,
         allVersions: Boolean,
+        queryReview: Boolean,
         pageSize: Int,
         pageStart: Long?,
         sortBy: String,
@@ -316,5 +317,31 @@ class TaskController(
                 "OK"
             )
         )
+    }
+
+    @Guard("create-review", "task")
+    override fun postTaskSubmissionReview(
+        @ResourceId taskId: Long,
+        version: Int,
+        postTaskSubmissionReviewRequestDTO: PostTaskSubmissionReviewRequestDTO
+    ): ResponseEntity<PostTaskSubmissionReview200ResponseDTO> {
+        TODO()
+    }
+
+    @Guard("modify-review", "task")
+    override fun patchTaskSubmissionReview(
+        @ResourceId taskId: Long,
+        version: Int,
+        patchTaskSubmissionReviewRequestDTO: PatchTaskSubmissionReviewRequestDTO
+    ): ResponseEntity<PostTaskSubmissionReview200ResponseDTO> {
+        TODO()
+    }
+
+    @Guard("delete-review", "task")
+    override fun deleteTaskSubmissionReview(
+        @ResourceId taskId: Long,
+        version: Int
+    ): ResponseEntity<Unit> {
+        TODO()
     }
 }

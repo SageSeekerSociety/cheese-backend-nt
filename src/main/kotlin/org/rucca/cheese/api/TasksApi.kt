@@ -18,9 +18,12 @@ import org.rucca.cheese.model.GetTaskParticipants200ResponseDTO
 import org.rucca.cheese.model.GetTaskSubmissions200ResponseDTO
 import org.rucca.cheese.model.GetTasks200ResponseDTO
 import org.rucca.cheese.model.PatchTaskRequestDTO
+import org.rucca.cheese.model.PatchTaskSubmissionReviewRequestDTO
 import org.rucca.cheese.model.PostTaskRequestDTO
 import org.rucca.cheese.model.PostTaskSubmission200ResponseDTO
 import org.rucca.cheese.model.PostTaskSubmissionRequestInnerDTO
+import org.rucca.cheese.model.PostTaskSubmissionReview200ResponseDTO
+import org.rucca.cheese.model.PostTaskSubmissionReviewRequestDTO
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -96,6 +99,32 @@ interface TasksApi {
         @RequestParam(value = "member", required = true)
         member: kotlin.Long
     ): ResponseEntity<GetTask200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags =
+            [
+                "default",
+            ],
+        summary = "Revert Review Submission",
+        operationId = "deleteTaskSubmissionReview",
+        description = """""",
+        responses = [ApiResponse(responseCode = "200", description = "OK")],
+        security = [SecurityRequirement(name = "bearerAuth")]
+    )
+    @RequestMapping(
+        method = [RequestMethod.DELETE],
+        value = ["/tasks/{taskId}/submissions/{version}/review"]
+    )
+    fun deleteTaskSubmissionReview(
+        @Parameter(description = "Task ID", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
+        @Parameter(description = "Version Index", required = true)
+        @PathVariable("version")
+        version: kotlin.Int
+    ): ResponseEntity<Unit> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -227,6 +256,13 @@ interface TasksApi {
         @Valid
         @RequestParam(value = "allVersions", required = false, defaultValue = "false")
         allVersions: kotlin.Boolean,
+        @Parameter(
+            description = "Query task owner's review",
+            schema = Schema(defaultValue = "false")
+        )
+        @Valid
+        @RequestParam(value = "queryReview", required = false, defaultValue = "false")
+        queryReview: kotlin.Boolean,
         @Parameter(description = "Page Size", schema = Schema(defaultValue = "9"))
         @Valid
         @RequestParam(value = "page_size", required = false, defaultValue = "9")
@@ -419,6 +455,54 @@ interface TasksApi {
             [
                 "default",
             ],
+        summary = "Re-Review Submission",
+        operationId = "patchTaskSubmissionReview",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation =
+                                            PostTaskSubmissionReview200ResponseDTO::class
+                                    )
+                            )
+                        ]
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")]
+    )
+    @RequestMapping(
+        method = [RequestMethod.PATCH],
+        value = ["/tasks/{taskId}/submissions/{version}/review"],
+        produces = ["application/json"],
+        consumes = ["application/json"]
+    )
+    fun patchTaskSubmissionReview(
+        @Parameter(description = "Task ID", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
+        @Parameter(description = "Version Index", required = true)
+        @PathVariable("version")
+        version: kotlin.Int,
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        patchTaskSubmissionReviewRequestDTO: PatchTaskSubmissionReviewRequestDTO
+    ): ResponseEntity<PostTaskSubmissionReview200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags =
+            [
+                "default",
+            ],
         summary = "Create Task",
         operationId = "postTask",
         description = """""",
@@ -530,6 +614,54 @@ interface TasksApi {
         postTaskSubmissionRequestInnerDTO:
             kotlin.collections.List<PostTaskSubmissionRequestInnerDTO>
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags =
+            [
+                "default",
+            ],
+        summary = "Review Submission",
+        operationId = "postTaskSubmissionReview",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation =
+                                            PostTaskSubmissionReview200ResponseDTO::class
+                                    )
+                            )
+                        ]
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")]
+    )
+    @RequestMapping(
+        method = [RequestMethod.POST],
+        value = ["/tasks/{taskId}/submissions/{version}/review"],
+        produces = ["application/json"],
+        consumes = ["application/json"]
+    )
+    fun postTaskSubmissionReview(
+        @Parameter(description = "Task ID", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
+        @Parameter(description = "Version Index", required = true)
+        @PathVariable("version")
+        version: kotlin.Int,
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        postTaskSubmissionReviewRequestDTO: PostTaskSubmissionReviewRequestDTO
+    ): ResponseEntity<PostTaskSubmissionReview200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 }
