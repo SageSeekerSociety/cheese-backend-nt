@@ -593,10 +593,7 @@ class TaskService(
             version = this.version!!,
             createdAt = this.createdAt!!.toEpochMilli(),
             updatedAt = this.updatedAt!!.toEpochMilli(),
-            member =
-                if (this.membership?.task != null)
-                    getTaskParticipantDtoByMembership(this.membership)
-                else null,
+            member = getTaskParticipantDtoByMembership(this.membership!!),
             submitter = userService.getUserDto(this.submitter!!.id!!.toLong()),
             content =
                 submissionListNotNull.withIndex().map {

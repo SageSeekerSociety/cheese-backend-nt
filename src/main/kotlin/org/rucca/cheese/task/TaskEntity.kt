@@ -30,7 +30,7 @@ class TaskSubmissionSchema(
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @EntityListeners(TaskElasticSearchSyncListener::class)
-data class Task(
+class Task(
     @Column(nullable = false) var name: String? = null,
     @Column(nullable = false) val submitterType: TaskSubmitterType? = null,
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val creator: User? = null,

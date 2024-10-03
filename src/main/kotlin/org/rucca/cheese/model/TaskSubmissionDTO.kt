@@ -6,17 +6,25 @@ import javax.validation.Valid
 
 /**
  * @param id
+ * @param member
+ * @param submitter
  * @param version
  * @param createdAt
  * @param updatedAt
- * @param member
- * @param submitter
  * @param content
  */
 data class TaskSubmissionDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("id", required = true)
     val id: kotlin.Long,
+    @field:Valid
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("member", required = true)
+    val member: TaskParticipantSummaryDTO,
+    @field:Valid
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("submitter", required = true)
+    val submitter: UserDTO,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("version", required = true)
     val version: kotlin.Int,
@@ -27,15 +35,7 @@ data class TaskSubmissionDTO(
     @get:JsonProperty("updatedAt", required = true)
     val updatedAt: kotlin.Long,
     @field:Valid
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("member")
-    val member: TaskParticipantSummaryDTO? = null,
-    @field:Valid
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("submitter")
-    val submitter: UserDTO? = null,
-    @field:Valid
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("content")
-    val content: kotlin.collections.List<TaskSubmissionContentEntryDTO>? = null
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("content", required = true)
+    val content: kotlin.collections.List<TaskSubmissionContentEntryDTO>
 ) {}

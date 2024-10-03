@@ -1872,11 +1872,12 @@ components:
       type: object
       required:
         - id
-        - memberId
+        - member
+        - submitter
         - version
-        - index
         - createdAt
         - updatedAt
+        - content
       properties:
         id:
           type: integer
