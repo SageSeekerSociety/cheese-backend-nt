@@ -31,6 +31,15 @@ jobs:
       - name: Build with Maven
         run: mvn install
       
+      - name: Check uncommitted changes to ensure format applied
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "There are uncommitted changes. Please run './mvnw spotless:apply' and commit the changes."
+            exit 1
+          else
+            echo "No uncommitted changes."
+          fi
+      
       - name: Test Legacy Service
         run: sudo docker exec cheese_legacy pnpm test
 
