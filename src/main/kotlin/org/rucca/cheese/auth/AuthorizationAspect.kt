@@ -18,21 +18,22 @@ import org.springframework.stereotype.Component
 @Aspect
 @Component
 class AuthorizationAspect(
-        private val authorizationService: AuthorizationService,
+    private val authorizationService: AuthorizationService,
 ) {
     @Before(
-            "@within(org.springframework.web.bind.annotation.RestController) || " +
-                    "@within(org.springframework.stereotype.Controller)")
+        "@within(org.springframework.web.bind.annotation.RestController) || " +
+            "@within(org.springframework.stereotype.Controller)"
+    )
     fun checkAuthorization(joinPoint: JoinPoint) {
         val method = (joinPoint.signature as MethodSignature).method
         val guardAnnotation: Guard? = method.getAnnotation<Guard>(Guard::class.java)
         val noAuthAnnotation: NoAuth? = method.getAnnotation<NoAuth>(NoAuth::class.java)
         if (noAuthAnnotation == null) {
             if (guardAnnotation == null)
-                    throw NoGuardOrNoAuthAnnotationException(
-                            joinPoint.target.javaClass.name,
-                            joinPoint.signature.name,
-                    )
+                throw NoGuardOrNoAuthAnnotationException(
+                    joinPoint.target.javaClass.name,
+                    joinPoint.signature.name,
+                )
 
             var resourceId: IdType? = null
             val authInfo: MutableMap<String, Any> = mutableMapOf()
@@ -42,24 +43,24 @@ class AuthorizationAspect(
                     if (annotation is ResourceId) {
                         if (resourceId != null) {
                             throw DuplicatedResourceIdAnnotationException(
-                                    joinPoint.target.javaClass.name,
-                                    joinPoint.signature.name,
+                                joinPoint.target.javaClass.name,
+                                joinPoint.signature.name,
                             )
                         }
                         val arg = joinPoint.args[i]
                         if (arg !is IdType) {
                             throw ResourceIdTypeMismatchException(
-                                    joinPoint.target.javaClass.name,
-                                    joinPoint.signature.name,
+                                joinPoint.target.javaClass.name,
+                                joinPoint.signature.name,
                             )
                         }
                         resourceId = arg
                     } else if (annotation is AuthInfo) {
                         if (authInfo.containsKey(annotation.key)) {
                             throw DuplicatedAuthInfoKeyException(
-                                    joinPoint.target.javaClass.name,
-                                    joinPoint.signature.name,
-                                    annotation.key,
+                                joinPoint.target.javaClass.name,
+                                joinPoint.signature.name,
+                                annotation.key,
                             )
                         }
                         authInfo[annotation.key] = joinPoint.args[i]
@@ -68,10 +69,10 @@ class AuthorizationAspect(
             }
 
             authorizationService.audit(
-                    guardAnnotation.action,
-                    guardAnnotation.resourceType,
-                    resourceId,
-                    authInfo,
+                guardAnnotation.action,
+                guardAnnotation.resourceType,
+                resourceId,
+                authInfo,
             )
         }
     }

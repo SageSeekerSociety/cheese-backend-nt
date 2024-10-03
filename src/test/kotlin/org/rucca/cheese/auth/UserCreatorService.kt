@@ -13,27 +13,27 @@ import org.springframework.stereotype.Service
 
 @Service
 class UserCreatorService(
-        private val applicationConfig: ApplicationConfig,
-        private val userRepository: UserRepository,
-        private val userProfileRepository: UserProfileRepository,
+    private val applicationConfig: ApplicationConfig,
+    private val userRepository: UserRepository,
+    private val userProfileRepository: UserProfileRepository,
 ) {
     class CreateUserResponse(
-            val userId: IdType,
-            val username: String,
-            val password: String,
-            val email: String,
-            val nickname: String,
-            val avatarId: IdType,
-            val intro: String,
+        val userId: IdType,
+        val username: String,
+        val password: String,
+        val email: String,
+        val nickname: String,
+        val avatarId: IdType,
+        val intro: String,
     )
 
     fun createUser(
-            username: String = testUsername(),
-            password: String = testPassword(),
-            email: String = testEmail(),
-            nickname: String = testNickname(),
-            avatarId: IdType = testAvatarId(),
-            intro: String = testIntro(),
+        username: String = testUsername(),
+        password: String = testPassword(),
+        email: String = testEmail(),
+        nickname: String = testNickname(),
+        avatarId: IdType = testAvatarId(),
+        intro: String = testIntro(),
     ): CreateUserResponse {
         val user = User()
         user.username = username
@@ -46,7 +46,15 @@ class UserCreatorService(
         userProfile.intro = intro
         userProfile.user = user
         userProfileRepository.save(userProfile)
-        return CreateUserResponse(userId.toLong(), username, password, email, nickname, avatarId, intro)
+        return CreateUserResponse(
+            userId.toLong(),
+            username,
+            password,
+            email,
+            nickname,
+            avatarId,
+            intro
+        )
     }
 
     /** @return JWT token */
@@ -54,7 +62,7 @@ class UserCreatorService(
         val client = ClientBuilder.newClient()
         val target = client.target(applicationConfig.legacyUrl).path("/users/auth/login")
         val request =
-                """
+            """
             {
                 "username": "$username",
                 "password": "$password"

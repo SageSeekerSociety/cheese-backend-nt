@@ -16,23 +16,26 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 class SpaceController(
-        private val spaceService: SpaceService,
-        private val authorizationService: AuthorizationService,
-        private val authenticationService: AuthenticationService,
+    private val spaceService: SpaceService,
+    private val authorizationService: AuthorizationService,
+    private val authenticationService: AuthenticationService,
 ) : SpacesApi {
     @PostConstruct
     fun initialize() {
         authorizationService.ownerIds.register("space", spaceService::getSpaceOwner)
         authorizationService.customAuthLogics.register("is-space-admin") {
-                userId: IdType,
-                _: AuthorizedAction,
-                _: String,
-                resourceId: IdType?,
-                _: Map<String, Any?>?,
-                _: IdGetter?,
-                _: Any?,
+            userId: IdType,
+            _: AuthorizedAction,
+            _: String,
+            resourceId: IdType?,
+            _: Map<String, Any?>?,
+            _: IdGetter?,
+            _: Any?,
             ->
-            spaceService.isSpaceAdmin(resourceId ?: throw IllegalArgumentException("resourceId is null"), userId)
+            spaceService.isSpaceAdmin(
+                resourceId ?: throw IllegalArgumentException("resourceId is null"),
+                userId
+            )
         }
     }
 
@@ -43,7 +46,10 @@ class SpaceController(
     }
 
     @Guard("remove-admin", "space")
-    override fun deleteSpaceAdmin(@ResourceId spaceId: Long, userId: Long): ResponseEntity<DeleteSpace200ResponseDTO> {
+    override fun deleteSpaceAdmin(
+        @ResourceId spaceId: Long,
+        userId: Long
+    ): ResponseEntity<DeleteSpace200ResponseDTO> {
         spaceService.removeSpaceAdmin(spaceId, userId)
         return ResponseEntity.ok(DeleteSpace200ResponseDTO(200, "OK"))
     }
@@ -51,36 +57,40 @@ class SpaceController(
     @Guard("query", "space")
     override fun getSpace(@ResourceId spaceId: Long): ResponseEntity<GetSpace200ResponseDTO> {
         val spaceDTO = spaceService.getSpaceDto(spaceId)
-        return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK"))
+        return ResponseEntity.ok(
+            GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
+        )
     }
 
     @Guard("enumerate", "space")
     override fun getSpaces(
-            pageSize: Int?,
-            pageStart: Long?,
-            sortBy: String,
-            sortOrder: String
+        pageSize: Int?,
+        pageStart: Long?,
+        sortBy: String,
+        sortOrder: String
     ): ResponseEntity<GetSpaces200ResponseDTO> {
         val by =
-                when (sortBy) {
-                    "updatedAt" -> SpaceService.SpacesSortBy.UPDATED_AT
-                    "createdAt" -> SpaceService.SpacesSortBy.CREATED_AT
-                    else -> throw IllegalArgumentException("Invalid sortBy: $sortBy")
-                }
+            when (sortBy) {
+                "updatedAt" -> SpaceService.SpacesSortBy.UPDATED_AT
+                "createdAt" -> SpaceService.SpacesSortBy.CREATED_AT
+                else -> throw IllegalArgumentException("Invalid sortBy: $sortBy")
+            }
         val order =
-                when (sortOrder) {
-                    "asc" -> SortDirection.ASCENDING
-                    "desc" -> SortDirection.DESCENDING
-                    else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
-                }
+            when (sortOrder) {
+                "asc" -> SortDirection.ASCENDING
+                "desc" -> SortDirection.DESCENDING
+                else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
+            }
         val (spaces, page) = spaceService.enumerateSpaces(by, order, pageSize ?: 10, pageStart)
-        return ResponseEntity.ok(GetSpaces200ResponseDTO(200, GetSpaces200ResponseDataDTO(spaces, page), "OK"))
+        return ResponseEntity.ok(
+            GetSpaces200ResponseDTO(200, GetSpaces200ResponseDataDTO(spaces, page), "OK")
+        )
     }
 
     @Guard("modify", "space")
     override fun patchSpace(
-            @ResourceId spaceId: Long,
-            patchSpaceRequestDTO: PatchSpaceRequestDTO
+        @ResourceId spaceId: Long,
+        patchSpaceRequestDTO: PatchSpaceRequestDTO
     ): ResponseEntity<GetSpace200ResponseDTO> {
         if (patchSpaceRequestDTO.name != null) {
             spaceService.updateSpaceName(spaceId, patchSpaceRequestDTO.name)
@@ -92,14 +102,16 @@ class SpaceController(
             spaceService.updateSpaceAvatar(spaceId, patchSpaceRequestDTO.avatarId)
         }
         val spaceDTO = spaceService.getSpaceDto(spaceId)
-        return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK"))
+        return ResponseEntity.ok(
+            GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
+        )
     }
 
     @Guard("modify-admin", "space")
     override fun patchSpaceAdmin(
-            @ResourceId spaceId: Long,
-            userId: Long,
-            patchSpaceAdminRequestDTO: PatchSpaceAdminRequestDTO
+        @ResourceId spaceId: Long,
+        userId: Long,
+        patchSpaceAdminRequestDTO: PatchSpaceAdminRequestDTO
     ): ResponseEntity<GetSpace200ResponseDTO> {
         if (patchSpaceAdminRequestDTO.role != null) {
             when (patchSpaceAdminRequestDTO.role) {
@@ -113,25 +125,32 @@ class SpaceController(
             }
         }
         val spaceDTO = spaceService.getSpaceDto(spaceId)
-        return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK"))
+        return ResponseEntity.ok(
+            GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
+        )
     }
 
     @Guard("create", "space")
-    override fun postSpace(postSpaceRequestDTO: PostSpaceRequestDTO): ResponseEntity<GetSpace200ResponseDTO> {
+    override fun postSpace(
+        postSpaceRequestDTO: PostSpaceRequestDTO
+    ): ResponseEntity<GetSpace200ResponseDTO> {
         val spaceId =
-                spaceService.createSpace(
-                        postSpaceRequestDTO.name,
-                        postSpaceRequestDTO.intro,
-                        postSpaceRequestDTO.avatarId,
-                        authenticationService.getCurrentUserId())
+            spaceService.createSpace(
+                postSpaceRequestDTO.name,
+                postSpaceRequestDTO.intro,
+                postSpaceRequestDTO.avatarId,
+                authenticationService.getCurrentUserId()
+            )
         val spaceDTO = spaceService.getSpaceDto(spaceId)
-        return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK"))
+        return ResponseEntity.ok(
+            GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
+        )
     }
 
     @Guard("add-admin", "space")
     override fun postSpaceAdmin(
-            @ResourceId spaceId: Long,
-            postSpaceAdminRequestDTO: PostSpaceAdminRequestDTO
+        @ResourceId spaceId: Long,
+        postSpaceAdminRequestDTO: PostSpaceAdminRequestDTO
     ): ResponseEntity<GetSpace200ResponseDTO> {
         spaceService.addSpaceAdmin(spaceId, postSpaceAdminRequestDTO.userId)
         when (postSpaceAdminRequestDTO.role) {
@@ -144,6 +163,8 @@ class SpaceController(
             }
         }
         val spaceDTO = spaceService.getSpaceDto(spaceId)
-        return ResponseEntity.ok(GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK"))
+        return ResponseEntity.ok(
+            GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
+        )
     }
 }

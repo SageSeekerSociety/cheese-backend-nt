@@ -24,9 +24,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 class AuthorizationAspectTest
 @Autowired
 constructor(
-        private val mockMvc: MockMvc,
-        @SpykBean private val authorizationService: AuthorizationService,
-        @SpykBean private val globalErrorHandler: GlobalErrorHandler,
+    private val mockMvc: MockMvc,
+    @SpykBean private val authorizationService: AuthorizationService,
+    @SpykBean private val globalErrorHandler: GlobalErrorHandler,
 ) {
     @BeforeEach
     fun prepare() {
@@ -35,7 +35,7 @@ constructor(
 
         // Avoid error logging in the console
         every { globalErrorHandler.handleException(any()) } returns
-                ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(InternalServerError())
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(InternalServerError())
     }
 
     @Test
@@ -47,7 +47,9 @@ constructor(
     @Test
     fun testDuplicatedResourceIdAnnotationException() {
         mockMvc.perform(MockMvcRequestBuilders.get("/example/2?id1=1&id2=2"))
-        verify { globalErrorHandler.handleException(ofType<DuplicatedResourceIdAnnotationException>()) }
+        verify {
+            globalErrorHandler.handleException(ofType<DuplicatedResourceIdAnnotationException>())
+        }
     }
 
     @Test
@@ -64,19 +66,26 @@ constructor(
 
     @Test
     fun testNoIdTokenInCapital() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/example/4").header("Authorization", "Bearer token Xxx"))
+        mockMvc.perform(
+            MockMvcRequestBuilders.get("/example/4").header("Authorization", "Bearer token Xxx")
+        )
         verify { authorizationService.audit("Bearer token Xxx", "query", "example", null) }
     }
 
     @Test
     fun testNoIdTokenNotInCapital() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/example/4").header("Authorization", "Bearer token Xxx"))
+        mockMvc.perform(
+            MockMvcRequestBuilders.get("/example/4").header("Authorization", "Bearer token Xxx")
+        )
         verify { authorizationService.audit("Bearer token Xxx", "query", "example", null) }
     }
 
     @Test
     fun testWithId() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/example/5?id=123").header("Authorization", "Bearer token Xxx"))
+        mockMvc.perform(
+            MockMvcRequestBuilders.get("/example/5?id=123")
+                .header("Authorization", "Bearer token Xxx")
+        )
         verify { authorizationService.audit("Bearer token Xxx", "query", "example", 123) }
     }
 
@@ -88,26 +97,36 @@ constructor(
 
     @Test
     fun testMvcController() {
-        mockMvc.perform(MockMvcRequestBuilders.get("/example2/1?id=123").header("Authorization", "Bearer token Xxx"))
+        mockMvc.perform(
+            MockMvcRequestBuilders.get("/example2/1?id=123")
+                .header("Authorization", "Bearer token Xxx")
+        )
         verify { authorizationService.audit("Bearer token Xxx", "query", "example", 123) }
     }
 
     @Test
     fun testWithIdAndAdditional() {
         mockMvc.perform(
-                MockMvcRequestBuilders.get("/example/7?id=123&additional_str=abc&additional_id=456")
-                        .header("Authorization", "Bearer token Xxx"))
+            MockMvcRequestBuilders.get("/example/7?id=123&additional_str=abc&additional_id=456")
+                .header("Authorization", "Bearer token Xxx")
+        )
         verify {
             authorizationService.audit(
-                    "Bearer token Xxx", "query", "example", 123, mapOf("str" to "abc", "id" to 456.toLong()))
+                "Bearer token Xxx",
+                "query",
+                "example",
+                123,
+                mapOf("str" to "abc", "id" to 456.toLong())
+            )
         }
     }
 
     @Test
     fun testDuplicatedAuthInfo() {
         mockMvc.perform(
-                MockMvcRequestBuilders.get("/example/8?additional_1=abc&additional_2=123")
-                        .header("Authorization", "Bearer token Xxx"))
+            MockMvcRequestBuilders.get("/example/8?additional_1=abc&additional_2=123")
+                .header("Authorization", "Bearer token Xxx")
+        )
         verify { globalErrorHandler.handleException(ofType<DuplicatedAuthInfoKeyException>()) }
     }
 }

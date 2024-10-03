@@ -281,9 +281,7 @@
                     </java>
                     <kotlin>
                         <ktfmt>
-                            <maxWidth>120</maxWidth>
-                            <blockIndent>4</blockIndent>
-                            <continuationIndent>8</continuationIndent>
+                            <style>KOTLINLANG</style>
                         </ktfmt>
                     </kotlin>
                     <pom>

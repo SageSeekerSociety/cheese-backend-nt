@@ -1,5 +1,5 @@
 package org.rucca.cheese.auth.exception
 
 class UnsupportedRoleException(
-        role: String,
+    role: String,
 ) : RuntimeException("Unsupported role: $role")

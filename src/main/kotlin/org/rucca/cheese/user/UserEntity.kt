@@ -31,12 +31,14 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
 @Table(
-        name = "\"user\"",
-        schema = "public",
-        indexes =
-                [
-                        Index(name = "IDX_78a916df40e02a9deb1c4b75ed", columnList = "username", unique = true),
-                        Index(name = "IDX_e12875dfb3b1d92d7d7c5377e2", columnList = "email", unique = true)])
+    name = "\"user\"",
+    schema = "public",
+    indexes =
+        [
+            Index(name = "IDX_78a916df40e02a9deb1c4b75ed", columnList = "username", unique = true),
+            Index(name = "IDX_e12875dfb3b1d92d7d7c5377e2", columnList = "email", unique = true)
+        ]
+)
 @SQLRestriction("deleted_at IS NULL")
 open class User {
     @Id
@@ -45,12 +47,14 @@ open class User {
     @Column(name = "id", nullable = false)
     open var id: Int? = null
 
-    @Column(name = "username", nullable = false, length = Integer.MAX_VALUE) open var username: String? = null
+    @Column(name = "username", nullable = false, length = Integer.MAX_VALUE)
+    open var username: String? = null
 
     @Column(name = "hashed_password", nullable = false, length = Integer.MAX_VALUE)
     open var hashedPassword: String? = null
 
-    @Column(name = "email", nullable = false, length = Integer.MAX_VALUE) open var email: String? = null
+    @Column(name = "email", nullable = false, length = Integer.MAX_VALUE)
+    open var email: String? = null
 
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false, insertable = false)

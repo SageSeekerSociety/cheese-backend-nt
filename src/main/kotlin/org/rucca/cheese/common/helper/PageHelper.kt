@@ -23,9 +23,9 @@ object PageHelper {
     //
     // in SQL.
     fun <TData> pageStart(
-            data: List<TData>,
-            pageSize: Int,
-            idGetter: (TData) -> IdType,
+        data: List<TData>,
+        pageSize: Int,
+        idGetter: (TData) -> IdType,
     ): Pair<List<TData>, PageDTO> {
         return page(data, pageSize, false, null, idGetter)
     }
@@ -48,14 +48,19 @@ object PageHelper {
     //
     // in SQL.
     fun <TPrev, TData> pageMiddle(
-            prev: List<TPrev>,
-            data: List<TData>,
-            pageSize: Int,
-            idGetterPrev: (TPrev) -> IdType,
-            idGetter: (TData) -> IdType,
+        prev: List<TPrev>,
+        data: List<TData>,
+        pageSize: Int,
+        idGetterPrev: (TPrev) -> IdType,
+        idGetter: (TData) -> IdType,
     ): Pair<List<TData>, PageDTO> {
         return page(
-                data, pageSize, prev.isNotEmpty(), if (prev.isNotEmpty()) idGetterPrev(prev.last()) else null, idGetter)
+            data,
+            pageSize,
+            prev.isNotEmpty(),
+            if (prev.isNotEmpty()) idGetterPrev(prev.last()) else null,
+            idGetter
+        )
     }
 
     // Used when you do
@@ -67,14 +72,18 @@ object PageHelper {
     //
     // in SQL.
     fun <TData> pageFromAll(
-            allData: List<TData>,
-            pageStart: IdType?,
-            pageSize: Int,
-            idGetter: (TData) -> IdType,
-            errorIfNotFound: ((IdType) -> Unit)?
+        allData: List<TData>,
+        pageStart: IdType?,
+        pageSize: Int,
+        idGetter: (TData) -> IdType,
+        errorIfNotFound: ((IdType) -> Unit)?
     ): Pair<List<TData>, PageDTO> {
         if (pageStart == null) {
-            return pageStart(allData.subList(0, min(pageSize + 1, allData.size)), pageSize, idGetter)
+            return pageStart(
+                allData.subList(0, min(pageSize + 1, allData.size)),
+                pageSize,
+                idGetter
+            )
         } else {
             val pageStartIndex = allData.indexOfFirst { idGetter(it) == pageStart }
             if (pageStartIndex == -1) {
@@ -85,51 +94,55 @@ object PageHelper {
                 }
             }
             val prev = allData.subList(max(pageStartIndex - pageSize, 0), pageStartIndex).reversed()
-            val data = allData.subList(pageStartIndex, min(pageStartIndex + pageSize + 1, allData.size))
+            val data =
+                allData.subList(pageStartIndex, min(pageStartIndex + pageSize + 1, allData.size))
             return pageMiddle(prev, data, pageSize, idGetter, idGetter)
         }
     }
 
     private fun <TData> page(
-            data: List<TData>,
-            pageSize: Int,
-            hasPrev: Boolean,
-            prevStart: IdType?,
-            idGetter: (TData) -> IdType,
+        data: List<TData>,
+        pageSize: Int,
+        hasPrev: Boolean,
+        prevStart: IdType?,
+        idGetter: (TData) -> IdType,
     ): Pair<List<TData>, PageDTO> {
         if (data.isEmpty() || pageSize < 0) {
             return Pair(
-                    data,
-                    PageDTO(
-                            pageStart = 0,
-                            pageSize = 0,
-                            hasPrev = hasPrev,
-                            prevStart = prevStart,
-                            hasMore = false,
-                            nextStart = null,
-                    ))
+                data,
+                PageDTO(
+                    pageStart = 0,
+                    pageSize = 0,
+                    hasPrev = hasPrev,
+                    prevStart = prevStart,
+                    hasMore = false,
+                    nextStart = null,
+                )
+            )
         } else if (data.size > pageSize) {
             return Pair(
-                    data.subList(0, pageSize),
-                    PageDTO(
-                            pageStart = idGetter(data[0]),
-                            pageSize = pageSize,
-                            hasPrev = hasPrev,
-                            prevStart = prevStart,
-                            hasMore = true,
-                            nextStart = idGetter(data[pageSize]),
-                    ))
+                data.subList(0, pageSize),
+                PageDTO(
+                    pageStart = idGetter(data[0]),
+                    pageSize = pageSize,
+                    hasPrev = hasPrev,
+                    prevStart = prevStart,
+                    hasMore = true,
+                    nextStart = idGetter(data[pageSize]),
+                )
+            )
         } else {
             return Pair(
-                    data,
-                    PageDTO(
-                            pageStart = idGetter(data[0]),
-                            pageSize = data.size,
-                            hasPrev = hasPrev,
-                            prevStart = prevStart,
-                            hasMore = false,
-                            nextStart = null,
-                    ))
+                data,
+                PageDTO(
+                    pageStart = idGetter(data[0]),
+                    pageSize = data.size,
+                    hasPrev = hasPrev,
+                    prevStart = prevStart,
+                    hasMore = false,
+                    nextStart = null,
+                )
+            )
         }
     }
 }

@@ -26,7 +26,7 @@ private class ErrorSerializer : JsonSerializer<BaseError>() {
 
 @JsonSerialize(using = ErrorSerializer::class)
 abstract class BaseError(
-        val status: HttpStatus,
-        override val message: String,
-        val data: Any? = null,
+    val status: HttpStatus,
+    override val message: String,
+    val data: Any? = null,
 ) : Exception(message)
