@@ -276,6 +276,9 @@
                 <configuration>
                     <systemPropertyVariables>
                         <spring.jpa.hibernate.ddl-auto>update</spring.jpa.hibernate.ddl-auto>
+                        <spring.jpa.show-sql>false</spring.jpa.show-sql>
+                        <application.warn-audit-failure>false</application.warn-audit-failure>
+                        <logging.level.root>WARN</logging.level.root>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
