@@ -635,11 +635,12 @@ class TaskService(
         taskId: IdType,
         member: IdType?,
         allVersions: Boolean,
+        queryReview: Boolean,
+        reviewed: Boolean?,
         pageSize: Int,
         pageStart: IdType?,
         sortBy: TaskSubmissionSortBy,
         sortOrder: SortDirection,
-        queryReview: Boolean,
     ): Pair<List<TaskSubmissionDTO>, PageDTO> {
         val cb = entityManager.criteriaBuilder
         val cq = cb.createQuery(TaskSubmission::class.java)
@@ -669,6 +670,17 @@ class TaskService(
                     )
                 )
             predicts.add(cb.equal(root.get<Int>("version"), subquery))
+        }
+        if (reviewed != null) {
+            val subquery = cq.subquery(Boolean::class.java)
+            val subRoot = subquery.from(TaskSubmissionReview::class.java)
+            subquery
+                .select(cb.literal(true))
+                .where(
+                    cb.equal(subRoot.get<TaskSubmission>("submission"), root),
+                )
+            if (reviewed) predicts.add(cb.exists(subquery))
+            else predicts.add(cb.not(cb.exists(subquery)))
         }
         cq.where(*predicts.toTypedArray())
         val by =

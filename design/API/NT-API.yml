@@ -977,6 +977,11 @@ paths:
           name: queryReview
           description: Query task owner's review
         - schema:
+            type: boolean
+          in: query
+          name: reviewed
+          description: Only return reviewed or unreviewed submissions
+        - schema:
             type: integer
             default: 9
           in: query

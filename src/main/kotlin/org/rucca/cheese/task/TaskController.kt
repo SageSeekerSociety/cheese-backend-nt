@@ -129,6 +129,7 @@ class TaskController(
         @AuthInfo("member") member: Long?,
         allVersions: Boolean,
         queryReview: Boolean,
+        reviewed: Boolean?,
         pageSize: Int,
         pageStart: Long?,
         sortBy: String,
@@ -151,11 +152,12 @@ class TaskController(
                 taskId = taskId,
                 member = member,
                 allVersions = allVersions,
+                queryReview = queryReview,
+                reviewed = reviewed,
                 pageSize = pageSize,
                 pageStart = pageStart,
                 sortBy = by,
                 sortOrder = order,
-                queryReview = queryReview,
             )
         return ResponseEntity.ok(
             GetTaskSubmissions200ResponseDTO(

@@ -260,6 +260,10 @@ interface TasksApi {
         @Valid
         @RequestParam(value = "queryReview", required = false, defaultValue = "false")
         queryReview: kotlin.Boolean,
+        @Parameter(description = "Only return reviewed or unreviewed submissions")
+        @Valid
+        @RequestParam(value = "reviewed", required = false)
+        reviewed: kotlin.Boolean?,
         @Parameter(description = "Page Size", schema = Schema(defaultValue = "9"))
         @Valid
         @RequestParam(value = "page_size", required = false, defaultValue = "9")
