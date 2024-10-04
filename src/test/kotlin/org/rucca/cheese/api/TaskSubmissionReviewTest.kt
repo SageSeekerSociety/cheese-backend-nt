@@ -174,6 +174,41 @@ constructor(
     }
 
     @Test
+    @Order(6)
+    fun testGetReviewedSubmissionWithQueryReviewEnabledWhenNotReviewed() {
+        val request =
+            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+                .header("Authorization", "Bearer $participantToken")
+                .queryParam("member", participant.userId.toString())
+                .queryParam("queryReview", "true")
+                .queryParam("reviewed", "true")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions").isEmpty)
+    }
+
+    @Test
+    @Order(7)
+    fun testGetUnreviewedSubmissionWithQueryReviewEnabledWhenNotReviewed() {
+        val request =
+            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+                .header("Authorization", "Bearer $participantToken")
+                .queryParam("member", participant.userId.toString())
+                .queryParam("queryReview", "true")
+                .queryParam("reviewed", "false")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.submissions[0].review.reviewed").value(false)
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.submissions[0].review.detail").doesNotExist()
+            )
+    }
+
+    @Test
     @Order(10)
     fun testCreateReview() {
         val request =
@@ -368,6 +403,49 @@ constructor(
     }
 
     @Test
+    @Order(71)
+    fun testGetReviewedSubmissionWithQueryReviewEnabled() {
+        val request =
+            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+                .header("Authorization", "Bearer $participantToken")
+                .queryParam("member", participant.userId.toString())
+                .queryParam("queryReview", "true")
+                .queryParam("reviewed", "true")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.submissions[0].review.reviewed").value(true)
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.submissions[0].review.detail.accepted")
+                    .value(false)
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.submissions[0].review.detail.score").value(4)
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.submissions[0].review.detail.comment")
+                    .value("Could be better.")
+            )
+    }
+
+    @Test
+    @Order(72)
+    fun testGetUnreviewedSubmissionWithQueryReviewEnabled() {
+        val request =
+            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+                .header("Authorization", "Bearer $participantToken")
+                .queryParam("member", participant.userId.toString())
+                .queryParam("queryReview", "true")
+                .queryParam("reviewed", "false")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions").isEmpty)
+    }
+
+    @Test
     @Order(75)
     fun testDeleteReviewAndGetPermissionDeniedError() {
         val request =
@@ -509,5 +587,48 @@ constructor(
                 MockMvcResultMatchers.jsonPath("$.data.submissions[0].review.detail.comment")
                     .value("Good job!")
             )
+    }
+
+    @Test
+    @Order(141)
+    fun testGetReviewedSubmissionOnceAgain() {
+        val request =
+            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+                .header("Authorization", "Bearer $participantToken")
+                .queryParam("member", participant.userId.toString())
+                .queryParam("queryReview", "true")
+                .queryParam("reviewed", "true")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.submissions[0].review.reviewed").value(true)
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.submissions[0].review.detail.accepted")
+                    .value(true)
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.submissions[0].review.detail.score").value(5)
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.submissions[0].review.detail.comment")
+                    .value("Good job!")
+            )
+    }
+
+    @Test
+    @Order(142)
+    fun testGetUnreviewedSubmissionOnceAgain() {
+        val request =
+            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+                .header("Authorization", "Bearer $participantToken")
+                .queryParam("member", participant.userId.toString())
+                .queryParam("queryReview", "true")
+                .queryParam("reviewed", "false")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions").isEmpty)
     }
 }
