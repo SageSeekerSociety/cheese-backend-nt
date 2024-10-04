@@ -14,6 +14,7 @@ import javax.validation.Valid
  * @param submissionSchema
  * @param team
  * @param space
+ * @param rank
  */
 data class PostTaskRequestDTO(
     @Schema(example = "null", required = true, description = "")
@@ -44,5 +45,8 @@ data class PostTaskRequestDTO(
     val team: kotlin.Long? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("space")
-    val space: kotlin.Long? = null
+    val space: kotlin.Long? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("rank")
+    val rank: kotlin.Int? = null
 ) {}

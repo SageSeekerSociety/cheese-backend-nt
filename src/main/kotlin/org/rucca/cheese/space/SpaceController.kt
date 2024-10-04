@@ -101,6 +101,9 @@ class SpaceController(
         if (patchSpaceRequestDTO.avatarId != null) {
             spaceService.updateSpaceAvatar(spaceId, patchSpaceRequestDTO.avatarId)
         }
+        if (patchSpaceRequestDTO.enableRank != null) {
+            spaceService.updateSpaceEnableRank(spaceId, patchSpaceRequestDTO.enableRank)
+        }
         val spaceDTO = spaceService.getSpaceDto(spaceId)
         return ResponseEntity.ok(
             GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
@@ -139,7 +142,8 @@ class SpaceController(
                 postSpaceRequestDTO.name,
                 postSpaceRequestDTO.intro,
                 postSpaceRequestDTO.avatarId,
-                authenticationService.getCurrentUserId()
+                authenticationService.getCurrentUserId(),
+                postSpaceRequestDTO.enableRank
             )
         val spaceDTO = spaceService.getSpaceDto(spaceId)
         return ResponseEntity.ok(

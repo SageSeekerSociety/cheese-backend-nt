@@ -142,6 +142,8 @@ paths:
                   x-stoplight:
                     id: jfrrkzlkmiav2
                   format: int64
+                enableRank:
+                  type: boolean
       summary: Update Space
       x-stoplight:
         id: 0f71c5ul8igvq
@@ -247,6 +249,7 @@ paths:
                 - intro
                 - name
                 - avatarId
+                - enableRank
               properties:
                 intro:
                   type: string
@@ -261,6 +264,9 @@ paths:
                   x-stoplight:
                     id: 3ec9m0u97i2rr
                   format: int64
+                enableRank:
+                  type: boolean
+                  default: false
       summary: Create Space
       x-stoplight:
         id: pg0dllezwwg9w
@@ -586,6 +592,10 @@ paths:
                     id: s3pibjz1gy1ek
                   items:
                     $ref: "#/components/schemas/TaskSubmissionSchemaEntry"
+                hasRank:
+                  type: boolean
+                rank:
+                  type: integer
       summary: Update Task
       x-stoplight:
         id: sy7yhfh83myt0
@@ -759,7 +769,8 @@ paths:
                 space:
                     type: integer
                     format: int64
-                    x-stoplight:
+                rank:
+                  type: integer
       summary: Create Task
       x-stoplight:
         id: ai79622xpxp6v
@@ -1793,6 +1804,7 @@ components:
         - admins
         - updatedAt
         - createdAt
+        - enableRank
       properties:
         id:
           type: integer
@@ -1828,6 +1840,8 @@ components:
           x-stoplight:
             id: ish0wypndvdar
           format: int64
+        enableRank:
+          type: boolean
     SpaceAdmin:
       title: SpaceAdmin
       x-stoplight:
@@ -1963,6 +1977,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TeamSummary'
+        rank:
+          type: integer
     TaskSubmitterType:
       title: TaskSubmitterType
       x-stoplight:

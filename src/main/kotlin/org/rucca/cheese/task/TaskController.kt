@@ -242,6 +242,9 @@ class TaskController(
                 }
             )
         }
+        if (patchTaskRequestDTO.rank != null) {
+            taskService.updateTaskRank(taskId, patchTaskRequestDTO.rank)
+        }
         val taskDTO = taskService.getTaskDto(taskId)
         return ResponseEntity.ok(
             GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK")
@@ -296,7 +299,8 @@ class TaskController(
                     },
                 creatorId = authenticationService.getCurrentUserId(),
                 teamId = postTaskRequestDTO.team,
-                spaceId = postTaskRequestDTO.space
+                spaceId = postTaskRequestDTO.space,
+                rank = postTaskRequestDTO.rank
             )
         val taskDTO = taskService.getTaskDto(taskId)
         return ResponseEntity.ok(

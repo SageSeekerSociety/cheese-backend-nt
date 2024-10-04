@@ -113,6 +113,7 @@ CREATE
     TABLE
         SPACE(
             avatar_id INTEGER NOT NULL,
+            enable_rank BOOLEAN NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
@@ -142,6 +143,7 @@ CREATE
         task(
             "creator_id" INTEGER NOT NULL,
             editable BOOLEAN NOT NULL,
+            RANK INTEGER,
             resubmittable BOOLEAN NOT NULL,
             submitter_type SMALLINT NOT NULL CHECK(
                 submitter_type BETWEEN 0 AND 1

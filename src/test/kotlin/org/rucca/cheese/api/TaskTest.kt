@@ -430,7 +430,8 @@ constructor(
                       "prompt": "Text Entry",
                       "type": "TEXT"
                     }
-                  ]
+                  ],
+                  "rank": 1
                 }
             """
                 )
@@ -460,6 +461,7 @@ constructor(
             .andExpect(
                 MockMvcResultMatchers.jsonPath("$.data.task.submissionSchema[0].type").value("TEXT")
             )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.rank").value(1))
     }
 
     @Test
@@ -487,6 +489,7 @@ constructor(
             .andExpect(
                 MockMvcResultMatchers.jsonPath("$.data.tasks[0].submitters.examples").isArray
             )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].rank").value(1))
     }
 
     @Test

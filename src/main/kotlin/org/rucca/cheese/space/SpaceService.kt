@@ -47,7 +47,8 @@ class SpaceService(
                     )
                 },
             updatedAt = space.updatedAt!!.toEpochMilli(),
-            createdAt = space.createdAt!!.toEpochMilli()
+            createdAt = space.createdAt!!.toEpochMilli(),
+            enableRank = space.enableRank!!,
         )
     }
 
@@ -76,14 +77,21 @@ class SpaceService(
         }
     }
 
-    fun createSpace(name: String, description: String, avatarId: IdType, ownerId: IdType): IdType {
+    fun createSpace(
+        name: String,
+        description: String,
+        avatarId: IdType,
+        ownerId: IdType,
+        enableRank: Boolean
+    ): IdType {
         ensureSpaceNameNotExists(name)
         val space =
             spaceRepository.save(
                 Space(
                     name = name,
                     description = description,
-                    avatar = Avatar().apply { id = avatarId.toInt() }
+                    avatar = Avatar().apply { id = avatarId.toInt() },
+                    enableRank = enableRank
                 )
             )
         spaceAdminRelationRepository.save(
@@ -96,25 +104,32 @@ class SpaceService(
         return space.id!!
     }
 
+    private fun getSpace(spaceId: IdType): Space {
+        return spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
+    }
+
     fun updateSpaceName(spaceId: IdType, name: String) {
         ensureSpaceNameNotExists(name)
-        val space =
-            spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
+        val space = getSpace(spaceId)
         space.name = name
         spaceRepository.save(space)
     }
 
     fun updateSpaceDescription(spaceId: IdType, description: String) {
-        val space =
-            spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
+        val space = getSpace(spaceId)
         space.description = description
         spaceRepository.save(space)
     }
 
     fun updateSpaceAvatar(spaceId: IdType, avatarId: IdType) {
-        val space =
-            spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
+        val space = getSpace(spaceId)
         space.avatar = Avatar().apply { id = avatarId.toInt() }
+        spaceRepository.save(space)
+    }
+
+    fun updateSpaceEnableRank(spaceId: IdType, enableRank: Boolean) {
+        val space = getSpace(spaceId)
+        space.enableRank = enableRank
         spaceRepository.save(space)
     }
 
@@ -240,7 +255,8 @@ class SpaceService(
                             )
                         },
                     updatedAt = it.updatedAt!!.toEpochMilli(),
-                    createdAt = it.createdAt!!.toEpochMilli()
+                    createdAt = it.createdAt!!.toEpochMilli(),
+                    enableRank = it.enableRank!!
                 )
             },
             page
