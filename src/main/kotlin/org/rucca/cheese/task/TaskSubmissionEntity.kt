@@ -17,7 +17,7 @@ import org.springframework.data.jpa.repository.Query
             Index(columnList = "membership_id"),
         ]
 )
-data class TaskSubmission(
+class TaskSubmission(
     @JoinColumn(nullable = false)
     @ManyToOne(fetch = FetchType.LAZY)
     val membership: TaskMembership? = null,

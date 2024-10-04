@@ -22,7 +22,8 @@
 				"AndrewButson.vscode-openapi-viewer",
 				"redhat.vscode-xml",
 				"redhat.vscode-yaml",
-				"fwcd.kotlin"
+				"fwcd.kotlin",
+				"streetsidesoftware.code-spell-checker"
 			]
 		}
 	}

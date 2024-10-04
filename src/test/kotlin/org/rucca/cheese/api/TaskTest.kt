@@ -834,8 +834,6 @@ constructor(
                     """
                         [
                           {
-                            "title": "Text Entry",
-                            "type": "TEXT",
                             "contentText": "This is a test submission."
                           }
                         ]
@@ -919,13 +917,9 @@ constructor(
                     """
                         [
                           {
-                            "title": "Text Entry",
-                            "type": "TEXT",
                             "contentText": "This is a test submission."
                           },
                           {
-                            "title": "Attachment Entry",
-                            "type": "FILE",
                             "contentAttachmentId": $attachmentId
                           }
                         ]
@@ -978,8 +972,6 @@ constructor(
                     """
                         [
                           {
-                            "title": "Text Entry",
-                            "type": "TEXT",
                             "contentText": "This is a test submission."
                           }
                         ]
@@ -1025,8 +1017,6 @@ constructor(
                     """
                         [
                           {
-                            "title": "Text Entry",
-                            "type": "TEXT",
                             "contentText": "This is a test submission. (Version 2)"
                           }
                         ]
@@ -1071,8 +1061,6 @@ constructor(
                     """
                       [
                         {
-                          "title": "Text Entry",
-                          "type": "TEXT",
                           "contentText": "This is a test submission. (Version 1) (edited)"
                         }
                       ]
@@ -1119,8 +1107,6 @@ constructor(
                     """
                       [
                         {
-                          "title": "Text Entry",
-                          "type": "TEXT",
                           "contentText": "This is a test submission. (Version 2) (edited)"
                         }
                       ]
