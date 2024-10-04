@@ -20,7 +20,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 
 @Service
 class AuthorizationService(
-    applicationConfig: ApplicationConfig,
+    private val applicationConfig: ApplicationConfig,
     private val objectMapper: ObjectMapper,
 ) {
     val customAuthLogics = CustomAuthLogics()
@@ -97,16 +97,13 @@ class AuthorizationService(
                     )
                 if (!result) continue
             }
-            logger.info(
-                "Operation permitted: '$action' on resource (resourceType: '$resourceType', resourceId: $resourceId, authInfo: $authInfo)." +
-                    " Authorization: $authorization"
-            )
             return
         }
-        logger.warn(
-            "Operation denied: '$action' on resource (resourceType: '$resourceType', resourceId: $resourceId, authInfo: $authInfo)." +
-                " Authorization: $authorization"
-        )
+        if (applicationConfig.warnAuditFailure)
+            logger.warn(
+                "Operation denied: '$action' on resource (resourceType: '$resourceType', resourceId: $resourceId, authInfo: $authInfo)." +
+                    " UserId: $userId. Authorization: $authorization"
+            )
         throw PermissionDeniedError(action, resourceType, resourceId, authInfo)
     }
 
