@@ -10,4 +10,5 @@ class ApplicationConfig {
     lateinit var jwtSecret: String
     lateinit var corsOrigin: String
     var shutdownOnStartup: Boolean = false
+    var warnAuditFailure: Boolean = false
 }
