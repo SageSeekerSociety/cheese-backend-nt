@@ -63,6 +63,11 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
+    SEQUENCE task_submission_review_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE task_submission_seq
 START WITH
     1 INCREMENT BY 50;
@@ -205,6 +210,20 @@ CREATE
 
 CREATE
     TABLE
+        task_submission_review(
+            accepted BOOLEAN NOT NULL,
+            score INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            submission_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            comment VARCHAR(255) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
         team(
             avatar_id INTEGER NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
@@ -260,6 +279,10 @@ CREATE
     task_submission_entry(task_submission_id);
 
 CREATE
+    INDEX IDX3ctl72phv5d0yluddhpkxb1y4 ON
+    task_submission_review(submission_id);
+
+CREATE
     INDEX IDXg2l9qqsoeuynt4r5ofdt1x2td ON
     team(name);
 
@@ -312,6 +335,9 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS task_submission_entry ADD CONSTRAINT FK3rhnhj7id0krtih5rhveivmgc FOREIGN KEY(task_submission_id) REFERENCES task_submission;
+
+ALTER TABLE
+    IF EXISTS task_submission_review ADD CONSTRAINT FKba2fmo0mgjdlohcnpf97tvgvt FOREIGN KEY(submission_id) REFERENCES task_submission;
 
 ALTER TABLE
     IF EXISTS team ADD CONSTRAINT FKjv1k745e89swu3gj896pxcq3y FOREIGN KEY(avatar_id) REFERENCES avatar;

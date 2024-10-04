@@ -106,15 +106,25 @@ class RolePermissionService {
                                 "delete",
                                 "add-participant",
                                 "remove-participant",
-                                "create-review",
-                                "modify-review",
-                                "delete-review"
                             ),
                         authorizedResource =
                             AuthorizedResource(
                                 types = listOf("task"),
                                 ownedByUser = userId,
                             ),
+                    ),
+                    Permission(
+                        authorizedActions =
+                            listOf(
+                                "create-submission-review",
+                                "modify-submission-review",
+                                "delete-submission-review"
+                            ),
+                        authorizedResource =
+                            AuthorizedResource(
+                                types = listOf("task"),
+                            ),
+                        customLogic = "is-task-owner-of-submission",
                     ),
                     Permission(
                         authorizedActions =

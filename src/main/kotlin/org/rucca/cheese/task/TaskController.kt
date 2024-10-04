@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*
 @RestController
 class TaskController(
     private val taskService: TaskService,
+    private val taskSubmissionReviewService: TaskSubmissionReviewService,
     private val authorizationService: AuthorizationService,
     private val authenticationService: AuthenticationService,
 ) : TasksApi {
@@ -58,6 +59,22 @@ class TaskController(
                 false
             } else {
                 taskService.participantIsSelfOrTeamWhereIAmAdmin(resourceId, userId, memberId)
+            }
+        }
+        authorizationService.customAuthLogics.register("is-task-owner-of-submission") {
+            userId: IdType,
+            _: AuthorizedAction,
+            _: String,
+            _: IdType?,
+            authInfo: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            val submissionId = authInfo["submission"] as? IdType
+            if (submissionId == null) {
+                false
+            } else {
+                taskService.isTaskOwnerOfSubmission(submissionId, userId)
             }
         }
     }
@@ -137,7 +154,8 @@ class TaskController(
                 pageSize = pageSize,
                 pageStart = pageStart,
                 sortBy = by,
-                sortOrder = order
+                sortOrder = order,
+                queryReview = queryReview,
             )
         return ResponseEntity.ok(
             GetTaskSubmissions200ResponseDTO(
@@ -319,29 +337,65 @@ class TaskController(
         )
     }
 
-    @Guard("create-review", "task")
+    @Guard("create-submission-review", "task")
     override fun postTaskSubmissionReview(
-        @ResourceId taskId: Long,
-        version: Int,
+        @AuthInfo("submission") submissionId: Long,
         postTaskSubmissionReviewRequestDTO: PostTaskSubmissionReviewRequestDTO
     ): ResponseEntity<PostTaskSubmissionReview200ResponseDTO> {
-        TODO()
+        taskSubmissionReviewService.createReview(
+            submissionId = submissionId,
+            accepted = postTaskSubmissionReviewRequestDTO.accepted,
+            score = postTaskSubmissionReviewRequestDTO.score,
+            comment = postTaskSubmissionReviewRequestDTO.comment
+        )
+        val submissionDTO = taskService.getSubmissionDTO(submissionId, queryReview = true)
+        return ResponseEntity.ok(
+            PostTaskSubmissionReview200ResponseDTO(
+                200,
+                PostTaskSubmissionReview200ResponseDataDTO(submissionDTO),
+                "OK"
+            )
+        )
     }
 
-    @Guard("modify-review", "task")
+    @Guard("modify-submission-review", "task")
     override fun patchTaskSubmissionReview(
-        @ResourceId taskId: Long,
-        version: Int,
+        @AuthInfo("submission") submissionId: Long,
         patchTaskSubmissionReviewRequestDTO: PatchTaskSubmissionReviewRequestDTO
     ): ResponseEntity<PostTaskSubmissionReview200ResponseDTO> {
-        TODO()
+        if (patchTaskSubmissionReviewRequestDTO.accepted != null) {
+            taskSubmissionReviewService.updateReviewAccepted(
+                submissionId = submissionId,
+                accepted = patchTaskSubmissionReviewRequestDTO.accepted
+            )
+        }
+        if (patchTaskSubmissionReviewRequestDTO.score != null) {
+            taskSubmissionReviewService.updateReviewScore(
+                submissionId = submissionId,
+                score = patchTaskSubmissionReviewRequestDTO.score
+            )
+        }
+        if (patchTaskSubmissionReviewRequestDTO.comment != null) {
+            taskSubmissionReviewService.updateReviewComment(
+                submissionId = submissionId,
+                comment = patchTaskSubmissionReviewRequestDTO.comment
+            )
+        }
+        val submissionDTO = taskService.getSubmissionDTO(submissionId, queryReview = true)
+        return ResponseEntity.ok(
+            PostTaskSubmissionReview200ResponseDTO(
+                200,
+                PostTaskSubmissionReview200ResponseDataDTO(submissionDTO),
+                "OK"
+            )
+        )
     }
 
-    @Guard("delete-review", "task")
+    @Guard("delete-submission-review", "task")
     override fun deleteTaskSubmissionReview(
-        @ResourceId taskId: Long,
-        version: Int
+        @AuthInfo("submission") submissionId: Long,
     ): ResponseEntity<Unit> {
-        TODO()
+        taskSubmissionReviewService.deleteReview(submissionId)
+        return ResponseEntity.ok().build()
     }
 }

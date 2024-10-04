@@ -115,15 +115,12 @@ interface TasksApi {
     )
     @RequestMapping(
         method = [RequestMethod.DELETE],
-        value = ["/tasks/{taskId}/submissions/{version}/review"]
+        value = ["/tasks/submissions/{submissionId}/review"]
     )
     fun deleteTaskSubmissionReview(
-        @Parameter(description = "Task ID", required = true)
-        @PathVariable("taskId")
-        taskId: kotlin.Long,
-        @Parameter(description = "Version Index", required = true)
-        @PathVariable("version")
-        version: kotlin.Int
+        @Parameter(description = "Task Submission ID", required = true)
+        @PathVariable("submissionId")
+        submissionId: kotlin.Long
     ): ResponseEntity<Unit> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -479,17 +476,14 @@ interface TasksApi {
     )
     @RequestMapping(
         method = [RequestMethod.PATCH],
-        value = ["/tasks/{taskId}/submissions/{version}/review"],
+        value = ["/tasks/submissions/{submissionId}/review"],
         produces = ["application/json"],
         consumes = ["application/json"]
     )
     fun patchTaskSubmissionReview(
-        @Parameter(description = "Task ID", required = true)
-        @PathVariable("taskId")
-        taskId: kotlin.Long,
-        @Parameter(description = "Version Index", required = true)
-        @PathVariable("version")
-        version: kotlin.Int,
+        @Parameter(description = "Task Submission ID", required = true)
+        @PathVariable("submissionId")
+        submissionId: kotlin.Long,
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
@@ -646,17 +640,14 @@ interface TasksApi {
     )
     @RequestMapping(
         method = [RequestMethod.POST],
-        value = ["/tasks/{taskId}/submissions/{version}/review"],
+        value = ["/tasks/submissions/{submissionId}/review"],
         produces = ["application/json"],
         consumes = ["application/json"]
     )
     fun postTaskSubmissionReview(
-        @Parameter(description = "Task ID", required = true)
-        @PathVariable("taskId")
-        taskId: kotlin.Long,
-        @Parameter(description = "Version Index", required = true)
-        @PathVariable("version")
-        version: kotlin.Int,
+        @Parameter(description = "Task Submission ID", required = true)
+        @PathVariable("submissionId")
+        submissionId: kotlin.Long,
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody

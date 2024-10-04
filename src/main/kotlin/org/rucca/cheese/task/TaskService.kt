@@ -37,6 +37,7 @@ class TaskService(
     private val attachmentService: AttachmentService,
     private val elasticsearchTemplate: ElasticsearchTemplate,
     private val taskSubmissionEntryRepository: TaskSubmissionEntryRepository,
+    private val taskSubmissionReviewService: TaskSubmissionReviewService,
 ) {
     fun getTaskDto(
         taskId: IdType,
@@ -437,6 +438,22 @@ class TaskService(
         data class Attachment(val attachmentId: IdType) : TaskSubmissionEntry()
     }
 
+    private fun getSubmission(submissionId: IdType): TaskSubmission {
+        return taskSubmissionRepository.findById(submissionId).orElseThrow {
+            NotFoundError("task submission", submissionId)
+        }
+    }
+
+    fun getSubmissionDTO(submissionId: IdType, queryReview: Boolean = false): TaskSubmissionDTO {
+        val submission = getSubmission(submissionId)
+        return submission.toTaskSubmissionDTO(queryReview = queryReview)
+    }
+
+    fun isTaskOwnerOfSubmission(submissionId: IdType, userId: IdType): Boolean {
+        val submission = getSubmission(submissionId)
+        return submission.membership!!.task!!.creator!!.id!!.toLong() == userId
+    }
+
     fun validateSubmission(taskId: IdType, submission: List<TaskSubmissionEntry>) {
         val schema =
             taskRepository
@@ -566,7 +583,8 @@ class TaskService(
 
     fun TaskSubmission.toTaskSubmissionDTO(
         submissionList: List<org.rucca.cheese.task.TaskSubmissionEntry>? = null,
-        schema: List<TaskSubmissionSchema>? = null
+        schema: List<TaskSubmissionSchema>? = null,
+        queryReview: Boolean = false,
     ): TaskSubmissionDTO {
         val submissionListNotNull =
             submissionList ?: taskSubmissionEntryRepository.findAllByTaskSubmissionId(this.id!!)
@@ -608,7 +626,8 @@ class TaskService(
                                 )
                             else null
                     )
-                }
+                },
+            review = if (queryReview) taskSubmissionReviewService.getReviewDTO(this.id!!) else null
         )
     }
 
@@ -620,6 +639,7 @@ class TaskService(
         pageStart: IdType?,
         sortBy: TaskSubmissionSortBy,
         sortOrder: SortDirection,
+        queryReview: Boolean,
     ): Pair<List<TaskSubmissionDTO>, PageDTO> {
         val cb = entityManager.criteriaBuilder
         val cq = cb.createQuery(TaskSubmission::class.java)
@@ -672,6 +692,6 @@ class TaskService(
                 { it.id!! },
                 { id -> throw NotFoundError("task submission", id) }
             )
-        return Pair(curr.map { it.toTaskSubmissionDTO() }, page)
+        return Pair(curr.map { it.toTaskSubmissionDTO(queryReview = queryReview) }, page)
     }
 }

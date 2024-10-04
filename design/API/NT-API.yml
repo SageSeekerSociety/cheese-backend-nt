@@ -1147,7 +1147,7 @@ paths:
                     x-stoplight:
                       id: 6pybgx4byzj2l
                     format: int64
-  '/tasks/{taskId}/submissions/{version}/review':
+  '/tasks/submissions/{submissionId}/review':
     post:
       summary: Review Submission
       tags: []
@@ -1180,14 +1180,8 @@ paths:
             type: integer
             format: int64
           in: path
-          name: taskId
-          description: Task ID
-          required: true
-        - schema:
-            type: integer
-          in: path
-          name: version
-          description: Version Index
+          name: submissionId
+          description: Task Submission ID
           required: true
       requestBody:
         required: true
@@ -1238,14 +1232,8 @@ paths:
             type: integer
             format: int64
           in: path
-          name: taskId
-          description: Task ID
-          required: true
-        - schema:
-            type: integer
-          in: path
-          name: version
-          description: Version Index
+          name: submissionId
+          description: Task Submission ID
           required: true
       requestBody:
         required: true
@@ -1272,14 +1260,8 @@ paths:
             type: integer
             format: int64
           in: path
-          name: taskId
-          description: Task ID
-          required: true
-        - schema:
-            type: integer
-          in: path
-          name: version
-          description: Version Index
+          name: submissionId
+          description: Task Submission ID
           required: true
   /teams/{teamId}:
     delete:
