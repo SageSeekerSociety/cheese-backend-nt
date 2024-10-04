@@ -128,7 +128,14 @@ interface SpacesApi {
     fun getSpace(
         @Parameter(description = "Space ID", required = true)
         @PathVariable("spaceId")
-        spaceId: kotlin.Long
+        spaceId: kotlin.Long,
+        @Parameter(
+            description = "Query your rank in this space",
+            schema = Schema(defaultValue = "false")
+        )
+        @Valid
+        @RequestParam(value = "queryMyRank", required = false, defaultValue = "false")
+        queryMyRank: kotlin.Boolean
     ): ResponseEntity<GetSpace200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -158,6 +165,13 @@ interface SpacesApi {
         produces = ["application/json"]
     )
     fun getSpaces(
+        @Parameter(
+            description = "Query your rank in this space",
+            schema = Schema(defaultValue = "false")
+        )
+        @Valid
+        @RequestParam(value = "queryMyRank", required = false, defaultValue = "false")
+        queryMyRank: kotlin.Boolean,
         @Parameter(description = "Page Size")
         @Valid
         @RequestParam(value = "page_size", required = false)

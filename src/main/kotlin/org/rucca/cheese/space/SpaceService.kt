@@ -3,6 +3,7 @@ package org.rucca.cheese.space
 import jakarta.persistence.EntityManager
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
+import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
@@ -27,18 +28,17 @@ class SpaceService(
     private val spaceAdminRelationRepository: SpaceAdminRelationRepository,
     private val userService: UserService,
     private val entityManager: EntityManager,
+    private val spaceUserRankService: SpaceUserRankService,
+    private val authenticationService: AuthenticationService,
 ) {
-    fun getSpaceDto(spaceId: IdType): SpaceDTO {
-        val space =
-            spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
-        val admins = spaceAdminRelationRepository.findAllBySpaceId(spaceId)
+    fun Space.toSpaceDTO(queryMyRank: Boolean): SpaceDTO {
         return SpaceDTO(
-            id = space.id!!,
-            intro = space.description!!,
-            name = space.name!!,
-            avatarId = space.avatar!!.id!!.toLong(),
+            id = this.id!!,
+            intro = this.description!!,
+            name = this.name!!,
+            avatarId = this.avatar!!.id!!.toLong(),
             admins =
-                admins.map {
+                spaceAdminRelationRepository.findAllBySpaceId(this.id!!).map {
                     SpaceAdminDTO(
                         convertAdminRole(it.role!!),
                         userService.getUserDto(it.user!!.id!!.toLong()),
@@ -46,10 +46,19 @@ class SpaceService(
                         updatedAt = it.updatedAt!!.toEpochMilli()
                     )
                 },
-            updatedAt = space.updatedAt!!.toEpochMilli(),
-            createdAt = space.createdAt!!.toEpochMilli(),
-            enableRank = space.enableRank!!,
+            updatedAt = this.updatedAt!!.toEpochMilli(),
+            createdAt = this.createdAt!!.toEpochMilli(),
+            enableRank = this.enableRank!!,
+            myRank =
+                if (queryMyRank && this.enableRank!!) {
+                    val userId = authenticationService.getCurrentUserId()
+                    spaceUserRankService.getRank(this.id!!, userId)
+                } else null
         )
+    }
+
+    fun getSpaceDto(spaceId: IdType, queryMyRank: Boolean = false): SpaceDTO {
+        return getSpace(spaceId).toSpaceDTO(queryMyRank)
     }
 
     fun getSpaceOwner(spaceId: IdType): IdType {
@@ -209,6 +218,7 @@ class SpaceService(
     }
 
     fun enumerateSpaces(
+        queryMyRank: Boolean,
         sortBy: SpacesSortBy,
         sortOrder: SortDirection,
         pageSize: Int,
@@ -238,28 +248,6 @@ class SpaceService(
                 { it.id!! },
                 { id -> throw NotFoundError("space", id) }
             )
-        return Pair(
-            curr.map {
-                SpaceDTO(
-                    id = it.id!!,
-                    intro = it.description!!,
-                    name = it.name!!,
-                    avatarId = it.avatar!!.id!!.toLong(),
-                    admins =
-                        spaceAdminRelationRepository.findAllBySpaceId(it.id!!).map {
-                            SpaceAdminDTO(
-                                convertAdminRole(it.role!!),
-                                userService.getUserDto(it.user!!.id!!.toLong()),
-                                createdAt = it.createdAt!!.toEpochMilli(),
-                                updatedAt = it.updatedAt!!.toEpochMilli()
-                            )
-                        },
-                    updatedAt = it.updatedAt!!.toEpochMilli(),
-                    createdAt = it.createdAt!!.toEpochMilli(),
-                    enableRank = it.enableRank!!
-                )
-            },
-            page
-        )
+        return Pair(curr.map { it.toSpaceDTO(queryMyRank) }, page)
     }
 }

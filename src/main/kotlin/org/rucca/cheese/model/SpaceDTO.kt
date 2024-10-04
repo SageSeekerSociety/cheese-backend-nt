@@ -13,6 +13,7 @@ import javax.validation.Valid
  * @param updatedAt
  * @param createdAt
  * @param enableRank
+ * @param myRank Only has value when: 'queryJoinablity' == true && 'enableRank' == true
  */
 data class SpaceDTO(
     @Schema(example = "null", required = true, description = "")
@@ -39,5 +40,11 @@ data class SpaceDTO(
     val createdAt: kotlin.Long,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("enableRank", required = true)
-    val enableRank: kotlin.Boolean
+    val enableRank: kotlin.Boolean,
+    @Schema(
+        example = "null",
+        description = "Only has value when: 'queryJoinablity' == true && 'enableRank' == true"
+    )
+    @get:JsonProperty("myRank")
+    val myRank: kotlin.Int? = null
 ) {}

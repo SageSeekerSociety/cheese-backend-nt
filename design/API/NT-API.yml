@@ -48,6 +48,12 @@ paths:
           schema:
             type: integer
             format: int64
+        - description: Query your rank in this space
+          in: query
+          name: queryMyRank
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           content:
@@ -184,6 +190,12 @@ paths:
       x-stoplight:
         id: ftqdjmms34blr
       parameters:
+        - description: Query your rank in this space
+          in: query
+          name: queryMyRank
+          schema:
+            type: boolean
+            default: false
         - schema:
             type: integer
           in: query
@@ -1842,6 +1854,9 @@ components:
           format: int64
         enableRank:
           type: boolean
+        myRank:
+          type: integer
+          description: 'Only has value when: ''queryJoinablity'' == true && ''enableRank'' == true'
     SpaceAdmin:
       title: SpaceAdmin
       x-stoplight:
