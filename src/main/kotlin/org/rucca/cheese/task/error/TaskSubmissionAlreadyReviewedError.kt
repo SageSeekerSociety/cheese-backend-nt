@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus
 
 class TaskSubmissionAlreadyReviewedError(submissionId: IdType) :
     BaseError(
-        HttpStatus.NOT_FOUND,
+        HttpStatus.CONFLICT,
         "Submission with id $submissionId has already been reviewed",
         mapOf("submissionId" to submissionId)
     )
