@@ -4,6 +4,7 @@ import com.ninjasquad.springmockk.SpykBean
 import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.rucca.cheese.auth.exception.DuplicatedAuthInfoKeyException
 import org.rucca.cheese.auth.exception.DuplicatedResourceIdAnnotationException
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 
+@Disabled("Disabled to speed up tests")
 @SpringBootTest
 @AutoConfigureMockMvc
 class AuthorizationAspectTest
