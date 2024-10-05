@@ -113,23 +113,25 @@ class TaskService(
                 getSubmittability(this.id!!, authenticationService.getCurrentUserId())
             else Pair(null, null)
         return TaskDTO(
-            this.id!!,
-            this.name!!,
-            convertTaskSubmitterType(this.submitterType!!),
-            userService.getUserDto(this.creator!!.id!!.toLong()),
-            this.deadline!!.toEpochMilli(),
-            this.resubmittable!!,
-            this.editable!!,
-            this.description!!,
-            this.submissionSchema!!
-                .sortedBy { it.index }
-                .map {
-                    TaskSubmissionSchemaEntryDTO(
-                        it.description!!,
-                        convertTaskSubmissionEntryType(it.type!!)
-                    )
-                },
-            getTaskSubmitterSummary(this.id!!),
+            id = this.id!!,
+            name = this.name!!,
+            submitterType = convertTaskSubmitterType(this.submitterType!!),
+            creator = userService.getUserDto(this.creator!!.id!!.toLong()),
+            deadline = this.deadline!!.toEpochMilli(),
+            resubmittable = this.resubmittable!!,
+            editable = this.editable!!,
+            intro = this.intro!!,
+            description = this.description!!,
+            submissionSchema =
+                this.submissionSchema!!
+                    .sortedBy { it.index }
+                    .map {
+                        TaskSubmissionSchemaEntryDTO(
+                            it.description!!,
+                            convertTaskSubmissionEntryType(it.type!!)
+                        )
+                    },
+            submitters = getTaskSubmittersSummary(this.id!!),
             updatedAt = this.updatedAt!!.toEpochMilli(),
             createdAt = this.createdAt!!.toEpochMilli(),
             joinable = joinability.first,
@@ -146,6 +148,7 @@ class TaskService(
         deadline: LocalDateTime,
         resubmittable: Boolean,
         editable: Boolean,
+        intro: String,
         description: String,
         submissionSchema: List<TaskSubmissionSchema>,
         creatorId: IdType,
@@ -164,6 +167,7 @@ class TaskService(
                     editable = editable,
                     team = if (teamId != null) Team().apply { id = teamId } else null,
                     space = if (spaceId != null) Space().apply { id = spaceId } else null,
+                    intro = intro,
                     description = description,
                     submissionSchema = submissionSchema,
                     rank = rank
@@ -197,6 +201,12 @@ class TaskService(
     fun updateTaskEditable(taskId: IdType, editable: Boolean) {
         val task = getTask(taskId)
         task.editable = editable
+        taskRepository.save(task)
+    }
+
+    fun updateTaskIntro(taskId: IdType, intro: String) {
+        val task = getTask(taskId)
+        task.intro = intro
         taskRepository.save(task)
     }
 
@@ -264,7 +274,7 @@ class TaskService(
         }
     }
 
-    fun getTaskSubmitterSummary(taskId: IdType): TaskSubmittersDTO {
+    fun getTaskSubmittersSummary(taskId: IdType): TaskSubmittersDTO {
         val submitters = taskMembershipRepository.findByTaskIdWhereMemberHasSubmitted(taskId)
         val examples = submitters.sortedBy { it.updatedAt }.reversed().take(3)
         val exampleDTOs =

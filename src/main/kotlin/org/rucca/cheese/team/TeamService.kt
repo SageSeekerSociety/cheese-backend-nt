@@ -39,13 +39,14 @@ class TeamService(
     private val authenticateService: AuthenticationService,
 ) {
     fun getTeamDto(teamId: IdType): TeamDTO {
-        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        val team = getTeam(teamId)
         val currentUserId = authenticateService.getCurrentUserId()
         val myRoleOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, currentUserId)
         return TeamDTO(
             id = team.id!!,
             name = team.name!!,
-            intro = team.description!!,
+            intro = team.intro!!,
+            description = team.description!!,
             avatarId = team.avatar!!.id!!.toLong(),
             owner = userService.getUserDto(getTeamOwner(teamId)),
             admins =
@@ -66,12 +67,12 @@ class TeamService(
     }
 
     fun getTeamAvatarId(teamId: IdType): IdType {
-        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        val team = getTeam(teamId)
         return team.avatar!!.id!!.toLong()
     }
 
     fun getTaskParticipantSummaryDto(teamId: IdType): TaskParticipantSummaryDTO {
-        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        val team = getTeam(teamId)
         return TaskParticipantSummaryDTO(
             team.id!!,
             team.description!!,
@@ -98,8 +99,8 @@ class TeamService(
             return Pair(listOf(getTeamDto(id)), PageDTO(id, 1, hasPrev = false, hasMore = false))
         }
         val criteria = Criteria("name").matches(query)
-        val query = CriteriaQuery(criteria)
-        val hints = elasticsearchTemplate.search(query, TeamElasticSearch::class.java)
+        val hints =
+            elasticsearchTemplate.search(CriteriaQuery(criteria), TeamElasticSearch::class.java)
         val result =
             (SearchHitSupport.unwrapSearchHits(hints) as List<*>).filterIsInstance<
                 TeamElasticSearch
@@ -178,12 +179,19 @@ class TeamService(
         }
     }
 
-    fun createTeam(name: String, description: String, avatarId: IdType, ownerId: IdType): IdType {
+    fun createTeam(
+        name: String,
+        intro: String,
+        description: String,
+        avatarId: IdType,
+        ownerId: IdType
+    ): IdType {
         ensureTeamNameNotExists(name)
         val team =
             teamRepository.save(
                 Team(
                     name = name,
+                    intro = intro,
                     description = description,
                     avatar = Avatar().apply { id = avatarId.toInt() }
                 )
@@ -198,21 +206,31 @@ class TeamService(
         return team.id!!
     }
 
+    fun getTeam(teamId: IdType): Team {
+        return teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+    }
+
     fun updateTeamName(teamId: IdType, name: String) {
         ensureTeamNameNotExists(name)
-        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        val team = getTeam(teamId)
         team.name = name
         teamRepository.save(team)
     }
 
+    fun updateTeamIntro(teamId: IdType, intro: String) {
+        val team = getTeam(teamId)
+        team.intro = intro
+        teamRepository.save(team)
+    }
+
     fun updateTeamDescription(teamId: IdType, description: String) {
-        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        val team = getTeam(teamId)
         team.description = description
         teamRepository.save(team)
     }
 
     fun updateTeamAvatar(teamId: IdType, avatarId: IdType) {
-        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        val team = getTeam(teamId)
         team.avatar = Avatar().apply { id = avatarId.toInt() }
         teamRepository.save(team)
     }
@@ -226,7 +244,7 @@ class TeamService(
     fun deleteTeam(teamId: IdType) {
         val relations = teamUserRelationRepository.findAllByTeamId(teamId)
         relations.forEach { it.deletedAt = LocalDateTime.now() }
-        val team = teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+        val team = getTeam(teamId)
         team.deletedAt = LocalDateTime.now()
         teamUserRelationRepository.saveAll(relations)
         teamRepository.save(team)

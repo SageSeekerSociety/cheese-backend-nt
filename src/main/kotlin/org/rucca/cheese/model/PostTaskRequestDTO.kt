@@ -10,6 +10,7 @@ import javax.validation.Valid
  * @param deadline
  * @param resubmittable
  * @param editable
+ * @param intro
  * @param description
  * @param submissionSchema
  * @param team
@@ -33,6 +34,9 @@ data class PostTaskRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("editable", required = true)
     val editable: kotlin.Boolean,
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("intro", required = true)
+    val intro: kotlin.String,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("description", required = true)
     val description: kotlin.String,
