@@ -149,6 +149,11 @@
             <version>3.1.8</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+            <version>3.1.8</version>
+        </dependency>
     </dependencies>
 
     <!-- Build Configuration -->
@@ -280,6 +285,7 @@
                         <application.warn-audit-failure>false</application.warn-audit-failure>
                         <logging.level.root>WARN</logging.level.root>
                     </systemPropertyVariables>
+                    <argLine>-XX:+EnableDynamicAgentLoading</argLine>
                 </configuration>
             </plugin>
             <plugin>
