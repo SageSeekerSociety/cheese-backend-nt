@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema
  * @param intro
  * @param name
  * @param avatarId
+ * @param enableRank
  */
 data class PatchSpaceRequestDTO(
     @Schema(example = "null", description = "")
@@ -17,5 +18,8 @@ data class PatchSpaceRequestDTO(
     val name: kotlin.String? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("avatarId")
-    val avatarId: kotlin.Long? = null
+    val avatarId: kotlin.Long? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("enableRank")
+    val enableRank: kotlin.Boolean? = null
 ) {}

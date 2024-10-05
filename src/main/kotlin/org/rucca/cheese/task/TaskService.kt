@@ -44,12 +44,12 @@ class TaskService(
         queryJoinability: Boolean = false,
         querySubmittability: Boolean = false
     ): TaskDTO {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val task = getTask(taskId)
         return task.toTaskDTO(queryJoinability, querySubmittability)
     }
 
     fun getTaskOwner(taskId: IdType): IdType {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val task = getTask(taskId)
         return task.creator!!.id!!.toLong()
     }
 
@@ -135,7 +135,8 @@ class TaskService(
             joinable = joinability.first,
             joinableAsTeam = joinability.second,
             submittable = submittability.first,
-            submittableAsTeam = submittability.second
+            submittableAsTeam = submittability.second,
+            rank = this.rank,
         )
     }
 
@@ -148,8 +149,9 @@ class TaskService(
         description: String,
         submissionSchema: List<TaskSubmissionSchema>,
         creatorId: IdType,
-        teamId: IdType? = null,
-        spaceId: IdType? = null,
+        teamId: IdType?,
+        spaceId: IdType?,
+        rank: Int? = null
     ): IdType {
         val task =
             taskRepository.save(
@@ -163,45 +165,56 @@ class TaskService(
                     team = if (teamId != null) Team().apply { id = teamId } else null,
                     space = if (spaceId != null) Space().apply { id = spaceId } else null,
                     description = description,
-                    submissionSchema = submissionSchema
+                    submissionSchema = submissionSchema,
+                    rank = rank
                 )
             )
         return task.id!!
     }
 
+    private fun getTask(taskId: IdType): Task {
+        return taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+    }
+
     fun updateTaskName(taskId: IdType, name: String) {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val task = getTask(taskId)
         task.name = name
         taskRepository.save(task)
     }
 
     fun updateTaskDeadline(taskId: IdType, deadline: LocalDateTime) {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val task = getTask(taskId)
         task.deadline = deadline
         taskRepository.save(task)
     }
 
     fun updateTaskResubmittable(taskId: IdType, resubmittable: Boolean) {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val task = getTask(taskId)
         task.resubmittable = resubmittable
         taskRepository.save(task)
     }
 
     fun updateTaskEditable(taskId: IdType, editable: Boolean) {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val task = getTask(taskId)
         task.editable = editable
         taskRepository.save(task)
     }
 
     fun updateTaskDescription(taskId: IdType, description: String) {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val task = getTask(taskId)
         task.description = description
         taskRepository.save(task)
     }
 
     fun updateTaskSubmissionSchema(taskId: IdType, submissionSchema: List<TaskSubmissionSchema>) {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val task = getTask(taskId)
         task.submissionSchema = submissionSchema
+        taskRepository.save(task)
+    }
+
+    fun updateTaskRank(taskId: IdType, rank: Int?) {
+        val task = getTask(taskId)
+        task.rank = rank
         taskRepository.save(task)
     }
 
@@ -212,17 +225,17 @@ class TaskService(
     }
 
     fun getTaskSumbitterType(taskId: IdType): TaskSubmitterTypeDTO {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val task = getTask(taskId)
         return convertTaskSubmitterType(task.submitterType!!)
     }
 
     fun isTaskResubmittable(taskId: IdType): Boolean {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val task = getTask(taskId)
         return task.resubmittable!!
     }
 
     fun isTaskEditable(taskId: IdType): Boolean {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val task = getTask(taskId)
         return task.editable!!
     }
 
@@ -379,7 +392,7 @@ class TaskService(
     }
 
     fun deleteTask(taskId: IdType) {
-        val task = taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+        val task = getTask(taskId)
         task.deletedAt = LocalDateTime.now()
         val participants = taskMembershipRepository.findAllByTaskId(taskId)
         for (participant in participants) {

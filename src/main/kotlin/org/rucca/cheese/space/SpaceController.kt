@@ -55,8 +55,11 @@ class SpaceController(
     }
 
     @Guard("query", "space")
-    override fun getSpace(@ResourceId spaceId: Long): ResponseEntity<GetSpace200ResponseDTO> {
-        val spaceDTO = spaceService.getSpaceDto(spaceId)
+    override fun getSpace(
+        @ResourceId spaceId: Long,
+        queryMyRank: Boolean
+    ): ResponseEntity<GetSpace200ResponseDTO> {
+        val spaceDTO = spaceService.getSpaceDto(spaceId, queryMyRank)
         return ResponseEntity.ok(
             GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
         )
@@ -64,6 +67,7 @@ class SpaceController(
 
     @Guard("enumerate", "space")
     override fun getSpaces(
+        queryMyRank: Boolean,
         pageSize: Int?,
         pageStart: Long?,
         sortBy: String,
@@ -81,7 +85,8 @@ class SpaceController(
                 "desc" -> SortDirection.DESCENDING
                 else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
             }
-        val (spaces, page) = spaceService.enumerateSpaces(by, order, pageSize ?: 10, pageStart)
+        val (spaces, page) =
+            spaceService.enumerateSpaces(queryMyRank, by, order, pageSize ?: 10, pageStart)
         return ResponseEntity.ok(
             GetSpaces200ResponseDTO(200, GetSpaces200ResponseDataDTO(spaces, page), "OK")
         )
@@ -100,6 +105,9 @@ class SpaceController(
         }
         if (patchSpaceRequestDTO.avatarId != null) {
             spaceService.updateSpaceAvatar(spaceId, patchSpaceRequestDTO.avatarId)
+        }
+        if (patchSpaceRequestDTO.enableRank != null) {
+            spaceService.updateSpaceEnableRank(spaceId, patchSpaceRequestDTO.enableRank)
         }
         val spaceDTO = spaceService.getSpaceDto(spaceId)
         return ResponseEntity.ok(
@@ -139,7 +147,8 @@ class SpaceController(
                 postSpaceRequestDTO.name,
                 postSpaceRequestDTO.intro,
                 postSpaceRequestDTO.avatarId,
-                authenticationService.getCurrentUserId()
+                authenticationService.getCurrentUserId(),
+                postSpaceRequestDTO.enableRank
             )
         val spaceDTO = spaceService.getSpaceDto(spaceId)
         return ResponseEntity.ok(

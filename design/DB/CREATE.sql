@@ -48,6 +48,11 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
+    SEQUENCE space_user_rank_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE task_membership_seq
 START WITH
     1 INCREMENT BY 50;
@@ -113,6 +118,7 @@ CREATE
     TABLE
         SPACE(
             avatar_id INTEGER NOT NULL,
+            enable_rank BOOLEAN NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
@@ -139,9 +145,23 @@ CREATE
 
 CREATE
     TABLE
+        space_user_rank(
+            RANK INTEGER NOT NULL,
+            "user_id" INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            space_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
         task(
             "creator_id" INTEGER NOT NULL,
             editable BOOLEAN NOT NULL,
+            RANK INTEGER,
             resubmittable BOOLEAN NOT NULL,
             submitter_type SMALLINT NOT NULL CHECK(
                 submitter_type BETWEEN 0 AND 1
@@ -263,6 +283,14 @@ CREATE
     space_admin_relation(user_id);
 
 CREATE
+    INDEX IDX5se9sb4u9yywkp49gnim8s85n ON
+    space_user_rank(space_id);
+
+CREATE
+    INDEX IDX4poyg61j8nhdhsryne7s8snmr ON
+    space_user_rank(user_id);
+
+CREATE
     INDEX IDX70x5oq6omtraaie2fttiv25rd ON
     task_membership(task_id);
 
@@ -308,6 +336,12 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS space_admin_relation ADD CONSTRAINT FKd3x1m946orup61b4f4wu6h2xn FOREIGN KEY("user_id") REFERENCES public."user";
+
+ALTER TABLE
+    IF EXISTS space_user_rank ADD CONSTRAINT FKh0k0jxvhnph0eoc5gw7652hdy FOREIGN KEY(space_id) REFERENCES SPACE;
+
+ALTER TABLE
+    IF EXISTS space_user_rank ADD CONSTRAINT FKiego7kcolpikn8o93o3qdjt3p FOREIGN KEY("user_id") REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS task ADD CONSTRAINT FK67uenor8d9f8lq7wjv7h56n2o FOREIGN KEY("creator_id") REFERENCES public."user";

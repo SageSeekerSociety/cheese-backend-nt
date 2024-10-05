@@ -41,6 +41,7 @@ class Task(
     @ManyToOne(fetch = FetchType.LAZY) val space: Space? = null, // nullable
     @Column(nullable = false) var description: String? = null,
     @ElementCollection var submissionSchema: List<TaskSubmissionSchema>? = null,
+    @Column(nullable = true) var rank: Int? = null,
 ) : BaseEntity()
 
 interface TaskRepository : JpaRepository<Task, IdType>

@@ -19,6 +19,7 @@ class Space(
     @Column(nullable = false) var name: String? = null,
     @Column(nullable = false) var description: String? = null,
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) var avatar: Avatar? = null,
+    @Column(nullable = false) var enableRank: Boolean? = null,
 ) : BaseEntity()
 
 interface SpaceRepository : JpaRepository<Space, IdType> {
