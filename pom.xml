@@ -285,7 +285,7 @@
                         <application.warn-audit-failure>false</application.warn-audit-failure>
                         <logging.level.root>WARN</logging.level.root>
                     </systemPropertyVariables>
-                    <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+                    <argLine>${argLine} -XX:+EnableDynamicAgentLoading</argLine>
                 </configuration>
             </plugin>
             <plugin>
