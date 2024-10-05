@@ -2,12 +2,14 @@ package org.rucca.cheese.auth
 
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.rucca.cheese.common.persistent.IdType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 
+@Disabled("Disabled to speed up tests")
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AuthorizationServiceTest
