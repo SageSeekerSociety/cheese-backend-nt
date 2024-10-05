@@ -227,6 +227,9 @@ class TaskController(
         if (patchTaskRequestDTO.editable != null) {
             taskService.updateTaskEditable(taskId, patchTaskRequestDTO.editable)
         }
+        if (patchTaskRequestDTO.intro != null) {
+            taskService.updateTaskIntro(taskId, patchTaskRequestDTO.intro)
+        }
         if (patchTaskRequestDTO.description != null) {
             taskService.updateTaskDescription(taskId, patchTaskRequestDTO.description)
         }
@@ -288,6 +291,7 @@ class TaskController(
                 deadline = postTaskRequestDTO.deadline.toLocalDateTime(),
                 resubmittable = postTaskRequestDTO.resubmittable,
                 editable = postTaskRequestDTO.editable,
+                intro = postTaskRequestDTO.intro,
                 description = postTaskRequestDTO.description,
                 submissionSchema =
                     postTaskRequestDTO.submissionSchema.withIndex().map {

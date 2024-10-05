@@ -132,7 +132,10 @@ class TeamController(
             teamService.updateTeamName(teamId, patchTeamRequestDTO.name)
         }
         if (patchTeamRequestDTO.intro != null) {
-            teamService.updateTeamDescription(teamId, patchTeamRequestDTO.intro)
+            teamService.updateTeamIntro(teamId, patchTeamRequestDTO.intro)
+        }
+        if (patchTeamRequestDTO.description != null) {
+            teamService.updateTeamDescription(teamId, patchTeamRequestDTO.description)
         }
         if (patchTeamRequestDTO.avatarId != null) {
             teamService.updateTeamAvatar(teamId, patchTeamRequestDTO.avatarId)
@@ -185,10 +188,11 @@ class TeamController(
     ): ResponseEntity<GetTeam200ResponseDTO> {
         val teamId =
             teamService.createTeam(
-                postTeamRequestDTO.name,
-                postTeamRequestDTO.intro,
-                postTeamRequestDTO.avatarId,
-                authenticationService.getCurrentUserId()
+                name = postTeamRequestDTO.name,
+                intro = postTeamRequestDTO.intro,
+                description = postTeamRequestDTO.description,
+                avatarId = postTeamRequestDTO.avatarId,
+                ownerId = authenticationService.getCurrentUserId()
             )
         val teamDTO = teamService.getTeamDto(teamId)
         return ResponseEntity.ok(

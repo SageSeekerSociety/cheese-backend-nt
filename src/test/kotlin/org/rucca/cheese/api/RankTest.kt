@@ -33,6 +33,7 @@ constructor(
     lateinit var creatorToken: String
     private var spaceName = "Test Space (${floor(Math.random() * 10000000000).toLong()})"
     private var spaceIntro = "This is a test space."
+    private var spaceDescription = "A lengthy text. ".repeat(1000)
     private var spaceAvatarId = userCreatorService.testAvatarId()
     private var spaceId: IdType = -1
 
@@ -40,6 +41,7 @@ constructor(
         creatorToken: String,
         spaceName: String,
         spaceIntro: String,
+        spaceDescription: String,
         spaceAvatarId: IdType
     ): IdType {
         val request =
@@ -51,6 +53,7 @@ constructor(
                 {
                     "name": "$spaceName",
                     "intro": "$spaceIntro",
+                    "description": "$spaceDescription",
                     "avatarId": $spaceAvatarId
                 }
             """
@@ -61,6 +64,10 @@ constructor(
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
+                .andExpect(
+                    MockMvcResultMatchers.jsonPath("$.data.space.description")
+                        .value(spaceDescription)
+                )
                 .andExpect(
                     MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId)
                 )
@@ -85,7 +92,7 @@ constructor(
     fun prepare() {
         creator = userCreatorService.createUser()
         creatorToken = userCreatorService.login(creator.username, creator.password)
-        spaceId = createSpace(creatorToken, spaceName, spaceIntro, spaceAvatarId)
+        spaceId = createSpace(creatorToken, spaceName, spaceIntro, spaceDescription, spaceAvatarId)
     }
 
     @Test

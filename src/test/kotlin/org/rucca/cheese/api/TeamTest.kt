@@ -39,6 +39,7 @@ constructor(
     lateinit var anotherUserToken: String
     private var teamName = "Test Team (${floor(Math.random() * 10000000000).toLong()})"
     private var teamIntro = "This is a test team"
+    private var teamDescription = "A lengthy text. ".repeat(1000)
     private var teamAvatarId = userCreatorService.testAvatarId()
     private var teamId: IdType = -1
 
@@ -68,6 +69,7 @@ constructor(
                 {
                   "name": "$teamName",
                   "intro": "$teamIntro",
+                  "description": "$teamDescription",
                   "avatarId": $teamAvatarId
                 }
             """
@@ -78,6 +80,9 @@ constructor(
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.name").value(teamName))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.intro").value(teamIntro))
+                .andExpect(
+                    MockMvcResultMatchers.jsonPath("$.data.team.description").value(teamDescription)
+                )
                 .andExpect(
                     MockMvcResultMatchers.jsonPath("$.data.team.avatarId").value(teamAvatarId)
                 )
@@ -439,6 +444,7 @@ constructor(
     fun testUpdateTeamUseAdmin() {
         teamName = "$teamName (2)"
         teamIntro = "$teamIntro (2)"
+        teamDescription = "$teamDescription (2)"
         teamAvatarId += 1
         val request =
             MockMvcRequestBuilders.patch("/teams/$teamId")
@@ -449,6 +455,7 @@ constructor(
                 {
                   "name": "$teamName",
                   "intro": "$teamIntro",
+                  "description": "$teamDescription",
                   "avatarId": $teamAvatarId
                 }
             """
@@ -458,6 +465,9 @@ constructor(
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.name").value(teamName))
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.intro").value(teamIntro))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.team.description").value(teamDescription)
+            )
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.team.avatarId").value(teamAvatarId))
     }
 

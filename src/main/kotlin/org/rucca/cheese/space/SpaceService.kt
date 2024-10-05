@@ -34,7 +34,8 @@ class SpaceService(
     fun Space.toSpaceDTO(queryMyRank: Boolean): SpaceDTO {
         return SpaceDTO(
             id = this.id!!,
-            intro = this.description!!,
+            intro = this.intro!!,
+            description = this.description!!,
             name = this.name!!,
             avatarId = this.avatar!!.id!!.toLong(),
             admins =
@@ -88,6 +89,7 @@ class SpaceService(
 
     fun createSpace(
         name: String,
+        intro: String,
         description: String,
         avatarId: IdType,
         ownerId: IdType,
@@ -98,6 +100,7 @@ class SpaceService(
             spaceRepository.save(
                 Space(
                     name = name,
+                    intro = intro,
                     description = description,
                     avatar = Avatar().apply { id = avatarId.toInt() },
                     enableRank = enableRank
@@ -121,6 +124,12 @@ class SpaceService(
         ensureSpaceNameNotExists(name)
         val space = getSpace(spaceId)
         space.name = name
+        spaceRepository.save(space)
+    }
+
+    fun updateSpaceIntro(spaceId: IdType, intro: String) {
+        val space = getSpace(spaceId)
+        space.intro = intro
         spaceRepository.save(space)
     }
 

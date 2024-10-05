@@ -41,7 +41,8 @@ constructor(
     private var taskId: IdType = -1
     private var submissionId: IdType = -1
     private val taskName = "Test Task (${floor(Math.random() * 10000000000).toLong()})"
-    private val taskDescription = "This is a test task."
+    private val taskIntro = "This is a test task."
+    private val taskDescription = "A lengthy text. ".repeat(1000)
     private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
     private val taskSubmissionSchema =
         listOf(
@@ -55,6 +56,7 @@ constructor(
         deadline: Long,
         resubmittable: Boolean,
         editable: Boolean,
+        intro: String,
         description: String,
         submissionSchema: List<Pair<String, String>>,
         team: IdType?,
@@ -72,6 +74,7 @@ constructor(
                   "deadline": "$deadline",
                   "resubmittable": $resubmittable,
                   "editable": $editable,
+                  "intro": "$intro",
                   "description": "$description",
                   "submissionSchema": [
                     ${
@@ -145,6 +148,7 @@ constructor(
                 taskDeadline,
                 false,
                 false,
+                taskIntro,
                 taskDescription,
                 taskSubmissionSchema,
                 null,

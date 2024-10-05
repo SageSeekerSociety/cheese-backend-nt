@@ -39,7 +39,8 @@ class Task(
     @Column(nullable = false) var editable: Boolean? = null,
     @ManyToOne(fetch = FetchType.LAZY) val team: Team? = null, // nullable
     @ManyToOne(fetch = FetchType.LAZY) val space: Space? = null, // nullable
-    @Column(nullable = false) var description: String? = null,
+    @Column(nullable = false) var intro: String? = null,
+    @Column(nullable = false, columnDefinition = "TEXT") var description: String? = null,
     @ElementCollection var submissionSchema: List<TaskSubmissionSchema>? = null,
     @Column(nullable = true) var rank: Int? = null,
 ) : BaseEntity()

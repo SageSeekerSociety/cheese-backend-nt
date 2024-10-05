@@ -7,6 +7,7 @@ import javax.validation.Valid
 /**
  * @param id
  * @param intro
+ * @param description
  * @param name
  * @param avatarId
  * @param admins
@@ -22,6 +23,9 @@ data class SpaceDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("intro", required = true)
     val intro: kotlin.String,
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("description", required = true)
+    val description: kotlin.String,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("name", required = true)
     val name: kotlin.String,
