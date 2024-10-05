@@ -139,6 +139,8 @@ paths:
                   type: string
                   x-stoplight:
                     id: o0xbwqyvvlxbw
+                description:
+                  type: string
                 name:
                   type: string
                   x-stoplight:
@@ -259,6 +261,7 @@ paths:
               type: object
               required:
                 - intro
+                - description
                 - name
                 - avatarId
                 - enableRank
@@ -267,6 +270,8 @@ paths:
                   type: string
                   x-stoplight:
                     id: 7k1r7n9xll0k2
+                description:
+                  type: string
                 name:
                   type: string
                   x-stoplight:
@@ -594,6 +599,8 @@ paths:
                   type: boolean
                   x-stoplight:
                     id: 5z1nmt7xtfq6p
+                intro:
+                  type: string
                 description:
                   type: string
                   x-stoplight:
@@ -744,6 +751,7 @@ paths:
                 - deadline
                 - resubmittable
                 - editable
+                - intro
                 - description
                 - submissionSchema
               properties:
@@ -764,6 +772,8 @@ paths:
                   type: boolean
                   x-stoplight:
                     id: 6slkgw3drj9t0
+                intro:
+                  type: string
                 description:
                   type: string
                   x-stoplight:
@@ -1419,6 +1429,8 @@ paths:
                   type: string
                   x-stoplight:
                     id: 8ctriovz0q68i
+                description:
+                  type: string
                 name:
                   type: string
                   x-stoplight:
@@ -1513,6 +1525,7 @@ paths:
               type: object
               required:
                 - intro
+                - description
                 - name
                 - avatarId
               properties:
@@ -1520,6 +1533,8 @@ paths:
                   type: string
                   x-stoplight:
                     id: ld5e4eauav2h5
+                description:
+                  type: string
                 name:
                   type: string
                   x-stoplight:
@@ -1811,6 +1826,7 @@ components:
       required:
         - id
         - intro
+        - description
         - name
         - avatarId
         - admins
@@ -1827,6 +1843,8 @@ components:
           type: string
           x-stoplight:
             id: 63zv59n5mly94
+        description:
+          type: string
         name:
           type: string
           x-stoplight:
@@ -1902,6 +1920,7 @@ components:
         - deadline
         - resubmittable
         - editable
+        - intro
         - description
         - submissionSchema
         - submitters
@@ -1932,6 +1951,8 @@ components:
           type: boolean
           x-stoplight:
             id: 2tmxxqzvv73pw
+        intro:
+          type: string
         description:
           type: string
           x-stoplight:
@@ -2106,6 +2127,7 @@ components:
       required:
         - id
         - intro
+        - description
         - name
         - avatarId
         - owner
@@ -2124,6 +2146,8 @@ components:
           type: string
           x-stoplight:
             id: c81sns2k5brz6
+        description:
+          type: string
         name:
           type: string
           x-stoplight:
