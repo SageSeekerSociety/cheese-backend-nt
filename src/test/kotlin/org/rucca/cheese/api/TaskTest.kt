@@ -53,7 +53,8 @@ constructor(
     private var attachmentId: IdType = -1
     private val taskIds = mutableListOf<IdType>()
     private val taskName = "Test Task (${floor(Math.random() * 10000000000).toLong()})"
-    private val taskDescription = "This is a test task."
+    private val taskIntro = "This is a test task."
+    private val taskDescription = "A lengthy text. ".repeat(1000)
     private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
     private val taskSubmissionSchema =
         listOf(
@@ -65,6 +66,7 @@ constructor(
         creatorToken: String,
         spaceName: String,
         spaceIntro: String,
+        spaceDescription: String,
         spaceAvatarId: IdType
     ): IdType {
         val request =
@@ -76,6 +78,7 @@ constructor(
                 {
                     "name": "$spaceName",
                     "intro": "$spaceIntro",
+                    "description": "$spaceDescription",
                     "avatarId": $spaceAvatarId
                 }
             """
@@ -93,6 +96,7 @@ constructor(
         creatorToken: String,
         teamName: String,
         teamIntro: String,
+        teamDescription: String,
         teamAvatarId: IdType
     ): IdType {
         val request =
@@ -104,6 +108,7 @@ constructor(
                 {
                   "name": "$teamName",
                   "intro": "$teamIntro",
+                  "description": "$teamDescription",
                   "avatarId": $teamAvatarId
                 }
             """
@@ -155,6 +160,7 @@ constructor(
                 creatorToken = teamCreatorToken,
                 spaceName = "Test Space (${floor(Math.random() * 10000000000).toLong()})",
                 spaceIntro = "This is a test space.",
+                spaceDescription = "A lengthy text. ".repeat(1000),
                 spaceAvatarId = userCreatorService.testAvatarId(),
             )
         teamId =
@@ -162,6 +168,7 @@ constructor(
                 creatorToken = teamCreatorToken,
                 teamName = "Test Team (${floor(Math.random() * 10000000000).toLong()})",
                 teamIntro = "This is a test team.",
+                teamDescription = "A lengthy text. ".repeat(1000),
                 teamAvatarId = userCreatorService.testAvatarId(),
             )
         joinTeam(teamCreatorToken, teamId, teamMember.userId)
@@ -174,6 +181,7 @@ constructor(
         deadline: Long,
         resubmittable: Boolean,
         editable: Boolean,
+        intro: String,
         description: String,
         submissionSchema: List<Pair<String, String>>,
         team: IdType?,
@@ -191,6 +199,7 @@ constructor(
                   "deadline": "$deadline",
                   "resubmittable": $resubmittable,
                   "editable": $editable,
+                  "intro": "$intro",
                   "description": "$description",
                   "submissionSchema": [
                     ${
@@ -225,6 +234,7 @@ constructor(
                     MockMvcResultMatchers.jsonPath("$.data.task.resubmittable").value(resubmittable)
                 )
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.editable").value(editable))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.intro").value(intro))
                 .andExpect(
                     MockMvcResultMatchers.jsonPath("$.data.task.description").value(description)
                 )
@@ -250,6 +260,7 @@ constructor(
             deadline = taskDeadline,
             resubmittable = true,
             editable = true,
+            intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
             team = teamId,
@@ -261,6 +272,7 @@ constructor(
             deadline = taskDeadline,
             resubmittable = true,
             editable = true,
+            intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
             team = teamId,
@@ -272,6 +284,7 @@ constructor(
             deadline = taskDeadline,
             resubmittable = true,
             editable = true,
+            intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
             team = null,
@@ -283,6 +296,7 @@ constructor(
             deadline = taskDeadline,
             resubmittable = true,
             editable = true,
+            intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
             team = teamId,
@@ -294,6 +308,7 @@ constructor(
             deadline = taskDeadline,
             resubmittable = true,
             editable = true,
+            intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
             team = null,
@@ -424,7 +439,8 @@ constructor(
                   "deadline": ${taskDeadline + 1000000000},
                   "resubmittable": false,
                   "editable": false,
-                  "description": "This is an updated test task.",
+                  "intro": "This is an updated test task.",
+                  "description": "${taskDescription} (updated)",
                   "submissionSchema": [
                     {
                       "prompt": "Text Entry",
@@ -451,8 +467,12 @@ constructor(
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.resubmittable").value(false))
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.editable").value(false))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.description")
+                MockMvcResultMatchers.jsonPath("$.data.task.intro")
                     .value("This is an updated test task.")
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.task.description")
+                    .value("${taskDescription} (updated)")
             )
             .andExpect(
                 MockMvcResultMatchers.jsonPath("$.data.task.submissionSchema[0].prompt")
@@ -478,8 +498,12 @@ constructor(
                     .value("$taskName (1) (updated)")
             )
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[0].description")
+                MockMvcResultMatchers.jsonPath("$.data.tasks[0].intro")
                     .value("This is an updated test task.")
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.tasks[0].description")
+                    .value("${taskDescription} (updated)")
             )
             .andExpect(
                 MockMvcResultMatchers.jsonPath("$.data.tasks[0].deadline")

@@ -40,6 +40,7 @@ constructor(
     private var spaceName = "Test Space (${floor(Math.random() * 10000000000).toLong()})"
     private var originalSpaceName = spaceName
     private var spaceIntro = "This is a test space."
+    private var spaceDescription = "A lengthy text. ".repeat(1000)
     private var spaceAvatarId = userCreatorService.testAvatarId()
     private var spaceId: IdType = -1
     private var spaceIdOfSecond: IdType = -1
@@ -75,6 +76,7 @@ constructor(
         creatorToken: String,
         spaceName: String,
         spaceIntro: String,
+        spaceDescription: String,
         spaceAvatarId: IdType
     ): IdType {
         val request =
@@ -86,6 +88,7 @@ constructor(
                 {
                     "name": "$spaceName",
                     "intro": "$spaceIntro",
+                    "description": "$spaceDescription",
                     "avatarId": $spaceAvatarId
                 }
             """
@@ -96,6 +99,10 @@ constructor(
                 .andExpect(MockMvcResultMatchers.status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
+                .andExpect(
+                    MockMvcResultMatchers.jsonPath("$.data.space.description")
+                        .value(spaceDescription)
+                )
                 .andExpect(
                     MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId)
                 )
@@ -119,12 +126,21 @@ constructor(
     @Test
     @Order(20)
     fun testCreateSpace() {
-        createSpace(creatorToken, "$spaceName previous", spaceIntro, spaceAvatarId)
-        spaceId = createSpace(creatorToken, spaceName, spaceIntro, spaceAvatarId)
-        spaceIdOfSecond = createSpace(creatorToken, "$spaceName 01", spaceIntro, spaceAvatarId)
-        createSpace(creatorToken, "$spaceName 02", spaceIntro, spaceAvatarId)
-        spaceIdOfBeforeLast = createSpace(creatorToken, "$spaceName 03", spaceIntro, spaceAvatarId)
-        spaceIdOfLast = createSpace(creatorToken, "$spaceName 04", spaceIntro, spaceAvatarId)
+        createSpace(
+            creatorToken,
+            "$spaceName previous",
+            spaceIntro,
+            spaceDescription,
+            spaceAvatarId
+        )
+        spaceId = createSpace(creatorToken, spaceName, spaceIntro, spaceDescription, spaceAvatarId)
+        spaceIdOfSecond =
+            createSpace(creatorToken, "$spaceName 01", spaceIntro, spaceDescription, spaceAvatarId)
+        createSpace(creatorToken, "$spaceName 02", spaceIntro, spaceDescription, spaceAvatarId)
+        spaceIdOfBeforeLast =
+            createSpace(creatorToken, "$spaceName 03", spaceIntro, spaceDescription, spaceAvatarId)
+        spaceIdOfLast =
+            createSpace(creatorToken, "$spaceName 04", spaceIntro, spaceDescription, spaceAvatarId)
     }
 
     @Test
@@ -159,6 +175,7 @@ constructor(
                 {
                     "name": "$spaceName",
                     "intro": "$spaceIntro",
+                    "description": "$spaceDescription",
                     "avatarId": $spaceAvatarId
                 }
             """
@@ -200,6 +217,7 @@ constructor(
     fun testPatchSpaceWithFullRequest() {
         spaceName += " (Updated)"
         spaceIntro += " (Updated)"
+        spaceDescription += " (Updated)"
         spaceAvatarId += 1
         val request =
             MockMvcRequestBuilders.patch("/spaces/$spaceId")
@@ -210,6 +228,7 @@ constructor(
                 {
                     "name": "$spaceName",
                     "intro": "$spaceIntro",
+                    "description": "$spaceDescription",
                     "avatarId": $spaceAvatarId,
                     "enableRank": true
                 }
@@ -221,6 +240,9 @@ constructor(
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.space.description").value(spaceDescription)
+            )
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER"))
             .andExpect(

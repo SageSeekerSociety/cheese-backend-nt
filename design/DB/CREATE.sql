@@ -123,7 +123,8 @@ CREATE
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            description VARCHAR(255) NOT NULL,
+            description TEXT NOT NULL,
+            intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
@@ -173,7 +174,8 @@ CREATE
             space_id BIGINT,
             team_id BIGINT,
             updated_at TIMESTAMP(6) NOT NULL,
-            description VARCHAR(255) NOT NULL,
+            description TEXT NOT NULL,
+            intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
@@ -250,7 +252,8 @@ CREATE
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            description VARCHAR(255) NOT NULL,
+            description TEXT NOT NULL,
+            intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
