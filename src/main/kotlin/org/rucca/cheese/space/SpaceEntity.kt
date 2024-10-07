@@ -10,14 +10,17 @@ import org.springframework.data.jpa.repository.JpaRepository
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @Table(
-        indexes =
-                [
-                        Index(columnList = "name"),
-                ])
+    indexes =
+        [
+            Index(columnList = "name"),
+        ]
+)
 class Space(
-        @Column(nullable = false) var name: String? = null,
-        @Column(nullable = false) var description: String? = null,
-        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) var avatar: Avatar? = null,
+    @Column(nullable = false) var name: String? = null,
+    @Column(nullable = false) var intro: String? = null,
+    @Column(nullable = false, columnDefinition = "TEXT") var description: String? = null,
+    @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) var avatar: Avatar? = null,
+    @Column(nullable = false) var enableRank: Boolean? = null,
 ) : BaseEntity()
 
 interface SpaceRepository : JpaRepository<Space, IdType> {

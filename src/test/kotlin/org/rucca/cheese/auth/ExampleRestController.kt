@@ -19,8 +19,8 @@ class ExampleRestController {
     @GetMapping("/example/2")
     @Guard("query", "example")
     fun duplicatedResourceId(
-            @RequestParam("id1") @ResourceId id1: IdType,
-            @RequestParam("id2") @ResourceId id2: IdType
+        @RequestParam("id1") @ResourceId id1: IdType,
+        @RequestParam("id2") @ResourceId id2: IdType
     ): String {
         return "example_2"
     }
@@ -28,7 +28,7 @@ class ExampleRestController {
     @GetMapping("/example/3")
     @Guard("query", "example")
     fun resourceIdMismatch(
-            @RequestParam("id") @ResourceId id: String,
+        @RequestParam("id") @ResourceId id: String,
     ): String {
         return "example_3"
     }
@@ -42,7 +42,7 @@ class ExampleRestController {
     @GetMapping("/example/5")
     @Guard("query", "example")
     fun withId(
-            @RequestParam("id") @ResourceId id: IdType,
+        @RequestParam("id") @ResourceId id: IdType,
     ): String {
         return "example_5"
     }
@@ -56,9 +56,9 @@ class ExampleRestController {
     @GetMapping("/example/7")
     @Guard("query", "example")
     fun withIdAndAdditional(
-            @RequestParam("id") @ResourceId id: IdType,
-            @RequestParam("additional_str") @AuthInfo("str") additionalStr: String,
-            @RequestParam("additional_id") @AuthInfo("id") additionalId: IdType
+        @RequestParam("id") @ResourceId id: IdType,
+        @RequestParam("additional_str") @AuthInfo("str") additionalStr: String,
+        @RequestParam("additional_id") @AuthInfo("id") additionalId: IdType
     ): String {
         return "example_7"
     }
@@ -66,8 +66,8 @@ class ExampleRestController {
     @GetMapping("/example/8")
     @Guard("query", "example")
     fun withDuplicatedAuthInfo(
-            @RequestParam("additional_1") @AuthInfo("key") additionalStr: String,
-            @RequestParam("additional_2") @AuthInfo("key") additionalId: IdType
+        @RequestParam("additional_1") @AuthInfo("key") additionalStr: String,
+        @RequestParam("additional_2") @AuthInfo("key") additionalId: IdType
     ): String {
         return "example_8"
     }

@@ -20,78 +20,90 @@ import org.springframework.web.context.request.ServletRequestAttributes
 
 @Service
 class AuthorizationService(
-        applicationConfig: ApplicationConfig,
-        private val objectMapper: ObjectMapper,
+    private val applicationConfig: ApplicationConfig,
+    private val objectMapper: ObjectMapper,
 ) {
     val customAuthLogics = CustomAuthLogics()
     val ownerIds = OwnerIds()
-    private val verifier: JWTVerifier = JWT.require(Algorithm.HMAC256(applicationConfig.jwtSecret)).build()
+    private val verifier: JWTVerifier =
+        JWT.require(Algorithm.HMAC256(applicationConfig.jwtSecret)).build()
     private val logger = LoggerFactory.getLogger(AuthorizationService::class.java)
 
     fun audit(
-            action: String,
-            resourceType: String,
-            resourceId: IdType?,
-            authInfo: Map<String, Any> = emptyMap(),
+        action: String,
+        resourceType: String,
+        resourceId: IdType?,
+        authInfo: Map<String, Any> = emptyMap(),
     ) {
         val token: String? =
-                (RequestContextHolder.currentRequestAttributes() as ServletRequestAttributes)
-                        .request
-                        .getHeader("Authorization")
+            (RequestContextHolder.currentRequestAttributes() as ServletRequestAttributes)
+                .request
+                .getHeader("Authorization")
         audit(token, action, resourceType, resourceId, authInfo)
     }
 
     fun audit(
-            token: String?,
-            action: String,
-            resourceType: String,
-            resourceId: IdType?,
-            authInfo: Map<String, Any> = emptyMap(),
+        token: String?,
+        action: String,
+        resourceType: String,
+        resourceId: IdType?,
+        authInfo: Map<String, Any> = emptyMap(),
     ) {
         audit(verify(token), action, resourceType, resourceId, authInfo)
     }
 
     fun audit(
-            authorization: Authorization,
-            action: String,
-            resourceType: String,
-            resourceId: IdType?,
-            authInfo: Map<String, Any> = emptyMap(),
+        authorization: Authorization,
+        action: String,
+        resourceType: String,
+        resourceId: IdType?,
+        authInfo: Map<String, Any> = emptyMap(),
     ) {
         val userId = authorization.userId
-        val ownerIdGetter = if (resourceId != null) ownerIds.getOwnerIdGetter(resourceType, resourceId) else null
+        val ownerIdGetter =
+            if (resourceId != null) ownerIds.getOwnerIdGetter(resourceType, resourceId) else null
         for (permission in authorization.permissions) {
-            if (!(permission.authorizedActions == null || permission.authorizedActions.contains(action))) continue
-            if (!(permission.authorizedResource.ownedByUser == null ||
-                    permission.authorizedResource.ownedByUser == ownerIdGetter?.invoke()))
-                    continue
-            if (!(permission.authorizedResource.types == null ||
-                    permission.authorizedResource.types.contains(resourceType)))
-                    continue
-            if (!(permission.authorizedResource.resourceIds == null ||
-                    permission.authorizedResource.resourceIds.contains(resourceId)))
-                    continue
+            if (
+                !(permission.authorizedActions == null ||
+                    permission.authorizedActions.contains(action))
+            )
+                continue
+            if (
+                !(permission.authorizedResource.ownedByUser == null ||
+                    permission.authorizedResource.ownedByUser == ownerIdGetter?.invoke())
+            )
+                continue
+            if (
+                !(permission.authorizedResource.types == null ||
+                    permission.authorizedResource.types.contains(resourceType))
+            )
+                continue
+            if (
+                !(permission.authorizedResource.resourceIds == null ||
+                    permission.authorizedResource.resourceIds.contains(resourceId))
+            )
+                continue
             if (permission.customLogic != null) {
                 val result =
-                        customAuthLogics.invoke(
-                                permission.customLogic,
-                                userId,
-                                action,
-                                resourceType,
-                                resourceId,
-                                authInfo,
-                                ownerIdGetter,
-                                permission.customLogicData)
+                    customAuthLogics.invoke(
+                        permission.customLogic,
+                        userId,
+                        action,
+                        resourceType,
+                        resourceId,
+                        authInfo,
+                        ownerIdGetter,
+                        permission.customLogicData
+                    )
                 if (!result) continue
             }
-            logger.info(
-                    "Operation permitted: '$action' on resource (resourceType: '$resourceType', resourceId: $resourceId, authInfo: $authInfo)." +
-                            " Authorization: $authorization")
             return
         }
-        logger.warn(
+        if (applicationConfig.warnAuditFailure)
+            logger.warn(
                 "Operation denied: '$action' on resource (resourceType: '$resourceType', resourceId: $resourceId, authInfo: $authInfo)." +
-                        " Authorization: $authorization")
+                    " UserId: $userId. Authorization: $authorization"
+            )
         throw PermissionDeniedError(action, resourceType, resourceId, authInfo)
     }
 
@@ -104,26 +116,29 @@ class AuthorizationService(
         val payload: TokenPayload
         try {
             payload =
-                    objectMapper.readValue(
-                            verifier.verify(tokenWithoutBearer).getClaim("payload")?.toString()
-                                    ?: throw InvalidTokenError(),
-                            TokenPayload::class.java)
+                objectMapper.readValue(
+                    verifier.verify(tokenWithoutBearer).getClaim("payload")?.toString()
+                        ?: throw InvalidTokenError(),
+                    TokenPayload::class.java
+                )
         } catch (e: TokenExpiredException) {
             throw TokenExpiredError()
         } catch (e: JWTVerificationException) {
             throw InvalidTokenError()
         } catch (e: JacksonException) {
             throw RuntimeException(
-                    "The token is valid, but the payload of the token is not a TokenPayload object." +
-                            " This is ether a bug or a malicious attack.",
-                    e)
+                "The token is valid, but the payload of the token is not a TokenPayload object." +
+                    " This is ether a bug or a malicious attack.",
+                e
+            )
         }
 
         if (payload.validUntil < System.currentTimeMillis()) throw TokenExpiredError()
         if (payload.signedAt > System.currentTimeMillis())
-                throw RuntimeException(
-                        "The token is valid, but it was signed in the future." +
-                                " This is a timezone bug or a malicious attack.")
+            throw RuntimeException(
+                "The token is valid, but it was signed in the future." +
+                    " This is a timezone bug or a malicious attack."
+            )
 
         return payload.authorization
     }

@@ -13,7 +13,7 @@
     <!-- Project Info -->
     <groupId>org.rucca</groupId>
     <artifactId>cheese</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <name>backend</name>
     <description>Backend for Cheese Web Application</description>
     <url/>
@@ -110,12 +110,12 @@
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations</artifactId>
-            <version>2.2.24</version>
+            <version>2.2.25</version>
         </dependency>
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-models</artifactId>
-            <version>2.2.24</version>
+            <version>2.2.25</version>
         </dependency>
         <dependency>
             <groupId>com.ninja-squad</groupId>
@@ -148,6 +148,11 @@
             <artifactId>jersey-media-multipart</artifactId>
             <version>3.1.8</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+            <version>3.1.8</version>
         </dependency>
     </dependencies>
 
@@ -195,7 +200,6 @@
                         <configuration>
                             <inputSpec>./design/API/NT-API.yml</inputSpec>
                             <generatorName>kotlin-spring</generatorName>
-                            <addCompileSourceRoot>true</addCompileSourceRoot>
                             <skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>
                             <modelNameSuffix>DTO</modelNameSuffix>
                             <configOptions>
@@ -206,22 +210,6 @@
                                 <useBeanValidation>true</useBeanValidation>
                                 <exceptionHandler>false</exceptionHandler>
                             </configOptions>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>add-source</goal>
-                        </goals>
-                        <phase>generate-sources</phase>
-                        <configuration>
-                            <sources>target/generated-sources/openapi/src</sources>
                         </configuration>
                     </execution>
                 </executions>
@@ -259,6 +247,31 @@
                             </target>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>copy-generated-api</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <target>
+                                <!-- Copy the generated API files to the correct package. -->
+                                <delete dir="src/main/kotlin/org/rucca/cheese/api"/>
+                                <delete dir="src/main/kotlin/org/rucca/cheese/model"/>
+                                <copy todir="src/main/kotlin/org/rucca/cheese/api">
+                                    <fileset dir="target/generated-sources/openapi/src/main/kotlin/org/rucca/cheese/api"/>
+                                </copy>
+                                <copy todir="src/main/kotlin/org/rucca/cheese/model">
+                                    <fileset dir="target/generated-sources/openapi/src/main/kotlin/org/rucca/cheese/model"/>
+                                </copy>
+                                <delete file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md"/>
+                                <echo append="true" file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md"># All files in this directory are generated!${line.separator}${line.separator}</echo>
+                                <echo append="true" file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md">All files in this directory are generated, including this markdown, so DO NOT MODIFY them!${line.separator}${line.separator}</echo>
+                                <echo append="true" file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md">If you want to modify the API, modify the OpenAPI specification file and run ```./mvnw install``` again.${line.separator}${line.separator}</echo>
+                                <copy file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md" todir="src/main/kotlin/org/rucca/cheese/api"/>
+                            </target>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -268,7 +281,11 @@
                 <configuration>
                     <systemPropertyVariables>
                         <spring.jpa.hibernate.ddl-auto>update</spring.jpa.hibernate.ddl-auto>
+                        <spring.jpa.show-sql>false</spring.jpa.show-sql>
+                        <application.warn-audit-failure>false</application.warn-audit-failure>
+                        <logging.level.root>WARN</logging.level.root>
                     </systemPropertyVariables>
+                    <argLine>${argLine} -XX:+EnableDynamicAgentLoading</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -281,9 +298,7 @@
                     </java>
                     <kotlin>
                         <ktfmt>
-                            <maxWidth>120</maxWidth>
-                            <blockIndent>4</blockIndent>
-                            <continuationIndent>8</continuationIndent>
+                            <style>KOTLINLANG</style>
                         </ktfmt>
                     </kotlin>
                     <pom>
@@ -301,10 +316,11 @@
                 </configuration>
                 <executions>
                     <execution>
+                        <id>Format generated sources</id>
                         <goals>
-                            <goal>check</goal>
+                            <goal>apply</goal>
                         </goals>
-                        <phase>compile</phase>
+                        <phase>generate-sources</phase>
                     </execution>
                     <execution>
                         <id>Format design/DB/CREATE.sql</id>

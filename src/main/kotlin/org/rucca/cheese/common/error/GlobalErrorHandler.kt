@@ -22,16 +22,18 @@ class GlobalErrorHandler {
     @ExceptionHandler(MissingServletRequestParameterException::class)
     @ResponseBody
     fun handleMissingServletRequestParameterException(
-            e: MissingServletRequestParameterException
+        e: MissingServletRequestParameterException
     ): ResponseEntity<BaseError> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(BadRequestError(e.message))
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
     @ResponseBody
-    fun handleMethodArgumentTypeMismatchException(e: MethodArgumentTypeMismatchException): ResponseEntity<BaseError> {
+    fun handleMethodArgumentTypeMismatchException(
+        e: MethodArgumentTypeMismatchException
+    ): ResponseEntity<BaseError> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(BadRequestError(e.message ?: "Method argument type mismatch"))
+            .body(BadRequestError(e.message ?: "Method argument type mismatch"))
     }
 
     @ExceptionHandler(Exception::class)

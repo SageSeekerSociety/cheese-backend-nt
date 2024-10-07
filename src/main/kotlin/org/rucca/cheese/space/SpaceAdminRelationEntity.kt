@@ -16,15 +16,16 @@ enum class SpaceAdminRole {
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @Table(
-        indexes =
-                [
-                        Index(columnList = "space_id"),
-                        Index(columnList = "user_id"),
-                ])
+    indexes =
+        [
+            Index(columnList = "space_id"),
+            Index(columnList = "user_id"),
+        ]
+)
 class SpaceAdminRelation(
-        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val space: Space? = null,
-        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val user: User? = null,
-        @Column(nullable = false) var role: SpaceAdminRole? = null,
+    @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val space: Space? = null,
+    @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val user: User? = null,
+    @Column(nullable = false) var role: SpaceAdminRole? = null,
 ) : BaseEntity()
 
 interface SpaceAdminRelationRepository : JpaRepository<SpaceAdminRelation, IdType> {
@@ -36,5 +37,9 @@ interface SpaceAdminRelationRepository : JpaRepository<SpaceAdminRelation, IdTyp
 
     fun existsBySpaceIdAndUserId(spaceId: IdType, userId: IdType): Boolean
 
-    fun existsBySpaceIdAndUserIdAndRole(spaceId: IdType, userId: IdType, role: SpaceAdminRole): Boolean
+    fun existsBySpaceIdAndUserIdAndRole(
+        spaceId: IdType,
+        userId: IdType,
+        role: SpaceAdminRole
+    ): Boolean
 }

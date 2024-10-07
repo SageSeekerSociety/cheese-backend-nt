@@ -40,7 +40,7 @@ enum class AttachmentType {
     companion object {
         fun fromString(value: String): AttachmentType {
             return entries.find { it.name.equals(value, ignoreCase = true) }
-                    ?: throw IllegalArgumentException("无效的 AttachmentType: $value")
+                ?: throw IllegalArgumentException("无效的 AttachmentType: $value")
         }
     }
 }
@@ -61,13 +61,19 @@ class AttachmentTypeConverter : AttributeConverter<AttachmentType, String> {
 open class Attachment {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "attachment_id_gen")
-    @SequenceGenerator(name = "attachment_id_gen", sequenceName = "attachment_id_seq", allocationSize = 1)
+    @SequenceGenerator(
+        name = "attachment_id_gen",
+        sequenceName = "attachment_id_seq",
+        allocationSize = 1
+    )
     @Column(name = "id", nullable = false)
     open var id: Int? = null
 
     @Column(name = "url", nullable = false, length = Integer.MAX_VALUE) open var url: String? = null
 
-    @JdbcTypeCode(SqlTypes.JSON) @Column(name = "meta", nullable = false) open var meta: MutableMap<String, Any>? = null
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "meta", nullable = false)
+    open var meta: MutableMap<String, Any>? = null
 
     @Column(name = "type", nullable = false)
     @Convert(converter = AttachmentTypeConverter::class)

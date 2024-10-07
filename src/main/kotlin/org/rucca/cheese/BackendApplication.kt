@@ -18,7 +18,7 @@ class BackendApplication(private val applicationConfig: ApplicationConfig) {
         return ApplicationListener { event ->
             if (applicationConfig.shutdownOnStartup) {
                 LoggerFactory.getLogger(BackendApplication::class.java)
-                        .info("Shutting down application as requested by configuration")
+                    .info("Shutting down application as requested by configuration")
                 SpringApplication.exit(event.applicationContext)
             }
         }

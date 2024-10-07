@@ -11,22 +11,24 @@ import org.springframework.data.jpa.repository.Query
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @Table(
-        indexes =
-                [
-                        Index(columnList = "name"),
-                ])
+    indexes =
+        [
+            Index(columnList = "name"),
+        ]
+)
 @EntityListeners(TeamElasticSearchSyncListener::class)
 class Team(
-        @Column(nullable = false) var name: String? = null,
-        @Column(nullable = false) var description: String? = null,
-        @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) var avatar: Avatar? = null,
+    @Column(nullable = false) var name: String? = null,
+    @Column(nullable = false) var intro: String? = null,
+    @Column(nullable = false, columnDefinition = "TEXT") var description: String? = null,
+    @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) var avatar: Avatar? = null,
 ) : BaseEntity()
 
 interface TeamRepository : JpaRepository<Team, IdType> {
     fun existsByName(name: String): Boolean
 
     @Query(
-            """
+        """
             SELECT team
             FROM Team team
             JOIN TeamUserRelation teamUserRelation ON team.id = teamUserRelation.team.id
@@ -38,25 +40,27 @@ interface TeamRepository : JpaRepository<Team, IdType> {
                 WHERE taskMembership.task.id = :taskId
                 AND taskMembership.memberId = team.id
             )
-            """)
+            """
+    )
     fun getTeamsThatUserCanUseToJoinTask(
-            taskId: IdType,
-            userId: IdType,
-            ownerRole: TeamMemberRole = TeamMemberRole.OWNER,
-            adminRole: TeamMemberRole = TeamMemberRole.ADMIN,
+        taskId: IdType,
+        userId: IdType,
+        ownerRole: TeamMemberRole = TeamMemberRole.OWNER,
+        adminRole: TeamMemberRole = TeamMemberRole.ADMIN,
     ): List<Team>
 
     @Query(
-            """
+        """
         SELECT team
         FROM Team team
         JOIN TeamUserRelation teamUserRelation ON team.id = teamUserRelation.team.id
         JOIN TaskMembership taskMembership ON team.id = taskMembership.memberId
         WHERE teamUserRelation.user.id = :userId
         AND taskMembership.task.id = :taskId
-        """)
+        """
+    )
     fun getTeamsThatUserCanUseToSubmitTask(
-            taskId: IdType,
-            userId: IdType,
+        taskId: IdType,
+        userId: IdType,
     ): List<Team>
 }

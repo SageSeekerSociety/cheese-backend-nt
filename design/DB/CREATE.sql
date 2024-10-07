@@ -48,6 +48,11 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
+    SEQUENCE space_user_rank_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE task_membership_seq
 START WITH
     1 INCREMENT BY 50;
@@ -59,6 +64,11 @@ START WITH
 
 CREATE
     SEQUENCE task_submission_entry_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
+    SEQUENCE task_submission_review_seq
 START WITH
     1 INCREMENT BY 50;
 
@@ -108,11 +118,13 @@ CREATE
     TABLE
         SPACE(
             avatar_id INTEGER NOT NULL,
+            enable_rank BOOLEAN NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            description VARCHAR(255) NOT NULL,
+            description TEXT NOT NULL,
+            intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
@@ -134,9 +146,23 @@ CREATE
 
 CREATE
     TABLE
+        space_user_rank(
+            RANK INTEGER NOT NULL,
+            "user_id" INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            space_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
         task(
             "creator_id" INTEGER NOT NULL,
             editable BOOLEAN NOT NULL,
+            RANK INTEGER,
             resubmittable BOOLEAN NOT NULL,
             submitter_type SMALLINT NOT NULL CHECK(
                 submitter_type BETWEEN 0 AND 1
@@ -148,7 +174,8 @@ CREATE
             space_id BIGINT,
             team_id BIGINT,
             updated_at TIMESTAMP(6) NOT NULL,
-            description VARCHAR(255) NOT NULL,
+            description TEXT NOT NULL,
+            intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
@@ -205,13 +232,28 @@ CREATE
 
 CREATE
     TABLE
+        task_submission_review(
+            accepted BOOLEAN NOT NULL,
+            score INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            submission_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            comment VARCHAR(255) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
         team(
             avatar_id INTEGER NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            description VARCHAR(255) NOT NULL,
+            description TEXT NOT NULL,
+            intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
@@ -244,6 +286,14 @@ CREATE
     space_admin_relation(user_id);
 
 CREATE
+    INDEX IDX5se9sb4u9yywkp49gnim8s85n ON
+    space_user_rank(space_id);
+
+CREATE
+    INDEX IDX4poyg61j8nhdhsryne7s8snmr ON
+    space_user_rank(user_id);
+
+CREATE
     INDEX IDX70x5oq6omtraaie2fttiv25rd ON
     task_membership(task_id);
 
@@ -258,6 +308,10 @@ CREATE
 CREATE
     INDEX IDXlac91yl30evfn8mq1kh91jyyg ON
     task_submission_entry(task_submission_id);
+
+CREATE
+    INDEX IDX3ctl72phv5d0yluddhpkxb1y4 ON
+    task_submission_review(submission_id);
 
 CREATE
     INDEX IDXg2l9qqsoeuynt4r5ofdt1x2td ON
@@ -287,6 +341,12 @@ ALTER TABLE
     IF EXISTS space_admin_relation ADD CONSTRAINT FKd3x1m946orup61b4f4wu6h2xn FOREIGN KEY("user_id") REFERENCES public."user";
 
 ALTER TABLE
+    IF EXISTS space_user_rank ADD CONSTRAINT FKh0k0jxvhnph0eoc5gw7652hdy FOREIGN KEY(space_id) REFERENCES SPACE;
+
+ALTER TABLE
+    IF EXISTS space_user_rank ADD CONSTRAINT FKiego7kcolpikn8o93o3qdjt3p FOREIGN KEY("user_id") REFERENCES public."user";
+
+ALTER TABLE
     IF EXISTS task ADD CONSTRAINT FK67uenor8d9f8lq7wjv7h56n2o FOREIGN KEY("creator_id") REFERENCES public."user";
 
 ALTER TABLE
@@ -312,6 +372,9 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS task_submission_entry ADD CONSTRAINT FK3rhnhj7id0krtih5rhveivmgc FOREIGN KEY(task_submission_id) REFERENCES task_submission;
+
+ALTER TABLE
+    IF EXISTS task_submission_review ADD CONSTRAINT FKba2fmo0mgjdlohcnpf97tvgvt FOREIGN KEY(submission_id) REFERENCES task_submission;
 
 ALTER TABLE
     IF EXISTS team ADD CONSTRAINT FKjv1k745e89swu3gj896pxcq3y FOREIGN KEY(avatar_id) REFERENCES avatar;

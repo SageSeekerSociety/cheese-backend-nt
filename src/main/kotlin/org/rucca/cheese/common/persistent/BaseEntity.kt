@@ -25,10 +25,13 @@ typealias IdGetter = () -> IdType
  */
 @MappedSuperclass
 abstract class BaseEntity(
-        // Default value for id, createdAt and updatedAt DO NOT have any effect.
-        // They are only set to avoid compilation errors when deriving an entity from BaseEntity.
-        @Column(nullable = false) @Id @GeneratedValue(strategy = GenerationType.SEQUENCE) var id: IdType? = null,
-        @Column(nullable = false) @CreationTimestamp val createdAt: LocalDateTime? = null,
-        @Column(nullable = false) @UpdateTimestamp val updatedAt: LocalDateTime? = null,
-        var deletedAt: LocalDateTime? = null, // nullable
+    // Default value for id, createdAt and updatedAt DO NOT have any effect.
+    // They are only set to avoid compilation errors when deriving an entity from BaseEntity.
+    @Column(nullable = false)
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    var id: IdType? = null,
+    @Column(nullable = false) @CreationTimestamp val createdAt: LocalDateTime? = null,
+    @Column(nullable = false) @UpdateTimestamp val updatedAt: LocalDateTime? = null,
+    var deletedAt: LocalDateTime? = null, // nullable
 )

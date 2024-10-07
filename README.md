@@ -31,6 +31,32 @@ You do not need to migrate the database manually during testing. In ```pom.xml``
 to ```update``` when Maven is running tests. This means that Hibernate will automatically create tables and columns in
 the database.
 
+Sometimes, auto update may not work as expected. In this case, you should use `doc/script/dependency-delete.sh` to delete
+your dependencies completely, and use `doc/script/dependency-start.sh` to start them again. Then, things should be fine.
+
 ### Production
-In production, you need to migrate the database manually. Our build system will generate ```design/DB/CREATE.sql``` each
-time you run ```./mvnw install```. This file is added to git, so you can see how the schema changes.
+In production, you need to migrate the database manually. In [design/DB/MIGRATION](design/DB/MIGRATION) directory, you can find SQL files that
+migrate the database between released versions. But be careful, you need to figure out your current version precisely
+and use the correct SQL files. You may need to execute several SQL files in order.
+
+## Development
+
+### About IDE
+
+IntelliJ IDEA is the best Java/Kotlin IDE, and we recommend using it. Simply open the project in IntelliJ IDEA and it
+works well without any additional configuration.
+
+However, IDEA is not free. If you want a free alternative, VSCode is absolutely the best choice. To save your time from
+configuring the mess of plugins and compatibility issues on Windows, we offer a DevContainer configuration for you. Just
+install Docker (or Docker Desktop on Windows), install VSCode extension `ms-vscode-remote.remote-containers`, and open
+the folder of this project in VSCode's dev container mode.
+
+If you think container is still too heavy, you can install VSCode extensions according to [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json).
+
+Remember, IDE won't help you start dependencies. You still need to use `doc/script/dependency-start.sh` to start
+the services.
+
+### Valuable Experience
+
+Fixing bugs can be time consuming. Luckily, we have learned some valuable experience from
+that disgusting process, which can be found in [doc/experience.md](doc/experience.md). I hope they are helpful to you.

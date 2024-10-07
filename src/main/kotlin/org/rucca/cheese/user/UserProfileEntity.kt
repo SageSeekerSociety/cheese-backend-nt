@@ -33,25 +33,35 @@ import org.springframework.data.jpa.repository.JpaRepository
 @Entity
 @Table(name = "avatar")
 open class Avatar {
-    @Id @ColumnDefault("nextval('avatar_id_seq')") @Column(name = "id", nullable = false) open var id: Int? = null
+    @Id
+    @ColumnDefault("nextval('avatar_id_seq')")
+    @Column(name = "id", nullable = false)
+    open var id: Int? = null
 }
 
 @Entity
 @Table(
-        name = "user_profile",
-        schema = "public",
-        indexes = [Index(name = "IDX_51cb79b5555effaf7d69ba1cff", columnList = "id", unique = true)])
+    name = "user_profile",
+    schema = "public",
+    indexes = [Index(name = "IDX_51cb79b5555effaf7d69ba1cff", columnList = "id", unique = true)]
+)
 @SQLRestriction("deleted_at IS NULL")
 open class UserProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_profile_id_gen")
-    @SequenceGenerator(name = "user_profile_id_gen", sequenceName = "user_profile_id_seq", allocationSize = 1)
+    @SequenceGenerator(
+        name = "user_profile_id_gen",
+        sequenceName = "user_profile_id_seq",
+        allocationSize = 1
+    )
     @Column(name = "id", nullable = false)
     open var id: Int? = null
 
-    @Column(name = "nickname", nullable = false, length = Integer.MAX_VALUE) open var nickname: String? = null
+    @Column(name = "nickname", nullable = false, length = Integer.MAX_VALUE)
+    open var nickname: String? = null
 
-    @Column(name = "intro", nullable = false, length = Integer.MAX_VALUE) open var intro: String? = null
+    @Column(name = "intro", nullable = false, length = Integer.MAX_VALUE)
+    open var intro: String? = null
 
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false, insertable = false)

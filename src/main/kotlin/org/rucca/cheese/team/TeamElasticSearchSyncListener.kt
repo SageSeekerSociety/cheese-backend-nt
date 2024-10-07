@@ -22,7 +22,8 @@ class TeamElasticSearchSyncListener {
     // Someone has already found a solution to this problem, and that's it:
     // See:
     // https://stackoverflow.com/questions/12155632/injecting-a-spring-dependency-into-a-jpa-entitylistener
-    @Autowired lateinit var teamElasticSearchRepositoryProvider: ObjectProvider<TeamElasticSearchRepository>
+    @Autowired
+    lateinit var teamElasticSearchRepositoryProvider: ObjectProvider<TeamElasticSearchRepository>
 
     @PrePersist
     fun prePersist(team: Team) {

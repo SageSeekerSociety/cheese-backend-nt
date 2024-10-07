@@ -25,8 +25,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 class SpaceTest
 @Autowired
 constructor(
-        private val mockMvc: MockMvc,
-        private val userCreatorService: UserCreatorService,
+    private val mockMvc: MockMvc,
+    private val userCreatorService: UserCreatorService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     lateinit var creator: UserCreatorService.CreateUserResponse
@@ -40,6 +40,7 @@ constructor(
     private var spaceName = "Test Space (${floor(Math.random() * 10000000000).toLong()})"
     private var originalSpaceName = spaceName
     private var spaceIntro = "This is a test space."
+    private var spaceDescription = "A lengthy text. ".repeat(1000)
     private var spaceAvatarId = userCreatorService.testAvatarId()
     private var spaceId: IdType = -1
     private var spaceIdOfSecond: IdType = -1
@@ -61,41 +62,63 @@ constructor(
     @Test
     @Order(10)
     fun testGetSpaceAndNotFound() {
-        val request = MockMvcRequestBuilders.get("/spaces/-1").header("Authorization", "Bearer $creatorToken")
-        mockMvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isNotFound)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("NotFoundError"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.type").value("space"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.id").value("-1"))
+        val request =
+            MockMvcRequestBuilders.get("/spaces/-1").header("Authorization", "Bearer $creatorToken")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isNotFound)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("NotFoundError"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.type").value("space"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.id").value("-1"))
     }
 
-    fun createSpace(creatorToken: String, spaceName: String, spaceIntro: String, spaceAvatarId: IdType): IdType {
+    fun createSpace(
+        creatorToken: String,
+        spaceName: String,
+        spaceIntro: String,
+        spaceDescription: String,
+        spaceAvatarId: IdType
+    ): IdType {
         val request =
-                MockMvcRequestBuilders.post("/spaces")
-                        .header("Authorization", "Bearer $creatorToken")
-                        .contentType("application/json")
-                        .content(
-                                """
+            MockMvcRequestBuilders.post("/spaces")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
                 {
                     "name": "$spaceName",
                     "intro": "$spaceIntro",
+                    "description": "$spaceDescription",
                     "avatarId": $spaceAvatarId
                 }
-            """)
+            """
+                )
         val response =
-                mockMvc.perform(request)
-                        .andExpect(MockMvcResultMatchers.status().isOk)
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER"))
-                        .andExpect(
-                                MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id").value(creator.userId))
+            mockMvc
+                .perform(request)
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
+                .andExpect(
+                    MockMvcResultMatchers.jsonPath("$.data.space.description")
+                        .value(spaceDescription)
+                )
+                .andExpect(
+                    MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId)
+                )
+                .andExpect(
+                    MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER")
+                )
+                .andExpect(
+                    MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id")
+                        .value(creator.userId)
+                )
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.enableRank").value(false))
         val spaceId =
-                JSONObject(response.andReturn().response.contentAsString)
-                        .getJSONObject("data")
-                        .getJSONObject("space")
-                        .getLong("id")
+            JSONObject(response.andReturn().response.contentAsString)
+                .getJSONObject("data")
+                .getJSONObject("space")
+                .getLong("id")
         logger.info("Created space: $spaceId")
         return spaceId
     }
@@ -103,70 +126,90 @@ constructor(
     @Test
     @Order(20)
     fun testCreateSpace() {
-        createSpace(creatorToken, "$spaceName previous", spaceIntro, spaceAvatarId)
-        spaceId = createSpace(creatorToken, spaceName, spaceIntro, spaceAvatarId)
-        spaceIdOfSecond = createSpace(creatorToken, "$spaceName 01", spaceIntro, spaceAvatarId)
-        createSpace(creatorToken, "$spaceName 02", spaceIntro, spaceAvatarId)
-        spaceIdOfBeforeLast = createSpace(creatorToken, "$spaceName 03", spaceIntro, spaceAvatarId)
-        spaceIdOfLast = createSpace(creatorToken, "$spaceName 04", spaceIntro, spaceAvatarId)
+        createSpace(
+            creatorToken,
+            "$spaceName previous",
+            spaceIntro,
+            spaceDescription,
+            spaceAvatarId
+        )
+        spaceId = createSpace(creatorToken, spaceName, spaceIntro, spaceDescription, spaceAvatarId)
+        spaceIdOfSecond =
+            createSpace(creatorToken, "$spaceName 01", spaceIntro, spaceDescription, spaceAvatarId)
+        createSpace(creatorToken, "$spaceName 02", spaceIntro, spaceDescription, spaceAvatarId)
+        spaceIdOfBeforeLast =
+            createSpace(creatorToken, "$spaceName 03", spaceIntro, spaceDescription, spaceAvatarId)
+        spaceIdOfLast =
+            createSpace(creatorToken, "$spaceName 04", spaceIntro, spaceDescription, spaceAvatarId)
     }
 
     @Test
     @Order(30)
     fun testGetSpace() {
-        val request = MockMvcRequestBuilders.get("/spaces/$spaceId").header("Authorization", "Bearer $creatorToken")
-        val response =
-                mockMvc.perform(request)
-                        .andExpect(MockMvcResultMatchers.status().isOk)
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER"))
-                        .andExpect(
-                                MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id").value(creator.userId))
+        val request =
+            MockMvcRequestBuilders.get("/spaces/$spaceId")
+                .header("Authorization", "Bearer $creatorToken")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER"))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id")
+                    .value(creator.userId)
+            )
     }
 
     @Test
     @Order(40)
     fun testNameAlreadyExists() {
         val request =
-                MockMvcRequestBuilders.post("/spaces")
-                        .header("Authorization", "Bearer $creatorToken")
-                        .contentType("application/json")
-                        .content(
-                                """
+            MockMvcRequestBuilders.post("/spaces")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
                 {
                     "name": "$spaceName",
                     "intro": "$spaceIntro",
+                    "description": "$spaceDescription",
                     "avatarId": $spaceAvatarId
                 }
-            """)
-        mockMvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isConflict)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("NameAlreadyExistsError"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.type").value("space"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.name").value(spaceName))
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isConflict)
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.error.name").value("NameAlreadyExistsError")
+            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.type").value("space"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.name").value(spaceName))
     }
 
     @Test
     @Order(50)
     fun testPatchSpaceWithEmptyRequest() {
         val request =
-                MockMvcRequestBuilders.patch("/spaces/$spaceId")
-                        .header("Authorization", "Bearer $creatorToken")
-                        .contentType("application/json")
-                        .content("{}")
-        val response =
-                mockMvc.perform(request)
-                        .andExpect(MockMvcResultMatchers.status().isOk)
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER"))
-                        .andExpect(
-                                MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id").value(creator.userId))
+            MockMvcRequestBuilders.patch("/spaces/$spaceId")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content("{}")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER"))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id")
+                    .value(creator.userId)
+            )
     }
 
     @Test
@@ -174,246 +217,321 @@ constructor(
     fun testPatchSpaceWithFullRequest() {
         spaceName += " (Updated)"
         spaceIntro += " (Updated)"
+        spaceDescription += " (Updated)"
         spaceAvatarId += 1
         val request =
-                MockMvcRequestBuilders.patch("/spaces/$spaceId")
-                        .header("Authorization", "Bearer $creatorToken")
-                        .contentType("application/json")
-                        .content(
-                                """
+            MockMvcRequestBuilders.patch("/spaces/$spaceId")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
                 {
                     "name": "$spaceName",
                     "intro": "$spaceIntro",
-                    "avatarId": $spaceAvatarId
+                    "description": "$spaceDescription",
+                    "avatarId": $spaceAvatarId,
+                    "enableRank": true
                 }
-            """)
-        val response =
-                mockMvc.perform(request)
-                        .andExpect(MockMvcResultMatchers.status().isOk)
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER"))
-                        .andExpect(
-                                MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id").value(creator.userId))
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.space.description").value(spaceDescription)
+            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER"))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id")
+                    .value(creator.userId)
+            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.enableRank").value(true))
     }
 
     @Test
     @Order(70)
     fun testPatchSpaceWithAnonymous() {
         val request =
-                MockMvcRequestBuilders.patch("/spaces/$spaceId")
-                        .header("Authorization", "Bearer $anonymousToken")
-                        .contentType("application/json")
-                        .content("{}")
-        mockMvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isForbidden)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.action").value("modify"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceType").value("space"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceId").value(spaceId))
+            MockMvcRequestBuilders.patch("/spaces/$spaceId")
+                .header("Authorization", "Bearer $anonymousToken")
+                .contentType("application/json")
+                .content("{}")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError")
+            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.action").value("modify"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceType").value("space"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceId").value(spaceId))
     }
 
     @Test
     @Order(75)
     fun testEnumerateSpacesByDefault() {
         val requestBuilders =
-                MockMvcRequestBuilders.get("/spaces")
-                        .param("page_size", "5")
-                        .header("Authorization", "Bearer $creatorToken")
-        mockMvc.perform(requestBuilders)
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[0].name").value("$originalSpaceName 04"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[1].name").value("$originalSpaceName 03"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[2].name").value("$originalSpaceName 02"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[3].name").value("$originalSpaceName 01"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[4].name").value(spaceName))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(spaceIdOfLast))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(5))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").isEmpty)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").value(true))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.next_start").isNotEmpty)
+            MockMvcRequestBuilders.get("/spaces")
+                .param("page_size", "5")
+                .header("Authorization", "Bearer $creatorToken")
+        mockMvc
+            .perform(requestBuilders)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.spaces[0].name")
+                    .value("$originalSpaceName 04")
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.spaces[1].name")
+                    .value("$originalSpaceName 03")
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.spaces[2].name")
+                    .value("$originalSpaceName 02")
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.spaces[3].name")
+                    .value("$originalSpaceName 01")
+            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[4].name").value(spaceName))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(spaceIdOfLast)
+            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(5))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").isEmpty)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").value(true))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.next_start").isNotEmpty)
     }
 
     @Test
     @Order(76)
     fun testEnumerateSpacesByUpdatedAtDescWithoutStart() {
         val requestBuilders =
-                MockMvcRequestBuilders.get("/spaces")
-                        .param("sort_by", "updatedAt")
-                        .param("sort_order", "desc")
-                        .param("page_size", "4")
-                        .header("Authorization", "Bearer $creatorToken")
-        mockMvc.perform(requestBuilders)
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[0].name").value(spaceName))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[1].name").value("$originalSpaceName 04"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[2].name").value("$originalSpaceName 03"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[3].name").value("$originalSpaceName 02"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(spaceId))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(4))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").isEmpty)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").value(true))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.next_start").value(spaceIdOfSecond))
+            MockMvcRequestBuilders.get("/spaces")
+                .param("sort_by", "updatedAt")
+                .param("sort_order", "desc")
+                .param("page_size", "4")
+                .header("Authorization", "Bearer $creatorToken")
+        mockMvc
+            .perform(requestBuilders)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[0].name").value(spaceName))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.spaces[1].name")
+                    .value("$originalSpaceName 04")
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.spaces[2].name")
+                    .value("$originalSpaceName 03")
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.spaces[3].name")
+                    .value("$originalSpaceName 02")
+            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(spaceId))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(4))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").isEmpty)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").value(true))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.page.next_start").value(spaceIdOfSecond)
+            )
     }
 
     @Test
     @Order(77)
     fun testEnumerateSpacesByUpdatedAtDescWithStart() {
         val requestBuilders =
-                MockMvcRequestBuilders.get("/spaces")
-                        .param("page_start", spaceIdOfLast.toString())
-                        .param("sort_by", "updatedAt")
-                        .param("sort_order", "desc")
-                        .param("page_size", "1")
-                        .header("Authorization", "Bearer $creatorToken")
-        mockMvc.perform(requestBuilders)
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[0].name").value("$originalSpaceName 04"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(spaceIdOfLast))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(true))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").value(spaceId))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").value(true))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.next_start").value(spaceIdOfBeforeLast))
+            MockMvcRequestBuilders.get("/spaces")
+                .param("page_start", spaceIdOfLast.toString())
+                .param("sort_by", "updatedAt")
+                .param("sort_order", "desc")
+                .param("page_size", "1")
+                .header("Authorization", "Bearer $creatorToken")
+        mockMvc
+            .perform(requestBuilders)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.spaces[0].name")
+                    .value("$originalSpaceName 04")
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(spaceIdOfLast)
+            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(1))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(true))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").value(spaceId))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").value(true))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.page.next_start").value(spaceIdOfBeforeLast)
+            )
     }
 
     @Test
     @Order(80)
     fun testAddSpaceAdmin() {
         val request =
-                MockMvcRequestBuilders.post("/spaces/$spaceId/managers")
-                        .header("Authorization", "Bearer $creatorToken")
-                        .contentType("application/json")
-                        .content(
-                                """
+            MockMvcRequestBuilders.post("/spaces/$spaceId/managers")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
                 {
                     "role": "ADMIN",
                     "userId": ${admin.userId}
                 }
-            """)
-        mockMvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-                .andExpect(
-                        MockMvcResultMatchers.jsonPath(
-                                        "$.data.space.admins[?(@.user.id == '${admin.userId}' && @.role == 'ADMIN')])")
-                                .exists())
-                .andExpect(
-                        MockMvcResultMatchers.jsonPath(
-                                        "$.data.space.admins[?(@.user.id == '${creator.userId}' && @.role == 'OWNER')])")
-                                .exists())
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath(
+                        "$.data.space.admins[?(@.user.id == '${admin.userId}' && @.role == 'ADMIN')])"
+                    )
+                    .exists()
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath(
+                        "$.data.space.admins[?(@.user.id == '${creator.userId}' && @.role == 'OWNER')])"
+                    )
+                    .exists()
+            )
     }
 
     @Test
     @Order(90)
     fun testAddSpaceAdminAndShipOwnership() {
         val request =
-                MockMvcRequestBuilders.post("/spaces/$spaceId/managers")
-                        .header("Authorization", "Bearer $creatorToken")
-                        .contentType("application/json")
-                        .content(
-                                """
+            MockMvcRequestBuilders.post("/spaces/$spaceId/managers")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
                 {
                     "role": "OWNER",
                     "userId": ${newOwner.userId}
                 }
-            """)
-        val result =
-                mockMvc.perform(request)
-                        .andExpect(MockMvcResultMatchers.status().isOk)
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
-                        .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-                        .andExpect(
-                                MockMvcResultMatchers.jsonPath(
-                                                "$.data.space.admins[?(@.user.id == '${newOwner.userId}' && @.role == 'OWNER')])")
-                                        .exists())
-                        .andExpect(
-                                MockMvcResultMatchers.jsonPath(
-                                                "$.data.space.admins[?(@.user.id == '${admin.userId}' && @.role == 'ADMIN')])")
-                                        .exists())
-                        .andExpect(
-                                MockMvcResultMatchers.jsonPath(
-                                                "$.data.space.admins[?(@.user.id == '${creator.userId}' && @.role == 'ADMIN')])")
-                                        .exists())
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath(
+                        "$.data.space.admins[?(@.user.id == '${newOwner.userId}' && @.role == 'OWNER')])"
+                    )
+                    .exists()
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath(
+                        "$.data.space.admins[?(@.user.id == '${admin.userId}' && @.role == 'ADMIN')])"
+                    )
+                    .exists()
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath(
+                        "$.data.space.admins[?(@.user.id == '${creator.userId}' && @.role == 'ADMIN')])"
+                    )
+                    .exists()
+            )
     }
 
     @Test
     @Order(100)
     fun testAddSpaceAdminAfterNotOwner() {
         val request =
-                MockMvcRequestBuilders.post("/spaces/$spaceId/managers")
-                        .header("Authorization", "Bearer $creatorToken")
-                        .contentType("application/json")
-                        .content(
-                                """
+            MockMvcRequestBuilders.post("/spaces/$spaceId/managers")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
                 {
                     "role": "ADMIN",
                     "userId": ${admin.userId}
                 }
-            """)
-        mockMvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isForbidden)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.action").value("add-admin"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceType").value("space"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceId").value(spaceId))
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError")
+            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.action").value("add-admin"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceType").value("space"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceId").value(spaceId))
     }
 
     @Test
     @Order(110)
     fun testShipSpaceOwnership() {
         val request =
-                MockMvcRequestBuilders.patch("/spaces/$spaceId/managers/${creator.userId}")
-                        .header("Authorization", "Bearer $newOwnerToken")
-                        .contentType("application/json")
-                        .content(
-                                """
+            MockMvcRequestBuilders.patch("/spaces/$spaceId/managers/${creator.userId}")
+                .header("Authorization", "Bearer $newOwnerToken")
+                .contentType("application/json")
+                .content(
+                    """
                 {
                     "role": "OWNER"
                 }
-            """)
-        mockMvc.perform(request)
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-                .andExpect(
-                        MockMvcResultMatchers.jsonPath(
-                                        "$.data.space.admins[?(@.user.id == '${creator.userId}' && @.role == 'OWNER')])")
-                                .exists())
-                .andExpect(
-                        MockMvcResultMatchers.jsonPath(
-                                        "$.data.space.admins[?(@.user.id == '${admin.userId}' && @.role == 'ADMIN')])")
-                                .exists())
-                .andExpect(
-                        MockMvcResultMatchers.jsonPath(
-                                        "$.data.space.admins[?(@.user.id == '${newOwner.userId}' && @.role == 'ADMIN')])")
-                                .exists())
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath(
+                        "$.data.space.admins[?(@.user.id == '${creator.userId}' && @.role == 'OWNER')])"
+                    )
+                    .exists()
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath(
+                        "$.data.space.admins[?(@.user.id == '${admin.userId}' && @.role == 'ADMIN')])"
+                    )
+                    .exists()
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath(
+                        "$.data.space.admins[?(@.user.id == '${newOwner.userId}' && @.role == 'ADMIN')])"
+                    )
+                    .exists()
+            )
     }
 
     @Test
     @Order(120)
     fun testRemoveAdmin() {
         val request =
-                MockMvcRequestBuilders.delete("/spaces/$spaceId/managers/${newOwner.userId}")
-                        .header("Authorization", "Bearer $creatorToken")
+            MockMvcRequestBuilders.delete("/spaces/$spaceId/managers/${newOwner.userId}")
+                .header("Authorization", "Bearer $creatorToken")
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
     @Test
     @Order(130)
     fun testDeleteSpace() {
-        val request = MockMvcRequestBuilders.delete("/spaces/$spaceId").header("Authorization", "Bearer $adminToken")
+        val request =
+            MockMvcRequestBuilders.delete("/spaces/$spaceId")
+                .header("Authorization", "Bearer $adminToken")
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 }

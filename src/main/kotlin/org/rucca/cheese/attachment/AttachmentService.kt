@@ -10,15 +10,15 @@ import org.springframework.stereotype.Service
 
 @Service
 class AttachmentService(
-        private val applicationConfig: ApplicationConfig,
-        private val authenticationService: AuthenticationService,
+    private val applicationConfig: ApplicationConfig,
+    private val authenticationService: AuthenticationService,
 ) {
     private val logger = LoggerFactory.getLogger(AttachmentService::class.java)
 
     class GetAttachmentResponse(
-            val code: Int? = null,
-            val message: String? = null,
-            val data: GetAttachmentResponseData? = null,
+        val code: Int? = null,
+        val message: String? = null,
+        val data: GetAttachmentResponseData? = null,
     )
 
     class GetAttachmentResponseData(val attachment: AttachmentDTO? = null)
@@ -29,7 +29,8 @@ class AttachmentService(
         val token = authenticationService.getToken()
         val response = target.request().header("Authorization", token).get()
         if (response.status != 200) {
-            val info = "Failed to get attachment with id $attachmentId from legacy service. Response: $response"
+            val info =
+                "Failed to get attachment with id $attachmentId from legacy service. Response: $response"
             logger.error(info)
             throw RuntimeException(info)
         }

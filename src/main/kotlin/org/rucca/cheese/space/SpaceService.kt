@@ -3,6 +3,7 @@ package org.rucca.cheese.space
 import jakarta.persistence.EntityManager
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
+import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
@@ -23,36 +24,49 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional
 class SpaceService(
-        private val spaceRepository: SpaceRepository,
-        private val spaceAdminRelationRepository: SpaceAdminRelationRepository,
-        private val userService: UserService,
-        private val entityManager: EntityManager,
+    private val spaceRepository: SpaceRepository,
+    private val spaceAdminRelationRepository: SpaceAdminRelationRepository,
+    private val userService: UserService,
+    private val entityManager: EntityManager,
+    private val spaceUserRankService: SpaceUserRankService,
+    private val authenticationService: AuthenticationService,
 ) {
-    fun getSpaceDto(spaceId: IdType): SpaceDTO {
-        val space = spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
-        val admins = spaceAdminRelationRepository.findAllBySpaceId(spaceId)
+    fun Space.toSpaceDTO(queryMyRank: Boolean): SpaceDTO {
         return SpaceDTO(
-                id = space.id!!,
-                intro = space.description!!,
-                name = space.name!!,
-                avatarId = space.avatar!!.id!!.toLong(),
-                admins =
-                        admins.map {
-                            SpaceAdminDTO(
-                                    convertAdminRole(it.role!!),
-                                    userService.getUserDto(it.user!!.id!!.toLong()),
-                                    createdAt = it.createdAt!!.toEpochMilli(),
-                                    updatedAt = it.updatedAt!!.toEpochMilli())
-                        },
-                updatedAt = space.updatedAt!!.toEpochMilli(),
-                createdAt = space.createdAt!!.toEpochMilli())
+            id = this.id!!,
+            intro = this.intro!!,
+            description = this.description!!,
+            name = this.name!!,
+            avatarId = this.avatar!!.id!!.toLong(),
+            admins =
+                spaceAdminRelationRepository.findAllBySpaceId(this.id!!).map {
+                    SpaceAdminDTO(
+                        convertAdminRole(it.role!!),
+                        userService.getUserDto(it.user!!.id!!.toLong()),
+                        createdAt = it.createdAt!!.toEpochMilli(),
+                        updatedAt = it.updatedAt!!.toEpochMilli()
+                    )
+                },
+            updatedAt = this.updatedAt!!.toEpochMilli(),
+            createdAt = this.createdAt!!.toEpochMilli(),
+            enableRank = this.enableRank!!,
+            myRank =
+                if (queryMyRank && this.enableRank!!) {
+                    val userId = authenticationService.getCurrentUserId()
+                    spaceUserRankService.getRank(this.id!!, userId)
+                } else null
+        )
+    }
+
+    fun getSpaceDto(spaceId: IdType, queryMyRank: Boolean = false): SpaceDTO {
+        return getSpace(spaceId).toSpaceDTO(queryMyRank)
     }
 
     fun getSpaceOwner(spaceId: IdType): IdType {
         val spaceAdminRelation =
-                spaceAdminRelationRepository.findBySpaceIdAndRole(spaceId, SpaceAdminRole.OWNER).orElseThrow {
-                    NotFoundError("space", spaceId)
-                }
+            spaceAdminRelationRepository
+                .findBySpaceIdAndRole(spaceId, SpaceAdminRole.OWNER)
+                .orElseThrow { NotFoundError("space", spaceId) }
         return spaceAdminRelation.user!!.id!!.toLong()
     }
 
@@ -73,36 +87,67 @@ class SpaceService(
         }
     }
 
-    fun createSpace(name: String, description: String, avatarId: IdType, ownerId: IdType): IdType {
+    fun createSpace(
+        name: String,
+        intro: String,
+        description: String,
+        avatarId: IdType,
+        ownerId: IdType,
+        enableRank: Boolean
+    ): IdType {
         ensureSpaceNameNotExists(name)
         val space =
-                spaceRepository.save(
-                        Space(
-                                name = name,
-                                description = description,
-                                avatar = Avatar().apply { id = avatarId.toInt() }))
+            spaceRepository.save(
+                Space(
+                    name = name,
+                    intro = intro,
+                    description = description,
+                    avatar = Avatar().apply { id = avatarId.toInt() },
+                    enableRank = enableRank
+                )
+            )
         spaceAdminRelationRepository.save(
-                SpaceAdminRelation(
-                        space = space, role = SpaceAdminRole.OWNER, user = User().apply { id = ownerId.toInt() }))
+            SpaceAdminRelation(
+                space = space,
+                role = SpaceAdminRole.OWNER,
+                user = User().apply { id = ownerId.toInt() }
+            )
+        )
         return space.id!!
+    }
+
+    private fun getSpace(spaceId: IdType): Space {
+        return spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
     }
 
     fun updateSpaceName(spaceId: IdType, name: String) {
         ensureSpaceNameNotExists(name)
-        val space = spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
+        val space = getSpace(spaceId)
         space.name = name
         spaceRepository.save(space)
     }
 
+    fun updateSpaceIntro(spaceId: IdType, intro: String) {
+        val space = getSpace(spaceId)
+        space.intro = intro
+        spaceRepository.save(space)
+    }
+
     fun updateSpaceDescription(spaceId: IdType, description: String) {
-        val space = spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
+        val space = getSpace(spaceId)
         space.description = description
         spaceRepository.save(space)
     }
 
     fun updateSpaceAvatar(spaceId: IdType, avatarId: IdType) {
-        val space = spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
+        val space = getSpace(spaceId)
         space.avatar = Avatar().apply { id = avatarId.toInt() }
+        spaceRepository.save(space)
+    }
+
+    fun updateSpaceEnableRank(spaceId: IdType, enableRank: Boolean) {
+        val space = getSpace(spaceId)
+        space.enableRank = enableRank
         spaceRepository.save(space)
     }
 
@@ -115,7 +160,8 @@ class SpaceService(
     fun deleteSpace(spaceId: IdType) {
         val relations = spaceAdminRelationRepository.findAllBySpaceId(spaceId)
         relations.forEach { it.deletedAt = LocalDateTime.now() }
-        val space = spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
+        val space =
+            spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
         space.deletedAt = LocalDateTime.now()
         spaceAdminRelationRepository.saveAll(relations)
         spaceRepository.save(space)
@@ -130,15 +176,22 @@ class SpaceService(
     fun addSpaceAdmin(spaceId: IdType, userId: IdType) {
         ensureNotSpaceAdmin(spaceId, userId)
         val relation =
-                SpaceAdminRelation(
-                        space = Space().apply { id = spaceId },
-                        user = User().apply { id = userId.toInt() },
-                        role = SpaceAdminRole.ADMIN)
+            SpaceAdminRelation(
+                space = Space().apply { id = spaceId },
+                user = User().apply { id = userId.toInt() },
+                role = SpaceAdminRole.ADMIN
+            )
         spaceAdminRelationRepository.save(relation)
     }
 
     fun ensureNotSpaceOwner(spaceId: IdType, userId: IdType) {
-        if (spaceAdminRelationRepository.existsBySpaceIdAndUserIdAndRole(spaceId, userId, SpaceAdminRole.OWNER)) {
+        if (
+            spaceAdminRelationRepository.existsBySpaceIdAndUserIdAndRole(
+                spaceId,
+                userId,
+                SpaceAdminRole.OWNER
+            )
+        ) {
             throw AlreadyBeSpaceAdminError(spaceId, userId)
         }
     }
@@ -146,13 +199,13 @@ class SpaceService(
     fun shipSpaceOwnership(spaceId: IdType, userId: IdType) {
         ensureNotSpaceOwner(spaceId, userId)
         val oldRelation =
-                spaceAdminRelationRepository.findBySpaceIdAndRole(spaceId, SpaceAdminRole.OWNER).orElseThrow {
-                    NotFoundError("space", spaceId)
-                }
+            spaceAdminRelationRepository
+                .findBySpaceIdAndRole(spaceId, SpaceAdminRole.OWNER)
+                .orElseThrow { NotFoundError("space", spaceId) }
         val newRelation =
-                spaceAdminRelationRepository.findBySpaceIdAndUserId(spaceId, userId).orElseThrow {
-                    NotSpaceAdminYetError(spaceId, userId)
-                }
+            spaceAdminRelationRepository.findBySpaceIdAndUserId(spaceId, userId).orElseThrow {
+                NotSpaceAdminYetError(spaceId, userId)
+            }
         oldRelation.role = SpaceAdminRole.ADMIN
         newRelation.role = SpaceAdminRole.OWNER
         spaceAdminRelationRepository.save(oldRelation)
@@ -161,9 +214,9 @@ class SpaceService(
 
     fun removeSpaceAdmin(spaceId: IdType, userId: IdType) {
         val relation =
-                spaceAdminRelationRepository.findBySpaceIdAndUserId(spaceId, userId).orElseThrow {
-                    NotSpaceAdminYetError(spaceId, userId)
-                }
+            spaceAdminRelationRepository.findBySpaceIdAndUserId(spaceId, userId).orElseThrow {
+                NotSpaceAdminYetError(spaceId, userId)
+            }
         relation.deletedAt = LocalDateTime.now()
         spaceAdminRelationRepository.save(relation)
     }
@@ -174,48 +227,36 @@ class SpaceService(
     }
 
     fun enumerateSpaces(
-            sortBy: SpacesSortBy,
-            sortOrder: SortDirection,
-            pageSize: Int,
-            pageStart: Long?,
+        queryMyRank: Boolean,
+        sortBy: SpacesSortBy,
+        sortOrder: SortDirection,
+        pageSize: Int,
+        pageStart: Long?,
     ): Pair<List<SpaceDTO>, PageDTO> {
         val criteriaBuilder = entityManager.criteriaBuilder
         val cq = criteriaBuilder.createQuery(Space::class.java)
         val root = cq.from(Space::class.java)
         val by =
-                when (sortBy) {
-                    SpacesSortBy.CREATED_AT -> root.get<LocalDateTime>("createdAt")
-                    SpacesSortBy.UPDATED_AT -> root.get<LocalDateTime>("updatedAt")
-                }
+            when (sortBy) {
+                SpacesSortBy.CREATED_AT -> root.get<LocalDateTime>("createdAt")
+                SpacesSortBy.UPDATED_AT -> root.get<LocalDateTime>("updatedAt")
+            }
         val order =
-                when (sortOrder) {
-                    SortDirection.ASCENDING -> criteriaBuilder.asc(by)
-                    SortDirection.DESCENDING -> criteriaBuilder.desc(by)
-                }
+            when (sortOrder) {
+                SortDirection.ASCENDING -> criteriaBuilder.asc(by)
+                SortDirection.DESCENDING -> criteriaBuilder.desc(by)
+            }
         cq.orderBy(order)
         val query = entityManager.createQuery(cq)
         val result = query.resultList
         val (curr, page) =
-                PageHelper.pageFromAll(
-                        result, pageStart, pageSize, { it.id!! }, { id -> throw NotFoundError("space", id) })
-        return Pair(
-                curr.map {
-                    SpaceDTO(
-                            id = it.id!!,
-                            intro = it.description!!,
-                            name = it.name!!,
-                            avatarId = it.avatar!!.id!!.toLong(),
-                            admins =
-                                    spaceAdminRelationRepository.findAllBySpaceId(it.id!!).map {
-                                        SpaceAdminDTO(
-                                                convertAdminRole(it.role!!),
-                                                userService.getUserDto(it.user!!.id!!.toLong()),
-                                                createdAt = it.createdAt!!.toEpochMilli(),
-                                                updatedAt = it.updatedAt!!.toEpochMilli())
-                                    },
-                            updatedAt = it.updatedAt!!.toEpochMilli(),
-                            createdAt = it.createdAt!!.toEpochMilli())
-                },
-                page)
+            PageHelper.pageFromAll(
+                result,
+                pageStart,
+                pageSize,
+                { it.id!! },
+                { id -> throw NotFoundError("space", id) }
+            )
+        return Pair(curr.map { it.toSpaceDTO(queryMyRank) }, page)
     }
 }
