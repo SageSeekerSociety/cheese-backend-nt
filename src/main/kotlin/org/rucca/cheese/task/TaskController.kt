@@ -362,17 +362,21 @@ class TaskController(
         @AuthInfo("submission") submissionId: Long,
         postTaskSubmissionReviewRequestDTO: PostTaskSubmissionReviewRequestDTO
     ): ResponseEntity<PostTaskSubmissionReview200ResponseDTO> {
-        taskSubmissionReviewService.createReview(
-            submissionId = submissionId,
-            accepted = postTaskSubmissionReviewRequestDTO.accepted,
-            score = postTaskSubmissionReviewRequestDTO.score,
-            comment = postTaskSubmissionReviewRequestDTO.comment
-        )
+        val hasUpgradedParticipantRank =
+            taskSubmissionReviewService.createReview(
+                submissionId = submissionId,
+                accepted = postTaskSubmissionReviewRequestDTO.accepted,
+                score = postTaskSubmissionReviewRequestDTO.score,
+                comment = postTaskSubmissionReviewRequestDTO.comment,
+            )
         val submissionDTO = taskSubmissionService.getSubmissionDTO(submissionId, queryReview = true)
         return ResponseEntity.ok(
             PostTaskSubmissionReview200ResponseDTO(
                 200,
-                PostTaskSubmissionReview200ResponseDataDTO(submissionDTO),
+                PostTaskSubmissionReview200ResponseDataDTO(
+                    submissionDTO,
+                    hasUpgradedParticipantRank
+                ),
                 "OK"
             )
         )
@@ -383,11 +387,13 @@ class TaskController(
         @AuthInfo("submission") submissionId: Long,
         patchTaskSubmissionReviewRequestDTO: PatchTaskSubmissionReviewRequestDTO
     ): ResponseEntity<PostTaskSubmissionReview200ResponseDTO> {
+        var hasUpgradedParticipantRank = false
         if (patchTaskSubmissionReviewRequestDTO.accepted != null) {
-            taskSubmissionReviewService.updateReviewAccepted(
-                submissionId = submissionId,
-                accepted = patchTaskSubmissionReviewRequestDTO.accepted
-            )
+            hasUpgradedParticipantRank =
+                taskSubmissionReviewService.updateReviewAccepted(
+                    submissionId = submissionId,
+                    accepted = patchTaskSubmissionReviewRequestDTO.accepted
+                )
         }
         if (patchTaskSubmissionReviewRequestDTO.score != null) {
             taskSubmissionReviewService.updateReviewScore(
@@ -405,7 +411,10 @@ class TaskController(
         return ResponseEntity.ok(
             PostTaskSubmissionReview200ResponseDTO(
                 200,
-                PostTaskSubmissionReview200ResponseDataDTO(submissionDTO),
+                PostTaskSubmissionReview200ResponseDataDTO(
+                    submissionDTO,
+                    hasUpgradedParticipantRank
+                ),
                 "OK"
             )
         )

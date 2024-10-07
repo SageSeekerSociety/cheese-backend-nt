@@ -5,6 +5,7 @@ import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.TaskSubmissionReviewDTO
 import org.rucca.cheese.model.TaskSubmissionReviewDetailDTO
+import org.rucca.cheese.space.SpaceUserRankService
 import org.rucca.cheese.task.error.TaskSubmissionAlreadyReviewedError
 import org.rucca.cheese.task.error.TaskSubmissionNotReviewedYetError
 import org.springframework.stereotype.Service
@@ -12,10 +13,11 @@ import org.springframework.stereotype.Service
 @Service
 class TaskSubmissionReviewService(
     private val taskSubmissionRepository: TaskSubmissionRepository,
-    private val TaskSubmissionReviewRepository: TaskSubmissionReviewRepository,
+    private val taskSubmissionReviewRepository: TaskSubmissionReviewRepository,
+    private val spaceUserRankService: SpaceUserRankService,
 ) {
     fun getReviewDTO(submissionId: IdType): TaskSubmissionReviewDTO {
-        val reviewOpt = TaskSubmissionReviewRepository.findBySubmissionId(submissionId)
+        val reviewOpt = taskSubmissionReviewRepository.findBySubmissionId(submissionId)
         return if (reviewOpt.isPresent) {
             val review = reviewOpt.get()
             TaskSubmissionReviewDTO(
@@ -39,12 +41,20 @@ class TaskSubmissionReviewService(
     }
 
     fun ensureReviewNotExist(submissionId: IdType) {
-        if (TaskSubmissionReviewRepository.existsBySubmissionId(submissionId)) {
+        if (taskSubmissionReviewRepository.existsBySubmissionId(submissionId)) {
             throw TaskSubmissionAlreadyReviewedError(submissionId)
         }
     }
 
-    fun createReview(submissionId: IdType, accepted: Boolean, score: Int, comment: String) {
+    /*
+     * @Returns Has upgraded submitter's rank
+     */
+    fun createReview(
+        submissionId: IdType,
+        accepted: Boolean,
+        score: Int,
+        comment: String,
+    ): Boolean {
         ensureSubmissionExists(submissionId)
         ensureReviewNotExist(submissionId)
         val review =
@@ -54,11 +64,12 @@ class TaskSubmissionReviewService(
                 score = score,
                 comment = comment,
             )
-        TaskSubmissionReviewRepository.save(review)
+        taskSubmissionReviewRepository.save(review)
+        return tryUpdateParticipantRank(review)
     }
 
     private fun getTaskSubmissionReview(submissionId: IdType): TaskSubmissionReview {
-        return TaskSubmissionReviewRepository.findBySubmissionId(submissionId).orElseThrow {
+        return taskSubmissionReviewRepository.findBySubmissionId(submissionId).orElseThrow {
             throw TaskSubmissionNotReviewedYetError(submissionId)
         }
     }
@@ -66,24 +77,44 @@ class TaskSubmissionReviewService(
     fun deleteReview(submissionId: IdType) {
         val review = getTaskSubmissionReview(submissionId)
         review.deletedAt = LocalDateTime.now()
-        TaskSubmissionReviewRepository.save(review)
+        taskSubmissionReviewRepository.save(review)
     }
 
-    fun updateReviewAccepted(submissionId: IdType, accepted: Boolean) {
+    /*
+     * @Returns Has upgraded submitter's rank
+     */
+    fun updateReviewAccepted(submissionId: IdType, accepted: Boolean): Boolean {
         val review = getTaskSubmissionReview(submissionId)
         review.accepted = accepted
-        TaskSubmissionReviewRepository.save(review)
+        taskSubmissionReviewRepository.save(review)
+        return tryUpdateParticipantRank(review)
     }
 
     fun updateReviewScore(submissionId: IdType, score: Int) {
         val review = getTaskSubmissionReview(submissionId)
         review.score = score
-        TaskSubmissionReviewRepository.save(review)
+        taskSubmissionReviewRepository.save(review)
     }
 
     fun updateReviewComment(submissionId: IdType, comment: String) {
         val review = getTaskSubmissionReview(submissionId)
         review.comment = comment
-        TaskSubmissionReviewRepository.save(review)
+        taskSubmissionReviewRepository.save(review)
+    }
+
+    private fun tryUpdateParticipantRank(review: TaskSubmissionReview): Boolean {
+        if (!review.accepted!!) return false
+        val submission = taskSubmissionRepository.findById(review.submission!!.id!!).get()
+        val membership = submission.membership!!
+        val task = membership.task!!
+        val needUpgradeRank =
+            task.submitterType == TaskSubmitterType.USER && task.space != null && task.rank != null
+        if (needUpgradeRank) {
+            return spaceUserRankService.upgradeRank(
+                task.space!!.id!!,
+                membership.memberId!!,
+                task.rank!!
+            )
+        } else return false
     }
 }
