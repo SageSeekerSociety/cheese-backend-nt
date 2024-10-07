@@ -655,6 +655,23 @@ constructor(
     }
 
     @Test
+    @Order(91)
+    fun testAddTestParticipantUserAgainAndGetAlreadyBeTaskParticipantError() {
+        val request =
+            MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
+                .header("Authorization", "Bearer $participantToken")
+                .queryParam("member", participant.userId.toString())
+                .contentType("application/json")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isConflict)
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.error.name")
+                    .value("AlreadyBeTaskParticipantError")
+            )
+    }
+
+    @Test
     @Order(94)
     fun testAddTestParticipantTeamAndGetPermissionDeniedError() {
         val request =
@@ -679,6 +696,23 @@ constructor(
                 .queryParam("member", teamId.toString())
                 .contentType("application/json")
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(96)
+    fun testAddTestParticipantTeamAgainAndGetAlreadyBeTaskParticipantError() {
+        val request =
+            MockMvcRequestBuilders.post("/tasks/${taskIds[1]}/participants")
+                .header("Authorization", "Bearer $teamCreatorToken")
+                .queryParam("member", teamId.toString())
+                .contentType("application/json")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isConflict)
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.error.name")
+                    .value("AlreadyBeTaskParticipantError")
+            )
     }
 
     @Test

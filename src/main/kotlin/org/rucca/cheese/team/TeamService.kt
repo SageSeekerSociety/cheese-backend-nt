@@ -235,10 +235,8 @@ class TeamService(
         teamRepository.save(team)
     }
 
-    fun ensureTeamExists(teamId: IdType) {
-        if (!teamRepository.existsById(teamId)) {
-            throw NotFoundError("team", teamId)
-        }
+    fun existsTeam(teamId: IdType): Boolean {
+        return teamRepository.existsById(teamId)
     }
 
     fun deleteTeam(teamId: IdType) {
