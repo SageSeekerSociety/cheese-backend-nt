@@ -31,13 +31,16 @@ class SpaceUserRankService(
             .orElse(0)
     }
 
-    fun upgradeRank(spaceId: IdType, userId: IdType, rank: Int) {
+    fun upgradeRank(spaceId: IdType, userId: IdType, rank: Int): Boolean {
         ensureRankEnabled(spaceId)
         val spaceUserRankOpt = spaceUserRankRepository.findBySpaceIdAndUserId(spaceId, userId)
         if (spaceUserRankOpt.isPresent) {
             val spaceUserRank = spaceUserRankOpt.get()
-            spaceUserRank.rank = Math.max(spaceUserRank.rank!!, rank)
-            spaceUserRankRepository.save(spaceUserRank)
+            if (rank > spaceUserRank.rank!!) {
+                spaceUserRank.rank = Math.max(spaceUserRank.rank!!, rank)
+                spaceUserRankRepository.save(spaceUserRank)
+                return true
+            } else return false
         } else {
             val spaceUserRank =
                 SpaceUserRank(
@@ -46,6 +49,7 @@ class SpaceUserRankService(
                     rank = Math.max(0, rank)
                 )
             spaceUserRankRepository.save(spaceUserRank)
+            return rank > 0
         }
     }
 }

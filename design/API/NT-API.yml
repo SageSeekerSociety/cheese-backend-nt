@@ -1207,9 +1207,12 @@ paths:
                     type: object
                     required:
                       - submission
+                      - hasUpgradedParticipantRank
                     properties:
                       submission:
                         $ref: '#/components/schemas/TaskSubmission'
+                      hasUpgradedParticipantRank:
+                        type: boolean
                   message:
                     type: string
       operationId: post-task-submission-review
@@ -1259,9 +1262,12 @@ paths:
                     type: object
                     required:
                       - submission
+                      - hasUpgradedParticipantRank
                     properties:
                       submission:
                         $ref: '#/components/schemas/TaskSubmission'
+                      hasUpgradedParticipantRank:
+                        type: boolean
                   message:
                     type: string
       operationId: patch-task-submission-review

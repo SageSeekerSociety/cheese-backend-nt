@@ -11,4 +11,6 @@ class ApplicationConfig {
     lateinit var corsOrigin: String
     var shutdownOnStartup: Boolean = false
     var warnAuditFailure: Boolean = false
+    var rankCheckEnforced: Boolean = false
+    var rankJump: Int = 1
 }

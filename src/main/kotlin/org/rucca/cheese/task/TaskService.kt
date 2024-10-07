@@ -5,12 +5,15 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.AuthenticationService
+import org.rucca.cheese.common.config.ApplicationConfig
+import org.rucca.cheese.common.error.BaseError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.Space
+import org.rucca.cheese.space.SpaceUserRankService
 import org.rucca.cheese.task.error.*
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamService
@@ -32,6 +35,8 @@ class TaskService(
     private val taskSubmissionRepository: TaskSubmissionRepository,
     private val entityManager: EntityManager,
     private val elasticsearchTemplate: ElasticsearchTemplate,
+    private val spaceUserRankService: SpaceUserRankService,
+    private val applicationConfig: ApplicationConfig,
 ) {
     fun getTaskDto(
         taskId: IdType,
@@ -226,15 +231,46 @@ class TaskService(
         return convertTaskSubmitterType(task.submitterType!!)
     }
 
+    fun isTaskJoinable(task: Task, memberId: IdType): BaseError? {
+        // Ensure member exists
+        when (task.submitterType!!) {
+            TaskSubmitterType.USER ->
+                if (!userService.existsUser(memberId)) return NotFoundError("user", memberId)
+            TaskSubmitterType.TEAM ->
+                if (!teamService.existsTeam(memberId)) return NotFoundError("team", memberId)
+        }
+
+        // Has not joined yet
+        if (taskMembershipRepository.existsByTaskIdAndMemberId(task.id!!, memberId))
+            return AlreadyBeTaskParticipantError(task.id!!, memberId)
+
+        // Have enough rank
+        val needToCheckRank =
+            applicationConfig.rankCheckEnforced &&
+                task.submitterType == TaskSubmitterType.USER &&
+                task.space != null &&
+                task.space.enableRank!! &&
+                task.rank != null
+        if (needToCheckRank) {
+            val requiredRank = task.rank!! - applicationConfig.rankJump
+            val acturalRank = spaceUserRankService.getRank(task.space!!.id!!, memberId)
+            if (acturalRank < requiredRank)
+                return YourRankIsNotHighEnoughError(acturalRank, requiredRank)
+        }
+
+        return null
+    }
+
     fun getJoinability(taskId: IdType, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
         when (getTaskSumbitterType(taskId)) {
             TaskSubmitterTypeDTO.USER ->
-                return Pair(
-                    !taskMembershipRepository.existsByTaskIdAndMemberId(taskId, userId),
-                    null
-                )
+                return Pair(isTaskJoinable(getTask(taskId), userId) == null, null)
             TaskSubmitterTypeDTO.TEAM -> {
-                val teams = teamService.getTeamsThatUserCanUseToJoinTask(taskId, userId)
+                val task = getTask(taskId)
+                val teams =
+                    teamService.getTeamsThatUserCanUseToJoinTask(taskId, userId).filter {
+                        isTaskJoinable(task, it.id) == null
+                    }
                 return Pair(teams.isNotEmpty(), teams)
             }
         }
@@ -405,10 +441,8 @@ class TaskService(
     }
 
     fun addTaskParticipant(taskId: IdType, memberId: IdType) {
-        when (getTaskSumbitterType(taskId)) {
-            TaskSubmitterTypeDTO.USER -> userService.ensureUserExists(memberId)
-            TaskSubmitterTypeDTO.TEAM -> teamService.ensureTeamExists(memberId)
-        }
+        val errorOpt = isTaskJoinable(getTask(taskId), memberId)
+        if (errorOpt != null) throw errorOpt
         taskMembershipRepository.save(
             TaskMembership(task = Task().apply { id = taskId }, memberId = memberId)
         )

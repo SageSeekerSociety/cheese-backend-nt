@@ -45,7 +45,7 @@ class UserService(
         return profile.avatar!!.id!!.toLong()
     }
 
-    fun ensureUserExists(userId: IdType) {
-        userRepository.findById(userId.toInt()).orElseThrow { NotFoundError("user", userId) }
+    fun existsUser(userId: IdType): Boolean {
+        return userRepository.existsById(userId.toInt())
     }
 }
