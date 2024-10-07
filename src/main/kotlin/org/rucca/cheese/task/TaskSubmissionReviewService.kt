@@ -108,7 +108,10 @@ class TaskSubmissionReviewService(
         val membership = submission.membership!!
         val task = membership.task!!
         val needUpgradeRank =
-            task.submitterType == TaskSubmitterType.USER && task.space != null && task.rank != null
+            task.submitterType == TaskSubmitterType.USER &&
+                task.space != null &&
+                task.space.enableRank!! &&
+                task.rank != null
         if (needUpgradeRank) {
             return spaceUserRankService.upgradeRank(
                 task.space!!.id!!,

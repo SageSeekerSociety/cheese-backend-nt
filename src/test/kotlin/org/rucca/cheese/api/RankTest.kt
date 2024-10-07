@@ -51,6 +51,7 @@ constructor(
     private var taskId: IdType = -1
     private var taskId2: IdType = -1
     private var taskId3: IdType = -1
+    private var taskId4: IdType = -1
     private var submissionId: IdType = -1
     private var submissionId2: IdType = -1
     private var submissionId3: IdType = -1
@@ -228,6 +229,21 @@ constructor(
             )
         addParticipantUser(participantToken, taskId3, participant.userId)
         submissionId3 = submitTaskUser(participantToken, taskId3, participant.userId)
+        taskId4 =
+            createTask(
+                creatorToken,
+                taskName,
+                "USER",
+                taskDeadline,
+                false,
+                false,
+                taskIntro,
+                taskDescription,
+                taskSubmissionSchema,
+                null,
+                spaceId,
+                2
+            )
     }
 
     @Test
@@ -303,6 +319,24 @@ constructor(
     }
 
     @Test
+    @Order(55)
+    fun testJoinRank2TaskAndGetYourRankIsNotHighEnoughError() {
+        val request =
+            MockMvcRequestBuilders.post("/tasks/${taskId4}/participants")
+                .header("Authorization", "Bearer $participantToken")
+                .queryParam("member", participant.userId.toString())
+                .contentType("application/json")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isBadRequest)
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.error.name").value("YourRankIsNotHighEnoughError")
+            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.yourRank").value(0))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.requiredRank").value(1))
+    }
+
+    @Test
     @Order(60)
     fun testCreateReview() {
         val request =
@@ -356,6 +390,17 @@ constructor(
                         }
                     """
                 )
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(75)
+    fun testJoinRank2Task() {
+        val request =
+            MockMvcRequestBuilders.post("/tasks/${taskId4}/participants")
+                .header("Authorization", "Bearer $participantToken")
+                .queryParam("member", participant.userId.toString())
+                .contentType("application/json")
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 

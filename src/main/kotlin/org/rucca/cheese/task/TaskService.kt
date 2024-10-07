@@ -5,6 +5,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.AuthenticationService
+import org.rucca.cheese.common.config.ApplicationConfig
 import org.rucca.cheese.common.error.BaseError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
@@ -12,6 +13,7 @@ import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.Space
+import org.rucca.cheese.space.SpaceUserRankService
 import org.rucca.cheese.task.error.*
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamService
@@ -33,6 +35,8 @@ class TaskService(
     private val taskSubmissionRepository: TaskSubmissionRepository,
     private val entityManager: EntityManager,
     private val elasticsearchTemplate: ElasticsearchTemplate,
+    private val spaceUserRankService: SpaceUserRankService,
+    private val applicationConfig: ApplicationConfig,
 ) {
     fun getTaskDto(
         taskId: IdType,
@@ -239,6 +243,21 @@ class TaskService(
         // Has not joined yet
         if (taskMembershipRepository.existsByTaskIdAndMemberId(task.id!!, memberId))
             return AlreadyBeTaskParticipantError(task.id!!, memberId)
+
+        // Have enough rank
+        val needToCheckRank =
+            applicationConfig.rankCheckEnforced &&
+                task.submitterType == TaskSubmitterType.USER &&
+                task.space != null &&
+                task.space.enableRank!! &&
+                task.rank != null
+        if (needToCheckRank) {
+            val requiredRank = task.rank!! - applicationConfig.rankJump
+            val acturalRank = spaceUserRankService.getRank(task.space!!.id!!, memberId)
+            if (acturalRank < requiredRank)
+                return YourRankIsNotHighEnoughError(acturalRank, requiredRank)
+        }
+
         return null
     }
 
