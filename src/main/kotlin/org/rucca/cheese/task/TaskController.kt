@@ -13,13 +13,23 @@ import org.rucca.cheese.common.helper.toLocalDateTime
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
-import org.rucca.cheese.task.helper.toEntryList
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+
+fun List<PostTaskSubmissionRequestInnerDTO>.toEntryList() = map {
+    if (it.contentText != null) {
+        TaskSubmissionService.TaskSubmissionEntry.Text(it.contentText)
+    } else if (it.contentAttachmentId != null) {
+        TaskSubmissionService.TaskSubmissionEntry.Attachment(it.contentAttachmentId)
+    } else {
+        throw IllegalArgumentException("Invalid PostTaskSubmissionRequestInnerDTO: $it")
+    }
+}
 
 @RestController
 class TaskController(
     private val taskService: TaskService,
+    private val taskSubmissionService: TaskSubmissionService,
     private val taskSubmissionReviewService: TaskSubmissionReviewService,
     private val authorizationService: AuthorizationService,
     private val authenticationService: AuthenticationService,
@@ -74,7 +84,7 @@ class TaskController(
             if (submissionId == null) {
                 false
             } else {
-                taskService.isTaskOwnerOfSubmission(submissionId, userId)
+                taskSubmissionService.isTaskOwnerOfSubmission(submissionId, userId)
             }
         }
     }
@@ -137,8 +147,8 @@ class TaskController(
     ): ResponseEntity<GetTaskSubmissions200ResponseDTO> {
         val by =
             when (sortBy) {
-                "createdAt" -> TaskService.TaskSubmissionSortBy.CREATED_AT
-                "updatedAt" -> TaskService.TaskSubmissionSortBy.UPDATED_AT
+                "createdAt" -> TaskSubmissionService.TaskSubmissionSortBy.CREATED_AT
+                "updatedAt" -> TaskSubmissionService.TaskSubmissionSortBy.UPDATED_AT
                 else -> throw IllegalArgumentException("Invalid sortBy: $sortBy")
             }
         val order =
@@ -148,7 +158,7 @@ class TaskController(
                 else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
             }
         val (dtos, page) =
-            taskService.enumerateSubmissions(
+            taskSubmissionService.enumerateSubmissions(
                 taskId = taskId,
                 member = member,
                 allVersions = allVersions,
@@ -240,7 +250,7 @@ class TaskController(
                     TaskSubmissionSchema(
                         it.index,
                         it.value.prompt,
-                        taskService.convertTaskSubmissionEntryType(it.value.type)
+                        taskSubmissionService.convertTaskSubmissionEntryType(it.value.type)
                     )
                 }
             )
@@ -263,7 +273,7 @@ class TaskController(
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
         val contents = postTaskSubmissionRequestInnerDTO.toEntryList()
         val submissions =
-            taskService.modifySubmission(
+            taskSubmissionService.modifySubmission(
                 taskId,
                 member,
                 authenticationService.getCurrentUserId(),
@@ -298,7 +308,7 @@ class TaskController(
                         TaskSubmissionSchema(
                             it.index,
                             it.value.prompt,
-                            taskService.convertTaskSubmissionEntryType(it.value.type)
+                            taskSubmissionService.convertTaskSubmissionEntryType(it.value.type)
                         )
                     },
                 creatorId = authenticationService.getCurrentUserId(),
@@ -332,7 +342,7 @@ class TaskController(
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
         val contents = postTaskSubmissionRequestInnerDTO.toEntryList()
         val submissions =
-            taskService.submitTask(
+            taskSubmissionService.submitTask(
                 taskId,
                 member,
                 authenticationService.getCurrentUserId(),
@@ -358,7 +368,7 @@ class TaskController(
             score = postTaskSubmissionReviewRequestDTO.score,
             comment = postTaskSubmissionReviewRequestDTO.comment
         )
-        val submissionDTO = taskService.getSubmissionDTO(submissionId, queryReview = true)
+        val submissionDTO = taskSubmissionService.getSubmissionDTO(submissionId, queryReview = true)
         return ResponseEntity.ok(
             PostTaskSubmissionReview200ResponseDTO(
                 200,
@@ -391,7 +401,7 @@ class TaskController(
                 comment = patchTaskSubmissionReviewRequestDTO.comment
             )
         }
-        val submissionDTO = taskService.getSubmissionDTO(submissionId, queryReview = true)
+        val submissionDTO = taskSubmissionService.getSubmissionDTO(submissionId, queryReview = true)
         return ResponseEntity.ok(
             PostTaskSubmissionReview200ResponseDTO(
                 200,
