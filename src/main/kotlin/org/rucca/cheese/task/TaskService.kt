@@ -68,22 +68,21 @@ class TaskService(
 
     fun isAvailableForUnapprovedTasks(spaceId: IdType?, teamId: IdType?): Boolean {
         val userId = authenticationService.getCurrentUserId()
-        if (spaceId != null) {
-            return spaceService.isSpaceAdmin(spaceId, userId)
-        } else if (teamId != null) {
-            return teamService.isTeamAdmin(teamId, userId)
+        return when {
+            spaceId != null -> spaceService.isSpaceAdmin(spaceId, userId)
+            teamId != null -> teamService.isTeamAdmin(teamId, userId)
+            else -> false
         }
-        return false
     }
 
     fun isSpaceOrTeamAdminForTask(taskId: IdType): Boolean {
         val userId = authenticationService.getCurrentUserId()
         val (spaceId, teamId) = getTask(taskId).let { task -> task.space?.id to task.team?.id }
-        if (spaceId != null) {
-            return spaceService.isSpaceAdmin(spaceId, userId)
-        } else if (teamId != null) {
-            return teamService.isTeamAdmin(teamId, userId)
-        } else return false
+        return when {
+            spaceId != null -> spaceService.isSpaceAdmin(spaceId, userId)
+            teamId != null -> teamService.isTeamAdmin(teamId, userId)
+            else -> false
+        }
     }
 
     fun participantIsSelfOrTeamWhereIAmAdmin(
