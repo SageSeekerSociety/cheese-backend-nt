@@ -160,6 +160,7 @@ CREATE
 CREATE
     TABLE
         task(
+            approved BOOLEAN NOT NULL,
             "creator_id" INTEGER NOT NULL,
             editable BOOLEAN NOT NULL,
             RANK INTEGER,

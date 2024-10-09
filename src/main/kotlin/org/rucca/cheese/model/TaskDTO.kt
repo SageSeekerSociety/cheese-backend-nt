@@ -23,6 +23,7 @@ import javax.validation.Valid
  * @param submittable Only has value when: 'querySubmitability' == true
  * @param submittableAsTeam
  * @param rank
+ * @param approved
  */
 data class TaskDTO(
     @Schema(example = "null", required = true, description = "")
@@ -84,5 +85,8 @@ data class TaskDTO(
     val submittableAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("rank")
-    val rank: kotlin.Int? = null
+    val rank: kotlin.Int? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("approved")
+    val approved: kotlin.Boolean? = null
 ) {}

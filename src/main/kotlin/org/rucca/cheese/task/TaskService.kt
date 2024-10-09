@@ -1,6 +1,7 @@
 package org.rucca.cheese.task
 
 import jakarta.persistence.EntityManager
+import jakarta.persistence.criteria.Predicate
 import java.time.LocalDate
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
@@ -13,6 +14,7 @@ import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.Space
+import org.rucca.cheese.space.SpaceService
 import org.rucca.cheese.space.SpaceUserRankService
 import org.rucca.cheese.task.error.*
 import org.rucca.cheese.team.Team
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Service
 @Service
 class TaskService(
     private val userService: UserService,
+    private val spaceService: SpaceService,
     private val teamService: TeamService,
     private val authenticationService: AuthenticationService,
     private val taskRepository: TaskRepository,
@@ -61,6 +64,26 @@ class TaskService(
                 teamService.isTeamMember(memberId, userId) &&
                     taskMembershipRepository.existsByTaskIdAndMemberId(taskId, memberId)
         }
+    }
+
+    fun isAvailableForUnapprovedTasks(spaceId: IdType?, teamId: IdType?): Boolean {
+        val userId = authenticationService.getCurrentUserId()
+        if (spaceId != null) {
+            return spaceService.isSpaceAdmin(spaceId, userId)
+        } else if (teamId != null) {
+            return teamService.isTeamAdmin(teamId, userId)
+        }
+        return false
+    }
+
+    fun isSpaceOrTeamAdminForTask(taskId: IdType): Boolean {
+        val userId = authenticationService.getCurrentUserId()
+        val (spaceId, teamId) = getTask(taskId).let { task -> task.space?.id to task.team?.id }
+        if (spaceId != null) {
+            return spaceService.isSpaceAdmin(spaceId, userId)
+        } else if (teamId != null) {
+            return teamService.isTeamAdmin(teamId, userId)
+        } else return false
     }
 
     fun participantIsSelfOrTeamWhereIAmAdmin(
@@ -131,6 +154,7 @@ class TaskService(
             submittable = submittability.first,
             submittableAsTeam = submittability.second,
             rank = this.rank,
+            approved = this.approved,
         )
     }
 
@@ -162,7 +186,8 @@ class TaskService(
                     intro = intro,
                     description = description,
                     submissionSchema = submissionSchema,
-                    rank = rank
+                    rank = rank,
+                    approved = false,
                 )
             )
         return task.id!!
@@ -217,6 +242,12 @@ class TaskService(
     fun updateTaskRank(taskId: IdType, rank: Int?) {
         val task = getTask(taskId)
         task.rank = rank
+        taskRepository.save(task)
+    }
+
+    fun updateApproved(taskId: IdType, approved: Boolean) {
+        val task = getTask(taskId)
+        task.approved = approved
         taskRepository.save(task)
     }
 
@@ -310,6 +341,7 @@ class TaskService(
         sortOrder: SortDirection,
         queryJoinability: Boolean = false,
         querySubmittability: Boolean = false,
+        approved: Boolean = true,
     ): Pair<List<TaskDTO>, PageDTO> {
         if (keywords == null) {
             return enumerateTasksUseDatabase(
@@ -320,7 +352,8 @@ class TaskService(
                 sortBy,
                 sortOrder,
                 queryJoinability,
-                querySubmittability
+                querySubmittability,
+                approved,
             )
         } else {
             val id = keywords.toLongOrNull()
@@ -340,7 +373,8 @@ class TaskService(
                 pageSize,
                 pageStart,
                 queryJoinability,
-                querySubmittability
+                querySubmittability,
+                approved,
             )
         }
     }
@@ -354,16 +388,20 @@ class TaskService(
         sortOrder: SortDirection,
         queryJoinability: Boolean = false,
         querySubmittability: Boolean = false,
+        approved: Boolean = true,
     ): Pair<List<TaskDTO>, PageDTO> {
         val cb = entityManager.criteriaBuilder
         val cq = cb.createQuery(Task::class.java)
         val root = cq.from(Task::class.java)
+        val predicates = mutableListOf<Predicate>()
+        predicates.add(cb.equal(root.get<Boolean>("approved"), approved))
         if (space != null) {
-            cq.where(cb.equal(root.get<Space>("space").get<IdType>("id"), space))
+            predicates.add(cb.equal(root.get<Space>("space").get<IdType>("id"), space))
         }
         if (team != null) {
-            cq.where(cb.equal(root.get<Team>("team").get<IdType>("id"), team))
+            predicates.add(cb.equal(root.get<Team>("team").get<IdType>("id"), team))
         }
+        cq.where(*predicates.toTypedArray())
         val by =
             when (sortBy) {
                 TasksSortBy.CREATED_AT -> root.get<LocalDateTime>("createdAt")
@@ -395,6 +433,7 @@ class TaskService(
         pageStart: IdType?,
         queryJoinability: Boolean = false,
         querySubmittability: Boolean = false,
+        approved: Boolean = true,
     ): Pair<List<TaskDTO>, PageDTO> {
         val criteria = Criteria("name").matches(keywords)
         val query = CriteriaQuery(criteria)

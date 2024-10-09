@@ -13,6 +13,7 @@ import org.rucca.cheese.common.helper.toLocalDateTime
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.task.error.NoRightToAccessTaskError
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -87,6 +88,41 @@ class TaskController(
                 taskSubmissionService.isTaskOwnerOfSubmission(submissionId, userId)
             }
         }
+        authorizationService.customAuthLogics.register("is-available-for-tasks") {
+            userId: IdType,
+            _: AuthorizedAction,
+            _: String,
+            _: IdType?,
+            authInfo: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            val spaceId = authInfo["space"] as? IdType
+            val teamId = authInfo["team"] as? IdType
+            val approved = authInfo["approved"] as? Boolean
+            if (approved == false) {
+                if ((spaceId != null && teamId == null) || (spaceId == null && teamId != null)) {
+                    taskService.isAvailableForUnapprovedTasks(spaceId, teamId)
+                } else {
+                    false
+                }
+            } else {
+                true
+            }
+        }
+        authorizationService.customAuthLogics.register("is-space-or-team-admin-of-task") {
+            userId: IdType,
+            _: AuthorizedAction,
+            _: String,
+            resourceId: IdType?,
+            _: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            if (resourceId != null) {
+                taskService.isSpaceOrTeamAdminForTask(resourceId)
+            } else false
+        }
     }
 
     @Guard("delete", "task")
@@ -114,6 +150,9 @@ class TaskController(
         querySubmittability: Boolean
     ): ResponseEntity<GetTask200ResponseDTO> {
         val taskDTO = taskService.getTaskDto(taskId, queryJoinability, querySubmittability)
+        if (taskDTO.approved == false && !taskService.isSpaceOrTeamAdminForTask(taskId)) {
+            throw NoRightToAccessTaskError(taskId)
+        }
         return ResponseEntity.ok(
             GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK")
         )
@@ -180,8 +219,8 @@ class TaskController(
 
     @Guard("enumerate", "task")
     override fun getTasks(
-        space: Long?,
-        team: Int?,
+        @AuthInfo("space") space: Long?,
+        @AuthInfo("team") team: Int?,
         pageSize: Int,
         pageStart: Long?,
         sortBy: String,
@@ -189,6 +228,7 @@ class TaskController(
         queryJoinability: Boolean,
         querySubmittability: Boolean,
         keywords: String?,
+        @AuthInfo("approved") approved: Boolean,
     ): ResponseEntity<GetTasks200ResponseDTO> {
         val by =
             when (sortBy) {
@@ -213,7 +253,8 @@ class TaskController(
                 sortBy = by,
                 sortOrder = order,
                 queryJoinability = queryJoinability,
-                querySubmittability = querySubmittability
+                querySubmittability = querySubmittability,
+                approved = approved,
             )
         return ResponseEntity.ok(
             GetTasks200ResponseDTO(200, GetTasks200ResponseDataDTO(taskSummaryDTOs, page), "OK")
@@ -225,6 +266,10 @@ class TaskController(
         @ResourceId taskId: Long,
         patchTaskRequestDTO: PatchTaskRequestDTO
     ): ResponseEntity<GetTask200ResponseDTO> {
+        if (patchTaskRequestDTO.approved != null) {
+            authorizationService.audit("approve", "task", taskId)
+            taskService.updateApproved(taskId, patchTaskRequestDTO.approved)
+        }
         if (patchTaskRequestDTO.name != null) {
             taskService.updateTaskName(taskId, patchTaskRequestDTO.name)
         }

@@ -2,6 +2,7 @@ package org.rucca.cheese.api
 
 import java.time.LocalDateTime
 import kotlin.math.floor
+import org.hamcrest.Matchers
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
@@ -21,6 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -46,6 +48,10 @@ constructor(
     lateinit var participantToken: String
     lateinit var participant2: UserCreatorService.CreateUserResponse
     lateinit var participantToken2: String
+    lateinit var spaceAdmin: UserCreatorService.CreateUserResponse
+    lateinit var spaceAdminToken: String
+    lateinit var teamAdmin: UserCreatorService.CreateUserResponse
+    lateinit var teamAdminToken: String
     private var teamId: IdType = -1
     private var spaceId: IdType = -1
     private val taskIds = mutableListOf<IdType>()
@@ -87,6 +93,26 @@ constructor(
                 .getLong("id")
         logger.info("Created space: $spaceId")
         return spaceId
+    }
+
+    fun addSpaceAdmin(
+        creatorToken: String,
+        spaceId: IdType,
+        adminId: IdType,
+    ) {
+        val request =
+            MockMvcRequestBuilders.post("/spaces/$spaceId/managers")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                    "role": "ADMIN",
+                    "userId": ${adminId}
+                }
+            """
+                )
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
     fun createTeam(
@@ -135,6 +161,26 @@ constructor(
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
+    fun addTeamAdmin(
+        creatorToken: String,
+        teamId: IdType,
+        adminId: IdType,
+    ) {
+        val request =
+            MockMvcRequestBuilders.post("/teams/$teamId/members")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "role": "ADMIN",
+                  "user_id": ${adminId}
+                }
+            """
+                )
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
     @BeforeAll
     fun prepare() {
         creator = userCreatorService.createUser()
@@ -149,9 +195,13 @@ constructor(
         participantToken = userCreatorService.login(participant.username, participant.password)
         participant2 = userCreatorService.createUser()
         participantToken2 = userCreatorService.login(participant2.username, participant2.password)
+        spaceAdmin = userCreatorService.createUser()
+        spaceAdminToken = userCreatorService.login(spaceAdmin.username, spaceAdmin.password)
+        teamAdmin = userCreatorService.createUser()
+        teamAdminToken = userCreatorService.login(teamAdmin.username, teamAdmin.password)
         spaceId =
             createSpace(
-                creatorToken = teamCreatorToken,
+                creatorToken = spaceCreatorToken,
                 spaceName = "Test Space (${floor(Math.random() * 10000000000).toLong()})",
                 spaceIntro = "This is a test space.",
                 spaceDescription = "A lengthy text. ".repeat(1000),
@@ -166,6 +216,8 @@ constructor(
                 teamAvatarId = userCreatorService.testAvatarId(),
             )
         joinTeam(teamCreatorToken, teamId, teamMember.userId)
+        addSpaceAdmin(spaceCreatorToken, spaceId, spaceAdmin.userId)
+        addTeamAdmin(teamCreatorToken, teamId, teamAdmin.userId)
     }
 
     fun createTask(
@@ -215,22 +267,14 @@ constructor(
             mockMvc
                 .perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.name").value(name))
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.submitterType").value(submitterType)
-                )
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.creator.id").value(creator.userId)
-                )
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.deadline").value(deadline))
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.resubmittable").value(resubmittable)
-                )
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.editable").value(editable))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.intro").value(intro))
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.description").value(description)
-                )
+                .andExpect(jsonPath("$.data.task.name").value(name))
+                .andExpect(jsonPath("$.data.task.submitterType").value(submitterType))
+                .andExpect(jsonPath("$.data.task.creator.id").value(creator.userId))
+                .andExpect(jsonPath("$.data.task.deadline").value(deadline))
+                .andExpect(jsonPath("$.data.task.resubmittable").value(resubmittable))
+                .andExpect(jsonPath("$.data.task.editable").value(editable))
+                .andExpect(jsonPath("$.data.task.intro").value(intro))
+                .andExpect(jsonPath("$.data.task.description").value(description))
         val json = JSONObject(response.andReturn().response.contentAsString)
         for (entry in submissionSchema) {
             val schema =
@@ -242,6 +286,27 @@ constructor(
         val taskId = json.getJSONObject("data").getJSONObject("task").getLong("id")
         taskIds.add(taskId)
         logger.info("Created task: $taskId")
+    }
+
+    fun approveTask(
+        taskId: IdType,
+        token: String,
+    ) {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/$taskId")
+                .header("Authorization", "Bearer $token")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": true
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.task.approved").value(true))
     }
 
     @Test
@@ -310,6 +375,88 @@ constructor(
     }
 
     @Test
+    @Order(14)
+    fun testEnumerateUnapprovedTasks() {
+        val request =
+            MockMvcRequestBuilders.get("/tasks")
+                .header("Authorization", "Bearer $spaceAdminToken")
+                .param("approved", "false")
+                .param("space", spaceId.toString())
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.tasks.length()").value(3))
+    }
+
+    @Test
+    @Order(15)
+    fun testEnumerateUnapprovedTasksWithoutAdmin() {
+        val request =
+            MockMvcRequestBuilders.get("/tasks")
+                .header("Authorization", "Bearer $creatorToken")
+                .param("approved", "false")
+                .param("space", spaceId.toString())
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
+    }
+
+    @Test
+    @Order(16)
+    fun testGetUnapprovedTask() {
+        val taskId = taskIds[3]
+        val request =
+            MockMvcRequestBuilders.get("/tasks/$taskId")
+                .queryParam("queryJoinability", "true")
+                .queryParam("querySubmittability", "true")
+                .header("Authorization", "Bearer $teamAdminToken")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.task.name").value("$taskName (4)"))
+    }
+
+    @Test
+    @Order(17)
+    fun testGetUnapprovedTaskPermissionDeniedError() {
+        val taskId = taskIds[3]
+        val request =
+            MockMvcRequestBuilders.get("/tasks/$taskId")
+                .queryParam("queryJoinability", "true")
+                .queryParam("querySubmittability", "true")
+                .header("Authorization", "Bearer $creatorToken")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+            .andExpect(jsonPath("$.error.name").value("NoRightToAccessTaskError"))
+    }
+
+    @Test
+    @Order(18)
+    fun testApproveTask() {
+        approveTask(taskIds[0], spaceAdminToken)
+        approveTask(taskIds[1], spaceAdminToken)
+        approveTask(taskIds[3], teamAdminToken)
+    }
+
+    @Test
+    @Order(19)
+    fun testApproveTaskWithoutAdmin() {
+        val taskId = taskIds[2]
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/$taskId")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": true
+                }
+            """
+                )
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
+        approveTask(taskIds[2], spaceAdminToken)
+    }
+
+    @Test
     @Order(20)
     fun testGetTask() {
         val taskId = taskIds[0]
@@ -320,23 +467,13 @@ constructor(
             mockMvc
                 .perform(request)
                 .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.name").value("$taskName (1)")
-                )
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.submitterType").value("USER")
-                )
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.creator.id").value(creator.userId)
-                )
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.deadline").value(taskDeadline)
-                )
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.resubmittable").value(true))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.editable").value(true))
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.description").value(taskDescription)
-                )
+                .andExpect(jsonPath("$.data.task.name").value("$taskName (1)"))
+                .andExpect(jsonPath("$.data.task.submitterType").value("USER"))
+                .andExpect(jsonPath("$.data.task.creator.id").value(creator.userId))
+                .andExpect(jsonPath("$.data.task.deadline").value(taskDeadline))
+                .andExpect(jsonPath("$.data.task.resubmittable").value(true))
+                .andExpect(jsonPath("$.data.task.editable").value(true))
+                .andExpect(jsonPath("$.data.task.description").value(taskDescription))
         val json = JSONObject(response.andReturn().response.contentAsString)
         for (entry in taskSubmissionSchema) {
             val schema =
@@ -359,12 +496,10 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(true))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam[0].id").value(teamId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittableAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinable").value(true))
+            .andExpect(jsonPath("$.data.task.joinableAsTeam[0].id").value(teamId))
+            .andExpect(jsonPath("$.data.task.submittable").value(false))
+            .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty)
     }
 
     @Test
@@ -379,10 +514,10 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam").isEmpty)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittableAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinable").value(false))
+            .andExpect(jsonPath("$.data.task.joinableAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.submittable").value(false))
+            .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty)
     }
 
     @Test
@@ -397,12 +532,10 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(true))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam").doesNotExist())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(false))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.submittableAsTeam").doesNotExist()
-            )
+            .andExpect(jsonPath("$.data.task.joinable").value(true))
+            .andExpect(jsonPath("$.data.task.joinableAsTeam").doesNotExist())
+            .andExpect(jsonPath("$.data.task.submittable").value(false))
+            .andExpect(jsonPath("$.data.task.submittableAsTeam").doesNotExist())
     }
 
     @Test
@@ -447,34 +580,16 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.name").value("$taskName (1) (updated)")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.creator.id").value(creator.userId)
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.deadline")
-                    .value(taskDeadline + 1000000000)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.resubmittable").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.editable").value(false))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.intro")
-                    .value("This is an updated test task.")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.description")
-                    .value("${taskDescription} (updated)")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.submissionSchema[0].prompt")
-                    .value("Text Entry")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.submissionSchema[0].type").value("TEXT")
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.rank").value(1))
+            .andExpect(jsonPath("$.data.task.name").value("$taskName (1) (updated)"))
+            .andExpect(jsonPath("$.data.task.creator.id").value(creator.userId))
+            .andExpect(jsonPath("$.data.task.deadline").value(taskDeadline + 1000000000))
+            .andExpect(jsonPath("$.data.task.resubmittable").value(false))
+            .andExpect(jsonPath("$.data.task.editable").value(false))
+            .andExpect(jsonPath("$.data.task.intro").value("This is an updated test task."))
+            .andExpect(jsonPath("$.data.task.description").value("${taskDescription} (updated)"))
+            .andExpect(jsonPath("$.data.task.submissionSchema[0].prompt").value("Text Entry"))
+            .andExpect(jsonPath("$.data.task.submissionSchema[0].type").value("TEXT"))
+            .andExpect(jsonPath("$.data.task.rank").value(1))
     }
 
     @Test
@@ -485,28 +600,17 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].id").value(taskIds[0]))
+            .andExpect(jsonPath("$.data.tasks[*].id").value(Matchers.not(taskIds[4])))
+            .andExpect(jsonPath("$.data.tasks[0].id").value(taskIds[0]))
+            .andExpect(jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
+            .andExpect(jsonPath("$.data.tasks[0].intro").value("This is an updated test task."))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[0].name")
-                    .value("$taskName (1) (updated)")
+                jsonPath("$.data.tasks[0].description").value("${taskDescription} (updated)")
             )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[0].intro")
-                    .value("This is an updated test task.")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[0].description")
-                    .value("${taskDescription} (updated)")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[0].deadline")
-                    .value(taskDeadline + 1000000000)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].submitters.total").value(0))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[0].submitters.examples").isArray
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].rank").value(1))
+            .andExpect(jsonPath("$.data.tasks[0].deadline").value(taskDeadline + 1000000000))
+            .andExpect(jsonPath("$.data.tasks[0].submitters.total").value(0))
+            .andExpect(jsonPath("$.data.tasks[0].submitters.examples").isArray)
+            .andExpect(jsonPath("$.data.tasks[0].rank").value(1))
     }
 
     @Test
@@ -519,13 +623,8 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[0].name")
-                    .value("$taskName (1) (updated)")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[1].name").value("$taskName (4)")
-            )
+            .andExpect(jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
+            .andExpect(jsonPath("$.data.tasks[1].name").value("$taskName (4)"))
     }
 
     @Test
@@ -539,20 +638,15 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].id").value(taskIds[0]))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[0].name")
-                    .value("$taskName (1) (updated)")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[1].name").value("$taskName (3)")
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(taskIds[0]))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(2))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").value(null))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").value(true))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.next_start").value(taskIds[1]))
+            .andExpect(jsonPath("$.data.tasks[0].id").value(taskIds[0]))
+            .andExpect(jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
+            .andExpect(jsonPath("$.data.tasks[1].name").value("$taskName (3)"))
+            .andExpect(jsonPath("$.data.page.page_start").value(taskIds[0]))
+            .andExpect(jsonPath("$.data.page.page_size").value(2))
+            .andExpect(jsonPath("$.data.page.has_prev").value(false))
+            .andExpect(jsonPath("$.data.page.prev_start").value(null))
+            .andExpect(jsonPath("$.data.page.has_more").value(true))
+            .andExpect(jsonPath("$.data.page.next_start").value(taskIds[1]))
     }
 
     @Test
@@ -567,16 +661,12 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[0].name").value("$taskName (3)")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[1].name").value("$taskName (2)")
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(taskIds[2]))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(2))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(true))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").value(taskIds[0]))
+            .andExpect(jsonPath("$.data.tasks[0].name").value("$taskName (3)"))
+            .andExpect(jsonPath("$.data.tasks[1].name").value("$taskName (2)"))
+            .andExpect(jsonPath("$.data.page.page_start").value(taskIds[2]))
+            .andExpect(jsonPath("$.data.page.page_size").value(2))
+            .andExpect(jsonPath("$.data.page.has_prev").value(true))
+            .andExpect(jsonPath("$.data.page.prev_start").value(taskIds[0]))
     }
 
     @Test
@@ -591,11 +681,8 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].id").value(taskIds[0]))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[0].name")
-                    .value("$taskName (1) (updated)")
-            )
+            .andExpect(jsonPath("$.data.tasks[0].id").value(taskIds[0]))
+            .andExpect(jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
     }
 
     @Test
@@ -608,11 +695,8 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].id").value(taskIds[0]))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[0].name")
-                    .value("$taskName (1) (updated)")
-            )
+            .andExpect(jsonPath("$.data.tasks[0].id").value(taskIds[0]))
+            .andExpect(jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
     }
 
     @Test
@@ -625,11 +709,8 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.tasks[0].id").value(taskIds[0]))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.tasks[0].name")
-                    .value("$taskName (1) (updated)")
-            )
+            .andExpect(jsonPath("$.data.tasks[0].id").value(taskIds[0]))
+            .andExpect(jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
     }
 
     @Test
@@ -665,10 +746,7 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isConflict)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name")
-                    .value("AlreadyBeTaskParticipantError")
-            )
+            .andExpect(jsonPath("$.error.name").value("AlreadyBeTaskParticipantError"))
     }
 
     @Test
@@ -682,9 +760,7 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError")
-            )
+            .andExpect(jsonPath("$.error.name").value("PermissionDeniedError"))
     }
 
     @Test
@@ -709,10 +785,7 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isConflict)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name")
-                    .value("AlreadyBeTaskParticipantError")
-            )
+            .andExpect(jsonPath("$.error.name").value("AlreadyBeTaskParticipantError"))
     }
 
     @Test
@@ -725,15 +798,11 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.participants[0].id").value(participant.userId))
+            .andExpect(jsonPath("$.data.participants[0].intro").isString)
+            .andExpect(jsonPath("$.data.participants[0].name").isString)
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.participants[0].id")
-                    .value(participant.userId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants[0].intro").isString)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants[0].name").isString)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.participants[0].avatarId")
-                    .value(userCreatorService.testAvatarId())
+                jsonPath("$.data.participants[0].avatarId").value(userCreatorService.testAvatarId())
             )
     }
 
@@ -747,12 +816,11 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants[0].id").value(teamId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants[0].intro").isString)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants[0].name").isString)
+            .andExpect(jsonPath("$.data.participants[0].id").value(teamId))
+            .andExpect(jsonPath("$.data.participants[0].intro").isString)
+            .andExpect(jsonPath("$.data.participants[0].name").isString)
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.participants[0].avatarId")
-                    .value(userCreatorService.testAvatarId())
+                jsonPath("$.data.participants[0].avatarId").value(userCreatorService.testAvatarId())
             )
     }
 
@@ -768,12 +836,10 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam").isEmpty)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(true))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.submittableAsTeam[0].id").value(teamId)
-            )
+            .andExpect(jsonPath("$.data.task.joinable").value(false))
+            .andExpect(jsonPath("$.data.task.joinableAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.submittable").value(true))
+            .andExpect(jsonPath("$.data.task.submittableAsTeam[0].id").value(teamId))
     }
 
     @Test
@@ -808,12 +874,10 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(true))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.joinableAsTeam[0].id").value(teamId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittableAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinable").value(true))
+            .andExpect(jsonPath("$.data.task.joinableAsTeam[0].id").value(teamId))
+            .andExpect(jsonPath("$.data.task.submittable").value(false))
+            .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty)
     }
 
     @Test
@@ -826,7 +890,7 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants").isEmpty)
+            .andExpect(jsonPath("$.data.participants").isEmpty)
     }
 
     @Test
@@ -839,7 +903,7 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participants").isEmpty)
+            .andExpect(jsonPath("$.data.participants").isEmpty)
     }
 
     @Test

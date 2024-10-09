@@ -14,6 +14,7 @@ import javax.validation.Valid
  * @param submissionSchema
  * @param hasRank
  * @param rank
+ * @param approved
  */
 data class PatchTaskRequestDTO(
     @Schema(example = "null", description = "")
@@ -43,5 +44,8 @@ data class PatchTaskRequestDTO(
     val hasRank: kotlin.Boolean? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("rank")
-    val rank: kotlin.Int? = null
+    val rank: kotlin.Int? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("approved")
+    val approved: kotlin.Boolean? = null
 ) {}
