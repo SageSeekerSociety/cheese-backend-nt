@@ -111,22 +111,12 @@ class RolePermissionService {
                             AuthorizedResource(
                                 types = listOf("task"),
                             ),
-                        customLogic = "owned",
+                        customLogic = "owned || is-space-admin-of-task || is-team-admin-of-task",
                     ),
                     Permission(
                         authorizedActions =
                             listOf(
                                 "modify-approved",
-                                // owner permissions
-                                "enumerate-submissions",
-                                "modify",
-                                "delete",
-                                "add-participant",
-                                "remove-participant",
-                                // view unapproved tasks
-                                "query",
-                                "enumerate",
-                                "enumerate-participants",
                             ),
                         authorizedResource = AuthorizedResource(types = listOf("task")),
                         customLogic = "is-space-admin-of-task || is-team-admin-of-task"
@@ -175,7 +165,8 @@ class RolePermissionService {
                             AuthorizedResource(
                                 types = listOf("task"),
                             ),
-                        customLogic = "is-task-approved"
+                        customLogic =
+                            "is-task-approved || is-space-admin-of-task || is-team-admin-of-task"
                     ),
                 )
         )
