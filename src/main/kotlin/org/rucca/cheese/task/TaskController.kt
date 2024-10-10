@@ -195,6 +195,51 @@ class TaskController(
                 } else false
             teamQueryAndAdmin || isAdminForInstance
         }
+        authorizationService.customAuthLogics.register("is-task-in-space") {
+            _: IdType,
+            _: AuthorizedAction,
+            _: String,
+            resourceId: IdType?,
+            _: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            if (resourceId != null) taskService.getTaskSpaceId(resourceId) != null else false
+        }
+        authorizationService.customAuthLogics.register("is-task-in-team") {
+            _: IdType,
+            _: AuthorizedAction,
+            _: String,
+            resourceId: IdType?,
+            _: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            if (resourceId != null) taskService.getTaskTeamId(resourceId) != null else false
+        }
+        authorizationService.customAuthLogics.register("task-has-any-participant") {
+            _: IdType,
+            _: AuthorizedAction,
+            _: String,
+            resourceId: IdType?,
+            _: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            if (resourceId == null) false else taskService.taskHasAnyParticipant(resourceId)
+        }
+        authorizationService.customAuthLogics.register("task-has-any-submission") {
+            _: IdType,
+            _: AuthorizedAction,
+            _: String,
+            resourceId: IdType?,
+            _: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            if (resourceId == null) false
+            else taskSubmissionService.taskHasAnySubmission(resourceId)
+        }
     }
 
     @Guard("delete", "task")

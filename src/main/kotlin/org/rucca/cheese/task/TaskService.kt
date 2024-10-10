@@ -71,6 +71,10 @@ class TaskService(
         return task.approved!!
     }
 
+    fun taskHasAnyParticipant(taskId: IdType): Boolean {
+        return taskMembershipRepository.existsByTaskId(taskId)
+    }
+
     fun convertTaskSubmitterType(type: TaskSubmitterType): TaskSubmitterTypeDTO {
         return when (type) {
             TaskSubmitterType.USER -> TaskSubmitterTypeDTO.USER

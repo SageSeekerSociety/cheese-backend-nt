@@ -59,6 +59,11 @@ class TaskSubmissionService(
         return submission.membership!!.task!!.creator!!.id!!.toLong() == userId
     }
 
+    fun taskHasAnySubmission(taskId: IdType): Boolean {
+        val task = getTask(taskId)
+        return taskSubmissionRepository.existsByTaskId(taskId)
+    }
+
     fun validateSubmission(taskId: IdType, submission: List<TaskSubmissionEntry>) {
         val schema =
             taskRepository

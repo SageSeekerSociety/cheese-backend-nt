@@ -102,8 +102,6 @@ class RolePermissionService {
                         authorizedActions =
                             listOf(
                                 "enumerate-submissions",
-                                "modify",
-                                "delete",
                                 "add-participant",
                                 "remove-participant",
                             ),
@@ -112,6 +110,20 @@ class RolePermissionService {
                                 types = listOf("task"),
                             ),
                         customLogic = "owned || is-space-admin-of-task || is-team-admin-of-task",
+                    ),
+                    Permission(
+                        authorizedActions =
+                            listOf(
+                                "modify",
+                                "delete",
+                            ),
+                        authorizedResource =
+                            AuthorizedResource(
+                                types = listOf("task"),
+                            ),
+                        customLogic =
+                            "(owned && ((!is-task-in-space && !is-task-in-team) || (!task-has-any-submission && !task-has-any-participant))) " +
+                                "|| is-space-admin-of-task || is-team-admin-of-task",
                     ),
                     Permission(
                         authorizedActions =
