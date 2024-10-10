@@ -171,7 +171,7 @@ open class CustomAuthLogicsExpressionParser : BaseParser<CustomAuthLogicsExpress
     }
 
     open fun Term(): Rule {
-        return FirstOf(Variable(), Parens())
+        return FirstOf(Variable(), Parens(), NotExpression())
     }
 
     open fun Parens(): Rule {
