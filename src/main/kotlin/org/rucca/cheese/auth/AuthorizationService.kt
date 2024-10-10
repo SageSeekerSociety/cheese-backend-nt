@@ -85,7 +85,7 @@ class AuthorizationService(
                 continue
             if (permission.customLogic != null) {
                 val result =
-                    customAuthLogics.invoke(
+                    customAuthLogics.evaluate(
                         permission.customLogic,
                         userId,
                         action,
