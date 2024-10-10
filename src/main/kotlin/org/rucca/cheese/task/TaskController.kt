@@ -57,22 +57,66 @@ class TaskController(
                 taskService.isTaskParticipant(resourceId, userId, memberId)
             }
         }
-        authorizationService.customAuthLogics.register(
-            "participant-is-self-or-team-where-i-am-admin"
-        ) {
-            userId: IdType,
+        authorizationService.customAuthLogics.register("is-team-task") {
+            _: IdType,
             _: AuthorizedAction,
             _: String,
             resourceId: IdType?,
+            _: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            if (resourceId == null) {
+                false
+            } else {
+                taskService.getTaskSumbitterType(resourceId) == TaskSubmitterTypeDTO.TEAM
+            }
+        }
+        authorizationService.customAuthLogics.register("is-user-task") {
+            _: IdType,
+            _: AuthorizedAction,
+            _: String,
+            resourceId: IdType?,
+            _: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            if (resourceId == null) {
+                false
+            } else {
+                taskService.getTaskSumbitterType(resourceId) == TaskSubmitterTypeDTO.USER
+            }
+        }
+        authorizationService.customAuthLogics.register("task-member-is-self") {
+            userId: IdType,
+            _: AuthorizedAction,
+            _: String,
+            _: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
             _: Any?,
             ->
             val memberId = authInfo["member"] as? IdType
-            if (resourceId == null || memberId == null) {
+            if (memberId == null) {
                 false
             } else {
-                taskService.participantIsSelfOrTeamWhereIAmAdmin(resourceId, userId, memberId)
+                userId == memberId
+            }
+        }
+        authorizationService.customAuthLogics.register("task-user-is-admin-of-member") {
+            userId: IdType,
+            _: AuthorizedAction,
+            _: String,
+            _: IdType?,
+            authInfo: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            val memberId = authInfo["member"] as? IdType
+            if (memberId == null) {
+                false
+            } else {
+                teamService.isTeamAdmin(memberId, userId)
             }
         }
         authorizationService.customAuthLogics.register("is-task-owner-of-submission") {
@@ -105,7 +149,7 @@ class TaskController(
                 if (resourceId != null) taskService.isTaskApproved(resourceId) else false
             approvedQuery || approvedOfInstance
         }
-        authorizationService.customAuthLogics.register("is-space-or-team-admin-of-task") {
+        authorizationService.customAuthLogics.register("is-space-admin-of-task") {
             userId: IdType,
             _: AuthorizedAction,
             _: String,
@@ -115,20 +159,41 @@ class TaskController(
             _: Any?,
             ->
             val spaceId = authInfo["space"] as? IdType
-            val teamId = authInfo["team"] as? IdType
             val spaceQueryAndAdmin =
                 if (spaceId != null) {
                     spaceService.isSpaceAdmin(spaceId, userId)
                 } else false
+            val isAdminForInstance =
+                if (resourceId != null) {
+                    val spaceId = taskService.getTaskSpaceId(resourceId)
+                    if (spaceId != null) {
+                        spaceService.isSpaceAdmin(spaceId, userId)
+                    } else false
+                } else false
+            spaceQueryAndAdmin || isAdminForInstance
+        }
+        authorizationService.customAuthLogics.register("is-team-admin-of-task") {
+            userId: IdType,
+            _: AuthorizedAction,
+            _: String,
+            resourceId: IdType?,
+            authInfo: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            val teamId = authInfo["team"] as? IdType
             val teamQueryAndAdmin =
                 if (teamId != null) {
                     teamService.isTeamAdmin(teamId, userId)
                 } else false
             val isAdminForInstance =
                 if (resourceId != null) {
-                    taskService.isSpaceOrTeamAdminForTask(resourceId, userId)
+                    val teamId = taskService.getTaskTeamId(resourceId)
+                    if (teamId != null) {
+                        teamService.isTeamAdmin(teamId, userId)
+                    } else false
                 } else false
-            spaceQueryAndAdmin || teamQueryAndAdmin || isAdminForInstance
+            teamQueryAndAdmin || isAdminForInstance
         }
     }
 

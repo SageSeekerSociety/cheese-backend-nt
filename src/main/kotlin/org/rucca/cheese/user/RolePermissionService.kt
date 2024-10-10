@@ -129,7 +129,7 @@ class RolePermissionService {
                                 "enumerate-participants",
                             ),
                         authorizedResource = AuthorizedResource(types = listOf("task")),
-                        customLogic = "is-space-or-team-admin-of-task"
+                        customLogic = "is-space-admin-of-task || is-team-admin-of-task"
                     ),
                     Permission(
                         authorizedActions =
@@ -159,7 +159,8 @@ class RolePermissionService {
                             AuthorizedResource(
                                 types = listOf("task"),
                             ),
-                        customLogic = "participant-is-self-or-team-where-i-am-admin",
+                        customLogic =
+                            "(is-user-task && task-member-is-self) || (is-team-task && task-user-is-admin-of-member)",
                     ),
                     Permission(
                         authorizedActions = listOf("create"),
