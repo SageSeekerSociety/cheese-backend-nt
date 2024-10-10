@@ -7,11 +7,13 @@ import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.exceptions.TokenExpiredException
 import com.fasterxml.jackson.core.JacksonException
 import com.fasterxml.jackson.databind.ObjectMapper
+import javax.annotation.PostConstruct
 import org.rucca.cheese.auth.error.AuthenticationRequiredError
 import org.rucca.cheese.auth.error.InvalidTokenError
 import org.rucca.cheese.auth.error.PermissionDeniedError
 import org.rucca.cheese.auth.error.TokenExpiredError
 import org.rucca.cheese.common.config.ApplicationConfig
+import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -28,6 +30,21 @@ class AuthorizationService(
     private val verifier: JWTVerifier =
         JWT.require(Algorithm.HMAC256(applicationConfig.jwtSecret)).build()
     private val logger = LoggerFactory.getLogger(AuthorizationService::class.java)
+
+    @PostConstruct
+    fun initialize() {
+        this.customAuthLogics.register("owned") {
+            userId: IdType,
+            _: AuthorizedAction,
+            _: String,
+            _: IdType?,
+            _: Map<String, Any>,
+            resourceOwnerIdGetter: IdGetter?,
+            _: Any?,
+            ->
+            if (resourceOwnerIdGetter == null) false else resourceOwnerIdGetter() == userId
+        }
+    }
 
     fun audit(
         action: String,
@@ -68,6 +85,8 @@ class AuthorizationService(
                     permission.authorizedActions.contains(action))
             )
                 continue
+            if (permission.authorizedResource.ownedByUser != null)
+                logger.warn("ownedByUser is deprecated. Use custom logic 'owned' instead.")
             if (
                 !(permission.authorizedResource.ownedByUser == null ||
                     permission.authorizedResource.ownedByUser == ownerIdGetter?.invoke())
