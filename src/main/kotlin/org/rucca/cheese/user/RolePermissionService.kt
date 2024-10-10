@@ -30,8 +30,8 @@ class RolePermissionService {
                         authorizedResource =
                             AuthorizedResource(
                                 types = listOf("space"),
-                                ownedByUser = userId,
                             ),
+                        customLogic = "owned",
                     ),
                     Permission(
                         authorizedActions = listOf("modify", "delete"),
@@ -62,8 +62,8 @@ class RolePermissionService {
                         authorizedResource =
                             AuthorizedResource(
                                 types = listOf("team"),
-                                ownedByUser = userId,
                             ),
+                        customLogic = "owned",
                     ),
                     Permission(
                         authorizedActions =
@@ -110,8 +110,8 @@ class RolePermissionService {
                         authorizedResource =
                             AuthorizedResource(
                                 types = listOf("task"),
-                                ownedByUser = userId,
                             ),
+                        customLogic = "owned",
                     ),
                     Permission(
                         authorizedActions =
