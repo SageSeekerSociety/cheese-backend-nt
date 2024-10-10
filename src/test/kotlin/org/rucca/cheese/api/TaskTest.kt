@@ -941,8 +941,38 @@ constructor(
 
     @Test
     @Order(230)
+    fun testDeleteTaskAndGetPermissionDeniedError() {
+        val taskId = taskIds[1]
+        val request =
+            MockMvcRequestBuilders.delete("/tasks/$taskId")
+                .header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
+    }
+
+    @Test
+    @Order(240)
     fun testDeleteTask() {
         val taskId = taskIds[1]
+        val request =
+            MockMvcRequestBuilders.delete("/tasks/$taskId")
+                .header("Authorization", "Bearer $spaceCreatorToken")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(250)
+    fun testDeleteTask2() {
+        val taskId = taskIds[3]
+        val request =
+            MockMvcRequestBuilders.delete("/tasks/$taskId")
+                .header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(260)
+    fun testDeleteTask3() {
+        val taskId = taskIds[4]
         val request =
             MockMvcRequestBuilders.delete("/tasks/$taskId")
                 .header("Authorization", "Bearer $creatorToken")

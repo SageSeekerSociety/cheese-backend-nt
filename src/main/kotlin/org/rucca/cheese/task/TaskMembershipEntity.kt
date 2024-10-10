@@ -29,6 +29,8 @@ interface taskMembershipRepository : JpaRepository<TaskMembership, IdType> {
 
     fun existsByTaskIdAndMemberId(taskId: IdType, memberId: IdType): Boolean
 
+    fun existsByTaskId(taskId: IdType): Boolean
+
     @Query(
         "SELECT tm FROM TaskMembership tm WHERE tm.task.id = :taskId AND EXISTS (SELECT 1 FROM TaskSubmission ts WHERE ts.membership.id = tm.id)"
     )

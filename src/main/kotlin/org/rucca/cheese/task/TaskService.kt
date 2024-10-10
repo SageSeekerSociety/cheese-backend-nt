@@ -71,24 +71,8 @@ class TaskService(
         return task.approved!!
     }
 
-    fun isSpaceOrTeamAdminForTask(taskId: IdType, userId: IdType): Boolean {
-        val (spaceId, teamId) = getTask(taskId).let { task -> task.space?.id to task.team?.id }
-        return when {
-            spaceId != null -> spaceService.isSpaceAdmin(spaceId, userId)
-            teamId != null -> teamService.isTeamAdmin(teamId, userId)
-            else -> false
-        }
-    }
-
-    fun participantIsSelfOrTeamWhereIAmAdmin(
-        taskId: IdType,
-        userId: IdType,
-        memberId: IdType
-    ): Boolean {
-        return when (getTaskSumbitterType(taskId)) {
-            TaskSubmitterTypeDTO.USER -> userId == memberId
-            TaskSubmitterTypeDTO.TEAM -> teamService.isTeamAdmin(memberId, userId)
-        }
+    fun taskHasAnyParticipant(taskId: IdType): Boolean {
+        return taskMembershipRepository.existsByTaskId(taskId)
     }
 
     fun convertTaskSubmitterType(type: TaskSubmitterType): TaskSubmitterTypeDTO {
@@ -254,6 +238,16 @@ class TaskService(
     fun getTaskSumbitterType(taskId: IdType): TaskSubmitterTypeDTO {
         val task = getTask(taskId)
         return convertTaskSubmitterType(task.submitterType!!)
+    }
+
+    fun getTaskSpaceId(taskId: IdType): IdType? {
+        val task = getTask(taskId)
+        return task.space?.id
+    }
+
+    fun getTaskTeamId(taskId: IdType): IdType? {
+        val task = getTask(taskId)
+        return task.team?.id
     }
 
     fun isTaskJoinable(task: Task, memberId: IdType): BaseError? {
