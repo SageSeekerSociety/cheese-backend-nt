@@ -426,7 +426,7 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(jsonPath("$.error.name").value("NoRightToAccessTaskError"))
+            .andExpect(jsonPath("$.error.name").value("PermissionDeniedError"))
     }
 
     @Test

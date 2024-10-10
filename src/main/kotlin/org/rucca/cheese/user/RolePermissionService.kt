@@ -116,6 +116,24 @@ class RolePermissionService {
                     Permission(
                         authorizedActions =
                             listOf(
+                                "modify-approved",
+                                // owner permissions
+                                "enumerate-submissions",
+                                "modify",
+                                "delete",
+                                "add-participant",
+                                "remove-participant",
+                                // view unapproved tasks
+                                "query",
+                                "enumerate",
+                                "enumerate-participants",
+                            ),
+                        authorizedResource = AuthorizedResource(types = listOf("task")),
+                        customLogic = "is-space-or-team-admin-of-task"
+                    ),
+                    Permission(
+                        authorizedActions =
+                            listOf(
                                 "create-submission-review",
                                 "modify-submission-review",
                                 "delete-submission-review"
@@ -144,25 +162,20 @@ class RolePermissionService {
                         customLogic = "participant-is-self-or-team-where-i-am-admin",
                     ),
                     Permission(
-                        authorizedActions = listOf("create", "query", "enumerate-participants"),
+                        authorizedActions = listOf("create"),
                         authorizedResource =
                             AuthorizedResource(
                                 types = listOf("task"),
                             ),
                     ),
                     Permission(
-                        authorizedActions = listOf("enumerate"),
+                        authorizedActions = listOf("query", "enumerate", "enumerate-participants"),
                         authorizedResource =
                             AuthorizedResource(
                                 types = listOf("task"),
                             ),
-                        customLogic = "is-available-for-tasks"
+                        customLogic = "is-task-approved"
                     ),
-                    Permission(
-                        authorizedActions = listOf("approve", "modify"),
-                        authorizedResource = AuthorizedResource(types = listOf("task")),
-                        customLogic = "is-space-or-team-admin-of-task"
-                    )
                 )
         )
     }

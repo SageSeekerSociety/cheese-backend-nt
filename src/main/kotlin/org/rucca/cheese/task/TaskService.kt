@@ -66,17 +66,12 @@ class TaskService(
         }
     }
 
-    fun isAvailableForUnapprovedTasks(spaceId: IdType?, teamId: IdType?): Boolean {
-        val userId = authenticationService.getCurrentUserId()
-        return when {
-            spaceId != null -> spaceService.isSpaceAdmin(spaceId, userId)
-            teamId != null -> teamService.isTeamAdmin(teamId, userId)
-            else -> false
-        }
+    fun isTaskApproved(taskId: IdType): Boolean {
+        val task = getTask(taskId)
+        return task.approved!!
     }
 
-    fun isSpaceOrTeamAdminForTask(taskId: IdType): Boolean {
-        val userId = authenticationService.getCurrentUserId()
+    fun isSpaceOrTeamAdminForTask(taskId: IdType, userId: IdType): Boolean {
         val (spaceId, teamId) = getTask(taskId).let { task -> task.space?.id to task.team?.id }
         return when {
             spaceId != null -> spaceService.isSpaceAdmin(spaceId, userId)

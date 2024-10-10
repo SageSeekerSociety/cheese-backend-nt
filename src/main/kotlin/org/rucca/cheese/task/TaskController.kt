@@ -13,7 +13,8 @@ import org.rucca.cheese.common.helper.toLocalDateTime
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
-import org.rucca.cheese.task.error.NoRightToAccessTaskError
+import org.rucca.cheese.space.SpaceService
+import org.rucca.cheese.team.TeamService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -34,6 +35,8 @@ class TaskController(
     private val taskSubmissionReviewService: TaskSubmissionReviewService,
     private val authorizationService: AuthorizationService,
     private val authenticationService: AuthenticationService,
+    private val spaceService: SpaceService,
+    private val teamService: TeamService,
 ) : TasksApi {
     @PostConstruct
     fun initialize() {
@@ -88,40 +91,44 @@ class TaskController(
                 taskSubmissionService.isTaskOwnerOfSubmission(submissionId, userId)
             }
         }
-        authorizationService.customAuthLogics.register("is-available-for-tasks") {
-            userId: IdType,
+        authorizationService.customAuthLogics.register("is-task-approved") {
+            _: IdType,
             _: AuthorizedAction,
             _: String,
-            _: IdType?,
+            resourceId: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
             _: Any?,
             ->
-            val spaceId = authInfo["space"] as? IdType
-            val teamId = authInfo["team"] as? IdType
-            val approved = authInfo["approved"] as? Boolean
-            if (approved == false) {
-                if ((spaceId != null && teamId == null) || (spaceId == null && teamId != null)) {
-                    taskService.isAvailableForUnapprovedTasks(spaceId, teamId)
-                } else {
-                    false
-                }
-            } else {
-                true
-            }
+            val approvedQuery = authInfo["approved"] as? Boolean ?: false
+            val approvedOfInstance =
+                if (resourceId != null) taskService.isTaskApproved(resourceId) else false
+            approvedQuery || approvedOfInstance
         }
         authorizationService.customAuthLogics.register("is-space-or-team-admin-of-task") {
             userId: IdType,
             _: AuthorizedAction,
             _: String,
             resourceId: IdType?,
-            _: Map<String, Any>,
+            authInfo: Map<String, Any>,
             _: IdGetter?,
             _: Any?,
             ->
-            if (resourceId != null) {
-                taskService.isSpaceOrTeamAdminForTask(resourceId)
-            } else false
+            val spaceId = authInfo["space"] as? IdType
+            val teamId = authInfo["team"] as? IdType
+            val spaceQueryAndAdmin =
+                if (spaceId != null) {
+                    spaceService.isSpaceAdmin(spaceId, userId)
+                } else false
+            val teamQueryAndAdmin =
+                if (teamId != null) {
+                    teamService.isTeamAdmin(teamId, userId)
+                } else false
+            val isAdminForInstance =
+                if (resourceId != null) {
+                    taskService.isSpaceOrTeamAdminForTask(resourceId, userId)
+                } else false
+            spaceQueryAndAdmin || teamQueryAndAdmin || isAdminForInstance
         }
     }
 
@@ -150,9 +157,6 @@ class TaskController(
         querySubmittability: Boolean
     ): ResponseEntity<GetTask200ResponseDTO> {
         val taskDTO = taskService.getTaskDto(taskId, queryJoinability, querySubmittability)
-        if (taskDTO.approved == false && !taskService.isSpaceOrTeamAdminForTask(taskId)) {
-            throw NoRightToAccessTaskError(taskId)
-        }
         return ResponseEntity.ok(
             GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK")
         )
@@ -267,7 +271,7 @@ class TaskController(
         patchTaskRequestDTO: PatchTaskRequestDTO
     ): ResponseEntity<GetTask200ResponseDTO> {
         if (patchTaskRequestDTO.approved != null) {
-            authorizationService.audit("approve", "task", taskId)
+            authorizationService.audit("modify-approved", "task", taskId)
             taskService.updateApproved(taskId, patchTaskRequestDTO.approved)
         }
         if (patchTaskRequestDTO.name != null) {
