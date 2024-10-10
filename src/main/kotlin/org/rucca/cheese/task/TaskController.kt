@@ -13,6 +13,8 @@ import org.rucca.cheese.common.helper.toLocalDateTime
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.space.SpaceService
+import org.rucca.cheese.team.TeamService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -33,6 +35,8 @@ class TaskController(
     private val taskSubmissionReviewService: TaskSubmissionReviewService,
     private val authorizationService: AuthorizationService,
     private val authenticationService: AuthenticationService,
+    private val spaceService: SpaceService,
+    private val teamService: TeamService,
 ) : TasksApi {
     @PostConstruct
     fun initialize() {
@@ -86,6 +90,45 @@ class TaskController(
             } else {
                 taskSubmissionService.isTaskOwnerOfSubmission(submissionId, userId)
             }
+        }
+        authorizationService.customAuthLogics.register("is-task-approved") {
+            _: IdType,
+            _: AuthorizedAction,
+            _: String,
+            resourceId: IdType?,
+            authInfo: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            val approvedQuery = authInfo["approved"] as? Boolean ?: false
+            val approvedOfInstance =
+                if (resourceId != null) taskService.isTaskApproved(resourceId) else false
+            approvedQuery || approvedOfInstance
+        }
+        authorizationService.customAuthLogics.register("is-space-or-team-admin-of-task") {
+            userId: IdType,
+            _: AuthorizedAction,
+            _: String,
+            resourceId: IdType?,
+            authInfo: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            val spaceId = authInfo["space"] as? IdType
+            val teamId = authInfo["team"] as? IdType
+            val spaceQueryAndAdmin =
+                if (spaceId != null) {
+                    spaceService.isSpaceAdmin(spaceId, userId)
+                } else false
+            val teamQueryAndAdmin =
+                if (teamId != null) {
+                    teamService.isTeamAdmin(teamId, userId)
+                } else false
+            val isAdminForInstance =
+                if (resourceId != null) {
+                    taskService.isSpaceOrTeamAdminForTask(resourceId, userId)
+                } else false
+            spaceQueryAndAdmin || teamQueryAndAdmin || isAdminForInstance
         }
     }
 
@@ -180,8 +223,8 @@ class TaskController(
 
     @Guard("enumerate", "task")
     override fun getTasks(
-        space: Long?,
-        team: Int?,
+        @AuthInfo("space") space: Long?,
+        @AuthInfo("team") team: Int?,
         pageSize: Int,
         pageStart: Long?,
         sortBy: String,
@@ -189,6 +232,7 @@ class TaskController(
         queryJoinability: Boolean,
         querySubmittability: Boolean,
         keywords: String?,
+        @AuthInfo("approved") approved: Boolean,
     ): ResponseEntity<GetTasks200ResponseDTO> {
         val by =
             when (sortBy) {
@@ -213,7 +257,8 @@ class TaskController(
                 sortBy = by,
                 sortOrder = order,
                 queryJoinability = queryJoinability,
-                querySubmittability = querySubmittability
+                querySubmittability = querySubmittability,
+                approved = approved,
             )
         return ResponseEntity.ok(
             GetTasks200ResponseDTO(200, GetTasks200ResponseDataDTO(taskSummaryDTOs, page), "OK")
@@ -225,6 +270,10 @@ class TaskController(
         @ResourceId taskId: Long,
         patchTaskRequestDTO: PatchTaskRequestDTO
     ): ResponseEntity<GetTask200ResponseDTO> {
+        if (patchTaskRequestDTO.approved != null) {
+            authorizationService.audit("modify-approved", "task", taskId)
+            taskService.updateApproved(taskId, patchTaskRequestDTO.approved)
+        }
         if (patchTaskRequestDTO.name != null) {
             taskService.updateTaskName(taskId, patchTaskRequestDTO.name)
         }
