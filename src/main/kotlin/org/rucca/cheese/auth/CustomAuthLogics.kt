@@ -141,7 +141,7 @@ open class CustomAuthLogicsExpressionParser : BaseParser<CustomAuthLogicsExpress
         return FirstOf(
             Sequence(
                 Term(),
-                Optional(
+                ZeroOrMore(
                     FirstOf(
                         Sequence(
                             AndOperator(),
