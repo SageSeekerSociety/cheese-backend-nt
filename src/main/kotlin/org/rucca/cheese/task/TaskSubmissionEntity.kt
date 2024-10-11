@@ -34,4 +34,9 @@ interface TaskSubmissionRepository : JpaRepository<TaskSubmission, IdType> {
 
     @Query("SELECT MAX(ts.version) FROM TaskSubmission ts WHERE ts.membership.id = :membershipId")
     fun findVersionNumberByMembershipId(membershipId: IdType): Optional<Int>
+
+    @Query(
+        "SELECT count(submission) > 0 FROM TaskSubmission submission JOIN submission.membership membership WHERE membership.id = :taskId"
+    )
+    fun existsByTaskId(taskId: IdType): Boolean
 }

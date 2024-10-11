@@ -157,7 +157,7 @@ constructor(
             userCreatorService.login(irrelevantUser.username, irrelevantUser.password)
         spaceId =
             createSpace(
-                creatorToken = teamCreatorToken,
+                creatorToken = spaceCreatorToken,
                 spaceName = "Test Space (${floor(Math.random() * 10000000000).toLong()})",
                 spaceIntro = "This is a test space.",
                 spaceDescription = "A lengthy text. ".repeat(1000),
@@ -546,11 +546,29 @@ constructor(
 
     @Test
     @Order(160)
-    fun updateToResubmittable() {
+    fun updateToResubmittableAndGetPermissionDeniedError() {
         val taskId = taskIds[0]
         val request =
             MockMvcRequestBuilders.patch("/tasks/$taskId")
                 .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "resubmittable": true
+                }
+            """
+                )
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
+    }
+
+    @Test
+    @Order(161)
+    fun updateToResubmittable() {
+        val taskId = taskIds[0]
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/$taskId")
+                .header("Authorization", "Bearer $spaceCreatorToken")
                 .contentType("application/json")
                 .content(
                     """
@@ -640,7 +658,7 @@ constructor(
         val taskId = taskIds[0]
         val request =
             MockMvcRequestBuilders.patch("/tasks/$taskId")
-                .header("Authorization", "Bearer $creatorToken")
+                .header("Authorization", "Bearer $spaceCreatorToken")
                 .contentType("application/json")
                 .content(
                     """
@@ -900,11 +918,21 @@ constructor(
 
     @Test
     @Order(230)
-    fun testDeleteTask() {
+    fun testDeleteTaskAndGetPermissionDeniedError() {
         val taskId = taskIds[1]
         val request =
             MockMvcRequestBuilders.delete("/tasks/$taskId")
                 .header("Authorization", "Bearer $creatorToken")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
+    }
+
+    @Test
+    @Order(240)
+    fun testDeleteTask() {
+        val taskId = taskIds[1]
+        val request =
+            MockMvcRequestBuilders.delete("/tasks/$taskId")
+                .header("Authorization", "Bearer $spaceCreatorToken")
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 }

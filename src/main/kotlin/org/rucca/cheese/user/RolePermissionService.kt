@@ -30,8 +30,8 @@ class RolePermissionService {
                         authorizedResource =
                             AuthorizedResource(
                                 types = listOf("space"),
-                                ownedByUser = userId,
                             ),
+                        customLogic = "owned",
                     ),
                     Permission(
                         authorizedActions = listOf("modify", "delete"),
@@ -62,8 +62,8 @@ class RolePermissionService {
                         authorizedResource =
                             AuthorizedResource(
                                 types = listOf("team"),
-                                ownedByUser = userId,
                             ),
+                        customLogic = "owned",
                     ),
                     Permission(
                         authorizedActions =
@@ -102,16 +102,36 @@ class RolePermissionService {
                         authorizedActions =
                             listOf(
                                 "enumerate-submissions",
-                                "modify",
-                                "delete",
                                 "add-participant",
                                 "remove-participant",
                             ),
                         authorizedResource =
                             AuthorizedResource(
                                 types = listOf("task"),
-                                ownedByUser = userId,
                             ),
+                        customLogic = "owned || is-space-admin-of-task || is-team-admin-of-task",
+                    ),
+                    Permission(
+                        authorizedActions =
+                            listOf(
+                                "modify",
+                                "delete",
+                            ),
+                        authorizedResource =
+                            AuthorizedResource(
+                                types = listOf("task"),
+                            ),
+                        customLogic =
+                            "(owned && ((!is-task-in-space && !is-task-in-team) || (!task-has-any-submission && !task-has-any-participant))) " +
+                                "|| is-space-admin-of-task || is-team-admin-of-task",
+                    ),
+                    Permission(
+                        authorizedActions =
+                            listOf(
+                                "modify-approved",
+                            ),
+                        authorizedResource = AuthorizedResource(types = listOf("task")),
+                        customLogic = "is-space-admin-of-task || is-team-admin-of-task"
                     ),
                     Permission(
                         authorizedActions =
@@ -141,15 +161,24 @@ class RolePermissionService {
                             AuthorizedResource(
                                 types = listOf("task"),
                             ),
-                        customLogic = "participant-is-self-or-team-where-i-am-admin",
+                        customLogic =
+                            "(is-user-task && task-member-is-self) || (is-team-task && task-user-is-admin-of-member)",
                     ),
                     Permission(
-                        authorizedActions =
-                            listOf("create", "query", "enumerate", "enumerate-participants"),
+                        authorizedActions = listOf("create"),
                         authorizedResource =
                             AuthorizedResource(
                                 types = listOf("task"),
                             ),
+                    ),
+                    Permission(
+                        authorizedActions = listOf("query", "enumerate", "enumerate-participants"),
+                        authorizedResource =
+                            AuthorizedResource(
+                                types = listOf("task"),
+                            ),
+                        customLogic =
+                            "is-task-approved || is-space-admin-of-task || is-team-admin-of-task"
                     ),
                 )
         )

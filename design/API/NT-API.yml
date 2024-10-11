@@ -615,6 +615,8 @@ paths:
                   type: boolean
                 rank:
                   type: integer
+                approved:
+                  type: boolean
       summary: Update Task
       x-stoplight:
         id: sy7yhfh83myt0
@@ -707,6 +709,12 @@ paths:
           in: query
           name: keywords
           description: Use this to search
+        - schema:
+            type: boolean
+            default: true
+          in: query
+          name: approved
+          description: Distinguish task status 
     post:
       responses:
         "200":
@@ -2021,6 +2029,8 @@ components:
             $ref: '#/components/schemas/TeamSummary'
         rank:
           type: integer
+        approved:
+          type: boolean
     TaskSubmitterType:
       title: TaskSubmitterType
       x-stoplight:

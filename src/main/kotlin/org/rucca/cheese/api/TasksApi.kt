@@ -358,7 +358,11 @@ interface TasksApi {
         @Parameter(description = "Use this to search")
         @Valid
         @RequestParam(value = "keywords", required = false)
-        keywords: kotlin.String?
+        keywords: kotlin.String?,
+        @Parameter(description = "Distinguish task status", schema = Schema(defaultValue = "true"))
+        @Valid
+        @RequestParam(value = "approved", required = false, defaultValue = "true")
+        approved: kotlin.Boolean
     ): ResponseEntity<GetTasks200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
