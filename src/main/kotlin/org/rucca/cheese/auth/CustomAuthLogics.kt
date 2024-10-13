@@ -67,14 +67,18 @@ class CustomAuthLogics {
         resourceOwnerIdGetter: IdGetter?,
         customLogicData: Any?,
     ): Boolean {
-        val parserRunner = ReportingParseRunner<CustomAuthLogicsExpressionNode>(parser.Expression())
-        val result = parserRunner.run(expression)
-        if (result.hasErrors()) {
-            throw RuntimeException(
-                "Failed to parse custom auth logic expression: '$expression'. Details: ${ErrorUtils.printParseErrors(result.parseErrors)}"
-            )
+        val root: CustomAuthLogicsExpressionNode
+        synchronized(parser) {
+            val parserRunner =
+                ReportingParseRunner<CustomAuthLogicsExpressionNode>(parser.Expression())
+            val result = parserRunner.run(expression)
+            if (result.hasErrors()) {
+                throw RuntimeException(
+                    "Failed to parse custom auth logic expression: '$expression'. Details: ${ErrorUtils.printParseErrors(result.parseErrors)}"
+                )
+            }
+            root = result.parseTreeRoot.getValue()
         }
-        val root = result.parseTreeRoot.getValue()
         if (root !is CustomAuthLogicsVariableNode)
             logger.info(
                 "Parsed complex custom auth logic expression. Original: '$expression', parsed: $root"
