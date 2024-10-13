@@ -320,6 +320,14 @@ interface TasksApi {
         @Valid
         @RequestParam(value = "team", required = false)
         team: kotlin.Int?,
+        @Parameter(description = "Distinguish task status")
+        @Valid
+        @RequestParam(value = "approved", required = false)
+        approved: kotlin.Boolean?,
+        @Parameter(description = "Owner's User ID")
+        @Valid
+        @RequestParam(value = "owner", required = false)
+        owner: kotlin.Long?,
         @Parameter(description = "Page Size", schema = Schema(defaultValue = "9"))
         @Valid
         @RequestParam(value = "page_size", required = false, defaultValue = "9")
@@ -358,11 +366,7 @@ interface TasksApi {
         @Parameter(description = "Use this to search")
         @Valid
         @RequestParam(value = "keywords", required = false)
-        keywords: kotlin.String?,
-        @Parameter(description = "Distinguish task status", schema = Schema(defaultValue = "true"))
-        @Valid
-        @RequestParam(value = "approved", required = false, defaultValue = "true")
-        approved: kotlin.Boolean
+        keywords: kotlin.String?
     ): ResponseEntity<GetTasks200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }

@@ -322,6 +322,8 @@ class TaskService(
     fun enumerateTasks(
         space: IdType?,
         team: Int?,
+        approved: Boolean?,
+        owner: IdType?,
         keywords: String?,
         pageSize: Int,
         pageStart: IdType?,
@@ -329,19 +331,19 @@ class TaskService(
         sortOrder: SortDirection,
         queryJoinability: Boolean = false,
         querySubmittability: Boolean = false,
-        approved: Boolean = true,
     ): Pair<List<TaskDTO>, PageDTO> {
         if (keywords == null) {
             return enumerateTasksUseDatabase(
                 space,
                 team,
+                approved,
+                owner,
                 pageSize,
                 pageStart,
                 sortBy,
                 sortOrder,
                 queryJoinability,
                 querySubmittability,
-                approved,
             )
         } else {
             val id = keywords.toLongOrNull()
@@ -370,24 +372,30 @@ class TaskService(
     fun enumerateTasksUseDatabase(
         space: IdType?,
         team: Int?,
+        approved: Boolean?,
+        owner: IdType?,
         pageSize: Int,
         pageStart: IdType?,
         sortBy: TasksSortBy,
         sortOrder: SortDirection,
         queryJoinability: Boolean = false,
         querySubmittability: Boolean = false,
-        approved: Boolean = true,
     ): Pair<List<TaskDTO>, PageDTO> {
         val cb = entityManager.criteriaBuilder
         val cq = cb.createQuery(Task::class.java)
         val root = cq.from(Task::class.java)
         val predicates = mutableListOf<Predicate>()
-        predicates.add(cb.equal(root.get<Boolean>("approved"), approved))
         if (space != null) {
             predicates.add(cb.equal(root.get<Space>("space").get<IdType>("id"), space))
         }
         if (team != null) {
             predicates.add(cb.equal(root.get<Team>("team").get<IdType>("id"), team))
+        }
+        if (approved != null) {
+            predicates.add(cb.equal(root.get<Boolean>("approved"), approved))
+        }
+        if (owner != null) {
+            predicates.add(cb.equal(root.get<User>("creator").get<IdType>("id"), owner))
         }
         cq.where(*predicates.toTypedArray())
         val by =
@@ -421,7 +429,7 @@ class TaskService(
         pageStart: IdType?,
         queryJoinability: Boolean = false,
         querySubmittability: Boolean = false,
-        approved: Boolean = true,
+        approved: Boolean?,
     ): Pair<List<TaskDTO>, PageDTO> {
         val criteria = Criteria("name").matches(keywords)
         val query = CriteriaQuery(criteria)
@@ -438,7 +446,11 @@ class TaskService(
                 { it.id!! },
                 { id -> throw NotFoundError("task", id) }
             )
-        return Pair(tasks.map { getTaskDto(it.id!!, queryJoinability, querySubmittability) }, page)
+        val dtos =
+            tasks
+                .map { getTaskDto(it.id!!, queryJoinability, querySubmittability) }
+                .filter { approved == null || it.approved == approved }
+        return Pair(dtos, page)
     }
 
     fun deleteTask(taskId: IdType) {
