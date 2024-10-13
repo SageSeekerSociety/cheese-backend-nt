@@ -669,6 +669,17 @@ paths:
           name: team
           description: Team ID
         - schema:
+            type: boolean
+          in: query
+          name: approved
+          description: Distinguish task status 
+        - schema:
+            type: integer
+            format: int64
+          in: query
+          name: owner
+          description: Owner's User ID
+        - schema:
             type: integer
             default: 9
           in: query
@@ -709,12 +720,6 @@ paths:
           in: query
           name: keywords
           description: Use this to search
-        - schema:
-            type: boolean
-            default: true
-          in: query
-          name: approved
-          description: Distinguish task status 
     post:
       responses:
         "200":
