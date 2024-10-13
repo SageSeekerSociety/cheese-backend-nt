@@ -178,7 +178,8 @@ class RolePermissionService {
                                 types = listOf("task"),
                             ),
                         customLogic =
-                            "is-task-approved || is-space-admin-of-task || is-team-admin-of-task"
+                            "is-task-approved || (owned || is-enumerating-owned-tasks) " +
+                                "|| is-space-admin-of-task || is-team-admin-of-task"
                     ),
                 )
         )

@@ -240,6 +240,22 @@ class TaskController(
             if (resourceId == null) false
             else taskSubmissionService.taskHasAnySubmission(resourceId)
         }
+        authorizationService.customAuthLogics.register("is-enumerating-owned-tasks") {
+            userId: IdType,
+            _: AuthorizedAction,
+            _: String,
+            _: IdType?,
+            authInfo: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            val ownerId = authInfo["owner"] as? IdType
+            if (ownerId == null) {
+                false
+            } else {
+                ownerId == userId
+            }
+        }
     }
 
     @Guard("delete", "task")
@@ -335,6 +351,8 @@ class TaskController(
     override fun getTasks(
         @AuthInfo("space") space: Long?,
         @AuthInfo("team") team: Int?,
+        @AuthInfo("approved") approved: Boolean?,
+        @AuthInfo("owner") owner: Long?,
         pageSize: Int,
         pageStart: Long?,
         sortBy: String,
@@ -342,7 +360,6 @@ class TaskController(
         queryJoinability: Boolean,
         querySubmittability: Boolean,
         keywords: String?,
-        @AuthInfo("approved") approved: Boolean,
     ): ResponseEntity<GetTasks200ResponseDTO> {
         val by =
             when (sortBy) {
@@ -361,6 +378,8 @@ class TaskController(
             taskService.enumerateTasks(
                 space = space,
                 team = team,
+                approved = approved,
+                owner = owner,
                 keywords = keywords,
                 pageSize = pageSize,
                 pageStart = pageStart,
@@ -368,7 +387,6 @@ class TaskController(
                 sortOrder = order,
                 queryJoinability = queryJoinability,
                 querySubmittability = querySubmittability,
-                approved = approved,
             )
         return ResponseEntity.ok(
             GetTasks200ResponseDTO(200, GetTasks200ResponseDataDTO(taskSummaryDTOs, page), "OK")
