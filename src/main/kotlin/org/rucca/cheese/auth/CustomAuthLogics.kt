@@ -67,23 +67,27 @@ class CustomAuthLogics {
         resourceOwnerIdGetter: IdGetter?,
         customLogicData: Any?,
     ): Boolean {
-        val parserRunner = ReportingParseRunner<CustomAuthLogicsExpressionNode>(parser.Expression())
-        val result = parserRunner.run(expression)
-        if (result.hasErrors()) {
-            throw RuntimeException(
-                "Failed to parse custom auth logic expression: '$expression'. Details: ${ErrorUtils.printParseErrors(result.parseErrors)}"
-            )
+        val root: CustomAuthLogicsExpressionNode
+        synchronized(parser) {
+            val parserRunner =
+                ReportingParseRunner<CustomAuthLogicsExpressionNode>(parser.Expression())
+            val result = parserRunner.run(expression)
+            if (result.hasErrors()) {
+                throw RuntimeException(
+                    "Failed to parse custom auth logic expression: '$expression'. Details: ${ErrorUtils.printParseErrors(result.parseErrors)}"
+                )
+            }
+            root = result.parseTreeRoot.getValue()
         }
-        val root = result.parseTreeRoot.getValue()
         if (root !is CustomAuthLogicsVariableNode)
             logger.info(
                 "Parsed complex custom auth logic expression. Original: '$expression', parsed: $root"
             )
-        fun evaluater(node: CustomAuthLogicsExpressionNode): Boolean {
+        fun evaluator(node: CustomAuthLogicsExpressionNode): Boolean {
             return when (node) {
-                is CustomAuthLogicsAndNode -> evaluater(node.left) && evaluater(node.right)
-                is CustomAuthLogicsOrNode -> evaluater(node.left) || evaluater(node.right)
-                is CustomAuthLogicsNotNode -> !evaluater(node.child)
+                is CustomAuthLogicsAndNode -> evaluator(node.left) && evaluator(node.right)
+                is CustomAuthLogicsOrNode -> evaluator(node.left) || evaluator(node.right)
+                is CustomAuthLogicsNotNode -> !evaluator(node.child)
                 is CustomAuthLogicsVariableNode ->
                     invoke(
                         node.name,
@@ -97,7 +101,7 @@ class CustomAuthLogics {
                     )
             }
         }
-        return evaluater(root)
+        return evaluator(root)
     }
 }
 
