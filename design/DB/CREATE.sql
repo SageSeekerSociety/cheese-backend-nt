@@ -123,9 +123,11 @@ CREATE
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
+            announcements TEXT NOT NULL,
             description TEXT NOT NULL,
             intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
+            task_templates TEXT NOT NULL,
             PRIMARY KEY(id)
         );
 

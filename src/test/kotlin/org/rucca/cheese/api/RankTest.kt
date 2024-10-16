@@ -73,7 +73,10 @@ constructor(
                     "name": "$spaceName",
                     "intro": "$spaceIntro",
                     "description": "$spaceDescription",
-                    "avatarId": $spaceAvatarId
+                    "avatarId": $spaceAvatarId,
+                    "enableRank": false,
+                    "announcements": "",
+                    "taskTemplates": ""
                 }
             """
                 )
