@@ -79,7 +79,9 @@ constructor(
                     "name": "$spaceName",
                     "intro": "$spaceIntro",
                     "description": "$spaceDescription",
-                    "avatarId": $spaceAvatarId
+                    "avatarId": $spaceAvatarId,
+                    "announcements": "",
+                    "taskTemplates": ""
                 }
             """
                 )

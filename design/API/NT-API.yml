@@ -152,6 +152,10 @@ paths:
                   format: int64
                 enableRank:
                   type: boolean
+                announcements:
+                  type: string
+                taskTemplates:
+                  type: string
       summary: Update Space
       x-stoplight:
         id: 0f71c5ul8igvq
@@ -265,6 +269,8 @@ paths:
                 - name
                 - avatarId
                 - enableRank
+                - announcements
+                - taskTemplates
               properties:
                 intro:
                   type: string
@@ -284,6 +290,10 @@ paths:
                 enableRank:
                   type: boolean
                   default: false
+                announcements:
+                  type: string
+                taskTemplates:
+                  type: string
       summary: Create Space
       x-stoplight:
         id: pg0dllezwwg9w
@@ -1852,6 +1862,8 @@ components:
         - updatedAt
         - createdAt
         - enableRank
+        - announcements
+        - taskTemplates
       properties:
         id:
           type: integer
@@ -1891,6 +1903,10 @@ components:
           format: int64
         enableRank:
           type: boolean
+        announcements:
+          type: string
+        taskTemplates:
+          type: string
         myRank:
           type: integer
           description: 'Only has value when: ''queryJoinablity'' == true && ''enableRank'' == true'

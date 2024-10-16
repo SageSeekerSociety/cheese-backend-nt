@@ -50,6 +50,8 @@ class SpaceService(
             updatedAt = this.updatedAt!!.toEpochMilli(),
             createdAt = this.createdAt!!.toEpochMilli(),
             enableRank = this.enableRank!!,
+            announcements = this.announcements!!,
+            taskTemplates = this.taskTemplates!!,
             myRank =
                 if (queryMyRank && this.enableRank!!) {
                     val userId = authenticationService.getCurrentUserId()
@@ -93,7 +95,9 @@ class SpaceService(
         description: String,
         avatarId: IdType,
         ownerId: IdType,
-        enableRank: Boolean
+        enableRank: Boolean,
+        announcements: String,
+        taskTemplates: String
     ): IdType {
         ensureSpaceNameNotExists(name)
         val space =
@@ -103,7 +107,9 @@ class SpaceService(
                     intro = intro,
                     description = description,
                     avatar = Avatar().apply { id = avatarId.toInt() },
-                    enableRank = enableRank
+                    enableRank = enableRank,
+                    announcements = announcements,
+                    taskTemplates = taskTemplates
                 )
             )
         spaceAdminRelationRepository.save(
@@ -148,6 +154,18 @@ class SpaceService(
     fun updateSpaceEnableRank(spaceId: IdType, enableRank: Boolean) {
         val space = getSpace(spaceId)
         space.enableRank = enableRank
+        spaceRepository.save(space)
+    }
+
+    fun updateSpaceAnnouncements(spaceId: IdType, announcements: String) {
+        val space = getSpace(spaceId)
+        space.announcements = announcements
+        spaceRepository.save(space)
+    }
+
+    fun updateSpaceTaskTemplates(spaceId: IdType, taskTemplates: String) {
+        val space = getSpace(spaceId)
+        space.taskTemplates = taskTemplates
         spaceRepository.save(space)
     }
 
