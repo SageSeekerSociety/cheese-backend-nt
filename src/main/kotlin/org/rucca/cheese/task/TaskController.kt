@@ -119,6 +119,18 @@ class TaskController(
                 teamService.isTeamAdmin(memberId, userId)
             }
         }
+        authorizationService.customAuthLogics.register("deadline-is-set") {
+            _: IdType,
+            _: AuthorizedAction,
+            _: String,
+            _: IdType?,
+            authInfo: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            val deadline = authInfo["deadline"] as? Long
+            deadline != null
+        }
         authorizationService.customAuthLogics.register("is-task-owner-of-submission") {
             userId: IdType,
             _: AuthorizedAction,
@@ -148,6 +160,20 @@ class TaskController(
             val approvedOfInstance =
                 if (resourceId != null) taskService.isTaskApproved(resourceId) else false
             approvedQuery || approvedOfInstance
+        }
+        authorizationService.customAuthLogics.register("is-participant-approved") {
+            _: IdType,
+            _: AuthorizedAction,
+            _: String,
+            resourceId: IdType?,
+            authInfo: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            val memberId = authInfo["member"] as? IdType
+            if (resourceId != null && memberId != null)
+                taskService.isParticipantApproved(resourceId, memberId)
+            else false
         }
         authorizationService.customAuthLogics.register("is-space-admin-of-task") {
             userId: IdType,
@@ -441,6 +467,28 @@ class TaskController(
         )
     }
 
+    @Guard("modify-membership", "task")
+    override fun patchTaskMembership(
+        @ResourceId taskId: Long,
+        @AuthInfo("member") member: Long,
+        patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO
+    ): ResponseEntity<PatchTaskMembership200ResponseDTO> {
+        val participant =
+            taskService.updateTaskMembership(
+                taskId,
+                member,
+                patchTaskMembershipRequestDTO.deadline,
+                patchTaskMembershipRequestDTO.approved
+            )
+        return ResponseEntity.ok(
+            PatchTaskMembership200ResponseDTO(
+                200,
+                PatchTaskMembership200ResponseDataDTO(participant),
+                "OK"
+            )
+        )
+    }
+
     @Guard("modify-submission", "task")
     override fun patchTaskSubmission(
         @ResourceId taskId: Long,
@@ -502,9 +550,14 @@ class TaskController(
     @Guard("add-participant", "task")
     override fun postTaskParticipant(
         @ResourceId taskId: Long,
-        @AuthInfo("member") member: Long
+        @AuthInfo("member") member: Long,
+        @AuthInfo("deadline") deadline: Long?
     ): ResponseEntity<GetTask200ResponseDTO> {
-        taskService.addTaskParticipant(taskId, member)
+        if (deadline != null) {
+            taskService.addTaskParticipant(taskId, member, deadline.toLocalDateTime(), true)
+        } else {
+            taskService.addTaskParticipant(taskId, member, null, false)
+        }
         val taskDTO = taskService.getTaskDto(taskId)
         return ResponseEntity.ok(
             GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK")

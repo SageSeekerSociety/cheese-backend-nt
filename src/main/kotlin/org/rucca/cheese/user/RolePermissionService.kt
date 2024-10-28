@@ -102,8 +102,8 @@ class RolePermissionService {
                         authorizedActions =
                             listOf(
                                 "enumerate-submissions",
-                                "add-participant",
                                 "remove-participant",
+                                "modify-membership"
                             ),
                         authorizedResource =
                             AuthorizedResource(
@@ -153,16 +153,26 @@ class RolePermissionService {
                             AuthorizedResource(
                                 types = listOf("task"),
                             ),
-                        customLogic = "is-task-participant",
+                        customLogic = "is-task-participant && is-participant-approved",
                     ),
                     Permission(
-                        authorizedActions = listOf("add-participant", "remove-participant"),
+                        authorizedActions = listOf("remove-participant"),
                         authorizedResource =
                             AuthorizedResource(
                                 types = listOf("task"),
                             ),
                         customLogic =
                             "(is-user-task && task-member-is-self) || (is-team-task && task-user-is-admin-of-member)",
+                    ),
+                    Permission(
+                        authorizedActions = listOf("add-participant"),
+                        authorizedResource =
+                            AuthorizedResource(
+                                types = listOf("task"),
+                            ),
+                        customLogic =
+                            "(!deadline-is-set && ((is-user-task && task-member-is-self) || (is-team-task && task-user-is-admin-of-member)))" +
+                                "|| (deadline-is-set && (owned || is-space-admin-of-task || is-team-admin-of-task))",
                     ),
                     Permission(
                         authorizedActions = listOf("create"),

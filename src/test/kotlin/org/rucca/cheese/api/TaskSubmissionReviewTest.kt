@@ -109,6 +109,25 @@ constructor(
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
+    fun approveTaskParticipant(token: String, taskId: IdType, memberId: IdType) {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants")
+                .queryParam("member", memberId.toString())
+                .header("Authorization", "Bearer ${token}")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": true
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participant.approved").value(true))
+    }
+
     fun submitTask(taskId: IdType, participantId: IdType, participantToken: String): IdType {
         val request =
             MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
@@ -155,6 +174,7 @@ constructor(
                 null,
             )
         joinTask(taskId, participant.userId, participantToken)
+        approveTaskParticipant(creatorToken, taskId, participant.userId)
         submissionId = submitTask(taskId, participant.userId, participantToken)
     }
 

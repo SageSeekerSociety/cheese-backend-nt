@@ -44,6 +44,7 @@ constructor(
     private val taskIntro = "This is a test task."
     private val taskDescription = "Description of task"
     private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
+    private val taskMembershipDeadline = LocalDateTime.now().plusMonths(1).toEpochMilli()
     private val taskSubmissionSchema =
         listOf(
             Pair("Text Entry", "TEXT"),
@@ -152,6 +153,25 @@ constructor(
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
+    fun approveTaskParticipant(token: String, taskId: IdType, memberId: IdType) {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants")
+                .queryParam("member", memberId.toString())
+                .header("Authorization", "Bearer $token")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": true
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participant.approved").value(true))
+    }
+
     fun submitTaskUser(token: String, taskId: IdType, userId: IdType): IdType {
         val request =
             MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
@@ -197,6 +217,7 @@ constructor(
                 1
             )
         addParticipantUser(participantToken, taskId, participant.userId)
+        approveTaskParticipant(creatorToken, taskId, participant.userId)
         submissionId = submitTaskUser(participantToken, taskId, participant.userId)
         taskId2 =
             createTask(
@@ -214,6 +235,7 @@ constructor(
                 2
             )
         addParticipantUser(participantToken, taskId2, participant.userId)
+        approveTaskParticipant(creatorToken, taskId2, participant.userId)
         submissionId2 = submitTaskUser(participantToken, taskId2, participant.userId)
         taskId3 =
             createTask(
@@ -231,6 +253,7 @@ constructor(
                 1
             )
         addParticipantUser(participantToken, taskId3, participant.userId)
+        approveTaskParticipant(creatorToken, taskId3, participant.userId)
         submissionId3 = submitTaskUser(participantToken, taskId3, participant.userId)
         taskId4 =
             createTask(
