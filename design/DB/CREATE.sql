@@ -171,7 +171,7 @@ CREATE
                 submitter_type BETWEEN 0 AND 1
             ),
             created_at TIMESTAMP(6) NOT NULL,
-            deadline TIMESTAMP(6) NOT NULL,
+            deadline TIMESTAMP(6),
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             space_id BIGINT,
@@ -197,7 +197,9 @@ CREATE
 CREATE
     TABLE
         task_membership(
+            approved BOOLEAN NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
+            deadline TIMESTAMP(6),
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             member_id BIGINT NOT NULL,

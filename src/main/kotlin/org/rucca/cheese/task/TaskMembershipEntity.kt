@@ -1,6 +1,7 @@
 package org.rucca.cheese.task
 
 import jakarta.persistence.*
+import java.time.LocalDateTime
 import java.util.Optional
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
@@ -20,6 +21,8 @@ import org.springframework.data.jpa.repository.Query
 class TaskMembership(
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val task: Task? = null,
     @Column(nullable = false) val memberId: IdType? = null,
+    @Column(nullable = true) var deadline: LocalDateTime? = null,
+    @Column(nullable = false) var approved: Boolean? = null,
 ) : BaseEntity()
 
 interface taskMembershipRepository : JpaRepository<TaskMembership, IdType> {

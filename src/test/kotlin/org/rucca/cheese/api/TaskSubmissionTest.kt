@@ -253,6 +253,25 @@ constructor(
         logger.info("Created task: $taskId")
     }
 
+    fun approveTaskParticipant(token: String, taskId: IdType, memberId: IdType) {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants")
+                .queryParam("member", memberId.toString())
+                .header("Authorization", "Bearer ${token}")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": true
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participant.approved").value(true))
+    }
+
     @Test
     @Order(10)
     fun testCreateTask() {
@@ -379,6 +398,90 @@ constructor(
                 .queryParam("member", teamId.toString())
                 .contentType("application/json")
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(127)
+    fun testSubmitTaskUserPermissionDeniedError() {
+        val taskId = taskIds[0]
+        val request =
+            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+                .header("Authorization", "Bearer $participantToken")
+                .param("member", participant.userId.toString())
+                .contentType("application/json")
+                .content(
+                    """
+                        [
+                          {
+                            "contentText": "This is a test submission."
+                          }
+                        ]
+                    """
+                )
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
+    }
+
+    @Test
+    @Order(128)
+    fun testApproveTaskParticipantUser2() {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
+                .queryParam("member", participant.userId.toString())
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": true
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participant.approved").value(true))
+    }
+
+    @Test
+    @Order(128)
+    fun testApproveTaskParticipantUser3() {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
+                .queryParam("member", participant2.userId.toString())
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": true
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participant.approved").value(true))
+    }
+
+    @Test
+    @Order(128)
+    fun testApproveTaskParticipantTeam2() {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/${taskIds[1]}/participants")
+                .queryParam("member", teamId.toString())
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": true
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participant.approved").value(true))
     }
 
     @Test

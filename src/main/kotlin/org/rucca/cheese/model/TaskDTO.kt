@@ -9,7 +9,6 @@ import javax.validation.Valid
  * @param name
  * @param submitterType
  * @param creator
- * @param deadline
  * @param resubmittable
  * @param editable
  * @param intro
@@ -18,6 +17,7 @@ import javax.validation.Valid
  * @param submitters
  * @param updatedAt
  * @param createdAt
+ * @param deadline
  * @param joinable Only has value when: 'queryJoinablity' == true
  * @param joinableAsTeam
  * @param submittable Only has value when: 'querySubmitability' == true
@@ -40,9 +40,6 @@ data class TaskDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("creator", required = true)
     val creator: UserDTO,
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("deadline", required = true)
-    val deadline: kotlin.Long,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("resubmittable", required = true)
     val resubmittable: kotlin.Boolean,
@@ -69,6 +66,9 @@ data class TaskDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("createdAt", required = true)
     val createdAt: kotlin.Long,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("deadline")
+    val deadline: kotlin.Long? = null,
     @Schema(example = "null", description = "Only has value when: 'queryJoinablity' == true")
     @get:JsonProperty("joinable")
     val joinable: kotlin.Boolean? = null,
