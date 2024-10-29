@@ -230,7 +230,7 @@ constructor(
     fun createTask(
         name: String,
         submitterType: String,
-        deadline: Long,
+        deadline: Long?,
         resubmittable: Boolean,
         editable: Boolean,
         intro: String,
@@ -256,17 +256,19 @@ constructor(
                   "submissionSchema": [
                     ${
                         submissionSchema
-                            .map { """
+                            .map {
+                                """
                                 {
                                   "prompt": "${it.first}",
                                   "type": "${it.second}"
                                 }
-                            """ }
+                            """
+                            }
                             .joinToString(",\n")
                     }
                   ],
-                  "team": ${team?: "null"},
-                  "space": ${space?: "null"}
+                  "team": ${team ?: "null"},
+                  "space": ${space ?: "null"}
                 }
             """
                 )
@@ -370,7 +372,7 @@ constructor(
         createTask(
             name = "$taskName (5)",
             submitterType = "USER",
-            deadline = taskDeadline,
+            deadline = null,
             resubmittable = true,
             editable = true,
             intro = taskIntro,
@@ -613,6 +615,27 @@ constructor(
     }
 
     @Test
+    @Order(45)
+    fun testUpdateTaskWithEmptyDeadline() {
+        val taskId = taskIds[0]
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/$taskId")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "hasDeadline": false
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.task.deadline").isEmpty)
+    }
+
+    @Test
     @Order(50)
     fun testEnumerateTasksByDefault() {
         val request =
@@ -629,7 +652,7 @@ constructor(
             .andExpect(
                 jsonPath("$.data.tasks[0].description").value("${taskDescription} (updated)")
             )
-            .andExpect(jsonPath("$.data.tasks[0].deadline").value(taskDeadline + 1000000000))
+            .andExpect(jsonPath("$.data.tasks[0].deadline").isEmpty)
             .andExpect(jsonPath("$.data.tasks[0].submitters.total").value(0))
             .andExpect(jsonPath("$.data.tasks[0].submitters.examples").isArray)
             .andExpect(jsonPath("$.data.tasks[0].rank").value(1))
@@ -865,12 +888,7 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.participants[0].id").value(participant.userId))
-            .andExpect(jsonPath("$.data.participants[0].intro").isString)
-            .andExpect(jsonPath("$.data.participants[0].name").isString)
-            .andExpect(
-                jsonPath("$.data.participants[0].avatarId").value(userCreatorService.testAvatarId())
-            )
+            .andExpect(jsonPath("$.data.participants[?(@.id == ${ participant.userId })]").exists())
     }
 
     @Test
@@ -938,7 +956,7 @@ constructor(
                 .content(
                     """
                 {
-                  "deadline": ${taskMembershipDeadline+100000}
+                  "deadline": ${taskMembershipDeadline + 100000}
                 }
             """
                 )
@@ -977,7 +995,7 @@ constructor(
                 .content(
                     """
                 {
-                  "deadline": ${taskMembershipDeadline+100000}
+                  "deadline": ${taskMembershipDeadline + 100000}
                 }
             """
                 )

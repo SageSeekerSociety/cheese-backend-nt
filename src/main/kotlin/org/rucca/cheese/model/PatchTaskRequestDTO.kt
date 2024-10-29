@@ -6,6 +6,7 @@ import javax.validation.Valid
 
 /**
  * @param name
+ * @param hasDeadline
  * @param deadline
  * @param resubmittable
  * @param editable
@@ -20,6 +21,9 @@ data class PatchTaskRequestDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("name")
     val name: kotlin.String? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("hasDeadline")
+    val hasDeadline: kotlin.Boolean? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("deadline")
     val deadline: kotlin.Long? = null,

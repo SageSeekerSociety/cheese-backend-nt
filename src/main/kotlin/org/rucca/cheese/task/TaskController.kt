@@ -431,6 +431,9 @@ class TaskController(
         if (patchTaskRequestDTO.name != null) {
             taskService.updateTaskName(taskId, patchTaskRequestDTO.name)
         }
+        if (patchTaskRequestDTO.hasDeadline == false) {
+            taskService.updateTaskDeadline(taskId, null)
+        }
         if (patchTaskRequestDTO.deadline != null) {
             taskService.updateTaskDeadline(taskId, patchTaskRequestDTO.deadline.toLocalDateTime())
         }
@@ -523,7 +526,7 @@ class TaskController(
                 name = postTaskRequestDTO.name,
                 submitterType =
                     taskService.convertTaskSubmitterType(postTaskRequestDTO.submitterType),
-                deadline = postTaskRequestDTO.deadline.toLocalDateTime(),
+                deadline = postTaskRequestDTO.deadline?.toLocalDateTime(),
                 resubmittable = postTaskRequestDTO.resubmittable,
                 editable = postTaskRequestDTO.editable,
                 intro = postTaskRequestDTO.intro,

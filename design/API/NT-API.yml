@@ -598,6 +598,8 @@ paths:
                   type: string
                   x-stoplight:
                     id: 4eatfhceym142
+                hasDeadline:
+                  type: boolean
                 deadline:
                   type: integer
                   format: int64
@@ -771,7 +773,6 @@ paths:
               required:
                 - name
                 - submitterType
-                - deadline
                 - resubmittable
                 - editable
                 - intro
@@ -787,6 +788,7 @@ paths:
                 deadline:
                   type: integer
                   format: int64
+                  default: null
                 resubmittable:
                   type: boolean
                   x-stoplight:
