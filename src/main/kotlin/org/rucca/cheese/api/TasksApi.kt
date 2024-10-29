@@ -17,6 +17,8 @@ import org.rucca.cheese.model.GetTask200ResponseDTO
 import org.rucca.cheese.model.GetTaskParticipants200ResponseDTO
 import org.rucca.cheese.model.GetTaskSubmissions200ResponseDTO
 import org.rucca.cheese.model.GetTasks200ResponseDTO
+import org.rucca.cheese.model.PatchTaskMembership200ResponseDTO
+import org.rucca.cheese.model.PatchTaskMembershipRequestDTO
 import org.rucca.cheese.model.PatchTaskRequestDTO
 import org.rucca.cheese.model.PatchTaskSubmissionReviewRequestDTO
 import org.rucca.cheese.model.PostTaskRequestDTO
@@ -413,6 +415,55 @@ interface TasksApi {
             [
                 "default",
             ],
+        summary = "Update TaskMembership",
+        operationId = "patchTaskMembership",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation = PatchTaskMembership200ResponseDTO::class
+                                    )
+                            )
+                        ]
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")]
+    )
+    @RequestMapping(
+        method = [RequestMethod.PATCH],
+        value = ["/tasks/{taskId}/participants"],
+        produces = ["application/json"],
+        consumes = ["application/json"]
+    )
+    fun patchTaskMembership(
+        @Parameter(description = "Task ID", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
+        @NotNull
+        @Parameter(description = "Member ID", required = true)
+        @Valid
+        @RequestParam(value = "member", required = true)
+        member: kotlin.Long,
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO
+    ): ResponseEntity<PatchTaskMembership200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags =
+            [
+                "default",
+            ],
         summary = "Update Submission",
         operationId = "patchTaskSubmission",
         description = """""",
@@ -570,7 +621,11 @@ interface TasksApi {
         @Parameter(description = "Member ID", required = true)
         @Valid
         @RequestParam(value = "member", required = true)
-        member: kotlin.Long
+        member: kotlin.Long,
+        @Parameter(description = "Member's deadline")
+        @Valid
+        @RequestParam(value = "deadline", required = false)
+        deadline: kotlin.Long?
     ): ResponseEntity<GetTask200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }

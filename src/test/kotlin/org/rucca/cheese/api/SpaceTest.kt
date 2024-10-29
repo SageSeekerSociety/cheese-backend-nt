@@ -41,6 +41,8 @@ constructor(
     private var originalSpaceName = spaceName
     private var spaceIntro = "This is a test space."
     private var spaceDescription = "A lengthy text. ".repeat(1000)
+    private var spaceAnnouncements = "A lengthy text. ".repeat(1000)
+    private var spaceTaskTemplates = "A lengthy text. ".repeat(1000)
     private var spaceAvatarId = userCreatorService.testAvatarId()
     private var spaceId: IdType = -1
     private var spaceIdOfSecond: IdType = -1
@@ -77,7 +79,9 @@ constructor(
         spaceName: String,
         spaceIntro: String,
         spaceDescription: String,
-        spaceAvatarId: IdType
+        spaceAvatarId: IdType,
+        spaceAnnouncements: String,
+        spaceTaskTemplates: String
     ): IdType {
         val request =
             MockMvcRequestBuilders.post("/spaces")
@@ -89,7 +93,9 @@ constructor(
                     "name": "$spaceName",
                     "intro": "$spaceIntro",
                     "description": "$spaceDescription",
-                    "avatarId": $spaceAvatarId
+                    "avatarId": $spaceAvatarId,
+                    "announcements": "$spaceAnnouncements",
+                    "taskTemplates": "$spaceTaskTemplates"
                 }
             """
                 )
@@ -114,6 +120,14 @@ constructor(
                         .value(creator.userId)
                 )
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.enableRank").value(false))
+                .andExpect(
+                    MockMvcResultMatchers.jsonPath("$.data.space.announcements")
+                        .value(spaceAnnouncements)
+                )
+                .andExpect(
+                    MockMvcResultMatchers.jsonPath("$.data.space.taskTemplates")
+                        .value(spaceTaskTemplates)
+                )
         val spaceId =
             JSONObject(response.andReturn().response.contentAsString)
                 .getJSONObject("data")
@@ -131,16 +145,59 @@ constructor(
             "$spaceName previous",
             spaceIntro,
             spaceDescription,
-            spaceAvatarId
+            spaceAvatarId,
+            spaceAnnouncements,
+            spaceTaskTemplates
         )
-        spaceId = createSpace(creatorToken, spaceName, spaceIntro, spaceDescription, spaceAvatarId)
+        spaceId =
+            createSpace(
+                creatorToken,
+                spaceName,
+                spaceIntro,
+                spaceDescription,
+                spaceAvatarId,
+                spaceAnnouncements,
+                spaceTaskTemplates
+            )
         spaceIdOfSecond =
-            createSpace(creatorToken, "$spaceName 01", spaceIntro, spaceDescription, spaceAvatarId)
-        createSpace(creatorToken, "$spaceName 02", spaceIntro, spaceDescription, spaceAvatarId)
+            createSpace(
+                creatorToken,
+                "$spaceName 01",
+                spaceIntro,
+                spaceDescription,
+                spaceAvatarId,
+                spaceAnnouncements,
+                spaceTaskTemplates
+            )
+        createSpace(
+            creatorToken,
+            "$spaceName 02",
+            spaceIntro,
+            spaceDescription,
+            spaceAvatarId,
+            spaceAnnouncements,
+            spaceTaskTemplates
+        )
         spaceIdOfBeforeLast =
-            createSpace(creatorToken, "$spaceName 03", spaceIntro, spaceDescription, spaceAvatarId)
+            createSpace(
+                creatorToken,
+                "$spaceName 03",
+                spaceIntro,
+                spaceDescription,
+                spaceAvatarId,
+                spaceAnnouncements,
+                spaceTaskTemplates
+            )
         spaceIdOfLast =
-            createSpace(creatorToken, "$spaceName 04", spaceIntro, spaceDescription, spaceAvatarId)
+            createSpace(
+                creatorToken,
+                "$spaceName 04",
+                spaceIntro,
+                spaceDescription,
+                spaceAvatarId,
+                spaceAnnouncements,
+                spaceTaskTemplates
+            )
     }
 
     @Test
@@ -176,7 +233,9 @@ constructor(
                     "name": "$spaceName",
                     "intro": "$spaceIntro",
                     "description": "$spaceDescription",
-                    "avatarId": $spaceAvatarId
+                    "avatarId": $spaceAvatarId,
+                    "announcements": "",
+                    "taskTemplates": ""
                 }
             """
                 )
@@ -219,6 +278,8 @@ constructor(
         spaceIntro += " (Updated)"
         spaceDescription += " (Updated)"
         spaceAvatarId += 1
+        spaceAnnouncements += " (Updated)"
+        spaceTaskTemplates += " (Updated)"
         val request =
             MockMvcRequestBuilders.patch("/spaces/$spaceId")
                 .header("Authorization", "Bearer $creatorToken")
@@ -230,7 +291,9 @@ constructor(
                     "intro": "$spaceIntro",
                     "description": "$spaceDescription",
                     "avatarId": $spaceAvatarId,
-                    "enableRank": true
+                    "enableRank": true,
+                    "announcements": "$spaceAnnouncements",
+                    "taskTemplates": "$spaceTaskTemplates"
                 }
             """
                 )
@@ -250,6 +313,14 @@ constructor(
                     .value(creator.userId)
             )
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.enableRank").value(true))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.space.announcements")
+                    .value(spaceAnnouncements)
+            )
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.space.taskTemplates")
+                    .value(spaceTaskTemplates)
+            )
     }
 
     @Test

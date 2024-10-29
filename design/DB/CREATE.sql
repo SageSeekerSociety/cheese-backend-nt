@@ -123,9 +123,11 @@ CREATE
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
+            announcements TEXT NOT NULL,
             description TEXT NOT NULL,
             intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
+            task_templates TEXT NOT NULL,
             PRIMARY KEY(id)
         );
 
@@ -169,7 +171,7 @@ CREATE
                 submitter_type BETWEEN 0 AND 1
             ),
             created_at TIMESTAMP(6) NOT NULL,
-            deadline TIMESTAMP(6) NOT NULL,
+            deadline TIMESTAMP(6),
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             space_id BIGINT,
@@ -195,7 +197,9 @@ CREATE
 CREATE
     TABLE
         task_membership(
+            approved BOOLEAN NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
+            deadline TIMESTAMP(6),
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             member_id BIGINT NOT NULL,

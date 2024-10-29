@@ -152,6 +152,10 @@ paths:
                   format: int64
                 enableRank:
                   type: boolean
+                announcements:
+                  type: string
+                taskTemplates:
+                  type: string
       summary: Update Space
       x-stoplight:
         id: 0f71c5ul8igvq
@@ -265,6 +269,8 @@ paths:
                 - name
                 - avatarId
                 - enableRank
+                - announcements
+                - taskTemplates
               properties:
                 intro:
                   type: string
@@ -284,6 +290,10 @@ paths:
                 enableRank:
                   type: boolean
                   default: false
+                announcements:
+                  type: string
+                taskTemplates:
+                  type: string
       summary: Create Space
       x-stoplight:
         id: pg0dllezwwg9w
@@ -588,6 +598,8 @@ paths:
                   type: string
                   x-stoplight:
                     id: 4eatfhceym142
+                hasDeadline:
+                  type: boolean
                 deadline:
                   type: integer
                   format: int64
@@ -761,7 +773,6 @@ paths:
               required:
                 - name
                 - submitterType
-                - deadline
                 - resubmittable
                 - editable
                 - intro
@@ -777,6 +788,7 @@ paths:
                 deadline:
                   type: integer
                   format: int64
+                  default: null
                 resubmittable:
                   type: boolean
                   x-stoplight:
@@ -853,6 +865,64 @@ paths:
                   message:
                     type: string
           description: OK
+    patch:
+      summary: Update TaskMembership
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Member ID
+          in: query
+          name: member
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                    x-stoplight:
+                      id: ehv14gy4oxg6y
+                  data:
+                    properties:
+                      participant:
+                        $ref: "#/components/schemas/TaskMembership"
+                    required:
+                      - participant
+                    type: object
+                  message:
+                    type: string
+                    x-stoplight:
+                      id: avsxy26ifxoca
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: [ ]
+      operationId: patch-task-membership
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deadline:
+                  type: integer
+                  format: int64
+                approved:
+                  type: boolean
     delete:
       parameters:
         - description: Task ID
@@ -916,6 +986,12 @@ paths:
           in: query
           name: member
           required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Member's deadline
+          in: query
+          name: deadline
           schema:
             type: integer
             format: int64
@@ -1852,6 +1928,8 @@ components:
         - updatedAt
         - createdAt
         - enableRank
+        - announcements
+        - taskTemplates
       properties:
         id:
           type: integer
@@ -1891,6 +1969,10 @@ components:
           format: int64
         enableRank:
           type: boolean
+        announcements:
+          type: string
+        taskTemplates:
+          type: string
         myRank:
           type: integer
           description: 'Only has value when: ''queryJoinablity'' == true && ''enableRank'' == true'
@@ -1936,7 +2018,6 @@ components:
         - name
         - submitterType
         - creator
-        - deadline
         - resubmittable
         - editable
         - intro
@@ -2256,6 +2337,32 @@ components:
         createdAt:
           type: integer
           format: int64
+    TaskMembership:
+      title: TaskMembership
+      type: object
+      required:
+        - id
+        - member
+        - createdAt
+        - updatedAt
+        - approved
+      properties:
+        id:
+          type: integer
+          format: int64
+        member:
+          $ref: "#/components/schemas/TaskParticipantSummary"
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+        deadline:
+          type: integer
+          format: int64
+        approved:
+          type: boolean
     TaskParticipantSummary:
       title: TaskParticipantSummary
       type: object
