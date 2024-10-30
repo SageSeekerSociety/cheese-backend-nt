@@ -603,6 +603,9 @@ paths:
                 deadline:
                   type: integer
                   format: int64
+                defaultDeadline:
+                  type: integer
+                  format: int64
                 resubmittable:
                   type: boolean
                   x-stoplight:
@@ -773,6 +776,7 @@ paths:
               required:
                 - name
                 - submitterType
+                - defaultDeadline
                 - resubmittable
                 - editable
                 - intro
@@ -789,6 +793,10 @@ paths:
                   type: integer
                   format: int64
                   default: null
+                defaultDeadline:
+                  type: integer
+                  format: int64
+                  default: 30
                 resubmittable:
                   type: boolean
                   x-stoplight:
@@ -2017,6 +2025,7 @@ components:
         - id
         - name
         - submitterType
+        - defaultDeadline
         - creator
         - resubmittable
         - editable
@@ -2038,6 +2047,9 @@ components:
             id: rbj58vdb6mhrx
         submitterType:
           $ref: '#/components/schemas/TaskSubmitterType'
+        defaultDeadline:
+          type: integer
+          format: int64
         creator:
           $ref: '#/components/schemas/User'
         deadline:

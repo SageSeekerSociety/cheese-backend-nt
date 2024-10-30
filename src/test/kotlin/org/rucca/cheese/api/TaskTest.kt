@@ -61,6 +61,7 @@ constructor(
     private val taskIntro = "This is a test task."
     private val taskDescription = "A lengthy text. ".repeat(1000)
     private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
+    private val taskDefaultDeadline = 30L
     private val taskMembershipDeadline = LocalDateTime.now().plusMonths(1).toEpochMilli()
     private val taskSubmissionSchema =
         listOf(
@@ -231,6 +232,7 @@ constructor(
         name: String,
         submitterType: String,
         deadline: Long?,
+        defaultDeadline: Long?,
         resubmittable: Boolean,
         editable: Boolean,
         intro: String,
@@ -249,6 +251,7 @@ constructor(
                   "name": "$name",
                   "submitterType": "$submitterType",
                   "deadline": "$deadline",
+                  "defaultDeadline": $defaultDeadline,
                   "resubmittable": $resubmittable,
                   "editable": $editable,
                   "intro": "$intro",
@@ -280,6 +283,7 @@ constructor(
                 .andExpect(jsonPath("$.data.task.submitterType").value(submitterType))
                 .andExpect(jsonPath("$.data.task.creator.id").value(creator.userId))
                 .andExpect(jsonPath("$.data.task.deadline").value(deadline))
+                .andExpect(jsonPath("$.data.task.defaultDeadline").value(defaultDeadline))
                 .andExpect(jsonPath("$.data.task.resubmittable").value(resubmittable))
                 .andExpect(jsonPath("$.data.task.editable").value(editable))
                 .andExpect(jsonPath("$.data.task.intro").value(intro))
@@ -325,6 +329,7 @@ constructor(
             name = "$taskName (1)",
             submitterType = "USER",
             deadline = taskDeadline,
+            defaultDeadline = taskDefaultDeadline,
             resubmittable = true,
             editable = true,
             intro = taskIntro,
@@ -337,6 +342,7 @@ constructor(
             name = "$taskName (2)",
             submitterType = "TEAM",
             deadline = taskDeadline,
+            defaultDeadline = taskDefaultDeadline,
             resubmittable = true,
             editable = true,
             intro = taskIntro,
@@ -349,6 +355,7 @@ constructor(
             name = "$taskName (3)",
             submitterType = "USER",
             deadline = taskDeadline,
+            defaultDeadline = taskDefaultDeadline,
             resubmittable = true,
             editable = true,
             intro = taskIntro,
@@ -361,6 +368,7 @@ constructor(
             name = "$taskName (4)",
             submitterType = "USER",
             deadline = taskDeadline,
+            defaultDeadline = taskDefaultDeadline,
             resubmittable = true,
             editable = true,
             intro = taskIntro,
@@ -373,6 +381,7 @@ constructor(
             name = "$taskName (5)",
             submitterType = "USER",
             deadline = null,
+            defaultDeadline = taskDefaultDeadline,
             resubmittable = true,
             editable = true,
             intro = taskIntro,
