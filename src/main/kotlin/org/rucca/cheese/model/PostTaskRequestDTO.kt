@@ -7,12 +7,13 @@ import javax.validation.Valid
 /**
  * @param name
  * @param submitterType
- * @param deadline
+ * @param defaultDeadline
  * @param resubmittable
  * @param editable
  * @param intro
  * @param description
  * @param submissionSchema
+ * @param deadline
  * @param team
  * @param space
  * @param rank
@@ -26,8 +27,8 @@ data class PostTaskRequestDTO(
     @get:JsonProperty("submitterType", required = true)
     val submitterType: TaskSubmitterTypeDTO,
     @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("deadline", required = true)
-    val deadline: kotlin.Long,
+    @get:JsonProperty("defaultDeadline", required = true)
+    val defaultDeadline: kotlin.Long = 30L,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("resubmittable", required = true)
     val resubmittable: kotlin.Boolean,
@@ -44,6 +45,9 @@ data class PostTaskRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("submissionSchema", required = true)
     val submissionSchema: kotlin.collections.List<TaskSubmissionSchemaEntryDTO>,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("deadline")
+    val deadline: kotlin.Long? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("team")
     val team: kotlin.Long? = null,
