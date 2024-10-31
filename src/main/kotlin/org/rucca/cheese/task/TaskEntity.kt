@@ -35,7 +35,7 @@ class Task(
     @Column(nullable = false) val submitterType: TaskSubmitterType? = null,
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val creator: User? = null,
     @Column(nullable = true) var deadline: LocalDateTime? = null,
-    @Column(nullable = true) var defaultDeadline: Long? = null,
+    @Column(nullable = false) var defaultDeadline: Long? = null,
     @Column(nullable = false) var resubmittable: Boolean? = null,
     @Column(nullable = false) var editable: Boolean? = null,
     @ManyToOne(fetch = FetchType.LAZY) val team: Team? = null, // nullable
