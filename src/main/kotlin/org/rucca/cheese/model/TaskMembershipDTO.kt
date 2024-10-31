@@ -26,9 +26,10 @@ data class TaskMembershipDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("updatedAt", required = true)
     val updatedAt: kotlin.Long,
+    @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("approved", required = true)
-    val approved: kotlin.Boolean,
+    val approved: ApproveTypeDTO,
     @Schema(example = "null", description = "")
     @get:JsonProperty("deadline")
     val deadline: kotlin.Long? = null

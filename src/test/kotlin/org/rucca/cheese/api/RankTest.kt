@@ -150,6 +150,9 @@ constructor(
                 .header("Authorization", "Bearer $token")
                 .queryParam("member", userId.toString())
                 .contentType("application/json")
+                .content("""
+                {}
+            """)
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -162,14 +165,16 @@ constructor(
                 .content(
                     """
                 {
-                  "approved": true
+                  "approved": "APPROVED"
                 }
             """
                 )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participant.approved").value(true))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.participant.approved").value("APPROVED")
+            )
     }
 
     fun submitTaskUser(token: String, taskId: IdType, userId: IdType): IdType {
@@ -352,6 +357,9 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participant.userId.toString())
                 .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isBadRequest)
@@ -427,6 +435,9 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participant.userId.toString())
                 .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 

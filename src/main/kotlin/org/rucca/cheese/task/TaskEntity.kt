@@ -45,6 +45,7 @@ class Task(
     @ElementCollection var submissionSchema: List<TaskSubmissionSchema>? = null,
     @Column(nullable = true) var rank: Int? = null,
     @Column(nullable = false) var approved: Boolean? = null,
+    @Column(nullable = true) var rejectReason: String? = null,
 ) : BaseEntity()
 
 interface TaskRepository : JpaRepository<Task, IdType>

@@ -8,6 +8,7 @@ import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.task.ApproveType
 import org.rucca.cheese.team.error.NotTeamMemberYetError
 import org.rucca.cheese.team.error.TeamRoleConflictError
 import org.rucca.cheese.user.Avatar
@@ -38,6 +39,14 @@ class TeamService(
     private val elasticsearchTemplate: ElasticsearchTemplate,
     private val authenticateService: AuthenticationService,
 ) {
+    fun convertApproveType(type: ApproveType): ApproveTypeDTO {
+        return when (type) {
+            ApproveType.APPROVED -> ApproveTypeDTO.APPROVED
+            ApproveType.DISAPPROVED -> ApproveTypeDTO.DISAPPROVED
+            ApproveType.NONE -> ApproveTypeDTO.NONE
+        }
+    }
+
     fun getTeamDto(teamId: IdType): TeamDTO {
         val team = getTeam(teamId)
         val currentUserId = authenticateService.getCurrentUserId()
@@ -71,13 +80,17 @@ class TeamService(
         return team.avatar!!.id!!.toLong()
     }
 
-    fun getTaskParticipantSummaryDto(teamId: IdType): TaskParticipantSummaryDTO {
+    fun getTaskParticipantSummaryDto(
+        teamId: IdType,
+        approveType: ApproveType
+    ): TaskParticipantSummaryDTO {
         val team = getTeam(teamId)
         return TaskParticipantSummaryDTO(
             team.id!!,
             team.description!!,
             team.name!!,
             team.avatar!!.id!!.toLong(),
+            convertApproveType(approveType)
         )
     }
 

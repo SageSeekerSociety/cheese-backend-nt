@@ -2,8 +2,10 @@ package org.rucca.cheese.user
 
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.model.ApproveTypeDTO
 import org.rucca.cheese.model.TaskParticipantSummaryDTO
 import org.rucca.cheese.model.UserDTO
+import org.rucca.cheese.task.ApproveType
 import org.springframework.stereotype.Service
 
 @Service
@@ -11,6 +13,14 @@ class UserService(
     private val userRepository: UserRepository,
     private val userProfileRepository: UserProfileRepository,
 ) {
+    fun convertApproveType(type: ApproveType): ApproveTypeDTO {
+        return when (type) {
+            ApproveType.APPROVED -> ApproveTypeDTO.APPROVED
+            ApproveType.DISAPPROVED -> ApproveTypeDTO.DISAPPROVED
+            ApproveType.NONE -> ApproveTypeDTO.NONE
+        }
+    }
+
     fun getUserDto(userId: IdType): UserDTO {
         val user =
             userRepository.findById(userId.toInt()).orElseThrow { NotFoundError("user", userId) }
@@ -27,13 +37,17 @@ class UserService(
         )
     }
 
-    fun getTaskParticipantSummaryDto(userId: IdType): TaskParticipantSummaryDTO {
+    fun getTaskParticipantSummaryDto(
+        userId: IdType,
+        approveType: ApproveType
+    ): TaskParticipantSummaryDTO {
         val dto = getUserDto(userId)
         return TaskParticipantSummaryDTO(
             id = dto.id,
             intro = dto.intro,
             name = dto.nickname,
             avatarId = dto.avatarId,
+            approved = convertApproveType(approveType)
         )
     }
 

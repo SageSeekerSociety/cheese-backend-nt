@@ -181,6 +181,7 @@ CREATE
             description TEXT NOT NULL,
             intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
+            reject_reason VARCHAR(255),
             PRIMARY KEY(id)
         );
 
@@ -198,7 +199,9 @@ CREATE
 CREATE
     TABLE
         task_membership(
-            approved BOOLEAN NOT NULL,
+            approved SMALLINT NOT NULL CHECK(
+                approved BETWEEN 0 AND 2
+            ),
             created_at TIMESTAMP(6) NOT NULL,
             deadline TIMESTAMP(6),
             deleted_at TIMESTAMP(6),

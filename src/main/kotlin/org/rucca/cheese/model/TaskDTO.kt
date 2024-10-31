@@ -25,6 +25,7 @@ import javax.validation.Valid
  * @param submittableAsTeam
  * @param rank
  * @param approved
+ * @param rejectReason
  */
 data class TaskDTO(
     @Schema(example = "null", required = true, description = "")
@@ -92,5 +93,8 @@ data class TaskDTO(
     val rank: kotlin.Int? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("approved")
-    val approved: kotlin.Boolean? = null
+    val approved: kotlin.Boolean? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("rejectReason")
+    val rejectReason: kotlin.String? = null
 ) {}
