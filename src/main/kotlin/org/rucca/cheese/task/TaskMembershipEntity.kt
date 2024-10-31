@@ -9,6 +9,12 @@ import org.rucca.cheese.common.persistent.IdType
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
+enum class ApproveType {
+    APPROVED,
+    DISAPPROVED,
+    NONE
+}
+
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @Table(
@@ -22,7 +28,7 @@ class TaskMembership(
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val task: Task? = null,
     @Column(nullable = false) val memberId: IdType? = null,
     @Column(nullable = true) var deadline: LocalDateTime? = null,
-    @Column(nullable = false) var approved: Boolean? = null,
+    @Column(nullable = false) var approved: ApproveType? = null,
 ) : BaseEntity()
 
 interface taskMembershipRepository : JpaRepository<TaskMembership, IdType> {
