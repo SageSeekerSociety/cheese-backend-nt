@@ -142,6 +142,7 @@ class TaskService(
             submittableAsTeam = submittability.second,
             rank = this.rank,
             approved = this.approved,
+            rejectReason = this.rejectReason,
         )
     }
 
@@ -243,6 +244,12 @@ class TaskService(
     fun updateApproved(taskId: IdType, approved: Boolean) {
         val task = getTask(taskId)
         task.approved = approved
+        taskRepository.save(task)
+    }
+
+    fun updateRejectReason(taskId: IdType, rejectReason: String) {
+        val task = getTask(taskId)
+        task.rejectReason = rejectReason
         taskRepository.save(task)
     }
 

@@ -181,6 +181,7 @@ CREATE
             description TEXT NOT NULL,
             intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
+            reject_reason VARCHAR(255),
             PRIMARY KEY(id)
         );
 

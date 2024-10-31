@@ -516,6 +516,45 @@ constructor(
     }
 
     @Test
+    @Order(21)
+    fun testPatchRejectReasonWithoutAdmin() {
+        val taskId = taskIds[2]
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/$taskId")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "rejectReason": "Garbage."
+                }
+            """
+                )
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
+    }
+
+    @Test
+    @Order(22)
+    fun testPatchRejectReason() {
+        val taskId = taskIds[2]
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/$taskId")
+                .header("Authorization", "Bearer $spaceAdminToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "rejectReason": "Garbage."
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.task.rejectReason").value("Garbage."))
+    }
+
+    @Test
     @Order(25)
     fun testGetTeamTaskWithJoinabilityAndSubmittabilityUseTeamCreator() {
         val taskId = taskIds[1]

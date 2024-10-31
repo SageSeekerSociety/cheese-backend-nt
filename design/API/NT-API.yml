@@ -632,6 +632,8 @@ paths:
                   type: integer
                 approved:
                   type: boolean
+                rejectReason:
+                  type: string
       summary: Update Task
       x-stoplight:
         id: sy7yhfh83myt0
@@ -2129,6 +2131,8 @@ components:
           type: integer
         approved:
           type: boolean
+        rejectReason:
+          type: string
     TaskSubmitterType:
       title: TaskSubmitterType
       x-stoplight:

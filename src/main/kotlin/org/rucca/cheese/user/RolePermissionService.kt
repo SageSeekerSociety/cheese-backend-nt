@@ -129,6 +129,7 @@ class RolePermissionService {
                         authorizedActions =
                             listOf(
                                 "modify-approved",
+                                "modify-reject-reason",
                             ),
                         authorizedResource = AuthorizedResource(types = listOf("task")),
                         customLogic = "is-space-admin-of-task || is-team-admin-of-task"
