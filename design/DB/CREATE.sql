@@ -172,6 +172,7 @@ CREATE
             ),
             created_at TIMESTAMP(6) NOT NULL,
             deadline TIMESTAMP(6),
+            default_deadline BIGINT NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             space_id BIGINT,

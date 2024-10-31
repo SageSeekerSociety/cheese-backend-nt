@@ -8,6 +8,7 @@ import javax.validation.Valid
  * @param id
  * @param name
  * @param submitterType
+ * @param defaultDeadline
  * @param creator
  * @param resubmittable
  * @param editable
@@ -36,6 +37,9 @@ data class TaskDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("submitterType", required = true)
     val submitterType: TaskSubmitterTypeDTO,
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("defaultDeadline", required = true)
+    val defaultDeadline: kotlin.Long,
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("creator", required = true)
