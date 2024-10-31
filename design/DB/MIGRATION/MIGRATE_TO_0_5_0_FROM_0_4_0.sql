@@ -2,5 +2,5 @@
 -- Backup Before Executing This in Production Database
 
 ALTER TABLE task
-    ADD COLUMN default_deadline BIGINT;
+    ADD COLUMN default_deadline BIGINT NOT NULL DEFAULT 30;
 
