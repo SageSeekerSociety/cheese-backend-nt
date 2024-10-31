@@ -50,6 +50,8 @@ constructor(
     lateinit var participantToken2: String
     lateinit var participant3: UserCreatorService.CreateUserResponse
     lateinit var participantToken3: String
+    lateinit var participant4: UserCreatorService.CreateUserResponse
+    lateinit var participantToken4: String
     lateinit var spaceAdmin: UserCreatorService.CreateUserResponse
     lateinit var spaceAdminToken: String
     lateinit var teamAdmin: UserCreatorService.CreateUserResponse
@@ -202,6 +204,8 @@ constructor(
         participantToken2 = userCreatorService.login(participant2.username, participant2.password)
         participant3 = userCreatorService.createUser()
         participantToken3 = userCreatorService.login(participant3.username, participant3.password)
+        participant4 = userCreatorService.createUser()
+        participantToken4 = userCreatorService.login(participant4.username, participant4.password)
         spaceAdmin = userCreatorService.createUser()
         spaceAdminToken = userCreatorService.login(spaceAdmin.username, spaceAdmin.password)
         teamAdmin = userCreatorService.createUser()
@@ -761,6 +765,9 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participant.userId.toString())
                 .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -771,8 +778,14 @@ constructor(
             MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
                 .header("Authorization", "Bearer $creatorToken")
                 .queryParam("member", participant3.userId.toString())
-                .queryParam("deadline", taskMembershipDeadline.toString())
                 .contentType("application/json")
+                .content(
+                    """
+                    {
+                    "deadline": "$taskMembershipDeadline"
+                    }
+                """
+                )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -783,8 +796,14 @@ constructor(
             MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
                 .header("Authorization", "Bearer $participantToken2")
                 .queryParam("member", participant2.userId.toString())
-                .queryParam("deadline", taskMembershipDeadline.toString())
                 .contentType("application/json")
+                .content(
+                    """
+                    {
+                    "deadline": "$taskMembershipDeadline"
+                    }
+                """
+                )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
     }
 
@@ -796,6 +815,9 @@ constructor(
                 .header("Authorization", "Bearer $creatorToken")
                 .queryParam("member", participant2.userId.toString())
                 .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
     }
 
@@ -807,6 +829,9 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participant.userId.toString())
                 .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isConflict)
@@ -820,8 +845,14 @@ constructor(
             MockMvcRequestBuilders.post("/tasks/${taskIds[1]}/participants")
                 .header("Authorization", "Bearer $teamMemberToken")
                 .queryParam("member", teamId.toString())
-                .queryParam("deadline", taskMembershipDeadline.toString())
                 .contentType("application/json")
+                .content(
+                    """
+                    {
+                    "deadline": "$taskMembershipDeadline"
+                    }
+                """
+                )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
@@ -835,8 +866,10 @@ constructor(
             MockMvcRequestBuilders.post("/tasks/${taskIds[1]}/participants")
                 .header("Authorization", "Bearer $teamCreatorToken")
                 .queryParam("member", teamId.toString())
-                .queryParam("deadline", taskMembershipDeadline.toString())
                 .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -847,8 +880,14 @@ constructor(
             MockMvcRequestBuilders.post("/tasks/${taskIds[1]}/participants")
                 .header("Authorization", "Bearer $teamCreatorToken")
                 .queryParam("member", teamId.toString())
-                .queryParam("deadline", taskMembershipDeadline.toString())
                 .contentType("application/json")
+                .content(
+                    """
+                    {
+                    "deadline": "$taskMembershipDeadline"
+                    }
+                """
+                )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isConflict)
@@ -862,6 +901,7 @@ constructor(
         val request =
             MockMvcRequestBuilders.get("/tasks/$taskId/participants")
                 .header("Authorization", "Bearer $participantToken")
+        // .param("approved","APPROVED")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -910,7 +950,101 @@ constructor(
     }
 
     @Test
-    @Order(103)
+    @Order(104)
+    fun testAddTestParticipantUser4() {
+        val request =
+            MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
+                .header("Authorization", "Bearer $participantToken4")
+                .queryParam("member", participant4.userId.toString())
+                .contentType("application/json")
+                .content("""
+                    {}
+                """)
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(105)
+    fun testDisApproveTestParticipantUser4() {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
+                .queryParam("member", participant4.userId.toString())
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": "DISAPPROVED"
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.participant.approved").value("DISAPPROVED"))
+    }
+
+    @Test
+    @Order(106)
+    fun testGetTaskParticipantsByApproveStatusNone() {
+        val taskId = taskIds[0]
+        val request =
+            MockMvcRequestBuilders.get("/tasks/$taskId/participants")
+                .header("Authorization", "Bearer $creatorToken")
+                .param("approved", "NONE")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.participants.length()").value(1))
+            .andExpect(jsonPath("$.data.participants[0].id").value(participant.userId))
+            .andExpect(jsonPath("$.data.participants[0].intro").isString)
+            .andExpect(jsonPath("$.data.participants[0].name").isString)
+            .andExpect(
+                jsonPath("$.data.participants[0].avatarId").value(userCreatorService.testAvatarId())
+            )
+    }
+
+    @Test
+    @Order(106)
+    fun testGetTaskParticipantsByApproveStatusApproved() {
+        val taskId = taskIds[0]
+        val request =
+            MockMvcRequestBuilders.get("/tasks/$taskId/participants")
+                .header("Authorization", "Bearer $creatorToken")
+                .param("approved", "APPROVED")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.participants.length()").value(1))
+            .andExpect(jsonPath("$.data.participants[0].id").value(participant3.userId))
+            .andExpect(jsonPath("$.data.participants[0].intro").isString)
+            .andExpect(jsonPath("$.data.participants[0].name").isString)
+            .andExpect(
+                jsonPath("$.data.participants[0].avatarId").value(userCreatorService.testAvatarId())
+            )
+    }
+
+    @Order(106)
+    fun testGetTaskParticipantsByApproveStatusDisapproved() {
+        val taskId = taskIds[0]
+        val request =
+            MockMvcRequestBuilders.get("/tasks/$taskId/participants")
+                .header("Authorization", "Bearer $creatorToken")
+                .param("approved", "NONE")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.participants.length()").value(1))
+            .andExpect(jsonPath("$.data.participants[0].id").value(participant4.userId))
+            .andExpect(jsonPath("$.data.participants[0].intro").isString)
+            .andExpect(jsonPath("$.data.participants[0].name").isString)
+            .andExpect(
+                jsonPath("$.data.participants[0].avatarId").value(userCreatorService.testAvatarId())
+            )
+    }
+
+    @Test
+    @Order(107)
     fun testApproveTaskParticipantUserPermissionDeniedError() {
         val request =
             MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
@@ -920,7 +1054,7 @@ constructor(
                 .content(
                     """
                 {
-                  "approved": true
+                  "approved": "APPROVED"
                 }
             """
                 )
@@ -928,7 +1062,7 @@ constructor(
     }
 
     @Test
-    @Order(103)
+    @Order(107)
     fun testTaskParticipantNotApprovedError() {
         val request =
             MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
@@ -946,7 +1080,7 @@ constructor(
     }
 
     @Test
-    @Order(104)
+    @Order(108)
     fun testApproveTestParticipantUser() {
         val request =
             MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
@@ -956,18 +1090,18 @@ constructor(
                 .content(
                     """
                 {
-                  "approved": true
+                  "approved": "APPROVED"
                 }
             """
                 )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.participant.approved").value(true))
+            .andExpect(jsonPath("$.data.participant.approved").value("APPROVED"))
     }
 
     @Test
-    @Order(105)
+    @Order(109)
     fun testPatchTestParticipantUserDeadline() {
         val request =
             MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
@@ -984,7 +1118,7 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.participant.approved").value(true))
+            .andExpect(jsonPath("$.data.participant.approved").value("APPROVED"))
             .andExpect(
                 jsonPath("$.data.participant.deadline").value(taskMembershipDeadline + 100000)
             )
@@ -1007,6 +1141,16 @@ constructor(
             MockMvcRequestBuilders.delete("/tasks/${taskIds[0]}/participants")
                 .queryParam("member", participant3.userId.toString())
                 .header("Authorization", "Bearer $participantToken3")
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(110)
+    fun testRemoveTestParticipantUser4() {
+        val request =
+            MockMvcRequestBuilders.delete("/tasks/${taskIds[0]}/participants")
+                .queryParam("member", participant4.userId.toString())
+                .header("Authorization", "Bearer $participantToken4")
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -1072,6 +1216,9 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participant.userId.toString())
                 .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -1083,6 +1230,9 @@ constructor(
                 .header("Authorization", "Bearer $participantToken2")
                 .queryParam("member", participant2.userId.toString())
                 .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -1094,6 +1244,9 @@ constructor(
                 .header("Authorization", "Bearer $teamCreatorToken")
                 .queryParam("member", teamId.toString())
                 .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 

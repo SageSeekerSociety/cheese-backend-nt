@@ -197,7 +197,9 @@ CREATE
 CREATE
     TABLE
         task_membership(
-            approved BOOLEAN NOT NULL,
+            approved SMALLINT NOT NULL CHECK(
+                approved BETWEEN 0 AND 2
+            ),
             created_at TIMESTAMP(6) NOT NULL,
             deadline TIMESTAMP(6),
             deleted_at TIMESTAMP(6),

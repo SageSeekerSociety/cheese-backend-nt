@@ -336,9 +336,15 @@ class TaskSubmissionService(
     ): TaskParticipantSummaryDTO {
         return when (membership.task!!.submitterType!!) {
             TaskSubmitterType.USER ->
-                userService.getTaskParticipantSummaryDto(membership.memberId!!)
+                userService.getTaskParticipantSummaryDto(
+                    membership.memberId!!,
+                    membership.approved!!
+                )
             TaskSubmitterType.TEAM ->
-                teamService.getTaskParticipantSummaryDto(membership.memberId!!)
+                teamService.getTaskParticipantSummaryDto(
+                    membership.memberId!!,
+                    membership.approved!!
+                )
         }
     }
 

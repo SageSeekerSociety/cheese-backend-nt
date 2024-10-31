@@ -832,6 +832,11 @@ paths:
           schema:
             type: integer
             format: int64
+        - schema:
+            $ref: "#/components/schemas/ApproveType"
+          in: query
+          name: approved
+          description: approve status
       responses:
         '200':
           content:
@@ -920,7 +925,7 @@ paths:
                   type: integer
                   format: int64
                 approved:
-                  type: boolean
+                  $ref: "#/components/schemas/ApproveType"
     delete:
       parameters:
         - description: Task ID
@@ -987,12 +992,6 @@ paths:
           schema:
             type: integer
             format: int64
-        - description: Member's deadline
-          in: query
-          name: deadline
-          schema:
-            type: integer
-            format: int64
       responses:
         "200":
           content:
@@ -1022,6 +1021,16 @@ paths:
                   - message
                 type: object
           description: OK
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deadline:
+                  type: integer
+                  format: int64
       tags: []
       operationId: post-task-participant
       summary: Apply for Task
@@ -2360,7 +2369,7 @@ components:
           type: integer
           format: int64
         approved:
-          type: boolean
+          $ref: '#/components/schemas/ApproveType'
     TaskParticipantSummary:
       title: TaskParticipantSummary
       type: object
@@ -2369,6 +2378,7 @@ components:
         - intro
         - name
         - avatarId
+        - approved
       properties:
         id:
           type: integer
@@ -2380,6 +2390,8 @@ components:
         avatarId:
           type: integer
           format: int64
+        approved:
+          $ref: '#/components/schemas/ApproveType'
     TeamMember:
       properties:
         role:
@@ -2405,6 +2417,12 @@ components:
       type: object
       x-stoplight:
         id: razh52jtnx59o
+    ApproveType:
+      description: approve status of task or taskmembership
+      enum:
+        - APPROVED
+        - DISAPPROVED
+        - NONE
     TeamMemberRoleType:
       description: 小组角色
       enum:

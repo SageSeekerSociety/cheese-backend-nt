@@ -375,6 +375,9 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participant.userId.toString())
                 .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -386,6 +389,9 @@ constructor(
                 .header("Authorization", "Bearer $participantToken2")
                 .queryParam("member", participant2.userId.toString())
                 .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -397,6 +403,9 @@ constructor(
                 .header("Authorization", "Bearer $teamCreatorToken")
                 .queryParam("member", teamId.toString())
                 .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -432,14 +441,16 @@ constructor(
                 .content(
                     """
                 {
-                  "approved": true
+                  "approved": "APPROVED"
                 }
             """
                 )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participant.approved").value(true))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.participant.approved").value("APPROVED")
+            )
     }
 
     @Test
@@ -453,14 +464,16 @@ constructor(
                 .content(
                     """
                 {
-                  "approved": true
+                  "approved": "APPROVED"
                 }
             """
                 )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participant.approved").value(true))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.participant.approved").value("APPROVED")
+            )
     }
 
     @Test
@@ -474,14 +487,16 @@ constructor(
                 .content(
                     """
                 {
-                  "approved": true
+                  "approved": "APPROVED"
                 }
             """
                 )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.participant.approved").value(true))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.data.participant.approved").value("APPROVED")
+            )
     }
 
     @Test

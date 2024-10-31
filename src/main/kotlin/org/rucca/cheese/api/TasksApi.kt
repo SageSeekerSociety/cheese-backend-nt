@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
 import javax.validation.constraints.NotNull
 import kotlin.collections.List
+import org.rucca.cheese.model.ApproveTypeDTO
 import org.rucca.cheese.model.DeleteTask200ResponseDTO
 import org.rucca.cheese.model.GetTask200ResponseDTO
 import org.rucca.cheese.model.GetTaskParticipants200ResponseDTO
@@ -21,6 +22,7 @@ import org.rucca.cheese.model.PatchTaskMembership200ResponseDTO
 import org.rucca.cheese.model.PatchTaskMembershipRequestDTO
 import org.rucca.cheese.model.PatchTaskRequestDTO
 import org.rucca.cheese.model.PatchTaskSubmissionReviewRequestDTO
+import org.rucca.cheese.model.PostTaskParticipantRequestDTO
 import org.rucca.cheese.model.PostTaskRequestDTO
 import org.rucca.cheese.model.PostTaskSubmission200ResponseDTO
 import org.rucca.cheese.model.PostTaskSubmissionRequestInnerDTO
@@ -209,7 +211,14 @@ interface TasksApi {
     fun getTaskParticipants(
         @Parameter(description = "Task ID", required = true)
         @PathVariable("taskId")
-        taskId: kotlin.Long
+        taskId: kotlin.Long,
+        @Parameter(
+            description = "approve status",
+            schema = Schema(allowableValues = ["APPROVED", "DISAPPROVED", "NONE"])
+        )
+        @Valid
+        @RequestParam(value = "approved", required = false)
+        approved: ApproveTypeDTO?
     ): ResponseEntity<GetTaskParticipants200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -611,7 +620,8 @@ interface TasksApi {
     @RequestMapping(
         method = [RequestMethod.POST],
         value = ["/tasks/{taskId}/participants"],
-        produces = ["application/json"]
+        produces = ["application/json"],
+        consumes = ["application/json"]
     )
     fun postTaskParticipant(
         @Parameter(description = "Task ID", required = true)
@@ -622,10 +632,10 @@ interface TasksApi {
         @Valid
         @RequestParam(value = "member", required = true)
         member: kotlin.Long,
-        @Parameter(description = "Member's deadline")
+        @Parameter(description = "", required = true)
         @Valid
-        @RequestParam(value = "deadline", required = false)
-        deadline: kotlin.Long?
+        @RequestBody
+        postTaskParticipantRequestDTO: PostTaskParticipantRequestDTO
     ): ResponseEntity<GetTask200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
