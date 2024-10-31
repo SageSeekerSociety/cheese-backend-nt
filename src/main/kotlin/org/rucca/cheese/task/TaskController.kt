@@ -428,6 +428,10 @@ class TaskController(
             authorizationService.audit("modify-approved", "task", taskId)
             taskService.updateApproved(taskId, patchTaskRequestDTO.approved)
         }
+        if (patchTaskRequestDTO.rejectReason != null) {
+            authorizationService.audit("modify-reject-reason", "task", taskId)
+            taskService.updateRejectReason(taskId, patchTaskRequestDTO.rejectReason)
+        }
         if (patchTaskRequestDTO.name != null) {
             taskService.updateTaskName(taskId, patchTaskRequestDTO.name)
         }
