@@ -3,6 +3,7 @@ package org.rucca.cheese.common.error
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageConversionException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -34,6 +35,17 @@ class GlobalErrorHandler {
     ): ResponseEntity<BaseError> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(BadRequestError(e.message ?: "Method argument type mismatch"))
+    }
+
+    @ExceptionHandler(HttpMessageConversionException::class)
+    @ResponseBody
+    fun handleHttpMessageConversionException(
+        e: HttpMessageConversionException
+    ): ResponseEntity<BaseError> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(
+                BadRequestError(e.message ?: "Invalid request caused http message conversion error")
+            )
     }
 
     @ExceptionHandler(Exception::class)
