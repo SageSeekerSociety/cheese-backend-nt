@@ -41,8 +41,8 @@ constructor(
     private var originalSpaceName = spaceName
     private var spaceIntro = "This is a test space."
     private var spaceDescription = "A lengthy text. ".repeat(1000)
-    private var spaceAnnouncements = "A lengthy text. ".repeat(1000)
-    private var spaceTaskTemplates = "A lengthy text. ".repeat(1000)
+    private var spaceAnnouncements = "[]"
+    private var spaceTaskTemplates = "[]"
     private var spaceAvatarId = userCreatorService.testAvatarId()
     private var spaceId: IdType = -1
     private var spaceIdOfSecond: IdType = -1

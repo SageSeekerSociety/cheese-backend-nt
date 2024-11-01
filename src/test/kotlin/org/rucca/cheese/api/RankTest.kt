@@ -76,8 +76,8 @@ constructor(
                     "description": "$spaceDescription",
                     "avatarId": $spaceAvatarId,
                     "enableRank": false,
-                    "announcements": "",
-                    "taskTemplates": ""
+                    "announcements": "[]",
+                    "taskTemplates": "[]"
                 }
             """
                 )
