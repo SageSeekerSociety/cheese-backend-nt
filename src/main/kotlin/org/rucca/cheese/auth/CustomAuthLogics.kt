@@ -46,7 +46,20 @@ class CustomAuthLogics {
         customLogicData: Any?,
     ): Boolean {
         val handler = logics[name] ?: throw RuntimeException("Custom auth logic '$name' not found.")
-        return handler(
+        val result =
+            handler(
+                userId,
+                action,
+                resourceType,
+                resourceId,
+                authInfo,
+                resourceOwnerIdGetter,
+                customLogicData
+            )
+        logger.debug(
+            "Invoked custom auth logic '{}'. Result: {}, userId: {}, action: {}, resourceType: {}, resourceId: {}, authInfo: {}, resourceOwnerIdGetter: {}, customLogicData: {}",
+            name,
+            result,
             userId,
             action,
             resourceType,
@@ -55,6 +68,7 @@ class CustomAuthLogics {
             resourceOwnerIdGetter,
             customLogicData
         )
+        return result
     }
 
     fun evaluate(
@@ -80,8 +94,10 @@ class CustomAuthLogics {
             root = result.parseTreeRoot.getValue()
         }
         if (root !is CustomAuthLogicsVariableNode)
-            logger.info(
-                "Parsed complex custom auth logic expression. Original: '$expression', parsed: $root"
+            logger.debug(
+                "Parsed complex custom auth logic expression. Original: '{}', parsed: {}",
+                expression,
+                root
             )
         fun evaluator(node: CustomAuthLogicsExpressionNode): Boolean {
             return when (node) {

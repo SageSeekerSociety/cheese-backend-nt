@@ -343,7 +343,6 @@ constructor(
     @Order(40)
     fun testUpdateTaskWithFullRequest() {
         val taskId = taskIds[0]
-        print(creatorToken)
         val request =
             MockMvcRequestBuilders.patch("/tasks/$taskId")
                 .header("Authorization", "Bearer $creatorToken")
