@@ -162,7 +162,9 @@ CREATE
 CREATE
     TABLE
         task(
-            approved BOOLEAN NOT NULL,
+            approved SMALLINT NOT NULL CHECK(
+                approved BETWEEN 0 AND 2
+            ),
             "creator_id" INTEGER NOT NULL,
             editable BOOLEAN NOT NULL,
             RANK INTEGER,
@@ -181,7 +183,7 @@ CREATE
             description TEXT NOT NULL,
             intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
-            reject_reason VARCHAR(255),
+            reject_reason VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
 
