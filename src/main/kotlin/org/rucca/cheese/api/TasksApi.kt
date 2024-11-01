@@ -331,10 +331,13 @@ interface TasksApi {
         @Valid
         @RequestParam(value = "team", required = false)
         team: kotlin.Int?,
-        @Parameter(description = "Distinguish task status")
+        @Parameter(
+            description = "Distinguish task status",
+            schema = Schema(allowableValues = ["APPROVED", "DISAPPROVED", "NONE"])
+        )
         @Valid
         @RequestParam(value = "approved", required = false)
-        approved: kotlin.Boolean?,
+        approved: ApproveTypeDTO?,
         @Parameter(description = "Owner's User ID")
         @Valid
         @RequestParam(value = "owner", required = false)

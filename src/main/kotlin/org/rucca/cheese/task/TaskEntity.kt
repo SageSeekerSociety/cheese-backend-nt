@@ -3,6 +3,7 @@ package org.rucca.cheese.task
 import jakarta.persistence.*
 import java.time.LocalDateTime
 import org.hibernate.annotations.SQLRestriction
+import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.space.Space
@@ -44,8 +45,8 @@ class Task(
     @Column(nullable = false, columnDefinition = "TEXT") var description: String? = null,
     @ElementCollection var submissionSchema: List<TaskSubmissionSchema>? = null,
     @Column(nullable = true) var rank: Int? = null,
-    @Column(nullable = false) var approved: Boolean? = null,
-    @Column(nullable = true) var rejectReason: String? = null,
+    @Column(nullable = false) var approved: ApproveType? = null,
+    @Column(nullable = false) var rejectReason: String? = null,
 ) : BaseEntity()
 
 interface TaskRepository : JpaRepository<Task, IdType>

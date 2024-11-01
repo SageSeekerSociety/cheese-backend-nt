@@ -6,9 +6,10 @@ import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
+import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.common.persistent.convert
 import org.rucca.cheese.model.*
-import org.rucca.cheese.task.ApproveType
 import org.rucca.cheese.team.error.NotTeamMemberYetError
 import org.rucca.cheese.team.error.TeamRoleConflictError
 import org.rucca.cheese.user.Avatar
@@ -90,7 +91,7 @@ class TeamService(
             team.description!!,
             team.name!!,
             team.avatar!!.id!!.toLong(),
-            convertApproveType(approveType)
+            approveType.convert(),
         )
     }
 

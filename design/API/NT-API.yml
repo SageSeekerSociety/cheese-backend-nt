@@ -631,7 +631,7 @@ paths:
                 rank:
                   type: integer
                 approved:
-                  type: boolean
+                  $ref: '#/components/schemas/ApproveType'
                 rejectReason:
                   type: string
       summary: Update Task
@@ -686,7 +686,7 @@ paths:
           name: team
           description: Team ID
         - schema:
-            type: boolean
+            $ref: '#/components/schemas/ApproveType'
           in: query
           name: approved
           description: Distinguish task status 
@@ -794,7 +794,6 @@ paths:
                 deadline:
                   type: integer
                   format: int64
-                  default: null
                 defaultDeadline:
                   type: integer
                   format: int64
@@ -2139,7 +2138,7 @@ components:
         rank:
           type: integer
         approved:
-          type: boolean
+          $ref: '#/components/schemas/ApproveType'
         rejectReason:
           type: string
     TaskSubmitterType:

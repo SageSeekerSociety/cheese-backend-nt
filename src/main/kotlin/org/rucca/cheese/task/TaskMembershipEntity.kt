@@ -4,16 +4,11 @@ import jakarta.persistence.*
 import java.time.LocalDateTime
 import java.util.Optional
 import org.hibernate.annotations.SQLRestriction
+import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
-
-enum class ApproveType {
-    APPROVED,
-    DISAPPROVED,
-    NONE
-}
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
