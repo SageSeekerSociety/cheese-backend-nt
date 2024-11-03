@@ -6,6 +6,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.AuthenticationService
+import org.rucca.cheese.auth.error.PermissionDeniedError
 import org.rucca.cheese.common.config.ApplicationConfig
 import org.rucca.cheese.common.error.BaseError
 import org.rucca.cheese.common.error.NotFoundError
@@ -184,7 +185,9 @@ class TaskService(
                     description = description,
                     submissionSchema = submissionSchema,
                     rank = rank,
-                    approved = ApproveType.NONE,
+                    approved =
+                        if (spaceId != null || teamId != null) ApproveType.NONE
+                        else ApproveType.APPROVED,
                     rejectReason = "",
                 )
             )
@@ -334,6 +337,10 @@ class TaskService(
     }
 
     fun isTaskJoinable(task: Task, memberId: IdType): BaseError? {
+        // Task is approved
+        if (task.approved != ApproveType.APPROVED)
+            return PermissionDeniedError("add-participant", "task", task.id, null)
+
         // Ensure member exists
         when (task.submitterType!!) {
             TaskSubmitterType.USER ->
@@ -377,12 +384,20 @@ class TaskService(
         }
     }
 
-    fun getSubmittability(task: IdType, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
-        when (getTaskSumbitterType(task)) {
-            USER ->
-                return Pair(taskMembershipRepository.existsByTaskIdAndMemberId(task, userId), null)
-            TEAM -> {
-                val teams = teamService.getTeamsThatUserCanUseToSubmitTask(task, userId)
+    fun getSubmittability(taskId: IdType, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
+        val task = getTask(taskId)
+        when (task.submitterType!!) {
+            TaskSubmitterType.USER ->
+                return Pair(
+                    taskMembershipRepository.existsByTaskIdAndMemberIdAndApproved(
+                        taskId,
+                        userId,
+                        ApproveType.APPROVED
+                    ),
+                    null
+                )
+            TaskSubmitterType.TEAM -> {
+                val teams = teamService.getTeamsThatUserCanUseToSubmitTask(taskId, userId)
                 return Pair(teams.isNotEmpty(), teams)
             }
         }
