@@ -91,9 +91,10 @@ data class TaskDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("rank")
     val rank: kotlin.Int? = null,
+    @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("approved")
-    val approved: kotlin.Boolean? = null,
+    val approved: ApproveTypeDTO? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("rejectReason")
     val rejectReason: kotlin.String? = null

@@ -89,8 +89,8 @@ constructor(
                     "intro": "$spaceIntro",
                     "description": "$spaceDescription",
                     "avatarId": $spaceAvatarId,
-                    "announcements": "",
-                    "taskTemplates": ""
+                    "announcements": "[]",
+                    "taskTemplates": "[]"
                 }
             """
                 )
@@ -316,14 +316,14 @@ constructor(
                 .content(
                     """
                 {
-                  "approved": true
+                  "approved": "APPROVED"
                 }
             """
                 )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.task.approved").value(true))
+            .andExpect(jsonPath("$.data.task.approved").value("APPROVED"))
     }
 
     @Test
@@ -415,7 +415,7 @@ constructor(
         val request =
             MockMvcRequestBuilders.get("/tasks")
                 .header("Authorization", "Bearer $spaceAdminToken")
-                .param("approved", "false")
+                .param("approved", "NONE")
                 .param("space", spaceId.toString())
         mockMvc
             .perform(request)
@@ -429,7 +429,7 @@ constructor(
         val request =
             MockMvcRequestBuilders.get("/tasks")
                 .header("Authorization", "Bearer $creatorToken")
-                .param("approved", "false")
+                .param("approved", "NONE")
                 .param("space", spaceId.toString())
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
     }
@@ -483,7 +483,7 @@ constructor(
                 .content(
                     """
                 {
-                  "approved": true
+                  "approved": "APPROVED"
                 }
             """
                 )
@@ -693,7 +693,7 @@ constructor(
         val request =
             MockMvcRequestBuilders.get("/tasks")
                 .header("Authorization", "Bearer $creatorToken")
-                .param("approved", "true")
+                .param("approved", "APPROVED")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -717,7 +717,7 @@ constructor(
             MockMvcRequestBuilders.get("/tasks")
                 .header("Authorization", "Bearer $creatorToken")
                 .param("team", teamId.toString())
-                .param("approved", "true")
+                .param("approved", "APPROVED")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -733,7 +733,7 @@ constructor(
                 .header("Authorization", "Bearer $creatorToken")
                 .param("space", spaceId.toString())
                 .param("page_size", "2")
-                .param("approved", "true")
+                .param("approved", "APPROVED")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -757,7 +757,7 @@ constructor(
                 .param("space", spaceId.toString())
                 .param("page_size", "2")
                 .param("page_start", "${taskIds[2]}")
-                .param("approved", "true")
+                .param("approved", "APPROVED")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -778,7 +778,7 @@ constructor(
                 .param("space", spaceId.toString())
                 .param("sort_by", "createdAt")
                 .param("sort_order", "asc")
-                .param("approved", "true")
+                .param("approved", "APPROVED")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -793,7 +793,7 @@ constructor(
             MockMvcRequestBuilders.get("/tasks")
                 .header("Authorization", "Bearer $creatorToken")
                 .param("keywords", taskIds[0].toString())
-                .param("approved", "true")
+                .param("approved", "APPROVED")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -808,7 +808,7 @@ constructor(
             MockMvcRequestBuilders.get("/tasks")
                 .header("Authorization", "Bearer $creatorToken")
                 .param("keywords", "$taskName (1) (updated)")
-                .param("approved", "true")
+                .param("approved", "APPROVED")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -824,7 +824,7 @@ constructor(
                 .header("Authorization", "Bearer $creatorToken")
                 .param("sort_by", "deadline")
                 .param("sort_order", "desc")
-                .param("approved", "true")
+                .param("approved", "APPROVED")
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 

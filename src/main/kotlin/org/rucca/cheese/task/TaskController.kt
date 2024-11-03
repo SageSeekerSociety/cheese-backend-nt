@@ -10,8 +10,10 @@ import org.rucca.cheese.auth.annotation.AuthInfo
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.ResourceId
 import org.rucca.cheese.common.helper.toLocalDateTime
+import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.common.persistent.convert
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.SpaceService
 import org.rucca.cheese.team.TeamService
@@ -156,7 +158,7 @@ class TaskController(
             _: IdGetter?,
             _: Any?,
             ->
-            val approvedQuery = authInfo["approved"] as? Boolean ?: false
+            val approvedQuery = (authInfo["approved"] as? ApproveTypeDTO) == ApproveTypeDTO.APPROVED
             val approvedOfInstance =
                 if (resourceId != null) taskService.isTaskApproved(resourceId) else false
             approvedQuery || approvedOfInstance
@@ -319,13 +321,7 @@ class TaskController(
         @ResourceId taskId: Long,
         approved: ApproveTypeDTO?
     ): ResponseEntity<GetTaskParticipants200ResponseDTO> {
-        val approveType =
-            when (approved) {
-                ApproveTypeDTO.APPROVED -> ApproveType.APPROVED
-                ApproveTypeDTO.DISAPPROVED -> ApproveType.DISAPPROVED
-                ApproveTypeDTO.NONE -> ApproveType.NONE
-                null -> null
-            }
+        val approveType = approved?.convert()
         val participants = taskService.getTaskParticipantDtos(taskId, approveType)
         return ResponseEntity.ok(
             GetTaskParticipants200ResponseDTO(
@@ -385,7 +381,7 @@ class TaskController(
     override fun getTasks(
         @AuthInfo("space") space: Long?,
         @AuthInfo("team") team: Int?,
-        @AuthInfo("approved") approved: Boolean?,
+        @AuthInfo("approved") approved: ApproveTypeDTO?,
         @AuthInfo("owner") owner: Long?,
         pageSize: Int,
         pageStart: Long?,
@@ -412,7 +408,7 @@ class TaskController(
             taskService.enumerateTasks(
                 space = space,
                 team = team,
-                approved = approved,
+                approved = approved?.convert(),
                 owner = owner,
                 keywords = keywords,
                 pageSize = pageSize,
@@ -434,7 +430,7 @@ class TaskController(
     ): ResponseEntity<GetTask200ResponseDTO> {
         if (patchTaskRequestDTO.approved != null) {
             authorizationService.audit("modify-approved", "task", taskId)
-            taskService.updateApproved(taskId, patchTaskRequestDTO.approved)
+            taskService.updateApproved(taskId, patchTaskRequestDTO.approved.convert())
         }
         if (patchTaskRequestDTO.rejectReason != null) {
             authorizationService.audit("modify-reject-reason", "task", taskId)
@@ -491,20 +487,21 @@ class TaskController(
         @AuthInfo("member") member: Long,
         patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO
     ): ResponseEntity<PatchTaskMembership200ResponseDTO> {
-        val approveType =
-            when (patchTaskMembershipRequestDTO.approved) {
-                ApproveTypeDTO.APPROVED -> ApproveType.APPROVED
-                ApproveTypeDTO.DISAPPROVED -> ApproveType.DISAPPROVED
-                ApproveTypeDTO.NONE -> ApproveType.NONE
-                null -> null
-            }
-        val participant =
-            taskService.updateTaskMembership(
+        if (patchTaskMembershipRequestDTO.deadline != null) {
+            taskService.updateTaskMembershipDeadline(
                 taskId,
                 member,
-                patchTaskMembershipRequestDTO.deadline,
-                approveType
+                patchTaskMembershipRequestDTO.deadline
             )
+        }
+        if (patchTaskMembershipRequestDTO.approved != null) {
+            taskService.updateTaskMembershipApproved(
+                taskId,
+                member,
+                patchTaskMembershipRequestDTO.approved.convert()
+            )
+        }
+        val participant = taskService.getTaskMembershipDTO(taskId, member)
         return ResponseEntity.ok(
             PatchTaskMembership200ResponseDTO(
                 200,

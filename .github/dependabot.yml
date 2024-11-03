@@ -3,19 +3,19 @@ updates:
   - package-ecosystem: 'maven'
     directory: '/'
     schedule:
-      interval: 'monthly'
+      interval: 'daily'
 
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
-      interval: 'monthly'
+      interval: 'daily'
 
   - package-ecosystem: 'docker'
     directory: '/'
     schedule:
-      interval: 'monthly'
+      interval: 'daily'
 
   - package-ecosystem: 'devcontainers'
     directory: '/'
     schedule:
-      interval: 'monthly'
+      interval: 'daily'

@@ -6,14 +6,14 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.4</version>
+        <version>3.3.5</version>
         <relativePath/>
     </parent>
 
     <!-- Project Info -->
     <groupId>org.rucca</groupId>
     <artifactId>cheese</artifactId>
-    <version>0.6.0</version>
+    <version>0.7.0</version>
     <name>backend</name>
     <description>Backend for Cheese Web Application</description>
     <url/>
@@ -31,7 +31,7 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <kotlin.version>2.0.20</kotlin.version>
+        <kotlin.version>2.0.21</kotlin.version>
     </properties>
 
     <!-- Project Dependencies -->
@@ -136,23 +136,23 @@
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
-            <version>3.1.8</version>
+            <version>3.1.9</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-json-jackson</artifactId>
-            <version>3.1.8</version>
+            <version>3.1.9</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-multipart</artifactId>
-            <version>3.1.8</version>
+            <version>3.1.9</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.inject</groupId>
             <artifactId>jersey-hk2</artifactId>
-            <version>3.1.8</version>
+            <version>3.1.9</version>
         </dependency>
         <dependency>
             <groupId>org.parboiled</groupId>
@@ -194,14 +194,14 @@
                     <dependency>
                         <groupId>org.jetbrains.kotlin</groupId>
                         <artifactId>kotlin-maven-noarg</artifactId>
-                        <version>2.0.20</version>
+                        <version>2.0.21</version>
                     </dependency>
                 </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>7.8.0</version>
+                <version>7.9.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -287,7 +287,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>3.5.1</version>
                 <configuration>
                     <systemPropertyVariables>
                         <spring.jpa.hibernate.ddl-auto>update</spring.jpa.hibernate.ddl-auto>
