@@ -21,6 +21,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -253,6 +254,27 @@ constructor(
         logger.info("Created task: $taskId")
     }
 
+    fun approveTask(
+        taskId: IdType,
+        token: String,
+    ) {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/$taskId")
+                .header("Authorization", "Bearer $token")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": "APPROVED"
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.task.approved").value("APPROVED"))
+    }
+
     fun approveTaskParticipant(token: String, taskId: IdType, memberId: IdType) {
         val request =
             MockMvcRequestBuilders.patch("/tasks/${taskId}/participants")
@@ -289,6 +311,7 @@ constructor(
             team = teamId,
             space = spaceId,
         )
+        approveTask(taskIds[0], spaceCreatorToken)
         createTask(
             name = "$taskName (2)",
             submitterType = "TEAM",
@@ -301,6 +324,7 @@ constructor(
             team = teamId,
             space = spaceId,
         )
+        approveTask(taskIds[1], spaceCreatorToken)
         createTask(
             name = "$taskName (3)",
             submitterType = "USER",
@@ -313,6 +337,7 @@ constructor(
             team = null,
             space = spaceId,
         )
+        approveTask(taskIds[2], spaceCreatorToken)
         createTask(
             name = "$taskName (4)",
             submitterType = "USER",

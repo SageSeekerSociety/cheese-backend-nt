@@ -262,17 +262,15 @@ constructor(
                   "description": "$description",
                   "submissionSchema": [
                     ${
-                        submissionSchema
-                            .map {
-                                """
+                    submissionSchema.map {
+                        """
                                 {
                                   "prompt": "${it.first}",
                                   "type": "${it.second}"
                                 }
                             """
-                            }
-                            .joinToString(",\n")
-                    }
+                    }.joinToString(",\n")
+                }
                   ],
                   "team": ${team ?: "null"},
                   "space": ${space ?: "null"}
@@ -458,6 +456,23 @@ constructor(
                 .queryParam("queryJoinability", "true")
                 .queryParam("querySubmittability", "true")
                 .header("Authorization", "Bearer $participantToken")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+            .andExpect(jsonPath("$.error.name").value("PermissionDeniedError"))
+    }
+
+    @Test
+    @Order(17)
+    fun testJoinUnapprovedTaskPermissionDeniedError() {
+        val request =
+            MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
+                .header("Authorization", "Bearer $participantToken")
+                .queryParam("member", participant.userId.toString())
+                .contentType("application/json")
+                .content("""
+                    {}
+                """)
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
@@ -976,7 +991,7 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.participants[?(@.id == ${ participant.userId })]").exists())
+            .andExpect(jsonPath("$.data.participants[?(@.id == ${participant.userId})]").exists())
     }
 
     @Test

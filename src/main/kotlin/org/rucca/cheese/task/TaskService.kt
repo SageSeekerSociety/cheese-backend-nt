@@ -184,7 +184,9 @@ class TaskService(
                     description = description,
                     submissionSchema = submissionSchema,
                     rank = rank,
-                    approved = ApproveType.NONE,
+                    approved =
+                        if (spaceId != null || teamId != null) ApproveType.NONE
+                        else ApproveType.APPROVED,
                     rejectReason = "",
                 )
             )

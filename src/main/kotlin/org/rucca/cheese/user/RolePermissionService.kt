@@ -172,7 +172,7 @@ class RolePermissionService {
                                 types = listOf("task"),
                             ),
                         customLogic =
-                            "(!deadline-is-set && ((is-user-task && task-member-is-self) || (is-team-task && task-user-is-admin-of-member)))" +
+                            "(!deadline-is-set && is-task-approved && ((is-user-task && task-member-is-self) || (is-team-task && task-user-is-admin-of-member)))" +
                                 "|| (deadline-is-set && (owned || is-space-admin-of-task || is-team-admin-of-task))",
                     ),
                     Permission(
