@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -144,6 +145,27 @@ constructor(
         return taskId
     }
 
+    fun approveTask(
+        taskId: IdType,
+        token: String,
+    ) {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/$taskId")
+                .header("Authorization", "Bearer $token")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": "APPROVED"
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.task.approved").value("APPROVED"))
+    }
+
     fun addParticipantUser(token: String, taskId: IdType, userId: IdType) {
         val request =
             MockMvcRequestBuilders.post("/tasks/${taskId}/participants")
@@ -221,6 +243,7 @@ constructor(
                 spaceId,
                 1
             )
+        approveTask(taskId, creatorToken)
         addParticipantUser(participantToken, taskId, participant.userId)
         approveTaskParticipant(creatorToken, taskId, participant.userId)
         submissionId = submitTaskUser(participantToken, taskId, participant.userId)
@@ -239,6 +262,7 @@ constructor(
                 spaceId,
                 2
             )
+        approveTask(taskId2, creatorToken)
         addParticipantUser(participantToken, taskId2, participant.userId)
         approveTaskParticipant(creatorToken, taskId2, participant.userId)
         submissionId2 = submitTaskUser(participantToken, taskId2, participant.userId)
@@ -257,6 +281,7 @@ constructor(
                 spaceId,
                 1
             )
+        approveTask(taskId3, creatorToken)
         addParticipantUser(participantToken, taskId3, participant.userId)
         approveTaskParticipant(creatorToken, taskId3, participant.userId)
         submissionId3 = submitTaskUser(participantToken, taskId3, participant.userId)
@@ -275,6 +300,7 @@ constructor(
                 spaceId,
                 2
             )
+        approveTask(taskId4, creatorToken)
     }
 
     @Test

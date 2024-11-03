@@ -33,6 +33,12 @@ interface taskMembershipRepository : JpaRepository<TaskMembership, IdType> {
 
     fun existsByTaskIdAndMemberId(taskId: IdType, memberId: IdType): Boolean
 
+    fun existsByTaskIdAndMemberIdAndApproved(
+        taskId: IdType,
+        memberId: IdType,
+        approved: ApproveType
+    ): Boolean
+
     fun existsByTaskId(taskId: IdType): Boolean
 
     @Query(
