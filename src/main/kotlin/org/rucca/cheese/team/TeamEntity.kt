@@ -2,6 +2,7 @@ package org.rucca.cheese.team
 
 import jakarta.persistence.*
 import org.hibernate.annotations.SQLRestriction
+import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.user.Avatar
@@ -57,10 +58,12 @@ interface TeamRepository : JpaRepository<Team, IdType> {
         JOIN TaskMembership taskMembership ON team.id = taskMembership.memberId
         WHERE teamUserRelation.user.id = :userId
         AND taskMembership.task.id = :taskId
+        AND taskMembership.approved = :approved
         """
     )
     fun getTeamsThatUserCanUseToSubmitTask(
         taskId: IdType,
         userId: IdType,
+        approved: ApproveType = ApproveType.APPROVED,
     ): List<Team>
 }

@@ -1026,8 +1026,8 @@ constructor(
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("$.data.task.joinable").value(false))
             .andExpect(jsonPath("$.data.task.joinableAsTeam").isEmpty)
-            .andExpect(jsonPath("$.data.task.submittable").value(true))
-            .andExpect(jsonPath("$.data.task.submittableAsTeam[0].id").value(teamId))
+            .andExpect(jsonPath("$.data.task.submittable").value(false))
+            .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty())
     }
 
     @Test
