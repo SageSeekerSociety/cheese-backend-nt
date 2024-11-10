@@ -307,10 +307,21 @@ class TaskController(
     @Guard("query", "task")
     override fun getTask(
         @ResourceId taskId: Long,
+        querySpace: Boolean,
+        queryTeam: Boolean,
         queryJoinability: Boolean,
-        querySubmittability: Boolean
+        querySubmittability: Boolean,
+        queryJoined: Boolean,
     ): ResponseEntity<GetTask200ResponseDTO> {
-        val taskDTO = taskService.getTaskDto(taskId, queryJoinability, querySubmittability)
+        val taskDTO =
+            taskService.getTaskDto(
+                taskId,
+                querySpace,
+                queryTeam,
+                queryJoinability,
+                querySubmittability,
+                queryJoined
+            )
         return ResponseEntity.ok(
             GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK")
         )
@@ -380,15 +391,19 @@ class TaskController(
     @Guard("enumerate", "task")
     override fun getTasks(
         @AuthInfo("space") space: Long?,
-        @AuthInfo("team") team: Int?,
+        @AuthInfo("team") team: Long?,
         @AuthInfo("approved") approved: ApproveTypeDTO?,
         @AuthInfo("owner") owner: Long?,
+        joined: Boolean?,
         pageSize: Int,
         pageStart: Long?,
         sortBy: String,
         sortOrder: String,
+        querySpace: Boolean,
+        queryTeam: Boolean,
         queryJoinability: Boolean,
         querySubmittability: Boolean,
+        queryJoined: Boolean,
         keywords: String?,
     ): ResponseEntity<GetTasks200ResponseDTO> {
         val by =
@@ -410,13 +425,17 @@ class TaskController(
                 team = team,
                 approved = approved?.convert(),
                 owner = owner,
+                joined = joined,
                 keywords = keywords,
                 pageSize = pageSize,
                 pageStart = pageStart,
                 sortBy = by,
                 sortOrder = order,
+                querySpace = querySpace,
+                queryTeam = queryTeam,
                 queryJoinability = queryJoinability,
                 querySubmittability = querySubmittability,
+                queryJoined = queryJoined,
             )
         return ResponseEntity.ok(
             GetTasks200ResponseDTO(200, GetTasks200ResponseDataDTO(taskSummaryDTOs, page), "OK")

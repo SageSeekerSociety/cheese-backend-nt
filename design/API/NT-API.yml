@@ -505,6 +505,18 @@ paths:
             type: boolean
             default: false
           in: query
+          name: querySpace
+          description: Query the space that the task belongs to
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryTeam
+          description: Query the team that the task belongs to
+        - schema:
+            type: boolean
+            default: false
+          in: query
           name: queryJoinability
           description: Check whether current user can join this task or using one of his/her team
         - schema:
@@ -513,6 +525,12 @@ paths:
           in: query
           name: querySubmittability
           description: Check whether current user can submit this task or using one of his/her team
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryJoined
+          description: Check whether current user has joined this task
       responses:
         "200":
           content:
@@ -682,6 +700,7 @@ paths:
           description: Space ID
         - schema:
             type: integer
+            format: int64
           in: query
           name: team
           description: Team ID
@@ -696,6 +715,11 @@ paths:
           in: query
           name: owner
           description: Owner's User ID
+        - schema:
+            type: boolean
+          in: query
+          name: joined
+          description: Require joined or not
         - schema:
             type: integer
             default: 9
@@ -724,6 +748,18 @@ paths:
             type: boolean
             default: false
           in: query
+          name: querySpace
+          description: Query the space that the task belongs to
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryTeam
+          description: Query the team that the task belongs to
+        - schema:
+            type: boolean
+            default: false
+          in: query
           name: queryJoinability
           description: Check whether current user can join this task or using one of his/her team
         - schema:
@@ -732,6 +768,12 @@ paths:
           in: query
           name: querySubmittability
           description: Check whether current user can submit this task or using one of his/her team
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryJoined
+          description: Check whether current user has joined this task
         - schema:
             type: string
           in: query
@@ -2079,6 +2121,10 @@ components:
           type: string
           x-stoplight:
             id: szwjs5c0ougvr
+        space:
+          $ref: '#/components/schemas/Space'
+        team:
+          $ref: '#/components/schemas/Team'
         submissionSchema:
           type: array
           x-stoplight:
@@ -2141,6 +2187,12 @@ components:
           $ref: '#/components/schemas/ApproveType'
         rejectReason:
           type: string
+        joined:
+          type: boolean
+        joinedAsTeam:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamSummary'
     TaskSubmitterType:
       title: TaskSubmitterType
       x-stoplight:
