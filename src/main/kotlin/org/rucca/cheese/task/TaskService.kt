@@ -132,11 +132,10 @@ class TaskService(
     ): TaskDTO {
         val userId = authenticationService.getCurrentUserId()
         val space =
-            if (querySpace && this.space!!.id != null) spaceService.getSpaceDto(this.space.id!!)
+            if (querySpace && this.space?.id != null) spaceService.getSpaceDto(this.space.id!!)
             else null
         val team =
-            if (queryTeam && this.team!!.id != null) teamService.getTeamDto(this.team.id!!)
-            else null
+            if (queryTeam && this.team?.id != null) teamService.getTeamDto(this.team.id!!) else null
         val joinability = if (queryJoinability) getJoinability(this, userId) else Pair(null, null)
         val submittability =
             if (querySubmittability) getSubmittability(this, userId) else Pair(null, null)
@@ -568,7 +567,10 @@ class TaskService(
         val query = entityManager.createQuery(cq)
         var result = query.resultList
         if (joined != null)
-            result = result.filter { getJoined(it, authenticationService.getCurrentUserId()).first }
+            result =
+                result.filter {
+                    getJoined(it, authenticationService.getCurrentUserId()).first == joined
+                }
         val (curr, page) =
             PageHelper.pageFromAll(
                 result,
@@ -616,13 +618,15 @@ class TaskService(
                 TaskElasticSearch
             >()
         var entities = taskRepository.findAllById(result.map { it.id })
-        if (querySpace) entities = entities.filter { it.space?.id == space }
-        if (queryTeam) entities = entities.filter { it.team?.id == team }
+        if (space != null) entities = entities.filter { it.space?.id == space }
+        if (team != null) entities = entities.filter { it.team?.id == team }
         if (approved != null) entities = entities.filter { it.approved == approved }
         if (owner != null) entities = entities.filter { it.creator?.id == owner.toInt() }
         if (joined != null)
             entities =
-                entities.filter { getJoined(it, authenticationService.getCurrentUserId()).first }
+                entities.filter {
+                    getJoined(it, authenticationService.getCurrentUserId()).first == joined
+                }
         val (tasks, page) =
             PageHelper.pageFromAll(
                 entities,
