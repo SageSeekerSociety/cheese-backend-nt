@@ -78,6 +78,11 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
+    SEQUENCE task_topics_relation_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE team_seq
 START WITH
     1 INCREMENT BY 50;
@@ -86,6 +91,11 @@ CREATE
     SEQUENCE team_user_relation_seq
 START WITH
     1 INCREMENT BY 50;
+
+CREATE
+    SEQUENCE topic_id_seq
+START WITH
+    1 INCREMENT BY 1;
 
 CREATE
     SEQUENCE user_id_seq
@@ -257,6 +267,18 @@ CREATE
 
 CREATE
     TABLE
+        task_topics_relation(
+            topic_id INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            task_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
         team(
             avatar_id INTEGER NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
@@ -281,6 +303,17 @@ CREATE
             id BIGINT NOT NULL,
             team_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        topic(
+            created_by_id INTEGER NOT NULL,
+            id INTEGER NOT NULL,
+            created_at TIMESTAMP(6) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            deleted_at TIMESTAMP(6) WITH TIME ZONE,
+            name text NOT NULL,
             PRIMARY KEY(id)
         );
 
@@ -323,6 +356,14 @@ CREATE
 CREATE
     INDEX IDX3ctl72phv5d0yluddhpkxb1y4 ON
     task_submission_review(submission_id);
+
+CREATE
+    INDEX IDXka5lit0ursfthx3207eojpvn7 ON
+    task_topics_relation(task_id);
+
+CREATE
+    INDEX IDXop6rbg45aknhvuqaakuonifao ON
+    task_topics_relation(topic_id);
 
 CREATE
     INDEX IDXg2l9qqsoeuynt4r5ofdt1x2td ON
@@ -388,6 +429,12 @@ ALTER TABLE
     IF EXISTS task_submission_review ADD CONSTRAINT FKba2fmo0mgjdlohcnpf97tvgvt FOREIGN KEY(submission_id) REFERENCES task_submission;
 
 ALTER TABLE
+    IF EXISTS task_topics_relation ADD CONSTRAINT FKjbxaijxjd045fy4ry2pxenrir FOREIGN KEY(task_id) REFERENCES task;
+
+ALTER TABLE
+    IF EXISTS task_topics_relation ADD CONSTRAINT FKd1esf4rvrn7eedttnfqs5dfw1 FOREIGN KEY(topic_id) REFERENCES topic;
+
+ALTER TABLE
     IF EXISTS team ADD CONSTRAINT FKjv1k745e89swu3gj896pxcq3y FOREIGN KEY(avatar_id) REFERENCES avatar;
 
 ALTER TABLE
@@ -395,3 +442,6 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS team_user_relation ADD CONSTRAINT FK8rg61fyticaiphplc6wb3o68p FOREIGN KEY("user_id") REFERENCES public."user";
+
+ALTER TABLE
+    IF EXISTS topic ADD CONSTRAINT FKjy82itq5pcd3u2f8nvtrms0bn FOREIGN KEY(created_by_id) REFERENCES public."user";
