@@ -19,6 +19,8 @@ import javax.validation.Valid
  * @param updatedAt
  * @param createdAt
  * @param deadline
+ * @param space
+ * @param team
  * @param joinable Only has value when: 'queryJoinablity' == true
  * @param joinableAsTeam
  * @param submittable Only has value when: 'querySubmitability' == true
@@ -26,6 +28,8 @@ import javax.validation.Valid
  * @param rank
  * @param approved
  * @param rejectReason
+ * @param joined
+ * @param joinedAsTeam
  */
 data class TaskDTO(
     @Schema(example = "null", required = true, description = "")
@@ -74,6 +78,14 @@ data class TaskDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("deadline")
     val deadline: kotlin.Long? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("space")
+    val space: SpaceDTO? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("team")
+    val team: TeamDTO? = null,
     @Schema(example = "null", description = "Only has value when: 'queryJoinablity' == true")
     @get:JsonProperty("joinable")
     val joinable: kotlin.Boolean? = null,
@@ -97,5 +109,12 @@ data class TaskDTO(
     val approved: ApproveTypeDTO? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("rejectReason")
-    val rejectReason: kotlin.String? = null
+    val rejectReason: kotlin.String? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("joined")
+    val joined: kotlin.Boolean? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("joinedAsTeam")
+    val joinedAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null
 ) {}

@@ -147,6 +147,12 @@ class TeamService(
         }
     }
 
+    fun getTeamsThatUserJoinedTaskAs(taskId: IdType, userId: IdType): List<TeamSummaryDTO> {
+        return teamRepository.getTeamsThatUserJoinedTaskAs(taskId, userId).map {
+            it.toTeamSummaryDTO()
+        }
+    }
+
     fun isTeamAdmin(teamId: IdType, userId: IdType): Boolean {
         val relationOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId)
         return relationOptional.isPresent &&
