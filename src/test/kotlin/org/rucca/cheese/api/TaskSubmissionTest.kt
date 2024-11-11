@@ -9,11 +9,11 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
-import org.rucca.cheese.auth.UserCreatorService
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.utils.AttachmentCreatorService
 import org.rucca.cheese.utils.JsonArrayUtil
+import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc

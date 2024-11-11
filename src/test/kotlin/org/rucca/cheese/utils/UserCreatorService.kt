@@ -1,4 +1,4 @@
-package org.rucca.cheese.auth
+package org.rucca.cheese.utils
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 import jakarta.ws.rs.client.ClientBuilder
