@@ -26,6 +26,7 @@ import org.rucca.cheese.task.option.TaskEnumerateOptions
 import org.rucca.cheese.task.option.TaskQueryOptions
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamService
+import org.rucca.cheese.topic.Topic
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate
@@ -509,6 +510,17 @@ class TaskService(
         if (options.owner != null) {
             predicates.add(cb.equal(root.get<User>("creator").get<IdType>("id"), options.owner))
         }
+        if (options.topics != null) {
+            val subquery = cq.subquery(TaskTopicsRelation::class.java)
+            val subroot = subquery.from(TaskTopicsRelation::class.java)
+            subquery
+                .select(subroot)
+                .where(
+                    cb.equal(subroot.get<Task>("task").get<IdType>("id"), root.get<IdType>("id")),
+                    subroot.get<Topic>("topic").get<Int>("id").`in`(options.topics)
+                )
+            predicates.add(cb.exists(subquery))
+        }
         cq.where(*predicates.toTypedArray())
         val by =
             when (sortBy) {
@@ -528,12 +540,6 @@ class TaskService(
             result =
                 result.filter {
                     getJoined(it, authenticationService.getCurrentUserId()).first == options.joined
-                }
-        if (options.topics != null)
-            result =
-                result.filter { task ->
-                    val topics = taskTopicsService.getTaskTopicIds(task.id!!)
-                    options.topics.intersect(topics).isNotEmpty()
                 }
         val (curr, page) =
             PageHelper.pageFromAll(
