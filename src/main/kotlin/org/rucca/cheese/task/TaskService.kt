@@ -22,8 +22,11 @@ import org.rucca.cheese.space.Space
 import org.rucca.cheese.space.SpaceService
 import org.rucca.cheese.space.SpaceUserRankService
 import org.rucca.cheese.task.error.*
+import org.rucca.cheese.task.option.TaskEnumerateOptions
+import org.rucca.cheese.task.option.TaskQueryOptions
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamService
+import org.rucca.cheese.topic.Topic
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate
@@ -45,23 +48,11 @@ class TaskService(
     private val spaceUserRankService: SpaceUserRankService,
     private val applicationConfig: ApplicationConfig,
     private val spaceService: SpaceService,
+    private val taskTopicsService: TaskTopicsService,
 ) {
-    fun getTaskDto(
-        taskId: IdType,
-        querySpace: Boolean = false,
-        queryTeam: Boolean = false,
-        queryJoinability: Boolean = false,
-        querySubmittability: Boolean = false,
-        queryJoined: Boolean = false,
-    ): TaskDTO {
+    fun getTaskDto(taskId: IdType, options: TaskQueryOptions = TaskQueryOptions.MINIMUM): TaskDTO {
         val task = getTask(taskId)
-        return task.toTaskDTO(
-            querySpace,
-            queryTeam,
-            queryJoinability,
-            querySubmittability,
-            queryJoined
-        )
+        return task.toTaskDTO(options)
     }
 
     fun getTaskOwner(taskId: IdType): IdType {
@@ -123,23 +114,22 @@ class TaskService(
         }
     }
 
-    fun Task.toTaskDTO(
-        querySpace: Boolean,
-        queryTeam: Boolean,
-        queryJoinability: Boolean,
-        querySubmittability: Boolean,
-        queryJoined: Boolean
-    ): TaskDTO {
+    fun Task.toTaskDTO(options: TaskQueryOptions): TaskDTO {
         val userId = authenticationService.getCurrentUserId()
         val space =
-            if (querySpace && this.space?.id != null) spaceService.getSpaceDto(this.space.id!!)
+            if (options.querySpace && this.space?.id != null)
+                spaceService.getSpaceDto(this.space.id!!)
             else null
         val team =
-            if (queryTeam && this.team?.id != null) teamService.getTeamDto(this.team.id!!) else null
-        val joinability = if (queryJoinability) getJoinability(this, userId) else Pair(null, null)
+            if (options.queryTeam && this.team?.id != null) teamService.getTeamDto(this.team.id!!)
+            else null
+        val joinability =
+            if (options.queryJoinability) getJoinability(this, userId) else Pair(null, null)
         val submittability =
-            if (querySubmittability) getSubmittability(this, userId) else Pair(null, null)
-        val joined = if (queryJoined) getJoined(this, userId) else Pair(null, null)
+            if (options.querySubmittability) getSubmittability(this, userId) else Pair(null, null)
+        val joined = if (options.queryJoined) getJoined(this, userId) else Pair(null, null)
+        val topics =
+            if (options.queryTopics) taskTopicsService.getTaskTopicDTOs(this.id!!) else null
         return TaskDTO(
             id = this.id!!,
             name = this.name!!,
@@ -174,6 +164,7 @@ class TaskService(
             rejectReason = this.rejectReason,
             joined = joined.first,
             joinedAsTeam = joined.second,
+            topics = topics,
         )
     }
 
@@ -453,44 +444,28 @@ class TaskService(
     }
 
     fun enumerateTasks(
-        space: IdType?,
-        team: IdType?,
-        approved: ApproveType?,
-        owner: IdType?,
-        joined: Boolean?,
+        enumerateOptions: TaskEnumerateOptions,
         keywords: String?,
         pageSize: Int,
         pageStart: IdType?,
         sortBy: TasksSortBy,
         sortOrder: SortDirection,
-        querySpace: Boolean,
-        queryTeam: Boolean,
-        queryJoinability: Boolean,
-        querySubmittability: Boolean,
-        queryJoined: Boolean,
+        queryOptions: TaskQueryOptions,
     ): Pair<List<TaskDTO>, PageDTO> {
         if (keywords == null) {
             return enumerateTasksUseDatabase(
-                space,
-                team,
-                approved,
-                owner,
-                joined,
+                enumerateOptions,
                 pageSize,
                 pageStart,
                 sortBy,
                 sortOrder,
-                querySpace,
-                queryTeam,
-                queryJoinability,
-                querySubmittability,
-                queryJoined,
+                queryOptions,
             )
         } else {
             val id = keywords.toLongOrNull()
             if (id != null) {
                 return Pair(
-                    listOf(getTaskDto(id, queryJoinability, querySubmittability)),
+                    listOf(getTaskDto(id, queryOptions)),
                     PageDTO(
                         pageStart = id,
                         pageSize = 1,
@@ -500,56 +475,51 @@ class TaskService(
                 )
             }
             return enumerateTasksUseElasticSearch(
-                space,
-                team,
-                approved,
-                owner,
-                joined,
+                enumerateOptions,
                 keywords,
                 pageSize,
                 pageStart,
                 sortBy,
                 sortOrder,
-                querySpace,
-                queryTeam,
-                queryJoinability,
-                querySubmittability,
-                queryJoined,
+                queryOptions,
             )
         }
     }
 
     fun enumerateTasksUseDatabase(
-        space: IdType?,
-        team: IdType?,
-        approved: ApproveType?,
-        owner: IdType?,
-        joined: Boolean?,
+        options: TaskEnumerateOptions,
         pageSize: Int,
         pageStart: IdType?,
         sortBy: TasksSortBy,
         sortOrder: SortDirection,
-        querySpace: Boolean,
-        queryTeam: Boolean,
-        queryJoinability: Boolean,
-        querySubmittability: Boolean,
-        queryJoined: Boolean,
+        queryOptions: TaskQueryOptions,
     ): Pair<List<TaskDTO>, PageDTO> {
         val cb = entityManager.criteriaBuilder
         val cq = cb.createQuery(Task::class.java)
         val root = cq.from(Task::class.java)
         val predicates = mutableListOf<Predicate>()
-        if (space != null) {
-            predicates.add(cb.equal(root.get<Space>("space").get<IdType>("id"), space))
+        if (options.space != null) {
+            predicates.add(cb.equal(root.get<Space>("space").get<IdType>("id"), options.space))
         }
-        if (team != null) {
-            predicates.add(cb.equal(root.get<Team>("team").get<IdType>("id"), team))
+        if (options.team != null) {
+            predicates.add(cb.equal(root.get<Team>("team").get<IdType>("id"), options.team))
         }
-        if (approved != null) {
-            predicates.add(cb.equal(root.get<ApproveType>("approved"), approved))
+        if (options.approved != null) {
+            predicates.add(cb.equal(root.get<ApproveType>("approved"), options.approved))
         }
-        if (owner != null) {
-            predicates.add(cb.equal(root.get<User>("creator").get<IdType>("id"), owner))
+        if (options.owner != null) {
+            predicates.add(cb.equal(root.get<User>("creator").get<IdType>("id"), options.owner))
+        }
+        if (options.topics != null) {
+            val subquery = cq.subquery(TaskTopicsRelation::class.java)
+            val subroot = subquery.from(TaskTopicsRelation::class.java)
+            subquery
+                .select(subroot)
+                .where(
+                    cb.equal(subroot.get<Task>("task").get<IdType>("id"), root.get<IdType>("id")),
+                    subroot.get<Topic>("topic").get<Int>("id").`in`(options.topics)
+                )
+            predicates.add(cb.exists(subquery))
         }
         cq.where(*predicates.toTypedArray())
         val by =
@@ -566,10 +536,10 @@ class TaskService(
         cq.orderBy(order)
         val query = entityManager.createQuery(cq)
         var result = query.resultList
-        if (joined != null)
+        if (options.joined != null)
             result =
                 result.filter {
-                    getJoined(it, authenticationService.getCurrentUserId()).first == joined
+                    getJoined(it, authenticationService.getCurrentUserId()).first == options.joined
                 }
         val (curr, page) =
             PageHelper.pageFromAll(
@@ -579,36 +549,17 @@ class TaskService(
                 { it.id!! },
                 { id -> throw NotFoundError("task", id) }
             )
-        return Pair(
-            curr.map {
-                it.toTaskDTO(
-                    querySpace = querySpace,
-                    queryTeam = queryTeam,
-                    queryJoinability = queryJoinability,
-                    querySubmittability = querySubmittability,
-                    queryJoined = queryJoined,
-                )
-            },
-            page
-        )
+        return Pair(curr.map { it.toTaskDTO(queryOptions) }, page)
     }
 
     fun enumerateTasksUseElasticSearch(
-        space: IdType?,
-        team: IdType?,
-        approved: ApproveType?,
-        owner: IdType?,
-        joined: Boolean?,
+        options: TaskEnumerateOptions,
         keywords: String,
         pageSize: Int,
         pageStart: IdType?,
         sortBy: TasksSortBy,
         sortOrder: SortDirection,
-        querySpace: Boolean,
-        queryTeam: Boolean,
-        queryJoinability: Boolean,
-        querySubmittability: Boolean,
-        queryJoined: Boolean,
+        queryOptions: TaskQueryOptions,
     ): Pair<List<TaskDTO>, PageDTO> {
         val criteria = Criteria("name").matches(keywords)
         val query = CriteriaQuery(criteria)
@@ -618,14 +569,21 @@ class TaskService(
                 TaskElasticSearch
             >()
         var entities = taskRepository.findAllById(result.map { it.id })
-        if (space != null) entities = entities.filter { it.space?.id == space }
-        if (team != null) entities = entities.filter { it.team?.id == team }
-        if (approved != null) entities = entities.filter { it.approved == approved }
-        if (owner != null) entities = entities.filter { it.creator?.id == owner.toInt() }
-        if (joined != null)
+        if (options.space != null) entities = entities.filter { it.space?.id == options.space }
+        if (options.team != null) entities = entities.filter { it.team?.id == options.team }
+        if (options.approved != null) entities = entities.filter { it.approved == options.approved }
+        if (options.owner != null)
+            entities = entities.filter { it.creator?.id == options.owner.toInt() }
+        if (options.joined != null)
             entities =
                 entities.filter {
-                    getJoined(it, authenticationService.getCurrentUserId()).first == joined
+                    getJoined(it, authenticationService.getCurrentUserId()).first == options.joined
+                }
+        if (options.topics != null)
+            entities =
+                entities.filter { task ->
+                    val topics = taskTopicsService.getTaskTopicIds(task.id!!)
+                    options.topics.intersect(topics).isNotEmpty()
                 }
         val (tasks, page) =
             PageHelper.pageFromAll(
@@ -635,17 +593,7 @@ class TaskService(
                 { it.id!! },
                 { id -> throw NotFoundError("task", id) }
             )
-        val dtos =
-            tasks.map {
-                getTaskDto(
-                    it.id!!,
-                    querySpace = querySpace,
-                    queryTeam = queryTeam,
-                    queryJoinability = queryJoinability,
-                    querySubmittability = querySubmittability,
-                    queryJoined = queryJoined,
-                )
-            }
+        val dtos = tasks.map { getTaskDto(it.id!!, queryOptions) }
         return Pair(dtos, page)
     }
 

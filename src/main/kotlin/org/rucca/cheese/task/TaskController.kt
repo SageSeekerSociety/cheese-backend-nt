@@ -16,6 +16,8 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.convert
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.SpaceService
+import org.rucca.cheese.task.option.TaskEnumerateOptions
+import org.rucca.cheese.task.option.TaskQueryOptions
 import org.rucca.cheese.team.TeamService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -39,6 +41,7 @@ class TaskController(
     private val authenticationService: AuthenticationService,
     private val spaceService: SpaceService,
     private val teamService: TeamService,
+    private val taskTopicsService: TaskTopicsService,
 ) : TasksApi {
     @PostConstruct
     fun initialize() {
@@ -312,16 +315,18 @@ class TaskController(
         queryJoinability: Boolean,
         querySubmittability: Boolean,
         queryJoined: Boolean,
+        queryTopics: Boolean,
     ): ResponseEntity<GetTask200ResponseDTO> {
-        val taskDTO =
-            taskService.getTaskDto(
-                taskId,
-                querySpace,
-                queryTeam,
-                queryJoinability,
-                querySubmittability,
-                queryJoined
+        val queryOptions =
+            TaskQueryOptions(
+                querySpace = querySpace,
+                queryTeam = queryTeam,
+                queryJoinability = queryJoinability,
+                querySubmittability = querySubmittability,
+                queryJoined = queryJoined,
+                queryTopics = queryTopics,
             )
+        val taskDTO = taskService.getTaskDto(taskId, queryOptions)
         return ResponseEntity.ok(
             GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK")
         )
@@ -395,6 +400,7 @@ class TaskController(
         @AuthInfo("approved") approved: ApproveTypeDTO?,
         @AuthInfo("owner") owner: Long?,
         joined: Boolean?,
+        topics: List<Long>?,
         pageSize: Int,
         pageStart: Long?,
         sortBy: String,
@@ -404,6 +410,7 @@ class TaskController(
         queryJoinability: Boolean,
         querySubmittability: Boolean,
         queryJoined: Boolean,
+        queryTopics: Boolean,
         keywords: String?,
     ): ResponseEntity<GetTasks200ResponseDTO> {
         val by =
@@ -419,23 +426,33 @@ class TaskController(
                 "desc" -> SortDirection.DESCENDING
                 else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
             }
-        val (taskSummaryDTOs, page) =
-            taskService.enumerateTasks(
+        val enumerateOptions =
+            TaskEnumerateOptions(
                 space = space,
                 team = team,
                 approved = approved?.convert(),
                 owner = owner,
                 joined = joined,
-                keywords = keywords,
-                pageSize = pageSize,
-                pageStart = pageStart,
-                sortBy = by,
-                sortOrder = order,
+                topics = topics,
+            )
+        val queryOptions =
+            TaskQueryOptions(
                 querySpace = querySpace,
                 queryTeam = queryTeam,
                 queryJoinability = queryJoinability,
                 querySubmittability = querySubmittability,
                 queryJoined = queryJoined,
+                queryTopics = queryTopics,
+            )
+        val (taskSummaryDTOs, page) =
+            taskService.enumerateTasks(
+                enumerateOptions = enumerateOptions,
+                keywords = keywords,
+                pageSize = pageSize,
+                pageStart = pageStart,
+                sortBy = by,
+                sortOrder = order,
+                queryOptions = queryOptions,
             )
         return ResponseEntity.ok(
             GetTasks200ResponseDTO(200, GetTasks200ResponseDataDTO(taskSummaryDTOs, page), "OK")
@@ -494,7 +511,10 @@ class TaskController(
         if (patchTaskRequestDTO.rank != null) {
             taskService.updateTaskRank(taskId, patchTaskRequestDTO.rank)
         }
-        val taskDTO = taskService.getTaskDto(taskId)
+        if (patchTaskRequestDTO.topics != null) {
+            taskTopicsService.updateTaskTopics(taskId, patchTaskRequestDTO.topics)
+        }
+        val taskDTO = taskService.getTaskDto(taskId, TaskQueryOptions.MAXIMUM)
         return ResponseEntity.ok(
             GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK")
         )
@@ -583,7 +603,8 @@ class TaskController(
                 spaceId = postTaskRequestDTO.space,
                 rank = postTaskRequestDTO.rank
             )
-        val taskDTO = taskService.getTaskDto(taskId)
+        taskTopicsService.updateTaskTopics(taskId, postTaskRequestDTO.topics ?: emptyList())
+        val taskDTO = taskService.getTaskDto(taskId, TaskQueryOptions.MAXIMUM)
         return ResponseEntity.ok(
             GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK")
         )

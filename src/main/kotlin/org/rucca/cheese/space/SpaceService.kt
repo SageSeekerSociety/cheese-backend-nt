@@ -15,6 +15,8 @@ import org.rucca.cheese.model.SpaceAdminRoleTypeDTO
 import org.rucca.cheese.model.SpaceDTO
 import org.rucca.cheese.space.error.AlreadyBeSpaceAdminError
 import org.rucca.cheese.space.error.NotSpaceAdminYetError
+import org.rucca.cheese.space.option.SpaceQueryOptions
+import org.rucca.cheese.topic.TopicService
 import org.rucca.cheese.user.Avatar
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
@@ -30,8 +32,19 @@ class SpaceService(
     private val entityManager: EntityManager,
     private val spaceUserRankService: SpaceUserRankService,
     private val authenticationService: AuthenticationService,
+    private val topicService: TopicService,
+    private val spaceClassificationTopicsService: SpaceClassificationTopicsService,
 ) {
-    fun Space.toSpaceDTO(queryMyRank: Boolean): SpaceDTO {
+    fun Space.toSpaceDTO(options: SpaceQueryOptions): SpaceDTO {
+        val myRank =
+            if (options.queryMyRank && this.enableRank!!) {
+                val userId = authenticationService.getCurrentUserId()
+                spaceUserRankService.getRank(this.id!!, userId)
+            } else null
+        val classificationTopics =
+            if (options.queryClassificationTopics) {
+                spaceClassificationTopicsService.getClassificationTopicDTOs(this.id!!)
+            } else null
         return SpaceDTO(
             id = this.id!!,
             intro = this.intro!!,
@@ -52,16 +65,16 @@ class SpaceService(
             enableRank = this.enableRank!!,
             announcements = this.announcements!!,
             taskTemplates = this.taskTemplates!!,
-            myRank =
-                if (queryMyRank && this.enableRank!!) {
-                    val userId = authenticationService.getCurrentUserId()
-                    spaceUserRankService.getRank(this.id!!, userId)
-                } else null
+            myRank = myRank,
+            classificationTopics = classificationTopics,
         )
     }
 
-    fun getSpaceDto(spaceId: IdType, queryMyRank: Boolean = false): SpaceDTO {
-        return getSpace(spaceId).toSpaceDTO(queryMyRank)
+    fun getSpaceDto(
+        spaceId: IdType,
+        queryOptions: SpaceQueryOptions = SpaceQueryOptions.MINIMUM
+    ): SpaceDTO {
+        return getSpace(spaceId).toSpaceDTO(queryOptions)
     }
 
     fun getSpaceOwner(spaceId: IdType): IdType {
@@ -97,9 +110,11 @@ class SpaceService(
         ownerId: IdType,
         enableRank: Boolean,
         announcements: String,
-        taskTemplates: String
+        taskTemplates: String,
+        classificationTopics: List<IdType>,
     ): IdType {
         ensureSpaceNameNotExists(name)
+        for (topic in classificationTopics) topicService.ensureTopicExists(topic)
         val space =
             spaceRepository.save(
                 Space(
@@ -109,7 +124,7 @@ class SpaceService(
                     avatar = Avatar().apply { id = avatarId.toInt() },
                     enableRank = enableRank,
                     announcements = announcements,
-                    taskTemplates = taskTemplates
+                    taskTemplates = taskTemplates,
                 )
             )
         spaceAdminRelationRepository.save(
@@ -118,6 +133,10 @@ class SpaceService(
                 role = SpaceAdminRole.OWNER,
                 user = User().apply { id = ownerId.toInt() }
             )
+        )
+        spaceClassificationTopicsService.updateClassificationTopics(
+            space.id!!,
+            classificationTopics
         )
         return space.id!!
     }
@@ -167,6 +186,11 @@ class SpaceService(
         val space = getSpace(spaceId)
         space.taskTemplates = taskTemplates
         spaceRepository.save(space)
+    }
+
+    fun updateSpaceClassificationTopics(spaceId: IdType, classificationTopics: List<IdType>) {
+        for (topic in classificationTopics) topicService.ensureTopicExists(topic)
+        spaceClassificationTopicsService.updateClassificationTopics(spaceId, classificationTopics)
     }
 
     fun ensureSpaceExists(spaceId: IdType) {
@@ -245,11 +269,11 @@ class SpaceService(
     }
 
     fun enumerateSpaces(
-        queryMyRank: Boolean,
         sortBy: SpacesSortBy,
         sortOrder: SortDirection,
         pageSize: Int,
         pageStart: Long?,
+        queryOptions: SpaceQueryOptions,
     ): Pair<List<SpaceDTO>, PageDTO> {
         val criteriaBuilder = entityManager.criteriaBuilder
         val cq = criteriaBuilder.createQuery(Space::class.java)
@@ -275,6 +299,6 @@ class SpaceService(
                 { it.id!! },
                 { id -> throw NotFoundError("space", id) }
             )
-        return Pair(curr.map { it.toSpaceDTO(queryMyRank) }, page)
+        return Pair(curr.map { it.toSpaceDTO(queryOptions) }, page)
     }
 }

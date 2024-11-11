@@ -8,15 +8,17 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
-import org.rucca.cheese.auth.UserCreatorService
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.utils.TopicCreatorService
+import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -27,6 +29,7 @@ class SpaceTest
 constructor(
     private val mockMvc: MockMvc,
     private val userCreatorService: UserCreatorService,
+    private val topicCreatorService: TopicCreatorService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     lateinit var creator: UserCreatorService.CreateUserResponse
@@ -48,6 +51,8 @@ constructor(
     private var spaceIdOfSecond: IdType = -1
     private var spaceIdOfBeforeLast: IdType = -1
     private var spaceIdOfLast: IdType = -1
+    private var topicsCount = 3
+    private val topics: MutableList<IdType> = mutableListOf()
 
     @BeforeAll
     fun prepare() {
@@ -59,6 +64,14 @@ constructor(
         newOwnerToken = userCreatorService.login(newOwner.username, newOwner.password)
         anonymous = userCreatorService.createUser()
         anonymousToken = userCreatorService.login(anonymous.username, anonymous.password)
+        for (i in 1..topicsCount) {
+            topics.add(
+                topicCreatorService.createTopic(
+                    creatorToken,
+                    "Topic (${floor(Math.random() * 10000000000).toLong()}) ($i)"
+                )
+            )
+        }
     }
 
     @Test
@@ -68,10 +81,10 @@ constructor(
             MockMvcRequestBuilders.get("/spaces/-1").header("Authorization", "Bearer $creatorToken")
         mockMvc
             .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isNotFound)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("NotFoundError"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.type").value("space"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.id").value("-1"))
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("$.error.name").value("NotFoundError"))
+            .andExpect(jsonPath("$.error.data.type").value("space"))
+            .andExpect(jsonPath("$.error.data.id").value("-1"))
     }
 
     fun createSpace(
@@ -81,7 +94,8 @@ constructor(
         spaceDescription: String,
         spaceAvatarId: IdType,
         spaceAnnouncements: String,
-        spaceTaskTemplates: String
+        spaceTaskTemplates: String,
+        classificationTopics: List<IdType> = emptyList(),
     ): IdType {
         val request =
             MockMvcRequestBuilders.post("/spaces")
@@ -95,39 +109,31 @@ constructor(
                     "description": "$spaceDescription",
                     "avatarId": $spaceAvatarId,
                     "announcements": "$spaceAnnouncements",
-                    "taskTemplates": "$spaceTaskTemplates"
+                    "taskTemplates": "$spaceTaskTemplates",
+                    "classificationTopics": [${classificationTopics.joinToString(",")}]
                 }
             """
                 )
         val response =
             mockMvc
                 .perform(request)
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.space.name").value(spaceName))
+                .andExpect(jsonPath("$.data.space.intro").value(spaceIntro))
+                .andExpect(jsonPath("$.data.space.description").value(spaceDescription))
+                .andExpect(jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+                .andExpect(jsonPath("$.data.space.admins[0].role").value("OWNER"))
+                .andExpect(jsonPath("$.data.space.admins[0].user.id").value(creator.userId))
+                .andExpect(jsonPath("$.data.space.enableRank").value(false))
+                .andExpect(jsonPath("$.data.space.announcements").value(spaceAnnouncements))
+                .andExpect(jsonPath("$.data.space.taskTemplates").value(spaceTaskTemplates))
                 .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.space.description")
-                        .value(spaceDescription)
+                    jsonPath("$.data.space.classificationTopics.length()")
+                        .value(classificationTopics.size)
                 )
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId)
-                )
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER")
-                )
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id")
-                        .value(creator.userId)
-                )
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.enableRank").value(false))
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.space.announcements")
-                        .value(spaceAnnouncements)
-                )
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.space.taskTemplates")
-                        .value(spaceTaskTemplates)
-                )
+        for (topic in classificationTopics) response.andExpect(
+            jsonPath("$.data.space.classificationTopics[?(@.id == $topic)].name").exists()
+        )
         val spaceId =
             JSONObject(response.andReturn().response.contentAsString)
                 .getJSONObject("data")
@@ -157,7 +163,8 @@ constructor(
                 spaceDescription,
                 spaceAvatarId,
                 spaceAnnouncements,
-                spaceTaskTemplates
+                spaceTaskTemplates,
+                classificationTopics = listOf(topics[0], topics[1])
             )
         spaceIdOfSecond =
             createSpace(
@@ -205,18 +212,23 @@ constructor(
     fun testGetSpace() {
         val request =
             MockMvcRequestBuilders.get("/spaces/$spaceId")
+                .param("queryClassificationTopics", "true")
                 .header("Authorization", "Bearer $creatorToken")
         mockMvc
             .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.space.id").value(spaceId))
+            .andExpect(jsonPath("$.data.space.name").value(spaceName))
+            .andExpect(jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+            .andExpect(jsonPath("$.data.space.admins[0].role").value("OWNER"))
+            .andExpect(jsonPath("$.data.space.admins[0].user.id").value(creator.userId))
+            .andExpect(jsonPath("$.data.space.classificationTopics.length()").value(2))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id")
-                    .value(creator.userId)
+                jsonPath("$.data.space.classificationTopics[?(@.id == ${topics[0]})].name").exists()
+            )
+            .andExpect(
+                jsonPath("$.data.space.classificationTopics[?(@.id == ${topics[1]})].name").exists()
             )
     }
 
@@ -241,12 +253,10 @@ constructor(
                 )
         mockMvc
             .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isConflict)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name").value("NameAlreadyExistsError")
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.type").value("space"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.name").value(spaceName))
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.error.name").value("NameAlreadyExistsError"))
+            .andExpect(jsonPath("$.error.data.type").value("space"))
+            .andExpect(jsonPath("$.error.data.name").value(spaceName))
     }
 
     @Test
@@ -259,16 +269,13 @@ constructor(
                 .content("{}")
         mockMvc
             .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER"))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id")
-                    .value(creator.userId)
-            )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.space.id").value(spaceId))
+            .andExpect(jsonPath("$.data.space.name").value(spaceName))
+            .andExpect(jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+            .andExpect(jsonPath("$.data.space.admins[0].role").value("OWNER"))
+            .andExpect(jsonPath("$.data.space.admins[0].user.id").value(creator.userId))
     }
 
     @Test
@@ -293,33 +300,30 @@ constructor(
                     "avatarId": $spaceAvatarId,
                     "enableRank": true,
                     "announcements": "$spaceAnnouncements",
-                    "taskTemplates": "$spaceTaskTemplates"
+                    "taskTemplates": "$spaceTaskTemplates",
+                    "classificationTopics": [${topics[1]}, ${topics[2]}]
                 }
             """
                 )
         mockMvc
             .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.space.id").value(spaceId))
+            .andExpect(jsonPath("$.data.space.name").value(spaceName))
+            .andExpect(jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(jsonPath("$.data.space.description").value(spaceDescription))
+            .andExpect(jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+            .andExpect(jsonPath("$.data.space.admins[0].role").value("OWNER"))
+            .andExpect(jsonPath("$.data.space.admins[0].user.id").value(creator.userId))
+            .andExpect(jsonPath("$.data.space.enableRank").value(true))
+            .andExpect(jsonPath("$.data.space.announcements").value(spaceAnnouncements))
+            .andExpect(jsonPath("$.data.space.taskTemplates").value(spaceTaskTemplates))
+            .andExpect(jsonPath("$.data.space.classificationTopics.length()").value(2))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.space.description").value(spaceDescription)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.admins[0].role").value("OWNER"))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.space.admins[0].user.id")
-                    .value(creator.userId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.enableRank").value(true))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.space.announcements")
-                    .value(spaceAnnouncements)
+                jsonPath("$.data.space.classificationTopics[?(@.id == ${topics[1]})].name").exists()
             )
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.space.taskTemplates")
-                    .value(spaceTaskTemplates)
+                jsonPath("$.data.space.classificationTopics[?(@.id == ${topics[2]})].name").exists()
             )
     }
 
@@ -333,13 +337,11 @@ constructor(
                 .content("{}")
         mockMvc
             .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError")
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.action").value("modify"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceType").value("space"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceId").value(spaceId))
+            .andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.error.name").value("PermissionDeniedError"))
+            .andExpect(jsonPath("$.error.data.action").value("modify"))
+            .andExpect(jsonPath("$.error.data.resourceType").value("space"))
+            .andExpect(jsonPath("$.error.data.resourceId").value(spaceId))
     }
 
     @Test
@@ -351,32 +353,18 @@ constructor(
                 .header("Authorization", "Bearer $creatorToken")
         mockMvc
             .perform(requestBuilders)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.spaces[0].name")
-                    .value("$originalSpaceName 04")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.spaces[1].name")
-                    .value("$originalSpaceName 03")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.spaces[2].name")
-                    .value("$originalSpaceName 02")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.spaces[3].name")
-                    .value("$originalSpaceName 01")
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[4].name").value(spaceName))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(spaceIdOfLast)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(5))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").isEmpty)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").value(true))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.next_start").isNotEmpty)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.spaces[0].name").value("$originalSpaceName 04"))
+            .andExpect(jsonPath("$.data.spaces[1].name").value("$originalSpaceName 03"))
+            .andExpect(jsonPath("$.data.spaces[2].name").value("$originalSpaceName 02"))
+            .andExpect(jsonPath("$.data.spaces[3].name").value("$originalSpaceName 01"))
+            .andExpect(jsonPath("$.data.spaces[4].name").value(spaceName))
+            .andExpect(jsonPath("$.data.page.page_start").value(spaceIdOfLast))
+            .andExpect(jsonPath("$.data.page.page_size").value(5))
+            .andExpect(jsonPath("$.data.page.has_prev").value(false))
+            .andExpect(jsonPath("$.data.page.prev_start").isEmpty)
+            .andExpect(jsonPath("$.data.page.has_more").value(true))
+            .andExpect(jsonPath("$.data.page.next_start").isNotEmpty)
     }
 
     @Test
@@ -390,28 +378,17 @@ constructor(
                 .header("Authorization", "Bearer $creatorToken")
         mockMvc
             .perform(requestBuilders)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.spaces[0].name").value(spaceName))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.spaces[1].name")
-                    .value("$originalSpaceName 04")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.spaces[2].name")
-                    .value("$originalSpaceName 03")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.spaces[3].name")
-                    .value("$originalSpaceName 02")
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(spaceId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(4))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").isEmpty)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").value(true))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.page.next_start").value(spaceIdOfSecond)
-            )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.spaces[0].name").value(spaceName))
+            .andExpect(jsonPath("$.data.spaces[1].name").value("$originalSpaceName 04"))
+            .andExpect(jsonPath("$.data.spaces[2].name").value("$originalSpaceName 03"))
+            .andExpect(jsonPath("$.data.spaces[3].name").value("$originalSpaceName 02"))
+            .andExpect(jsonPath("$.data.page.page_start").value(spaceId))
+            .andExpect(jsonPath("$.data.page.page_size").value(4))
+            .andExpect(jsonPath("$.data.page.has_prev").value(false))
+            .andExpect(jsonPath("$.data.page.prev_start").isEmpty)
+            .andExpect(jsonPath("$.data.page.has_more").value(true))
+            .andExpect(jsonPath("$.data.page.next_start").value(spaceIdOfSecond))
     }
 
     @Test
@@ -426,21 +403,14 @@ constructor(
                 .header("Authorization", "Bearer $creatorToken")
         mockMvc
             .perform(requestBuilders)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.spaces[0].name")
-                    .value("$originalSpaceName 04")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(spaceIdOfLast)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(true))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").value(spaceId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").value(true))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.page.next_start").value(spaceIdOfBeforeLast)
-            )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.spaces[0].name").value("$originalSpaceName 04"))
+            .andExpect(jsonPath("$.data.page.page_start").value(spaceIdOfLast))
+            .andExpect(jsonPath("$.data.page.page_size").value(1))
+            .andExpect(jsonPath("$.data.page.has_prev").value(true))
+            .andExpect(jsonPath("$.data.page.prev_start").value(spaceId))
+            .andExpect(jsonPath("$.data.page.has_more").value(true))
+            .andExpect(jsonPath("$.data.page.next_start").value(spaceIdOfBeforeLast))
     }
 
     @Test
@@ -460,19 +430,19 @@ constructor(
                 )
         mockMvc
             .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.space.id").value(spaceId))
+            .andExpect(jsonPath("$.data.space.name").value(spaceName))
+            .andExpect(jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(jsonPath("$.data.space.avatarId").value(spaceAvatarId))
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
+                jsonPath(
                         "$.data.space.admins[?(@.user.id == '${admin.userId}' && @.role == 'ADMIN')])"
                     )
                     .exists()
             )
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
+                jsonPath(
                         "$.data.space.admins[?(@.user.id == '${creator.userId}' && @.role == 'OWNER')])"
                     )
                     .exists()
@@ -496,25 +466,25 @@ constructor(
                 )
         mockMvc
             .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.space.id").value(spaceId))
+            .andExpect(jsonPath("$.data.space.name").value(spaceName))
+            .andExpect(jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(jsonPath("$.data.space.avatarId").value(spaceAvatarId))
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
+                jsonPath(
                         "$.data.space.admins[?(@.user.id == '${newOwner.userId}' && @.role == 'OWNER')])"
                     )
                     .exists()
             )
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
+                jsonPath(
                         "$.data.space.admins[?(@.user.id == '${admin.userId}' && @.role == 'ADMIN')])"
                     )
                     .exists()
             )
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
+                jsonPath(
                         "$.data.space.admins[?(@.user.id == '${creator.userId}' && @.role == 'ADMIN')])"
                     )
                     .exists()
@@ -538,13 +508,11 @@ constructor(
                 )
         mockMvc
             .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError")
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.action").value("add-admin"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceType").value("space"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.resourceId").value(spaceId))
+            .andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.error.name").value("PermissionDeniedError"))
+            .andExpect(jsonPath("$.error.data.action").value("add-admin"))
+            .andExpect(jsonPath("$.error.data.resourceType").value("space"))
+            .andExpect(jsonPath("$.error.data.resourceId").value(spaceId))
     }
 
     @Test
@@ -563,25 +531,25 @@ constructor(
                 )
         mockMvc
             .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.id").value(spaceId))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.name").value(spaceName))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.intro").value(spaceIntro))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.space.avatarId").value(spaceAvatarId))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.space.id").value(spaceId))
+            .andExpect(jsonPath("$.data.space.name").value(spaceName))
+            .andExpect(jsonPath("$.data.space.intro").value(spaceIntro))
+            .andExpect(jsonPath("$.data.space.avatarId").value(spaceAvatarId))
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
+                jsonPath(
                         "$.data.space.admins[?(@.user.id == '${creator.userId}' && @.role == 'OWNER')])"
                     )
                     .exists()
             )
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
+                jsonPath(
                         "$.data.space.admins[?(@.user.id == '${admin.userId}' && @.role == 'ADMIN')])"
                     )
                     .exists()
             )
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
+                jsonPath(
                         "$.data.space.admins[?(@.user.id == '${newOwner.userId}' && @.role == 'ADMIN')])"
                     )
                     .exists()
@@ -594,7 +562,7 @@ constructor(
         val request =
             MockMvcRequestBuilders.delete("/spaces/$spaceId/managers/${newOwner.userId}")
                 .header("Authorization", "Bearer $creatorToken")
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        mockMvc.perform(request).andExpect(status().isOk)
     }
 
     @Test
@@ -603,6 +571,6 @@ constructor(
         val request =
             MockMvcRequestBuilders.delete("/spaces/$spaceId")
                 .header("Authorization", "Bearer $adminToken")
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        mockMvc.perform(request).andExpect(status().isOk)
     }
 }

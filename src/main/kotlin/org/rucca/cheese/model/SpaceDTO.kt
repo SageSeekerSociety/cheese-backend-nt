@@ -17,6 +17,7 @@ import javax.validation.Valid
  * @param announcements
  * @param taskTemplates
  * @param myRank Only has value when: 'queryJoinablity' == true && 'enableRank' == true
+ * @param classificationTopics
  */
 data class SpaceDTO(
     @Schema(example = "null", required = true, description = "")
@@ -58,5 +59,9 @@ data class SpaceDTO(
         description = "Only has value when: 'queryJoinablity' == true && 'enableRank' == true"
     )
     @get:JsonProperty("myRank")
-    val myRank: kotlin.Int? = null
+    val myRank: kotlin.Int? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("classificationTopics")
+    val classificationTopics: kotlin.collections.List<TopicDTO>? = null
 ) {}

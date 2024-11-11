@@ -43,6 +43,11 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
+    SEQUENCE space_classification_topics_relation_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE space_seq
 START WITH
     1 INCREMENT BY 50;
@@ -78,6 +83,11 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
+    SEQUENCE task_topics_relation_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE team_seq
 START WITH
     1 INCREMENT BY 50;
@@ -86,6 +96,11 @@ CREATE
     SEQUENCE team_user_relation_seq
 START WITH
     1 INCREMENT BY 50;
+
+CREATE
+    SEQUENCE topic_id_seq
+START WITH
+    1 INCREMENT BY 1;
 
 CREATE
     SEQUENCE user_id_seq
@@ -138,6 +153,18 @@ CREATE
                 ROLE BETWEEN 0 AND 1
             ),
             "user_id" INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            space_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        space_classification_topics_relation(
+            topic_id INTEGER NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
@@ -257,6 +284,18 @@ CREATE
 
 CREATE
     TABLE
+        task_topics_relation(
+            topic_id INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            task_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
         team(
             avatar_id INTEGER NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
@@ -285,6 +324,17 @@ CREATE
         );
 
 CREATE
+    TABLE
+        topic(
+            created_by_id INTEGER NOT NULL,
+            id INTEGER NOT NULL,
+            created_at TIMESTAMP(6) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            deleted_at TIMESTAMP(6) WITH TIME ZONE,
+            name text NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
     INDEX IDXmllyu96n9vj606vm9w0gp3obx ON
     SPACE(name);
 
@@ -295,6 +345,14 @@ CREATE
 CREATE
     INDEX IDX9kayuwile36o13jipo63b10sb ON
     space_admin_relation(user_id);
+
+CREATE
+    INDEX IDXo1hn4jgjd2kpue9yt0ptyj2jp ON
+    space_classification_topics_relation(space_id);
+
+CREATE
+    INDEX IDXby2rktc4t1x2cvvlps3gx5pg3 ON
+    space_classification_topics_relation(topic_id);
 
 CREATE
     INDEX IDX5se9sb4u9yywkp49gnim8s85n ON
@@ -325,6 +383,14 @@ CREATE
     task_submission_review(submission_id);
 
 CREATE
+    INDEX IDXka5lit0ursfthx3207eojpvn7 ON
+    task_topics_relation(task_id);
+
+CREATE
+    INDEX IDXop6rbg45aknhvuqaakuonifao ON
+    task_topics_relation(topic_id);
+
+CREATE
     INDEX IDXg2l9qqsoeuynt4r5ofdt1x2td ON
     team(name);
 
@@ -350,6 +416,12 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS space_admin_relation ADD CONSTRAINT FKd3x1m946orup61b4f4wu6h2xn FOREIGN KEY("user_id") REFERENCES public."user";
+
+ALTER TABLE
+    IF EXISTS space_classification_topics_relation ADD CONSTRAINT FKtfux67slxlrbd7975e7066vq FOREIGN KEY(space_id) REFERENCES SPACE;
+
+ALTER TABLE
+    IF EXISTS space_classification_topics_relation ADD CONSTRAINT FKpvs648o6f6bdvjsa27dd2pdp1 FOREIGN KEY(topic_id) REFERENCES topic;
 
 ALTER TABLE
     IF EXISTS space_user_rank ADD CONSTRAINT FKh0k0jxvhnph0eoc5gw7652hdy FOREIGN KEY(space_id) REFERENCES SPACE;
@@ -388,6 +460,12 @@ ALTER TABLE
     IF EXISTS task_submission_review ADD CONSTRAINT FKba2fmo0mgjdlohcnpf97tvgvt FOREIGN KEY(submission_id) REFERENCES task_submission;
 
 ALTER TABLE
+    IF EXISTS task_topics_relation ADD CONSTRAINT FKjbxaijxjd045fy4ry2pxenrir FOREIGN KEY(task_id) REFERENCES task;
+
+ALTER TABLE
+    IF EXISTS task_topics_relation ADD CONSTRAINT FKd1esf4rvrn7eedttnfqs5dfw1 FOREIGN KEY(topic_id) REFERENCES topic;
+
+ALTER TABLE
     IF EXISTS team ADD CONSTRAINT FKjv1k745e89swu3gj896pxcq3y FOREIGN KEY(avatar_id) REFERENCES avatar;
 
 ALTER TABLE
@@ -395,3 +473,6 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS team_user_relation ADD CONSTRAINT FK8rg61fyticaiphplc6wb3o68p FOREIGN KEY("user_id") REFERENCES public."user";
+
+ALTER TABLE
+    IF EXISTS topic ADD CONSTRAINT FKjy82itq5pcd3u2f8nvtrms0bn FOREIGN KEY(created_by_id) REFERENCES public."user";

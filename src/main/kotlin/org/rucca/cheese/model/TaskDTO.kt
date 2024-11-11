@@ -30,6 +30,7 @@ import javax.validation.Valid
  * @param rejectReason
  * @param joined
  * @param joinedAsTeam
+ * @param topics
  */
 data class TaskDTO(
     @Schema(example = "null", required = true, description = "")
@@ -116,5 +117,9 @@ data class TaskDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("joinedAsTeam")
-    val joinedAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null
+    val joinedAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("topics")
+    val topics: kotlin.collections.List<TopicDTO>? = null
 ) {}

@@ -193,7 +193,11 @@ interface TasksApi {
         )
         @Valid
         @RequestParam(value = "queryJoined", required = false, defaultValue = "false")
-        queryJoined: kotlin.Boolean
+        queryJoined: kotlin.Boolean,
+        @Parameter(description = "Query task's topics", schema = Schema(defaultValue = "false"))
+        @Valid
+        @RequestParam(value = "queryTopics", required = false, defaultValue = "false")
+        queryTopics: kotlin.Boolean
     ): ResponseEntity<GetTask200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -367,6 +371,10 @@ interface TasksApi {
         @Valid
         @RequestParam(value = "joined", required = false)
         joined: kotlin.Boolean?,
+        @Parameter(description = "Only show tasks with at least one of these topics")
+        @Valid
+        @RequestParam(value = "topics", required = false)
+        topics: kotlin.collections.List<kotlin.Long>?,
         @Parameter(description = "Page Size", schema = Schema(defaultValue = "9"))
         @Valid
         @RequestParam(value = "page_size", required = false, defaultValue = "9")
@@ -423,6 +431,10 @@ interface TasksApi {
         @Valid
         @RequestParam(value = "queryJoined", required = false, defaultValue = "false")
         queryJoined: kotlin.Boolean,
+        @Parameter(description = "Query task's topics", schema = Schema(defaultValue = "false"))
+        @Valid
+        @RequestParam(value = "queryTopics", required = false, defaultValue = "false")
+        queryTopics: kotlin.Boolean,
         @Parameter(description = "Use this to search")
         @Valid
         @RequestParam(value = "keywords", required = false)

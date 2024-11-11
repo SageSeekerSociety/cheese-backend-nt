@@ -2,6 +2,7 @@ package org.rucca.cheese.auth
 
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest

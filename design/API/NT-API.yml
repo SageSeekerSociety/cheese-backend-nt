@@ -54,6 +54,12 @@ paths:
           schema:
             type: boolean
             default: false
+        - description: Query the topics used for content classification
+          in: query
+          name: queryClassificationTopics
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           content:
@@ -156,6 +162,11 @@ paths:
                   type: string
                 taskTemplates:
                   type: string
+                classificationTopics:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
       summary: Update Space
       x-stoplight:
         id: 0f71c5ul8igvq
@@ -199,6 +210,12 @@ paths:
         - description: Query your rank in this space
           in: query
           name: queryMyRank
+          schema:
+            type: boolean
+            default: false
+        - description: Query the topics used for content classification
+          in: query
+          name: queryClassificationTopics
           schema:
             type: boolean
             default: false
@@ -294,6 +311,12 @@ paths:
                   type: string
                 taskTemplates:
                   type: string
+                classificationTopics:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                  default: []
       summary: Create Space
       x-stoplight:
         id: pg0dllezwwg9w
@@ -531,6 +554,12 @@ paths:
           in: query
           name: queryJoined
           description: Check whether current user has joined this task
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryTopics
+          description: Query task's topics
       responses:
         "200":
           content:
@@ -652,6 +681,11 @@ paths:
                   $ref: '#/components/schemas/ApproveType'
                 rejectReason:
                   type: string
+                topics:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
       summary: Update Task
       x-stoplight:
         id: sy7yhfh83myt0
@@ -721,6 +755,14 @@ paths:
           name: joined
           description: Require joined or not
         - schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+          in: query
+          name: topics
+          description: Only show tasks with at least one of these topics
+        - schema:
             type: integer
             default: 9
           in: query
@@ -774,6 +816,12 @@ paths:
           in: query
           name: queryJoined
           description: Check whether current user has joined this task
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryTopics
+          description: Query task's topics
         - schema:
             type: string
           in: query
@@ -869,6 +917,12 @@ paths:
                     format: int64
                 rank:
                   type: integer
+                topics:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                  default: []
       summary: Create Task
       x-stoplight:
         id: ai79622xpxp6v
@@ -2036,6 +2090,10 @@ components:
         myRank:
           type: integer
           description: 'Only has value when: ''queryJoinablity'' == true && ''enableRank'' == true'
+        classificationTopics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Topic'
     SpaceAdmin:
       title: SpaceAdmin
       x-stoplight:
@@ -2193,6 +2251,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TeamSummary'
+        topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Topic'
     TaskSubmitterType:
       title: TaskSubmitterType
       x-stoplight:
@@ -2650,6 +2712,17 @@ components:
         hash:
           type: string
           description: 文件哈希
+    Topic:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+      required:
+        - id
+        - name
   securitySchemes:
     bearerAuth:
       description: The access token is used in this way.
