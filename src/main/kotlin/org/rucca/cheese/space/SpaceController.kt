@@ -11,6 +11,7 @@ import org.rucca.cheese.auth.annotation.ResourceId
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.space.option.SpaceQueryOptions
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -57,9 +58,15 @@ class SpaceController(
     @Guard("query", "space")
     override fun getSpace(
         @ResourceId spaceId: Long,
-        queryMyRank: Boolean
+        queryMyRank: Boolean,
+        queryClassificationTopics: Boolean,
     ): ResponseEntity<GetSpace200ResponseDTO> {
-        val spaceDTO = spaceService.getSpaceDto(spaceId, queryMyRank)
+        val queryOptions =
+            SpaceQueryOptions(
+                queryMyRank = queryMyRank,
+                queryClassificationTopics = queryClassificationTopics,
+            )
+        val spaceDTO = spaceService.getSpaceDto(spaceId, queryOptions)
         return ResponseEntity.ok(
             GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
         )
@@ -68,6 +75,7 @@ class SpaceController(
     @Guard("enumerate", "space")
     override fun getSpaces(
         queryMyRank: Boolean,
+        queryClassificationTopics: Boolean,
         pageSize: Int?,
         pageStart: Long?,
         sortBy: String,
@@ -85,8 +93,13 @@ class SpaceController(
                 "desc" -> SortDirection.DESCENDING
                 else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
             }
+        val queryOptions =
+            SpaceQueryOptions(
+                queryMyRank = queryMyRank,
+                queryClassificationTopics = queryClassificationTopics,
+            )
         val (spaces, page) =
-            spaceService.enumerateSpaces(queryMyRank, by, order, pageSize ?: 10, pageStart)
+            spaceService.enumerateSpaces(by, order, pageSize ?: 10, pageStart, queryOptions)
         return ResponseEntity.ok(
             GetSpaces200ResponseDTO(200, GetSpaces200ResponseDataDTO(spaces, page), "OK")
         )
@@ -118,7 +131,13 @@ class SpaceController(
         if (patchSpaceRequestDTO.taskTemplates != null) {
             spaceService.updateSpaceTaskTemplates(spaceId, patchSpaceRequestDTO.taskTemplates)
         }
-        val spaceDTO = spaceService.getSpaceDto(spaceId)
+        if (patchSpaceRequestDTO.classificationTopics != null) {
+            spaceService.updateSpaceClassificationTopics(
+                spaceId,
+                patchSpaceRequestDTO.classificationTopics
+            )
+        }
+        val spaceDTO = spaceService.getSpaceDto(spaceId, SpaceQueryOptions.MAXIMUM)
         return ResponseEntity.ok(
             GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
         )
@@ -160,9 +179,10 @@ class SpaceController(
                 ownerId = authenticationService.getCurrentUserId(),
                 enableRank = postSpaceRequestDTO.enableRank,
                 announcements = postSpaceRequestDTO.announcements,
-                taskTemplates = postSpaceRequestDTO.taskTemplates
+                taskTemplates = postSpaceRequestDTO.taskTemplates,
+                classificationTopics = postSpaceRequestDTO.classificationTopics ?: emptyList()
             )
-        val spaceDTO = spaceService.getSpaceDto(spaceId)
+        val spaceDTO = spaceService.getSpaceDto(spaceId, SpaceQueryOptions.MAXIMUM)
         return ResponseEntity.ok(
             GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
         )

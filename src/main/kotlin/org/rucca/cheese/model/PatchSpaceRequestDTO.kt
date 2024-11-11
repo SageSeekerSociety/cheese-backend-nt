@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema
  * @param enableRank
  * @param announcements
  * @param taskTemplates
+ * @param classificationTopics
  */
 data class PatchSpaceRequestDTO(
     @Schema(example = "null", description = "")
@@ -33,5 +34,8 @@ data class PatchSpaceRequestDTO(
     val announcements: kotlin.String? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("taskTemplates")
-    val taskTemplates: kotlin.String? = null
+    val taskTemplates: kotlin.String? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("classificationTopics")
+    val classificationTopics: kotlin.collections.List<kotlin.Long>? = null
 ) {}

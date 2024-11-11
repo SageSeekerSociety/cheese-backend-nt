@@ -43,6 +43,11 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
+    SEQUENCE space_classification_topics_relation_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE space_seq
 START WITH
     1 INCREMENT BY 50;
@@ -148,6 +153,18 @@ CREATE
                 ROLE BETWEEN 0 AND 1
             ),
             "user_id" INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            space_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        space_classification_topics_relation(
+            topic_id INTEGER NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
@@ -330,6 +347,14 @@ CREATE
     space_admin_relation(user_id);
 
 CREATE
+    INDEX IDXo1hn4jgjd2kpue9yt0ptyj2jp ON
+    space_classification_topics_relation(space_id);
+
+CREATE
+    INDEX IDXby2rktc4t1x2cvvlps3gx5pg3 ON
+    space_classification_topics_relation(topic_id);
+
+CREATE
     INDEX IDX5se9sb4u9yywkp49gnim8s85n ON
     space_user_rank(space_id);
 
@@ -391,6 +416,12 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS space_admin_relation ADD CONSTRAINT FKd3x1m946orup61b4f4wu6h2xn FOREIGN KEY("user_id") REFERENCES public."user";
+
+ALTER TABLE
+    IF EXISTS space_classification_topics_relation ADD CONSTRAINT FKtfux67slxlrbd7975e7066vq FOREIGN KEY(space_id) REFERENCES SPACE;
+
+ALTER TABLE
+    IF EXISTS space_classification_topics_relation ADD CONSTRAINT FKpvs648o6f6bdvjsa27dd2pdp1 FOREIGN KEY(topic_id) REFERENCES topic;
 
 ALTER TABLE
     IF EXISTS space_user_rank ADD CONSTRAINT FKh0k0jxvhnph0eoc5gw7652hdy FOREIGN KEY(space_id) REFERENCES SPACE;

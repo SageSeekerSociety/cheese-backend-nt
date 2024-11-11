@@ -54,6 +54,12 @@ paths:
           schema:
             type: boolean
             default: false
+        - description: Query the topics used for content classification
+          in: query
+          name: queryClassificationTopics
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           content:
@@ -156,6 +162,11 @@ paths:
                   type: string
                 taskTemplates:
                   type: string
+                classificationTopics:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
       summary: Update Space
       x-stoplight:
         id: 0f71c5ul8igvq
@@ -199,6 +210,12 @@ paths:
         - description: Query your rank in this space
           in: query
           name: queryMyRank
+          schema:
+            type: boolean
+            default: false
+        - description: Query the topics used for content classification
+          in: query
+          name: queryClassificationTopics
           schema:
             type: boolean
             default: false
@@ -294,6 +311,12 @@ paths:
                   type: string
                 taskTemplates:
                   type: string
+                classificationTopics:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                  default: []
       summary: Create Space
       x-stoplight:
         id: pg0dllezwwg9w
@@ -2067,6 +2090,10 @@ components:
         myRank:
           type: integer
           description: 'Only has value when: ''queryJoinablity'' == true && ''enableRank'' == true'
+        classificationTopics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Topic'
     SpaceAdmin:
       title: SpaceAdmin
       x-stoplight:

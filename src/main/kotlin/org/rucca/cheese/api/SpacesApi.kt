@@ -135,7 +135,14 @@ interface SpacesApi {
         )
         @Valid
         @RequestParam(value = "queryMyRank", required = false, defaultValue = "false")
-        queryMyRank: kotlin.Boolean
+        queryMyRank: kotlin.Boolean,
+        @Parameter(
+            description = "Query the topics used for content classification",
+            schema = Schema(defaultValue = "false")
+        )
+        @Valid
+        @RequestParam(value = "queryClassificationTopics", required = false, defaultValue = "false")
+        queryClassificationTopics: kotlin.Boolean
     ): ResponseEntity<GetSpace200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -172,6 +179,13 @@ interface SpacesApi {
         @Valid
         @RequestParam(value = "queryMyRank", required = false, defaultValue = "false")
         queryMyRank: kotlin.Boolean,
+        @Parameter(
+            description = "Query the topics used for content classification",
+            schema = Schema(defaultValue = "false")
+        )
+        @Valid
+        @RequestParam(value = "queryClassificationTopics", required = false, defaultValue = "false")
+        queryClassificationTopics: kotlin.Boolean,
         @Parameter(description = "Page Size")
         @Valid
         @RequestParam(value = "page_size", required = false)

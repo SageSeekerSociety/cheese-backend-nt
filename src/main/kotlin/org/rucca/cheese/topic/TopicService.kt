@@ -5,6 +5,8 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.TopicDTO
 import org.springframework.stereotype.Service
 
+fun Topic.toDTO() = TopicDTO(id = id!!.toLong(), name = name!!)
+
 @Service
 class TopicService(private val topicRepository: TopicRepository) {
     fun ensureTopicExists(topicId: IdType) {
@@ -12,8 +14,6 @@ class TopicService(private val topicRepository: TopicRepository) {
             throw NotFoundError("topic", topicId)
         }
     }
-
-    fun Topic.toDTO() = TopicDTO(id = id!!.toLong(), name = name!!)
 
     fun getTopicDTO(topicId: IdType): TopicDTO {
         val topic =
