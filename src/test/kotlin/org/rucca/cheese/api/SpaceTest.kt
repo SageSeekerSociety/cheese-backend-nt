@@ -212,7 +212,6 @@ constructor(
     fun testGetSpace() {
         val request =
             MockMvcRequestBuilders.get("/spaces/$spaceId")
-                .param("queryClassificationTopics", "true")
                 .header("Authorization", "Bearer $creatorToken")
         mockMvc
             .perform(request)

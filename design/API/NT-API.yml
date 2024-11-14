@@ -54,12 +54,6 @@ paths:
           schema:
             type: boolean
             default: false
-        - description: Query the topics used for content classification
-          in: query
-          name: queryClassificationTopics
-          schema:
-            type: boolean
-            default: false
       responses:
         "200":
           content:
@@ -210,12 +204,6 @@ paths:
         - description: Query your rank in this space
           in: query
           name: queryMyRank
-          schema:
-            type: boolean
-            default: false
-        - description: Query the topics used for content classification
-          in: query
-          name: queryClassificationTopics
           schema:
             type: boolean
             default: false
@@ -2080,6 +2068,7 @@ components:
         - enableRank
         - announcements
         - taskTemplates
+        - classificationTopics
       properties:
         id:
           type: integer
