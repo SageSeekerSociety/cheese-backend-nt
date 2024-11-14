@@ -6,13 +6,9 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.AuthenticationService
-import org.rucca.cheese.auth.error.PermissionDeniedError
-import org.rucca.cheese.common.config.ApplicationConfig
-import org.rucca.cheese.common.error.BaseError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
-import org.rucca.cheese.common.helper.toLocalDateTime
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.convert
@@ -20,7 +16,6 @@ import org.rucca.cheese.model.*
 import org.rucca.cheese.model.TaskSubmitterTypeDTO.*
 import org.rucca.cheese.space.Space
 import org.rucca.cheese.space.SpaceService
-import org.rucca.cheese.space.SpaceUserRankService
 import org.rucca.cheese.task.error.*
 import org.rucca.cheese.task.option.TaskEnumerateOptions
 import org.rucca.cheese.task.option.TaskQueryOptions
@@ -41,14 +36,13 @@ class TaskService(
     private val teamService: TeamService,
     private val authenticationService: AuthenticationService,
     private val taskRepository: TaskRepository,
-    private val taskMembershipRepository: taskMembershipRepository,
+    private val taskMembershipRepository: TaskMembershipRepository,
     private val taskSubmissionRepository: TaskSubmissionRepository,
     private val entityManager: EntityManager,
     private val elasticsearchTemplate: ElasticsearchTemplate,
-    private val spaceUserRankService: SpaceUserRankService,
-    private val applicationConfig: ApplicationConfig,
     private val spaceService: SpaceService,
     private val taskTopicsService: TaskTopicsService,
+    private val taskMembershipService: TaskMembershipService,
 ) {
     fun getTaskDto(taskId: IdType, options: TaskQueryOptions = TaskQueryOptions.MINIMUM): TaskDTO {
         val task = getTask(taskId)
@@ -124,21 +118,29 @@ class TaskService(
             if (options.queryTeam && this.team?.id != null) teamService.getTeamDto(this.team.id!!)
             else null
         val joinability =
-            if (options.queryJoinability) getJoinability(this, userId) else Pair(null, null)
+            if (options.queryJoinability) taskMembershipService.getJoinability(this, userId)
+            else Pair(null, null)
         val submittability =
-            if (options.querySubmittability) getSubmittability(this, userId) else Pair(null, null)
-        val joined = if (options.queryJoined) getJoined(this, userId) else Pair(null, null)
+            if (options.querySubmittability) taskMembershipService.getSubmittability(this, userId)
+            else Pair(null, null)
+        val joined =
+            if (options.queryJoined) taskMembershipService.getJoined(this, userId)
+            else Pair(null, null)
         val joinedApproved =
             if (options.queryJoinedApproved)
-                getJoinedWithApproveType(this, userId, ApproveType.APPROVED)
+                taskMembershipService.getJoinedWithApproveType(this, userId, ApproveType.APPROVED)
             else Pair(null, null)
         val joinedDisapproved =
             if (options.queryJoinedDisapproved)
-                getJoinedWithApproveType(this, userId, ApproveType.DISAPPROVED)
+                taskMembershipService.getJoinedWithApproveType(
+                    this,
+                    userId,
+                    ApproveType.DISAPPROVED
+                )
             else Pair(null, null)
         val joinedNotApprovedOrDisapproved =
             if (options.queryJoinedNotApprovedOrDisapproved)
-                getJoinedWithApproveType(this, userId, ApproveType.NONE)
+                taskMembershipService.getJoinedWithApproveType(this, userId, ApproveType.NONE)
             else Pair(null, null)
         val topics =
             if (options.queryTopics) taskTopicsService.getTaskTopicDTOs(this.id!!) else null
@@ -296,57 +298,6 @@ class TaskService(
         taskRepository.save(task)
     }
 
-    private fun getTaskMembership(taskId: IdType, memberId: IdType): TaskMembership {
-        return taskMembershipRepository.findByTaskIdAndMemberId(taskId, memberId).orElseThrow {
-            NotTaskParticipantYetError(taskId, memberId)
-        }
-    }
-
-    fun getTaskMembershipDTO(taskId: IdType, memberId: IdType): TaskMembershipDTO {
-        val membership = getTaskMembership(taskId, memberId)
-        val taskParticipantSummaryDto =
-            when (getTaskSumbitterType(taskId)) {
-                USER ->
-                    userService.getTaskParticipantSummaryDto(
-                        membership.memberId!!,
-                        membership.approved!!
-                    )
-                TEAM ->
-                    teamService.getTaskParticipantSummaryDto(
-                        membership.memberId!!,
-                        membership.approved!!
-                    )
-            }
-        return TaskMembershipDTO(
-            id = membership.id!!,
-            member = taskParticipantSummaryDto,
-            createdAt = membership.createdAt!!.toEpochMilli(),
-            updatedAt = membership.updatedAt!!.toEpochMilli(),
-            deadline = membership.deadline?.toEpochMilli(),
-            approved = membership.approved!!.convert(),
-        )
-    }
-
-    fun updateTaskMembershipDeadline(
-        taskId: IdType,
-        memberId: IdType,
-        deadline: Long,
-    ) {
-        val participant = getTaskMembership(taskId, memberId)
-        if (participant.approved == ApproveType.APPROVED) {
-            participant.deadline = deadline.toLocalDateTime()
-        } else {
-            throw TaskParticipantNotApprovedError(taskId, memberId)
-        }
-        taskMembershipRepository.save(participant)
-    }
-
-    fun updateTaskMembershipApproved(taskId: IdType, memberId: IdType, approved: ApproveType) {
-        val participant = getTaskMembership(taskId, memberId)
-        participant.approved = approved
-        taskMembershipRepository.save(participant)
-    }
-
     enum class TasksSortBy {
         DEADLINE,
         CREATED_AT,
@@ -366,115 +317,6 @@ class TaskService(
     fun getTaskTeamId(taskId: IdType): IdType? {
         val task = getTask(taskId)
         return task.team?.id
-    }
-
-    fun isTaskJoinable(task: Task, memberId: IdType): BaseError? {
-        // Task is approved
-        if (task.approved != ApproveType.APPROVED)
-            return PermissionDeniedError("add-participant", "task", task.id, null)
-
-        // Ensure member exists
-        when (task.submitterType!!) {
-            TaskSubmitterType.USER ->
-                if (!userService.existsUser(memberId)) return NotFoundError("user", memberId)
-            TaskSubmitterType.TEAM ->
-                if (!teamService.existsTeam(memberId)) return NotFoundError("team", memberId)
-        }
-
-        // Has not joined yet
-        if (taskMembershipRepository.existsByTaskIdAndMemberId(task.id!!, memberId))
-            return AlreadyBeTaskParticipantError(task.id!!, memberId)
-
-        // Have enough rank
-        val needToCheckRank =
-            applicationConfig.rankCheckEnforced &&
-                task.submitterType == TaskSubmitterType.USER &&
-                task.space != null &&
-                task.space.enableRank!! &&
-                task.rank != null
-        if (needToCheckRank) {
-            val requiredRank = task.rank!! - applicationConfig.rankJump
-            val acturalRank = spaceUserRankService.getRank(task.space!!.id!!, memberId)
-            if (acturalRank < requiredRank)
-                return YourRankIsNotHighEnoughError(acturalRank, requiredRank)
-        }
-
-        return null
-    }
-
-    fun getJoinability(task: Task, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
-        when (task.submitterType!!) {
-            TaskSubmitterType.USER -> return Pair(isTaskJoinable(task, userId) == null, null)
-            TaskSubmitterType.TEAM -> {
-                val teams =
-                    teamService.getTeamsThatUserCanUseToJoinTask(task.id!!, userId).filter {
-                        isTaskJoinable(task, it.id) == null
-                    }
-                return Pair(teams.isNotEmpty(), teams)
-            }
-        }
-    }
-
-    fun getSubmittability(task: Task, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
-        when (task.submitterType!!) {
-            TaskSubmitterType.USER ->
-                return Pair(
-                    taskMembershipRepository.existsByTaskIdAndMemberIdAndApproved(
-                        task.id!!,
-                        userId,
-                        ApproveType.APPROVED
-                    ),
-                    null
-                )
-            TaskSubmitterType.TEAM -> {
-                val teams = teamService.getTeamsThatUserCanUseToSubmitTask(task.id!!, userId)
-                return Pair(teams.isNotEmpty(), teams)
-            }
-        }
-    }
-
-    fun getJoined(task: Task, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
-        when (task.submitterType!!) {
-            TaskSubmitterType.USER ->
-                return Pair(
-                    taskMembershipRepository.existsByTaskIdAndMemberId(
-                        task.id!!,
-                        userId,
-                    ),
-                    null
-                )
-            TaskSubmitterType.TEAM -> {
-                val teams = teamService.getTeamsThatUserJoinedTaskAs(task.id!!, userId)
-                return Pair(teams.isNotEmpty(), teams)
-            }
-        }
-    }
-
-    fun getJoinedWithApproveType(
-        task: Task,
-        userId: IdType,
-        approveType: ApproveType
-    ): Pair<Boolean, List<TeamSummaryDTO>?> {
-        when (task.submitterType!!) {
-            TaskSubmitterType.USER ->
-                return Pair(
-                    taskMembershipRepository.existsByTaskIdAndMemberIdAndApproved(
-                        task.id!!,
-                        userId,
-                        approveType,
-                    ),
-                    null
-                )
-            TaskSubmitterType.TEAM -> {
-                val teams =
-                    teamService.getTeamsThatUserJoinedTaskAsWithApprovedType(
-                        task.id!!,
-                        userId,
-                        approveType
-                    )
-                return Pair(teams.isNotEmpty(), teams)
-            }
-        }
     }
 
     fun getTaskSubmittersSummary(taskId: IdType): TaskSubmittersDTO {
@@ -572,7 +414,9 @@ class TaskService(
         if (options.joined != null)
             result =
                 result.filter {
-                    getJoined(it, authenticationService.getCurrentUserId()).first == options.joined
+                    taskMembershipService
+                        .getJoined(it, authenticationService.getCurrentUserId())
+                        .first == options.joined
                 }
         val (curr, page) =
             PageHelper.pageFromAll(
@@ -610,7 +454,9 @@ class TaskService(
         if (options.joined != null)
             entities =
                 entities.filter {
-                    getJoined(it, authenticationService.getCurrentUserId()).first == options.joined
+                    taskMembershipService
+                        .getJoined(it, authenticationService.getCurrentUserId())
+                        .first == options.joined
                 }
         if (options.topics != null)
             entities =
@@ -644,60 +490,5 @@ class TaskService(
         }
         taskMembershipRepository.saveAll(participants)
         taskRepository.save(task)
-    }
-
-    fun getTaskParticipantDtos(
-        taskId: IdType,
-        approveType: ApproveType?
-    ): List<TaskParticipantSummaryDTO> {
-        val cb = entityManager.criteriaBuilder
-        val cq = cb.createQuery(TaskMembership::class.java)
-        val root = cq.from(TaskMembership::class.java)
-        val predicates = mutableListOf<Predicate>()
-        predicates.add(cb.equal(root.get<Task>("task").get<IdType>("id"), taskId))
-        if (approveType != null) {
-            predicates.add(cb.equal(root.get<ApproveType>("approved"), approveType))
-        }
-        cq.where(*predicates.toTypedArray())
-        val query = entityManager.createQuery(cq)
-        val participants = query.resultList
-        // val participants = taskMembershipRepository.findAllByTaskId(taskId)
-        return when (getTaskSumbitterType(taskId)) {
-            USER ->
-                participants.map {
-                    userService.getTaskParticipantSummaryDto(it.memberId!!, it.approved!!)
-                }
-            TEAM ->
-                participants.map {
-                    teamService.getTaskParticipantSummaryDto(it.memberId!!, it.approved!!)
-                }
-        }
-    }
-
-    fun addTaskParticipant(
-        taskId: IdType,
-        memberId: IdType,
-        deadline: LocalDateTime?,
-        approved: ApproveType
-    ) {
-        val errorOpt = isTaskJoinable(getTask(taskId), memberId)
-        if (errorOpt != null) throw errorOpt
-        taskMembershipRepository.save(
-            TaskMembership(
-                task = Task().apply { id = taskId },
-                memberId = memberId,
-                deadline = deadline,
-                approved = approved,
-            )
-        )
-    }
-
-    fun removeTaskParticipant(taskId: IdType, memberId: IdType) {
-        val participant =
-            taskMembershipRepository.findByTaskIdAndMemberId(taskId, memberId).orElseThrow {
-                NotTaskParticipantYetError(taskId, memberId)
-            }
-        participant.deletedAt = LocalDateTime.now()
-        taskMembershipRepository.save(participant)
     }
 }

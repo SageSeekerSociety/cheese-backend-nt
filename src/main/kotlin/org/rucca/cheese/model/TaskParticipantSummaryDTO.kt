@@ -10,6 +10,7 @@ import javax.validation.Valid
  * @param name
  * @param avatarId
  * @param approved
+ * @param realNameInfo
  */
 data class TaskParticipantSummaryDTO(
     @Schema(example = "null", required = true, description = "")
@@ -27,5 +28,9 @@ data class TaskParticipantSummaryDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("approved", required = true)
-    val approved: ApproveTypeDTO
+    val approved: ApproveTypeDTO,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("realNameInfo")
+    val realNameInfo: TaskParticipantRealNameInfoDTO? = null
 ) {}

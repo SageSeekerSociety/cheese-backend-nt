@@ -1057,6 +1057,8 @@ paths:
                   format: int64
                 approved:
                   $ref: "#/components/schemas/ApproveType"
+                realNameInfo:
+                  $ref: '#/components/schemas/TaskParticipantRealNameInfo'
     delete:
       parameters:
         - description: Task ID
@@ -1162,6 +1164,8 @@ paths:
                 deadline:
                   type: integer
                   format: int64
+                realNameInfo:
+                  $ref: '#/components/schemas/TaskParticipantRealNameInfo'
       tags: []
       operationId: post-task-participant
       summary: Apply for Task
@@ -2544,6 +2548,41 @@ components:
           format: int64
         approved:
           $ref: '#/components/schemas/ApproveType'
+    TaskParticipantRealNameInfo:
+      title: TaskParticipantRealNameInfo
+      type: object
+      required:
+        - realName
+        - studentId
+        - grade
+        - major
+        - class
+        - email
+        - phone
+        - applyReason
+        - personalAdvantage
+        - remark
+      properties:
+        realName:
+          type: string
+        studentId:
+          type: string
+        grade:
+          type: string
+        major:
+          type: string
+        className:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        applyReason:
+          type: string
+        personalAdvantage:
+          type: string
+        remark:
+          type: string
     TaskParticipantSummary:
       title: TaskParticipantSummary
       type: object
@@ -2566,6 +2605,8 @@ components:
           format: int64
         approved:
           $ref: '#/components/schemas/ApproveType'
+        realNameInfo:
+          $ref: '#/components/schemas/TaskParticipantRealNameInfo'
     TeamMember:
       properties:
         role:

@@ -238,6 +238,16 @@ CREATE
             member_id BIGINT NOT NULL,
             task_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
+            apply_reason VARCHAR(255) NOT NULL,
+            class_name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            grade VARCHAR(255) NOT NULL,
+            major VARCHAR(255) NOT NULL,
+            personal_advantage VARCHAR(255) NOT NULL,
+            phone VARCHAR(255) NOT NULL,
+            real_name VARCHAR(255) NOT NULL,
+            remark VARCHAR(255) NOT NULL,
+            student_id VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
 
