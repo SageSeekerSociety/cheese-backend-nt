@@ -61,9 +61,24 @@ interface TeamRepository : JpaRepository<Team, IdType> {
         AND taskMembership.approved = :approved
         """
     )
-    fun getTeamsThatUserCanUseToSubmitTask(
+    fun getTeamsThatUserJoinedTaskAsWithApprovedType(
         taskId: IdType,
         userId: IdType,
-        approved: ApproveType = ApproveType.APPROVED,
+        approved: ApproveType,
+    ): List<Team>
+
+    @Query(
+        """
+        SELECT team
+        FROM Team team
+        JOIN TeamUserRelation teamUserRelation ON team.id = teamUserRelation.team.id
+        JOIN TaskMembership taskMembership ON team.id = taskMembership.memberId
+        WHERE teamUserRelation.user.id = :userId
+        AND taskMembership.task.id = :taskId
+        """
+    )
+    fun getTeamsThatUserJoinedTaskAs(
+        taskId: IdType,
+        userId: IdType,
     ): List<Team>
 }

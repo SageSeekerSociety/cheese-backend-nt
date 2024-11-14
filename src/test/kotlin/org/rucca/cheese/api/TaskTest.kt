@@ -10,11 +10,10 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
-import org.rucca.cheese.auth.UserCreatorService
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.utils.AttachmentCreatorService
 import org.rucca.cheese.utils.JsonArrayUtil
+import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -33,7 +32,6 @@ class TaskTest
 constructor(
     private val mockMvc: MockMvc,
     private val userCreatorService: UserCreatorService,
-    private val attachmentCreatorService: AttachmentCreatorService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     lateinit var creator: UserCreatorService.CreateUserResponse
@@ -262,15 +260,15 @@ constructor(
                   "description": "$description",
                   "submissionSchema": [
                     ${
-                    submissionSchema.map {
-                        """
+                        submissionSchema.map {
+                            """
                                 {
                                   "prompt": "${it.first}",
                                   "type": "${it.second}"
                                 }
                             """
-                    }.joinToString(",\n")
-                }
+                        }.joinToString(",\n")
+                    }
                   ],
                   "team": ${team ?: "null"},
                   "space": ${space ?: "null"}
@@ -575,30 +573,63 @@ constructor(
 
     @Test
     @Order(25)
-    fun testGetTeamTaskWithJoinabilityAndSubmittabilityUseTeamCreator() {
-        val taskId = taskIds[1]
+    fun testGetTeamTaskWithSpaceAndTeamUseTeamCreator() {
+        val taskId = taskIds[4]
         val request =
             MockMvcRequestBuilders.get("/tasks/$taskId")
-                .queryParam("queryJoinability", "true")
-                .queryParam("querySubmittability", "true")
+                .queryParam("querySpace", "true")
+                .queryParam("queryTeam", "true")
                 .header("Authorization", "Bearer $teamCreatorToken")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.task.space").isEmpty)
+            .andExpect(jsonPath("$.data.task.team").isEmpty)
+    }
+
+    @Test
+    @Order(25)
+    fun testGetTeamTaskWithOptionalQueriesUseTeamCreator() {
+        val taskId = taskIds[1]
+        val request =
+            MockMvcRequestBuilders.get("/tasks/$taskId")
+                .queryParam("querySpace", "true")
+                .queryParam("queryTeam", "true")
+                .queryParam("queryJoinability", "true")
+                .queryParam("querySubmittability", "true")
+                .queryParam("queryJoined", "true")
+                .queryParam("queryJoinedApproved", "true")
+                .queryParam("queryJoinedDisapproved", "true")
+                .queryParam("queryJoinedNotApprovedOrDisapproved", "true")
+                .header("Authorization", "Bearer $teamCreatorToken")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.task.space.id").value(spaceId))
+            .andExpect(jsonPath("$.data.task.team.id").value(teamId))
             .andExpect(jsonPath("$.data.task.joinable").value(true))
             .andExpect(jsonPath("$.data.task.joinableAsTeam[0].id").value(teamId))
             .andExpect(jsonPath("$.data.task.submittable").value(false))
             .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joined").value(false))
+            .andExpect(jsonPath("$.data.task.joinedAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinedApproved").value(false))
+            .andExpect(jsonPath("$.data.task.joinedApprovedAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinedDisapproved").value(false))
+            .andExpect(jsonPath("$.data.task.joinedDisapprovedAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinedNotApprovedOrDisapproved").value(false))
+            .andExpect(jsonPath("$.data.task.joinedNotApprovedOrDisapprovedAsTeam").isEmpty)
     }
 
     @Test
     @Order(26)
-    fun testGetTeamTaskWithJoinabilityAndSubmittabilityUseSpaceCreator() {
+    fun testGetTeamTaskWithOptionalQueriesUseSpaceCreator() {
         val taskId = taskIds[1]
         val request =
             MockMvcRequestBuilders.get("/tasks/$taskId")
                 .queryParam("queryJoinability", "true")
                 .queryParam("querySubmittability", "true")
+                .queryParam("queryJoined", "true")
                 .header("Authorization", "Bearer $spaceCreatorToken")
         mockMvc
             .perform(request)
@@ -607,16 +638,19 @@ constructor(
             .andExpect(jsonPath("$.data.task.joinableAsTeam").isEmpty)
             .andExpect(jsonPath("$.data.task.submittable").value(false))
             .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joined").value(false))
+            .andExpect(jsonPath("$.data.task.joinedAsTeam").isEmpty)
     }
 
     @Test
     @Order(27)
-    fun testGetUserTaskWithJoinabilityAndSubmittabilityUseSpaceCreator() {
+    fun testGetUserTaskWithOptionalQueriesUseSpaceCreator() {
         val taskId = taskIds[0]
         val request =
             MockMvcRequestBuilders.get("/tasks/$taskId")
                 .queryParam("queryJoinability", "true")
                 .queryParam("querySubmittability", "true")
+                .queryParam("queryJoined", "true")
                 .header("Authorization", "Bearer $spaceCreatorToken")
         mockMvc
             .perform(request)
@@ -625,6 +659,8 @@ constructor(
             .andExpect(jsonPath("$.data.task.joinableAsTeam").doesNotExist())
             .andExpect(jsonPath("$.data.task.submittable").value(false))
             .andExpect(jsonPath("$.data.task.submittableAsTeam").doesNotExist())
+            .andExpect(jsonPath("$.data.task.joined").value(false))
+            .andExpect(jsonPath("$.data.task.joinedAsTeam").doesNotExist())
     }
 
     @Test
@@ -652,6 +688,7 @@ constructor(
                 {
                   "name": "$taskName (1) (updated)",
                   "deadline": ${taskDeadline + 1000000000},
+                  "defaultDeadline": ${taskDefaultDeadline + 1},
                   "resubmittable": false,
                   "editable": false,
                   "intro": "This is an updated test task.",
@@ -672,6 +709,7 @@ constructor(
             .andExpect(jsonPath("$.data.task.name").value("$taskName (1) (updated)"))
             .andExpect(jsonPath("$.data.task.creator.id").value(creator.userId))
             .andExpect(jsonPath("$.data.task.deadline").value(taskDeadline + 1000000000))
+            .andExpect(jsonPath("$.data.task.defaultDeadline").value(taskDefaultDeadline + 1))
             .andExpect(jsonPath("$.data.task.resubmittable").value(false))
             .andExpect(jsonPath("$.data.task.editable").value(false))
             .andExpect(jsonPath("$.data.task.intro").value("This is an updated test task."))
@@ -709,6 +747,7 @@ constructor(
             MockMvcRequestBuilders.get("/tasks")
                 .header("Authorization", "Bearer $creatorToken")
                 .param("approved", "APPROVED")
+                .param("joined", "false")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -723,6 +762,20 @@ constructor(
             .andExpect(jsonPath("$.data.tasks[0].submitters.total").value(0))
             .andExpect(jsonPath("$.data.tasks[0].submitters.examples").isArray)
             .andExpect(jsonPath("$.data.tasks[0].rank").value(1))
+    }
+
+    @Test
+    @Order(50)
+    fun testEnumerateTasksNotJoined() {
+        val request =
+            MockMvcRequestBuilders.get("/tasks")
+                .header("Authorization", "Bearer $creatorToken")
+                .param("approved", "APPROVED")
+                .param("joined", "true")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.tasks").isEmpty)
     }
 
     @Test
@@ -802,21 +855,6 @@ constructor(
     }
 
     @Test
-    @Order(71)
-    fun testEnumerateTasksByIdInKeywords() {
-        val request =
-            MockMvcRequestBuilders.get("/tasks")
-                .header("Authorization", "Bearer $creatorToken")
-                .param("keywords", taskIds[0].toString())
-                .param("approved", "APPROVED")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.tasks[0].id").value(taskIds[0]))
-            .andExpect(jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
-    }
-
-    @Test
     @Order(72)
     fun testEnumerateTasksByNameInKeywords() {
         val request =
@@ -824,11 +862,13 @@ constructor(
                 .header("Authorization", "Bearer $creatorToken")
                 .param("keywords", "$taskName (1) (updated)")
                 .param("approved", "APPROVED")
+                .param("joined", "false")
+                .param("queryJoined", "true")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.tasks[0].id").value(taskIds[0]))
-            .andExpect(jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
+            .andExpect(jsonPath("$.data.tasks[?(@.approved != 'APPROVED')]").isEmpty)
+            .andExpect(jsonPath("$.data.tasks[?(@.joined != false)]").isEmpty)
     }
 
     @Test
@@ -855,6 +895,35 @@ constructor(
                     {}
                 """)
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    @Test
+    @Order(86)
+    fun testEnumerateTasksAfterJoined() {
+        val request =
+            MockMvcRequestBuilders.get("/tasks")
+                .header("Authorization", "Bearer $participantToken")
+                .param("approved", "APPROVED")
+                .param("joined", "true")
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.tasks[0].id").value(taskIds[0]))
+    }
+
+    @Test
+    @Order(86)
+    fun testEnumerateTasksAfterJoinedWithKeywords() {
+        val request =
+            MockMvcRequestBuilders.get("/tasks")
+                .header("Authorization", "Bearer $participantToken")
+                .param("approved", "APPROVED")
+                .param("joined", "true")
+                .param("query", taskName)
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.tasks[0].id").value(taskIds[0]))
     }
 
     @Test
@@ -1014,12 +1083,16 @@ constructor(
 
     @Test
     @Order(102)
-    fun testGetTeamTaskWithJoinabilityAndSubmittabilityUseTeamCreatorAfterJoin() {
+    fun testGetTeamTaskWithOptionalQueriesUseTeamCreatorAfterJoin() {
         val taskId = taskIds[1]
         val request =
             MockMvcRequestBuilders.get("/tasks/$taskId")
                 .queryParam("queryJoinability", "true")
                 .queryParam("querySubmittability", "true")
+                .queryParam("queryJoined", "true")
+                .queryParam("queryJoinedApproved", "true")
+                .queryParam("queryJoinedDisapproved", "true")
+                .queryParam("queryJoinedNotApprovedOrDisapproved", "true")
                 .header("Authorization", "Bearer $teamCreatorToken")
         mockMvc
             .perform(request)
@@ -1028,6 +1101,16 @@ constructor(
             .andExpect(jsonPath("$.data.task.joinableAsTeam").isEmpty)
             .andExpect(jsonPath("$.data.task.submittable").value(false))
             .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty())
+            .andExpect(jsonPath("$.data.task.joined").value(true))
+            .andExpect(jsonPath("$.data.task.joinedAsTeam[0].id").value(teamId))
+            .andExpect(jsonPath("$.data.task.joinedApproved").value(false))
+            .andExpect(jsonPath("$.data.task.joinedApprovedAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinedDisapproved").value(false))
+            .andExpect(jsonPath("$.data.task.joinedDisapprovedAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinedNotApprovedOrDisapproved").value(true))
+            .andExpect(
+                jsonPath("$.data.task.joinedNotApprovedOrDisapprovedAsTeam[0].id").value(teamId)
+            )
     }
 
     @Test
@@ -1105,13 +1188,14 @@ constructor(
             )
     }
 
+    @Test
     @Order(106)
     fun testGetTaskParticipantsByApproveStatusDisapproved() {
         val taskId = taskIds[0]
         val request =
             MockMvcRequestBuilders.get("/tasks/$taskId/participants")
                 .header("Authorization", "Bearer $creatorToken")
-                .param("approved", "NONE")
+                .param("approved", "DISAPPROVED")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -1247,12 +1331,13 @@ constructor(
 
     @Test
     @Order(25)
-    fun testGetTeamTaskWithJoinabilityAndSubmittabilityUseTeamCreatorAfterExit() {
+    fun testGetTeamTaskWithOptionalQueriesUseTeamCreatorAfterExit() {
         val taskId = taskIds[1]
         val request =
             MockMvcRequestBuilders.get("/tasks/$taskId")
                 .queryParam("queryJoinability", "true")
                 .queryParam("querySubmittability", "true")
+                .queryParam("queryJoined", "true")
                 .header("Authorization", "Bearer $teamCreatorToken")
         mockMvc
             .perform(request)
@@ -1261,6 +1346,8 @@ constructor(
             .andExpect(jsonPath("$.data.task.joinableAsTeam[0].id").value(teamId))
             .andExpect(jsonPath("$.data.task.submittable").value(false))
             .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joined").value(false))
+            .andExpect(jsonPath("$.data.task.joinedAsTeam").isEmpty())
     }
 
     @Test

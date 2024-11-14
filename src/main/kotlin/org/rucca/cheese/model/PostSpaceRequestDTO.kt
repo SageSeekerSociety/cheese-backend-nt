@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema
  * @param enableRank
  * @param announcements
  * @param taskTemplates
+ * @param classificationTopics
  */
 data class PostSpaceRequestDTO(
     @Schema(example = "null", required = true, description = "")
@@ -33,5 +34,8 @@ data class PostSpaceRequestDTO(
     val announcements: kotlin.String,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("taskTemplates", required = true)
-    val taskTemplates: kotlin.String
+    val taskTemplates: kotlin.String,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("classificationTopics")
+    val classificationTopics: kotlin.collections.List<kotlin.Long>? = arrayListOf()
 ) {}

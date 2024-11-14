@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.utils.UserCreatorService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 
