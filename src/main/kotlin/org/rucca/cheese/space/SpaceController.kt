@@ -59,12 +59,10 @@ class SpaceController(
     override fun getSpace(
         @ResourceId spaceId: Long,
         queryMyRank: Boolean,
-        queryClassificationTopics: Boolean,
     ): ResponseEntity<GetSpace200ResponseDTO> {
         val queryOptions =
             SpaceQueryOptions(
                 queryMyRank = queryMyRank,
-                queryClassificationTopics = queryClassificationTopics,
             )
         val spaceDTO = spaceService.getSpaceDto(spaceId, queryOptions)
         return ResponseEntity.ok(
@@ -75,7 +73,6 @@ class SpaceController(
     @Guard("enumerate", "space")
     override fun getSpaces(
         queryMyRank: Boolean,
-        queryClassificationTopics: Boolean,
         pageSize: Int?,
         pageStart: Long?,
         sortBy: String,
@@ -96,7 +93,6 @@ class SpaceController(
         val queryOptions =
             SpaceQueryOptions(
                 queryMyRank = queryMyRank,
-                queryClassificationTopics = queryClassificationTopics,
             )
         val (spaces, page) =
             spaceService.enumerateSpaces(by, order, pageSize ?: 10, pageStart, queryOptions)

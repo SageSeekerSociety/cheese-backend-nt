@@ -42,9 +42,7 @@ class SpaceService(
                 spaceUserRankService.getRank(this.id!!, userId)
             } else null
         val classificationTopics =
-            if (options.queryClassificationTopics) {
-                spaceClassificationTopicsService.getClassificationTopicDTOs(this.id!!)
-            } else null
+            spaceClassificationTopicsService.getClassificationTopicDTOs(this.id!!)
         return SpaceDTO(
             id = this.id!!,
             intro = this.intro!!,
