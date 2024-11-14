@@ -142,15 +142,25 @@ class TeamService(
     }
 
     fun getTeamsThatUserCanUseToSubmitTask(taskId: IdType, userId: IdType): List<TeamSummaryDTO> {
-        return teamRepository.getTeamsThatUserCanUseToSubmitTask(taskId, userId).map {
-            it.toTeamSummaryDTO()
-        }
+        return teamRepository
+            .getTeamsThatUserJoinedTaskAsWithApprovedType(taskId, userId, ApproveType.APPROVED)
+            .map { it.toTeamSummaryDTO() }
     }
 
     fun getTeamsThatUserJoinedTaskAs(taskId: IdType, userId: IdType): List<TeamSummaryDTO> {
         return teamRepository.getTeamsThatUserJoinedTaskAs(taskId, userId).map {
             it.toTeamSummaryDTO()
         }
+    }
+
+    fun getTeamsThatUserJoinedTaskAsWithApprovedType(
+        taskId: IdType,
+        userId: IdType,
+        approveType: ApproveType
+    ): List<TeamSummaryDTO> {
+        return teamRepository
+            .getTeamsThatUserJoinedTaskAsWithApprovedType(taskId, userId, approveType)
+            .map { it.toTeamSummaryDTO() }
     }
 
     fun isTeamAdmin(teamId: IdType, userId: IdType): Boolean {

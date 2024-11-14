@@ -315,6 +315,9 @@ class TaskController(
         queryJoinability: Boolean,
         querySubmittability: Boolean,
         queryJoined: Boolean,
+        queryJoinedApproved: Boolean,
+        queryJoinedDisapproved: Boolean,
+        queryJoinedNotApprovedOrDisapproved: Boolean,
         queryTopics: Boolean,
     ): ResponseEntity<GetTask200ResponseDTO> {
         val queryOptions =
@@ -324,6 +327,9 @@ class TaskController(
                 queryJoinability = queryJoinability,
                 querySubmittability = querySubmittability,
                 queryJoined = queryJoined,
+                queryJoinedApproved = queryJoinedApproved,
+                queryJoinedDisapproved = queryJoinedDisapproved,
+                queryJoinedNotApprovedOrDisapproved = queryJoinedNotApprovedOrDisapproved,
                 queryTopics = queryTopics,
             )
         val taskDTO = taskService.getTaskDto(taskId, queryOptions)
@@ -410,6 +416,9 @@ class TaskController(
         queryJoinability: Boolean,
         querySubmittability: Boolean,
         queryJoined: Boolean,
+        queryJoinedApproved: Boolean,
+        queryJoinedDisapproved: Boolean,
+        queryJoinedNotApprovedOrDisapproved: Boolean,
         queryTopics: Boolean,
         keywords: String?,
     ): ResponseEntity<GetTasks200ResponseDTO> {
@@ -442,6 +451,9 @@ class TaskController(
                 queryJoinability = queryJoinability,
                 querySubmittability = querySubmittability,
                 queryJoined = queryJoined,
+                queryJoinedApproved = queryJoinedApproved,
+                queryJoinedDisapproved = queryJoinedDisapproved,
+                queryJoinedNotApprovedOrDisapproved = queryJoinedNotApprovedOrDisapproved,
                 queryTopics = queryTopics,
             )
         val (taskSummaryDTOs, page) =

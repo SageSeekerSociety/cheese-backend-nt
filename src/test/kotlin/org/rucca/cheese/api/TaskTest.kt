@@ -598,6 +598,9 @@ constructor(
                 .queryParam("queryJoinability", "true")
                 .queryParam("querySubmittability", "true")
                 .queryParam("queryJoined", "true")
+                .queryParam("queryJoinedApproved", "true")
+                .queryParam("queryJoinedDisapproved", "true")
+                .queryParam("queryJoinedNotApprovedOrDisapproved", "true")
                 .header("Authorization", "Bearer $teamCreatorToken")
         mockMvc
             .perform(request)
@@ -610,6 +613,12 @@ constructor(
             .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty)
             .andExpect(jsonPath("$.data.task.joined").value(false))
             .andExpect(jsonPath("$.data.task.joinedAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinedApproved").value(false))
+            .andExpect(jsonPath("$.data.task.joinedApprovedAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinedDisapproved").value(false))
+            .andExpect(jsonPath("$.data.task.joinedDisapprovedAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinedNotApprovedOrDisapproved").value(false))
+            .andExpect(jsonPath("$.data.task.joinedNotApprovedOrDisapprovedAsTeam").isEmpty)
     }
 
     @Test
@@ -1096,6 +1105,9 @@ constructor(
                 .queryParam("queryJoinability", "true")
                 .queryParam("querySubmittability", "true")
                 .queryParam("queryJoined", "true")
+                .queryParam("queryJoinedApproved", "true")
+                .queryParam("queryJoinedDisapproved", "true")
+                .queryParam("queryJoinedNotApprovedOrDisapproved", "true")
                 .header("Authorization", "Bearer $teamCreatorToken")
         mockMvc
             .perform(request)
@@ -1106,6 +1118,14 @@ constructor(
             .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty())
             .andExpect(jsonPath("$.data.task.joined").value(true))
             .andExpect(jsonPath("$.data.task.joinedAsTeam[0].id").value(teamId))
+            .andExpect(jsonPath("$.data.task.joinedApproved").value(false))
+            .andExpect(jsonPath("$.data.task.joinedApprovedAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinedDisapproved").value(false))
+            .andExpect(jsonPath("$.data.task.joinedDisapprovedAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinedNotApprovedOrDisapproved").value(true))
+            .andExpect(
+                jsonPath("$.data.task.joinedNotApprovedOrDisapprovedAsTeam[0].id").value(teamId)
+            )
     }
 
     @Test
