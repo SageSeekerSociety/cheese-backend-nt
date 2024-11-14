@@ -61,10 +61,10 @@ interface TeamRepository : JpaRepository<Team, IdType> {
         AND taskMembership.approved = :approved
         """
     )
-    fun getTeamsThatUserCanUseToSubmitTask(
+    fun getTeamsThatUserJoinedTaskAsWithApprovedType(
         taskId: IdType,
         userId: IdType,
-        approved: ApproveType = ApproveType.APPROVED,
+        approved: ApproveType,
     ): List<Team>
 
     @Query(

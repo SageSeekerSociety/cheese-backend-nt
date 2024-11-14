@@ -6,6 +6,9 @@ data class TaskQueryOptions(
     val queryJoinability: Boolean,
     val querySubmittability: Boolean,
     val queryJoined: Boolean,
+    val queryJoinedApproved: Boolean,
+    val queryJoinedDisapproved: Boolean,
+    val queryJoinedNotApprovedOrDisapproved: Boolean,
     val queryTopics: Boolean,
 ) {
     companion object {
@@ -16,6 +19,9 @@ data class TaskQueryOptions(
                 queryJoinability = false,
                 querySubmittability = false,
                 queryJoined = false,
+                queryJoinedApproved = false,
+                queryJoinedDisapproved = false,
+                queryJoinedNotApprovedOrDisapproved = false,
                 queryTopics = false,
             )
 
@@ -26,6 +32,9 @@ data class TaskQueryOptions(
                 queryJoinability = true,
                 querySubmittability = true,
                 queryJoined = true,
+                queryJoinedApproved = true,
+                queryJoinedDisapproved = true,
+                queryJoinedNotApprovedOrDisapproved = true,
                 queryTopics = true,
             )
     }

@@ -194,6 +194,33 @@ interface TasksApi {
         @Valid
         @RequestParam(value = "queryJoined", required = false, defaultValue = "false")
         queryJoined: kotlin.Boolean,
+        @Parameter(
+            description = "Check whether current user has joined this task and has been approved",
+            schema = Schema(defaultValue = "false")
+        )
+        @Valid
+        @RequestParam(value = "queryJoinedApproved", required = false, defaultValue = "false")
+        queryJoinedApproved: kotlin.Boolean,
+        @Parameter(
+            description =
+                "Check whether current user has joined this task and has been disapproved",
+            schema = Schema(defaultValue = "false")
+        )
+        @Valid
+        @RequestParam(value = "queryJoinedDisapproved", required = false, defaultValue = "false")
+        queryJoinedDisapproved: kotlin.Boolean,
+        @Parameter(
+            description =
+                "Check whether current user has joined this task and has not been approved or disapproved",
+            schema = Schema(defaultValue = "false")
+        )
+        @Valid
+        @RequestParam(
+            value = "queryJoinedNotApprovedOrDisapproved",
+            required = false,
+            defaultValue = "false"
+        )
+        queryJoinedNotApprovedOrDisapproved: kotlin.Boolean,
         @Parameter(description = "Query task's topics", schema = Schema(defaultValue = "false"))
         @Valid
         @RequestParam(value = "queryTopics", required = false, defaultValue = "false")
@@ -431,6 +458,33 @@ interface TasksApi {
         @Valid
         @RequestParam(value = "queryJoined", required = false, defaultValue = "false")
         queryJoined: kotlin.Boolean,
+        @Parameter(
+            description = "Check whether current user has joined this task and has been approved",
+            schema = Schema(defaultValue = "false")
+        )
+        @Valid
+        @RequestParam(value = "queryJoinedApproved", required = false, defaultValue = "false")
+        queryJoinedApproved: kotlin.Boolean,
+        @Parameter(
+            description =
+                "Check whether current user has joined this task and has been disapproved",
+            schema = Schema(defaultValue = "false")
+        )
+        @Valid
+        @RequestParam(value = "queryJoinedDisapproved", required = false, defaultValue = "false")
+        queryJoinedDisapproved: kotlin.Boolean,
+        @Parameter(
+            description =
+                "Check whether current user has joined this task and has not been approved or disapproved",
+            schema = Schema(defaultValue = "false")
+        )
+        @Valid
+        @RequestParam(
+            value = "queryJoinedNotApprovedOrDisapproved",
+            required = false,
+            defaultValue = "false"
+        )
+        queryJoinedNotApprovedOrDisapproved: kotlin.Boolean,
         @Parameter(description = "Query task's topics", schema = Schema(defaultValue = "false"))
         @Valid
         @RequestParam(value = "queryTopics", required = false, defaultValue = "false")

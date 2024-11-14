@@ -30,6 +30,12 @@ import javax.validation.Valid
  * @param rejectReason
  * @param joined
  * @param joinedAsTeam
+ * @param joinedApproved
+ * @param joinedApprovedAsTeam
+ * @param joinedDisapproved
+ * @param joinedDisapprovedAsTeam
+ * @param joinedNotApprovedOrDisapproved
+ * @param joinedNotApprovedOrDisapprovedAsTeam
  * @param topics
  */
 data class TaskDTO(
@@ -118,6 +124,27 @@ data class TaskDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("joinedAsTeam")
     val joinedAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("joinedApproved")
+    val joinedApproved: kotlin.Boolean? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("joinedApprovedAsTeam")
+    val joinedApprovedAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("joinedDisapproved")
+    val joinedDisapproved: kotlin.Boolean? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("joinedDisapprovedAsTeam")
+    val joinedDisapprovedAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("joinedNotApprovedOrDisapproved")
+    val joinedNotApprovedOrDisapproved: kotlin.Boolean? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("joinedNotApprovedOrDisapprovedAsTeam")
+    val joinedNotApprovedOrDisapprovedAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null,
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("topics")

@@ -558,6 +558,24 @@ paths:
             type: boolean
             default: false
           in: query
+          name: queryJoinedApproved
+          description: Check whether current user has joined this task and has been approved
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryJoinedDisapproved
+          description: Check whether current user has joined this task and has been disapproved
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryJoinedNotApprovedOrDisapproved
+          description: Check whether current user has joined this task and has not been approved or disapproved
+        - schema:
+            type: boolean
+            default: false
+          in: query
           name: queryTopics
           description: Query task's topics
       responses:
@@ -816,6 +834,24 @@ paths:
           in: query
           name: queryJoined
           description: Check whether current user has joined this task
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryJoinedApproved
+          description: Check whether current user has joined this task and has been approved
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryJoinedDisapproved
+          description: Check whether current user has joined this task and has been disapproved
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryJoinedNotApprovedOrDisapproved
+          description: Check whether current user has joined this task and has not been approved or disapproved
         - schema:
             type: boolean
             default: false
@@ -2248,6 +2284,24 @@ components:
         joined:
           type: boolean
         joinedAsTeam:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamSummary'
+        joinedApproved:
+          type: boolean
+        joinedApprovedAsTeam:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamSummary'
+        joinedDisapproved:
+          type: boolean
+        joinedDisapprovedAsTeam:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamSummary'
+        joinedNotApprovedOrDisapproved:
+          type: boolean
+        joinedNotApprovedOrDisapprovedAsTeam:
           type: array
           items:
             $ref: '#/components/schemas/TeamSummary'

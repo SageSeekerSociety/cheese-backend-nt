@@ -128,6 +128,18 @@ class TaskService(
         val submittability =
             if (options.querySubmittability) getSubmittability(this, userId) else Pair(null, null)
         val joined = if (options.queryJoined) getJoined(this, userId) else Pair(null, null)
+        val joinedApproved =
+            if (options.queryJoinedApproved)
+                getJoinedWithApproveType(this, userId, ApproveType.APPROVED)
+            else Pair(null, null)
+        val joinedDisapproved =
+            if (options.queryJoinedDisapproved)
+                getJoinedWithApproveType(this, userId, ApproveType.DISAPPROVED)
+            else Pair(null, null)
+        val joinedNotApprovedOrDisapproved =
+            if (options.queryJoinedNotApprovedOrDisapproved)
+                getJoinedWithApproveType(this, userId, ApproveType.NONE)
+            else Pair(null, null)
         val topics =
             if (options.queryTopics) taskTopicsService.getTaskTopicDTOs(this.id!!) else null
         return TaskDTO(
@@ -164,6 +176,12 @@ class TaskService(
             rejectReason = this.rejectReason,
             joined = joined.first,
             joinedAsTeam = joined.second,
+            joinedApproved = joinedApproved.first,
+            joinedApprovedAsTeam = joinedApproved.second,
+            joinedDisapproved = joinedDisapproved.first,
+            joinedDisapprovedAsTeam = joinedDisapproved.second,
+            joinedNotApprovedOrDisapproved = joinedNotApprovedOrDisapproved.first,
+            joinedNotApprovedOrDisapprovedAsTeam = joinedNotApprovedOrDisapproved.second,
             topics = topics,
         )
     }
@@ -427,6 +445,33 @@ class TaskService(
                 )
             TaskSubmitterType.TEAM -> {
                 val teams = teamService.getTeamsThatUserJoinedTaskAs(task.id!!, userId)
+                return Pair(teams.isNotEmpty(), teams)
+            }
+        }
+    }
+
+    fun getJoinedWithApproveType(
+        task: Task,
+        userId: IdType,
+        approveType: ApproveType
+    ): Pair<Boolean, List<TeamSummaryDTO>?> {
+        when (task.submitterType!!) {
+            TaskSubmitterType.USER ->
+                return Pair(
+                    taskMembershipRepository.existsByTaskIdAndMemberIdAndApproved(
+                        task.id!!,
+                        userId,
+                        approveType,
+                    ),
+                    null
+                )
+            TaskSubmitterType.TEAM -> {
+                val teams =
+                    teamService.getTeamsThatUserJoinedTaskAsWithApprovedType(
+                        task.id!!,
+                        userId,
+                        approveType
+                    )
                 return Pair(teams.isNotEmpty(), teams)
             }
         }
