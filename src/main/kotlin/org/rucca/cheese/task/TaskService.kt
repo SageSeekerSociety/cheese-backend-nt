@@ -462,18 +462,6 @@ class TaskService(
                 queryOptions,
             )
         } else {
-            val id = keywords.toLongOrNull()
-            if (id != null) {
-                return Pair(
-                    listOf(getTaskDto(id, queryOptions)),
-                    PageDTO(
-                        pageStart = id,
-                        pageSize = 1,
-                        hasPrev = false,
-                        hasMore = false,
-                    )
-                )
-            }
             return enumerateTasksUseElasticSearch(
                 enumerateOptions,
                 keywords,
