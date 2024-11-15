@@ -103,7 +103,8 @@ class RolePermissionService {
                             listOf(
                                 "enumerate-submissions",
                                 "remove-participant",
-                                "modify-membership"
+                                "modify-membership",
+                                "query-participant-real-name-info"
                             ),
                         authorizedResource =
                             AuthorizedResource(

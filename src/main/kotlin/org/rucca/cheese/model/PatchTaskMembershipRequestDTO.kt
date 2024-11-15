@@ -7,6 +7,7 @@ import javax.validation.Valid
 /**
  * @param deadline
  * @param approved
+ * @param realNameInfo
  */
 data class PatchTaskMembershipRequestDTO(
     @Schema(example = "null", description = "")
@@ -15,5 +16,9 @@ data class PatchTaskMembershipRequestDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("approved")
-    val approved: ApproveTypeDTO? = null
+    val approved: ApproveTypeDTO? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("realNameInfo")
+    val realNameInfo: TaskParticipantRealNameInfoDTO? = null
 ) {}

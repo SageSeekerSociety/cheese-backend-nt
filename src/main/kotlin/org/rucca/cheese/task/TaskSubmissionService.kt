@@ -12,7 +12,6 @@ import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.task.error.*
-import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
@@ -20,14 +19,14 @@ import org.springframework.stereotype.Service
 @Service
 class TaskSubmissionService(
     private val userService: UserService,
-    private val teamService: TeamService,
     private val taskRepository: TaskRepository,
-    private val taskMembershipRepository: taskMembershipRepository,
+    private val taskMembershipRepository: TaskMembershipRepository,
     private val taskSubmissionRepository: TaskSubmissionRepository,
     private val entityManager: EntityManager,
     private val attachmentService: AttachmentService,
     private val taskSubmissionEntryRepository: TaskSubmissionEntryRepository,
     private val taskSubmissionReviewService: TaskSubmissionReviewService,
+    private val taskMembershipService: TaskMembershipService,
 ) {
     sealed class TaskSubmissionEntry {
         data class Text(val text: String) : TaskSubmissionEntry()
@@ -221,7 +220,10 @@ class TaskSubmissionService(
             version = this.version!!,
             createdAt = this.createdAt!!.toEpochMilli(),
             updatedAt = this.updatedAt!!.toEpochMilli(),
-            member = getTaskParticipantDtoByMembership(this.membership!!),
+            member =
+                taskMembershipService
+                    .getTaskMembershipDTO(this.membership!!.task!!.id!!, this.membership.memberId!!)
+                    .member,
             submitter = userService.getUserDto(this.submitter!!.id!!.toLong()),
             content =
                 submissionListNotNull.withIndex().map {
@@ -329,23 +331,6 @@ class TaskSubmissionService(
     private fun isTaskEditable(taskId: IdType): Boolean {
         val task = getTask(taskId)
         return task.editable!!
-    }
-
-    private fun getTaskParticipantDtoByMembership(
-        membership: TaskMembership
-    ): TaskParticipantSummaryDTO {
-        return when (membership.task!!.submitterType!!) {
-            TaskSubmitterType.USER ->
-                userService.getTaskParticipantSummaryDto(
-                    membership.memberId!!,
-                    membership.approved!!
-                )
-            TaskSubmitterType.TEAM ->
-                teamService.getTaskParticipantSummaryDto(
-                    membership.memberId!!,
-                    membership.approved!!
-                )
-        }
     }
 
     private fun getSubmission(submissionId: IdType): TaskSubmission {

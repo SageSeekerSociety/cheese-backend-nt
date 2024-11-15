@@ -42,6 +42,7 @@ class TaskController(
     private val spaceService: SpaceService,
     private val teamService: TeamService,
     private val taskTopicsService: TaskTopicsService,
+    private val taskMembershipService: TaskMembershipService,
 ) : TasksApi {
     @PostConstruct
     fun initialize() {
@@ -299,11 +300,15 @@ class TaskController(
     override fun deleteTaskParticipant(
         @ResourceId taskId: Long,
         @AuthInfo("member") member: Long
-    ): ResponseEntity<GetTask200ResponseDTO> {
-        taskService.removeTaskParticipant(taskId, member)
-        val taskDTO = taskService.getTaskDto(taskId)
+    ): ResponseEntity<PostTaskParticipant200ResponseDTO> {
+        taskMembershipService.removeTaskParticipant(taskId, member)
+        val participants = taskMembershipService.getTaskMembershipDTOs(taskId, null)
         return ResponseEntity.ok(
-            GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK")
+            PostTaskParticipant200ResponseDTO(
+                200,
+                PostTaskParticipant200ResponseDataDTO(participants),
+                "OK"
+            )
         )
     }
 
@@ -341,10 +346,14 @@ class TaskController(
     @Guard("enumerate-participants", "task")
     override fun getTaskParticipants(
         @ResourceId taskId: Long,
-        approved: ApproveTypeDTO?
+        approved: ApproveTypeDTO?,
+        queryRealNameInfo: Boolean,
     ): ResponseEntity<GetTaskParticipants200ResponseDTO> {
+        if (queryRealNameInfo)
+            authorizationService.audit("query-participant-real-name-info", "task", taskId)
         val approveType = approved?.convert()
-        val participants = taskService.getTaskParticipantDtos(taskId, approveType)
+        val participants =
+            taskMembershipService.getTaskMembershipDTOs(taskId, approveType, queryRealNameInfo)
         return ResponseEntity.ok(
             GetTaskParticipants200ResponseDTO(
                 200,
@@ -539,24 +548,31 @@ class TaskController(
         patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO
     ): ResponseEntity<PatchTaskMembership200ResponseDTO> {
         if (patchTaskMembershipRequestDTO.deadline != null) {
-            taskService.updateTaskMembershipDeadline(
+            taskMembershipService.updateTaskMembershipDeadline(
                 taskId,
                 member,
                 patchTaskMembershipRequestDTO.deadline
             )
         }
         if (patchTaskMembershipRequestDTO.approved != null) {
-            taskService.updateTaskMembershipApproved(
+            taskMembershipService.updateTaskMembershipApproved(
                 taskId,
                 member,
                 patchTaskMembershipRequestDTO.approved.convert()
             )
         }
-        val participant = taskService.getTaskMembershipDTO(taskId, member)
+        if (patchTaskMembershipRequestDTO.realNameInfo != null) {
+            taskMembershipService.updateTaskMembershipRealNameInfo(
+                taskId,
+                member,
+                patchTaskMembershipRequestDTO.realNameInfo
+            )
+        }
+        val participants = taskMembershipService.getTaskMembershipDTOs(taskId, null)
         return ResponseEntity.ok(
             PatchTaskMembership200ResponseDTO(
                 200,
-                PatchTaskMembership200ResponseDataDTO(participant),
+                PatchTaskMembership200ResponseDataDTO(participants),
                 "OK"
             )
         )
@@ -627,20 +643,24 @@ class TaskController(
         @ResourceId taskId: Long,
         @AuthInfo("member") member: Long,
         @AuthInfo("req") postTaskParticipantRequestDTO: PostTaskParticipantRequestDTO
-    ): ResponseEntity<GetTask200ResponseDTO> {
-        if (postTaskParticipantRequestDTO.deadline != null) {
-            taskService.addTaskParticipant(
-                taskId,
-                member,
-                postTaskParticipantRequestDTO.deadline.toLocalDateTime(),
-                ApproveType.APPROVED
-            )
-        } else {
-            taskService.addTaskParticipant(taskId, member, null, ApproveType.NONE)
-        }
-        val taskDTO = taskService.getTaskDto(taskId)
+    ): ResponseEntity<PostTaskParticipant200ResponseDTO> {
+        val approved =
+            if (postTaskParticipantRequestDTO.deadline != null) ApproveType.APPROVED
+            else ApproveType.NONE
+        taskMembershipService.addTaskParticipant(
+            taskId,
+            member,
+            postTaskParticipantRequestDTO.deadline?.toLocalDateTime(),
+            approved,
+            postTaskParticipantRequestDTO.realNameInfo,
+        )
+        val participants = taskMembershipService.getTaskMembershipDTOs(taskId, null)
         return ResponseEntity.ok(
-            GetTask200ResponseDTO(200, GetTask200ResponseDataDTO(taskDTO), "OK")
+            PostTaskParticipant200ResponseDTO(
+                200,
+                PostTaskParticipant200ResponseDataDTO(participants),
+                "OK"
+            )
         )
     }
 
