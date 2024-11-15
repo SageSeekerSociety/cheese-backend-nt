@@ -2576,7 +2576,7 @@ components:
         - studentId
         - grade
         - major
-        - class
+        - className
         - email
         - phone
         - applyReason
