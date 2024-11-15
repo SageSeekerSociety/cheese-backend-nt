@@ -14,6 +14,7 @@ import javax.validation.Valid
  * @param description
  * @param submissionSchema
  * @param deadline
+ * @param participantLimit
  * @param team
  * @param space
  * @param rank
@@ -49,6 +50,9 @@ data class PostTaskRequestDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("deadline")
     val deadline: kotlin.Long? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("participantLimit")
+    val participantLimit: kotlin.Int? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("team")
     val team: kotlin.Long? = null,

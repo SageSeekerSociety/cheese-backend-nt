@@ -194,6 +194,7 @@ CREATE
             ),
             "creator_id" INTEGER NOT NULL,
             editable BOOLEAN NOT NULL,
+            participant_limit INTEGER,
             RANK INTEGER,
             resubmittable BOOLEAN NOT NULL,
             submitter_type SMALLINT NOT NULL CHECK(
