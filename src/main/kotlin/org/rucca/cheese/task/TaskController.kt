@@ -553,18 +553,18 @@ class TaskController(
         @AuthInfo("member") member: Long,
         patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO
     ): ResponseEntity<PatchTaskMembership200ResponseDTO> {
-        if (patchTaskMembershipRequestDTO.deadline != null) {
-            taskMembershipService.updateTaskMembershipDeadline(
-                taskId,
-                member,
-                patchTaskMembershipRequestDTO.deadline
-            )
-        }
         if (patchTaskMembershipRequestDTO.approved != null) {
             taskMembershipService.updateTaskMembershipApproved(
                 taskId,
                 member,
                 patchTaskMembershipRequestDTO.approved.convert()
+            )
+        }
+        if (patchTaskMembershipRequestDTO.deadline != null) {
+            taskMembershipService.updateTaskMembershipDeadline(
+                taskId,
+                member,
+                patchTaskMembershipRequestDTO.deadline
             )
         }
         if (patchTaskMembershipRequestDTO.realNameInfo != null) {
