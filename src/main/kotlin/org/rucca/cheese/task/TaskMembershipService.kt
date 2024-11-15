@@ -19,10 +19,7 @@ import org.rucca.cheese.model.TaskSubmitterTypeDTO.TEAM
 import org.rucca.cheese.model.TaskSubmitterTypeDTO.USER
 import org.rucca.cheese.model.TeamSummaryDTO
 import org.rucca.cheese.space.SpaceUserRankService
-import org.rucca.cheese.task.error.AlreadyBeTaskParticipantError
-import org.rucca.cheese.task.error.NotTaskParticipantYetError
-import org.rucca.cheese.task.error.TaskParticipantNotApprovedError
-import org.rucca.cheese.task.error.YourRankIsNotHighEnoughError
+import org.rucca.cheese.task.error.*
 import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
@@ -157,6 +154,7 @@ class TaskMembershipService(
         approved: ApproveType,
         realNameInfo: TaskParticipantRealNameInfoDTO?,
     ) {
+        ensureTaskParticipantNotReachedLimit(taskId)
         val errorOpt = isTaskJoinable(getTask(taskId), memberId)
         if (errorOpt != null) throw errorOpt
         taskMembershipRepository.save(
@@ -184,7 +182,20 @@ class TaskMembershipService(
         taskMembershipRepository.save(participant)
     }
 
+    fun ensureTaskParticipantNotReachedLimit(taskId: IdType) {
+        if (applicationConfig.enforceTaskParticipantLimitCheck) {
+            val task = getTask(taskId)
+            if (task.participantLimit != null) {
+                val actual =
+                    taskMembershipRepository.countByTaskIdAndApproved(taskId, ApproveType.APPROVED)
+                if (actual >= task.participantLimit!!)
+                    throw TaskParticipantsReachedLimitError(taskId, task.participantLimit!!, actual)
+            }
+        }
+    }
+
     fun updateTaskMembershipApproved(taskId: IdType, memberId: IdType, approved: ApproveType) {
+        ensureTaskParticipantNotReachedLimit(taskId)
         val participant = getTaskMembership(taskId, memberId)
         participant.approved = approved
         taskMembershipRepository.save(participant)
