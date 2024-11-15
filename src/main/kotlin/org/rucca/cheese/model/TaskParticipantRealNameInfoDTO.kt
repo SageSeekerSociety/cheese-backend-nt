@@ -8,12 +8,12 @@ import io.swagger.v3.oas.annotations.media.Schema
  * @param studentId
  * @param grade
  * @param major
+ * @param className
  * @param email
  * @param phone
  * @param applyReason
  * @param personalAdvantage
  * @param remark
- * @param className
  */
 data class TaskParticipantRealNameInfoDTO(
     @Schema(example = "null", required = true, description = "")
@@ -29,6 +29,9 @@ data class TaskParticipantRealNameInfoDTO(
     @get:JsonProperty("major", required = true)
     val major: kotlin.String,
     @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("className", required = true)
+    val className: kotlin.String,
+    @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("email", required = true)
     val email: kotlin.String,
     @Schema(example = "null", required = true, description = "")
@@ -42,8 +45,5 @@ data class TaskParticipantRealNameInfoDTO(
     val personalAdvantage: kotlin.String,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("remark", required = true)
-    val remark: kotlin.String,
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("className")
-    val className: kotlin.String? = null
+    val remark: kotlin.String
 ) {}
