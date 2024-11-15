@@ -129,7 +129,10 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.participant.approved").value("APPROVED")
+                MockMvcResultMatchers.jsonPath(
+                        "$.data.participants[?(@.member.id == $memberId)].approved"
+                    )
+                    .value("APPROVED")
             )
     }
 

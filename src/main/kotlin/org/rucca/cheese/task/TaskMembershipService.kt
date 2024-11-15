@@ -91,7 +91,11 @@ class TaskMembershipService(
         }
     }
 
-    fun getTaskMembershipDTO(taskId: IdType, memberId: IdType): TaskMembershipDTO {
+    fun getTaskMembershipDTO(
+        taskId: IdType,
+        memberId: IdType,
+        queryRealNameInfo: Boolean = false,
+    ): TaskMembershipDTO {
         val task = getTask(taskId)
         val membership = getTaskMembership(taskId, memberId)
         val taskParticipantSummaryDto =
@@ -103,8 +107,6 @@ class TaskMembershipService(
                         intro = user.intro,
                         name = user.username,
                         avatarId = user.avatarId,
-                        approved = membership.approved!!.convert(),
-                        realNameInfo = membership.realNameInfo?.convert()
                     )
                 }
                 TaskSubmitterType.TEAM -> {
@@ -114,11 +116,10 @@ class TaskMembershipService(
                         intro = team.intro,
                         name = team.name,
                         avatarId = team.avatarId,
-                        approved = membership.approved!!.convert(),
-                        realNameInfo = membership.realNameInfo!!.convert()
                     )
                 }
             }
+        val realNameInfo = if (queryRealNameInfo) membership.realNameInfo!!.convert() else null
         return TaskMembershipDTO(
             id = membership.id!!,
             member = taskParticipantSummaryDto,
@@ -126,10 +127,15 @@ class TaskMembershipService(
             updatedAt = membership.updatedAt!!.toEpochMilli(),
             deadline = membership.deadline?.toEpochMilli(),
             approved = membership.approved!!.convert(),
+            realNameInfo = realNameInfo,
         )
     }
 
-    fun getTaskMembershipDTOs(taskId: IdType, approveType: ApproveType?): List<TaskMembershipDTO> {
+    fun getTaskMembershipDTOs(
+        taskId: IdType,
+        approveType: ApproveType?,
+        queryRealNameInfo: Boolean = false,
+    ): List<TaskMembershipDTO> {
         val cb = entityManager.criteriaBuilder
         val cq = cb.createQuery(TaskMembership::class.java)
         val root = cq.from(TaskMembership::class.java)
@@ -141,7 +147,7 @@ class TaskMembershipService(
         cq.where(*predicates.toTypedArray())
         val query = entityManager.createQuery(cq)
         val participants = query.resultList
-        return participants.map { getTaskMembershipDTO(taskId, it.memberId!!) }
+        return participants.map { getTaskMembershipDTO(taskId, it.memberId!!, queryRealNameInfo) }
     }
 
     fun addTaskParticipant(

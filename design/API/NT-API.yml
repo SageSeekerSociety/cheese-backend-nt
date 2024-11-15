@@ -968,6 +968,12 @@ paths:
           in: query
           name: approved
           description: approve status
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryRealNameInfo
+          description: Query real name info
       responses:
         '200':
           content:
@@ -991,11 +997,9 @@ paths:
                       - participants
                     properties:
                       participants:
-                        x-stoplight:
-                          id: oew2z4ca5or7i
                         type: array
                         items:
-                          $ref: '#/components/schemas/TaskParticipantSummary'
+                          $ref: '#/components/schemas/TaskMembership'
                   message:
                     type: string
           description: OK
@@ -1028,8 +1032,10 @@ paths:
                       id: ehv14gy4oxg6y
                   data:
                     properties:
-                      participant:
-                        $ref: "#/components/schemas/TaskMembership"
+                      participants:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskMembership'
                     required:
                       - participant
                     type: object
@@ -1087,8 +1093,10 @@ paths:
                       id: ehv14gy4oxg6y
                   data:
                     properties:
-                      task:
-                        $ref: "#/components/schemas/Task"
+                      participants:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskMembership'
                     required:
                       - task
                     type: object
@@ -1137,8 +1145,10 @@ paths:
                       id: ehv14gy4oxg6y
                   data:
                     properties:
-                      task:
-                        $ref: "#/components/schemas/Task"
+                      participants:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskMembership'
                     required:
                       - task
                     type: object
@@ -2548,6 +2558,8 @@ components:
           format: int64
         approved:
           $ref: '#/components/schemas/ApproveType'
+        realNameInfo:
+          $ref: '#/components/schemas/TaskParticipantRealNameInfo'
     TaskParticipantRealNameInfo:
       title: TaskParticipantRealNameInfo
       type: object
@@ -2591,7 +2603,6 @@ components:
         - intro
         - name
         - avatarId
-        - approved
       properties:
         id:
           type: integer
@@ -2603,10 +2614,6 @@ components:
         avatarId:
           type: integer
           format: int64
-        approved:
-          $ref: '#/components/schemas/ApproveType'
-        realNameInfo:
-          $ref: '#/components/schemas/TaskParticipantRealNameInfo'
     TeamMember:
       properties:
         role:

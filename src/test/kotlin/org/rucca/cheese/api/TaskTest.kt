@@ -1060,7 +1060,9 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.participants[?(@.id == ${participant.userId})]").exists())
+            .andExpect(
+                jsonPath("$.data.participants[?(@.member.id == ${participant.userId})]").exists()
+            )
     }
 
     @Test
@@ -1073,11 +1075,12 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.participants[0].id").value(teamId))
-            .andExpect(jsonPath("$.data.participants[0].intro").isString)
-            .andExpect(jsonPath("$.data.participants[0].name").isString)
+            .andExpect(jsonPath("$.data.participants[0].member.id").value(teamId))
+            .andExpect(jsonPath("$.data.participants[0].member.intro").isString)
+            .andExpect(jsonPath("$.data.participants[0].member.name").isString)
             .andExpect(
-                jsonPath("$.data.participants[0].avatarId").value(userCreatorService.testAvatarId())
+                jsonPath("$.data.participants[0].member.avatarId")
+                    .value(userCreatorService.testAvatarId())
             )
     }
 
@@ -1145,7 +1148,10 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.participant.approved").value("DISAPPROVED"))
+            .andExpect(
+                jsonPath("$.data.participants[?(@.member.id == ${participant4.userId})].approved")
+                    .value("DISAPPROVED")
+            )
     }
 
     @Test
@@ -1160,11 +1166,12 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("$.data.participants.length()").value(1))
-            .andExpect(jsonPath("$.data.participants[0].id").value(participant.userId))
-            .andExpect(jsonPath("$.data.participants[0].intro").isString)
-            .andExpect(jsonPath("$.data.participants[0].name").isString)
+            .andExpect(jsonPath("$.data.participants[0].member.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.participants[0].member.intro").isString)
+            .andExpect(jsonPath("$.data.participants[0].member.name").isString)
             .andExpect(
-                jsonPath("$.data.participants[0].avatarId").value(userCreatorService.testAvatarId())
+                jsonPath("$.data.participants[0].member.avatarId")
+                    .value(userCreatorService.testAvatarId())
             )
     }
 
@@ -1180,11 +1187,12 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("$.data.participants.length()").value(1))
-            .andExpect(jsonPath("$.data.participants[0].id").value(participant3.userId))
-            .andExpect(jsonPath("$.data.participants[0].intro").isString)
-            .andExpect(jsonPath("$.data.participants[0].name").isString)
+            .andExpect(jsonPath("$.data.participants[0].member.id").value(participant3.userId))
+            .andExpect(jsonPath("$.data.participants[0].member.intro").isString)
+            .andExpect(jsonPath("$.data.participants[0].member.name").isString)
             .andExpect(
-                jsonPath("$.data.participants[0].avatarId").value(userCreatorService.testAvatarId())
+                jsonPath("$.data.participants[0].member.avatarId")
+                    .value(userCreatorService.testAvatarId())
             )
     }
 
@@ -1200,11 +1208,12 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("$.data.participants.length()").value(1))
-            .andExpect(jsonPath("$.data.participants[0].id").value(participant4.userId))
-            .andExpect(jsonPath("$.data.participants[0].intro").isString)
-            .andExpect(jsonPath("$.data.participants[0].name").isString)
+            .andExpect(jsonPath("$.data.participants[0].member.id").value(participant4.userId))
+            .andExpect(jsonPath("$.data.participants[0].member.intro").isString)
+            .andExpect(jsonPath("$.data.participants[0].member.name").isString)
             .andExpect(
-                jsonPath("$.data.participants[0].avatarId").value(userCreatorService.testAvatarId())
+                jsonPath("$.data.participants[0].member.avatarId")
+                    .value(userCreatorService.testAvatarId())
             )
     }
 
@@ -1262,7 +1271,10 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.participant.approved").value("APPROVED"))
+            .andExpect(
+                jsonPath("$.data.participants[?(@.member.id == ${participant.userId})].approved")
+                    .value("APPROVED")
+            )
     }
 
     @Test
@@ -1283,9 +1295,13 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.participant.approved").value("APPROVED"))
             .andExpect(
-                jsonPath("$.data.participant.deadline").value(taskMembershipDeadline + 100000)
+                jsonPath("$.data.participants[?(@.member.id == ${participant.userId})].approved")
+                    .value("APPROVED")
+            )
+            .andExpect(
+                jsonPath("$.data.participants[?(@.member.id == ${participant.userId})].deadline")
+                    .value(taskMembershipDeadline + 100000)
             )
     }
 

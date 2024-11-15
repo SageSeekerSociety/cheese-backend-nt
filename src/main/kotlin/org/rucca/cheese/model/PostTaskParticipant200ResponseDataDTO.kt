@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import javax.validation.Valid
 
 /** @param participants */
-data class PatchTaskMembership200ResponseDataDTO(
+data class PostTaskParticipant200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("participants")
