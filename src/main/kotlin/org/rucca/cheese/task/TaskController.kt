@@ -347,8 +347,10 @@ class TaskController(
     override fun getTaskParticipants(
         @ResourceId taskId: Long,
         approved: ApproveTypeDTO?,
-        @AuthInfo("queryRealNameInfo") queryRealNameInfo: Boolean,
+        queryRealNameInfo: Boolean,
     ): ResponseEntity<GetTaskParticipants200ResponseDTO> {
+        if (queryRealNameInfo)
+            authorizationService.audit("query-participant-real-name-info", "task", taskId)
         val approveType = approved?.convert()
         val participants =
             taskMembershipService.getTaskMembershipDTOs(taskId, approveType, queryRealNameInfo)
