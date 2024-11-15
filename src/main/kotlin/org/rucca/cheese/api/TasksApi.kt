@@ -22,6 +22,7 @@ import org.rucca.cheese.model.PatchTaskMembership200ResponseDTO
 import org.rucca.cheese.model.PatchTaskMembershipRequestDTO
 import org.rucca.cheese.model.PatchTaskRequestDTO
 import org.rucca.cheese.model.PatchTaskSubmissionReviewRequestDTO
+import org.rucca.cheese.model.PostTaskParticipant200ResponseDTO
 import org.rucca.cheese.model.PostTaskParticipantRequestDTO
 import org.rucca.cheese.model.PostTaskRequestDTO
 import org.rucca.cheese.model.PostTaskSubmission200ResponseDTO
@@ -83,7 +84,14 @@ interface TasksApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [Content(schema = Schema(implementation = GetTask200ResponseDTO::class))]
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation = PostTaskParticipant200ResponseDTO::class
+                                    )
+                            )
+                        ]
                 )
             ],
         security = [SecurityRequirement(name = "bearerAuth")]
@@ -102,7 +110,7 @@ interface TasksApi {
         @Valid
         @RequestParam(value = "member", required = true)
         member: kotlin.Long
-    ): ResponseEntity<GetTask200ResponseDTO> {
+    ): ResponseEntity<PostTaskParticipant200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -270,7 +278,11 @@ interface TasksApi {
         )
         @Valid
         @RequestParam(value = "approved", required = false)
-        approved: ApproveTypeDTO?
+        approved: ApproveTypeDTO?,
+        @Parameter(description = "Query real name info", schema = Schema(defaultValue = "false"))
+        @Valid
+        @RequestParam(value = "queryRealNameInfo", required = false, defaultValue = "false")
+        queryRealNameInfo: kotlin.Boolean
     ): ResponseEntity<GetTaskParticipants200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -727,7 +739,14 @@ interface TasksApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [Content(schema = Schema(implementation = GetTask200ResponseDTO::class))]
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation = PostTaskParticipant200ResponseDTO::class
+                                    )
+                            )
+                        ]
                 )
             ],
         security = [SecurityRequirement(name = "bearerAuth")]
@@ -751,7 +770,7 @@ interface TasksApi {
         @Valid
         @RequestBody
         postTaskParticipantRequestDTO: PostTaskParticipantRequestDTO
-    ): ResponseEntity<GetTask200ResponseDTO> {
+    ): ResponseEntity<PostTaskParticipant200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 

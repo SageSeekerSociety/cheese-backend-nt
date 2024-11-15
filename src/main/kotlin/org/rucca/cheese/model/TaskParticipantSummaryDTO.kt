@@ -2,14 +2,12 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
-import javax.validation.Valid
 
 /**
  * @param id
  * @param intro
  * @param name
  * @param avatarId
- * @param approved
  */
 data class TaskParticipantSummaryDTO(
     @Schema(example = "null", required = true, description = "")
@@ -23,9 +21,5 @@ data class TaskParticipantSummaryDTO(
     val name: kotlin.String,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("avatarId", required = true)
-    val avatarId: kotlin.Long,
-    @field:Valid
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("approved", required = true)
-    val approved: ApproveTypeDTO
+    val avatarId: kotlin.Long
 ) {}

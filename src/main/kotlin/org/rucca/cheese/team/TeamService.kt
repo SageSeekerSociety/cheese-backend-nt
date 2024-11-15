@@ -8,7 +8,6 @@ import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.common.persistent.convert
 import org.rucca.cheese.model.*
 import org.rucca.cheese.team.error.NotTeamMemberYetError
 import org.rucca.cheese.team.error.TeamRoleConflictError
@@ -79,20 +78,6 @@ class TeamService(
     fun getTeamAvatarId(teamId: IdType): IdType {
         val team = getTeam(teamId)
         return team.avatar!!.id!!.toLong()
-    }
-
-    fun getTaskParticipantSummaryDto(
-        teamId: IdType,
-        approveType: ApproveType
-    ): TaskParticipantSummaryDTO {
-        val team = getTeam(teamId)
-        return TaskParticipantSummaryDTO(
-            team.id!!,
-            team.description!!,
-            team.name!!,
-            team.avatar!!.id!!.toLong(),
-            approveType.convert(),
-        )
     }
 
     fun getTeamOwner(teamId: IdType): IdType {

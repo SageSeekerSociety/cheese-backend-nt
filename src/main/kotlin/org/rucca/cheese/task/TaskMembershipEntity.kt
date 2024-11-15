@@ -10,6 +10,20 @@ import org.rucca.cheese.common.persistent.IdType
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
+@Embeddable
+class TaskMembershipRealNameInfo(
+    @Column(nullable = false) val realName: String? = null,
+    @Column(nullable = false) val studentId: String? = null,
+    @Column(nullable = false) val grade: String? = null,
+    @Column(nullable = false) val major: String? = null,
+    @Column(nullable = false) val className: String? = null,
+    @Column(nullable = false) val email: String? = null,
+    @Column(nullable = false) val phone: String? = null,
+    @Column(nullable = false) val applyReason: String? = null,
+    @Column(nullable = false) val personalAdvantage: String? = null,
+    @Column(nullable = false) val remark: String? = null,
+)
+
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @Table(
@@ -24,9 +38,10 @@ class TaskMembership(
     @Column(nullable = false) val memberId: IdType? = null,
     @Column(nullable = true) var deadline: LocalDateTime? = null,
     @Column(nullable = false) var approved: ApproveType? = null,
+    @Column(nullable = false) var realNameInfo: TaskMembershipRealNameInfo? = null,
 ) : BaseEntity()
 
-interface taskMembershipRepository : JpaRepository<TaskMembership, IdType> {
+interface TaskMembershipRepository : JpaRepository<TaskMembership, IdType> {
     fun findAllByTaskId(taskId: IdType): List<TaskMembership>
 
     fun findByTaskIdAndMemberId(taskId: IdType, memberId: IdType): Optional<TaskMembership>
@@ -40,6 +55,8 @@ interface taskMembershipRepository : JpaRepository<TaskMembership, IdType> {
     ): Boolean
 
     fun existsByTaskId(taskId: IdType): Boolean
+
+    fun countByTaskIdAndApproved(taskId: IdType, approved: ApproveType): Int
 
     @Query(
         "SELECT tm FROM TaskMembership tm WHERE tm.task.id = :taskId AND EXISTS (SELECT 1 FROM TaskSubmission ts WHERE ts.membership.id = tm.id)"

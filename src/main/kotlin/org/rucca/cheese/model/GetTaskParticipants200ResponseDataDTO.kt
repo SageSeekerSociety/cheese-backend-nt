@@ -9,5 +9,5 @@ data class GetTaskParticipants200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("participants", required = true)
-    val participants: kotlin.collections.List<TaskParticipantSummaryDTO>
+    val participants: kotlin.collections.List<TaskMembershipDTO>
 ) {}

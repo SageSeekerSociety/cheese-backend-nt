@@ -19,6 +19,7 @@ import javax.validation.Valid
  * @param updatedAt
  * @param createdAt
  * @param deadline
+ * @param participantLimit
  * @param space
  * @param team
  * @param joinable Only has value when: 'queryJoinablity' == true
@@ -85,6 +86,9 @@ data class TaskDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("deadline")
     val deadline: kotlin.Long? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("participantLimit")
+    val participantLimit: kotlin.Int? = null,
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("space")

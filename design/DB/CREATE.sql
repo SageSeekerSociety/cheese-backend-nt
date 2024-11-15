@@ -194,6 +194,7 @@ CREATE
             ),
             "creator_id" INTEGER NOT NULL,
             editable BOOLEAN NOT NULL,
+            participant_limit INTEGER,
             RANK INTEGER,
             resubmittable BOOLEAN NOT NULL,
             submitter_type SMALLINT NOT NULL CHECK(
@@ -238,6 +239,16 @@ CREATE
             member_id BIGINT NOT NULL,
             task_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
+            apply_reason VARCHAR(255) NOT NULL,
+            class_name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            grade VARCHAR(255) NOT NULL,
+            major VARCHAR(255) NOT NULL,
+            personal_advantage VARCHAR(255) NOT NULL,
+            phone VARCHAR(255) NOT NULL,
+            real_name VARCHAR(255) NOT NULL,
+            remark VARCHAR(255) NOT NULL,
+            student_id VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
 

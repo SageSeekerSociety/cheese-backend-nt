@@ -656,6 +656,10 @@ paths:
                 deadline:
                   type: integer
                   format: int64
+                hasParticipantLimit:
+                  type: boolean
+                participantLimit:
+                  type: integer
                 defaultDeadline:
                   type: integer
                   format: int64
@@ -908,6 +912,8 @@ paths:
                 deadline:
                   type: integer
                   format: int64
+                participantLimit:
+                  type: integer
                 defaultDeadline:
                   type: integer
                   format: int64
@@ -968,6 +974,12 @@ paths:
           in: query
           name: approved
           description: approve status
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryRealNameInfo
+          description: Query real name info
       responses:
         '200':
           content:
@@ -991,11 +1003,9 @@ paths:
                       - participants
                     properties:
                       participants:
-                        x-stoplight:
-                          id: oew2z4ca5or7i
                         type: array
                         items:
-                          $ref: '#/components/schemas/TaskParticipantSummary'
+                          $ref: '#/components/schemas/TaskMembership'
                   message:
                     type: string
           description: OK
@@ -1028,8 +1038,10 @@ paths:
                       id: ehv14gy4oxg6y
                   data:
                     properties:
-                      participant:
-                        $ref: "#/components/schemas/TaskMembership"
+                      participants:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskMembership'
                     required:
                       - participant
                     type: object
@@ -1057,6 +1069,8 @@ paths:
                   format: int64
                 approved:
                   $ref: "#/components/schemas/ApproveType"
+                realNameInfo:
+                  $ref: '#/components/schemas/TaskParticipantRealNameInfo'
     delete:
       parameters:
         - description: Task ID
@@ -1085,8 +1099,10 @@ paths:
                       id: ehv14gy4oxg6y
                   data:
                     properties:
-                      task:
-                        $ref: "#/components/schemas/Task"
+                      participants:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskMembership'
                     required:
                       - task
                     type: object
@@ -1135,8 +1151,10 @@ paths:
                       id: ehv14gy4oxg6y
                   data:
                     properties:
-                      task:
-                        $ref: "#/components/schemas/Task"
+                      participants:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskMembership'
                     required:
                       - task
                     type: object
@@ -1162,6 +1180,8 @@ paths:
                 deadline:
                   type: integer
                   format: int64
+                realNameInfo:
+                  $ref: '#/components/schemas/TaskParticipantRealNameInfo'
       tags: []
       operationId: post-task-participant
       summary: Apply for Task
@@ -2190,6 +2210,8 @@ components:
         deadline:
           type: integer
           format: int64
+        participantLimit:
+          type: integer
         resubmittable:
           type: boolean
           x-stoplight:
@@ -2544,6 +2566,43 @@ components:
           format: int64
         approved:
           $ref: '#/components/schemas/ApproveType'
+        realNameInfo:
+          $ref: '#/components/schemas/TaskParticipantRealNameInfo'
+    TaskParticipantRealNameInfo:
+      title: TaskParticipantRealNameInfo
+      type: object
+      required:
+        - realName
+        - studentId
+        - grade
+        - major
+        - className
+        - email
+        - phone
+        - applyReason
+        - personalAdvantage
+        - remark
+      properties:
+        realName:
+          type: string
+        studentId:
+          type: string
+        grade:
+          type: string
+        major:
+          type: string
+        className:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        applyReason:
+          type: string
+        personalAdvantage:
+          type: string
+        remark:
+          type: string
     TaskParticipantSummary:
       title: TaskParticipantSummary
       type: object
@@ -2552,7 +2611,6 @@ components:
         - intro
         - name
         - avatarId
-        - approved
       properties:
         id:
           type: integer
@@ -2564,8 +2622,6 @@ components:
         avatarId:
           type: integer
           format: int64
-        approved:
-          $ref: '#/components/schemas/ApproveType'
     TeamMember:
       properties:
         role:

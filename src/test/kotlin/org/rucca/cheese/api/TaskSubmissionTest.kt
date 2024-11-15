@@ -509,7 +509,10 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.participant.approved").value("APPROVED")
+                MockMvcResultMatchers.jsonPath(
+                        "$.data.participants[?(@.member.id == ${participant.userId})].approved"
+                    )
+                    .value("APPROVED")
             )
     }
 
@@ -548,7 +551,10 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.participant.approved").value("APPROVED")
+                MockMvcResultMatchers.jsonPath(
+                        "$.data.participants[?(@.member.id == ${participant2.userId})].approved"
+                    )
+                    .value("APPROVED")
             )
     }
 
@@ -571,7 +577,10 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.participant.approved").value("APPROVED")
+                MockMvcResultMatchers.jsonPath(
+                        "$.data.participants[?(@.member.id == $teamId)].approved"
+                    )
+                    .value("APPROVED")
             )
     }
 
