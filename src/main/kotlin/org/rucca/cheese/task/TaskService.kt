@@ -150,6 +150,7 @@ class TaskService(
             submitterType = convertTaskSubmitterType(this.submitterType!!),
             creator = userService.getUserDto(this.creator!!.id!!.toLong()),
             deadline = this.deadline?.toEpochMilli(),
+            participantLimit = this.participantLimit,
             defaultDeadline = this.defaultDeadline!!,
             resubmittable = this.resubmittable!!,
             editable = this.editable!!,
@@ -192,6 +193,7 @@ class TaskService(
         name: String,
         submitterType: TaskSubmitterType,
         deadline: LocalDateTime?,
+        participantLimit: Int?,
         defaultDeadline: Long,
         resubmittable: Boolean,
         editable: Boolean,
@@ -210,6 +212,7 @@ class TaskService(
                     submitterType = submitterType,
                     creator = User().apply { id = creatorId.toInt() },
                     deadline = deadline,
+                    participantLimit = participantLimit,
                     defaultDeadline = defaultDeadline,
                     resubmittable = resubmittable,
                     editable = editable,
@@ -241,6 +244,12 @@ class TaskService(
     fun updateTaskDeadline(taskId: IdType, deadline: LocalDateTime?) {
         val task = getTask(taskId)
         task.deadline = deadline
+        taskRepository.save(task)
+    }
+
+    fun updateTaskParticipantLimit(taskId: IdType, participantLimit: Int?) {
+        val task = getTask(taskId)
+        task.participantLimit = participantLimit
         taskRepository.save(task)
     }
 

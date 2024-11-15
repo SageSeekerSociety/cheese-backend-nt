@@ -502,6 +502,12 @@ class TaskController(
         if (patchTaskRequestDTO.deadline != null) {
             taskService.updateTaskDeadline(taskId, patchTaskRequestDTO.deadline.toLocalDateTime())
         }
+        if (patchTaskRequestDTO.hasParticipantLimit == false) {
+            taskService.updateTaskParticipantLimit(taskId, null)
+        }
+        if (patchTaskRequestDTO.participantLimit != null) {
+            taskService.updateTaskParticipantLimit(taskId, patchTaskRequestDTO.participantLimit)
+        }
         if (patchTaskRequestDTO.defaultDeadline != null) {
             taskService.updateTaskDefaultDeadline(taskId, patchTaskRequestDTO.defaultDeadline)
         }
@@ -613,6 +619,7 @@ class TaskController(
                 submitterType =
                     taskService.convertTaskSubmitterType(postTaskRequestDTO.submitterType),
                 deadline = postTaskRequestDTO.deadline?.toLocalDateTime(),
+                participantLimit = postTaskRequestDTO.participantLimit,
                 defaultDeadline = postTaskRequestDTO.defaultDeadline,
                 resubmittable = postTaskRequestDTO.resubmittable,
                 editable = postTaskRequestDTO.editable,

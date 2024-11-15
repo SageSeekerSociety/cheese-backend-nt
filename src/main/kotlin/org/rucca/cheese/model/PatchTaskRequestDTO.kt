@@ -8,6 +8,8 @@ import javax.validation.Valid
  * @param name
  * @param hasDeadline
  * @param deadline
+ * @param hasParticipantLimit
+ * @param participantLimit
  * @param defaultDeadline
  * @param resubmittable
  * @param editable
@@ -30,6 +32,12 @@ data class PatchTaskRequestDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("deadline")
     val deadline: kotlin.Long? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("hasParticipantLimit")
+    val hasParticipantLimit: kotlin.Boolean? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("participantLimit")
+    val participantLimit: kotlin.Int? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("defaultDeadline")
     val defaultDeadline: kotlin.Long? = null,

@@ -13,4 +13,5 @@ class ApplicationConfig {
     var warnAuditFailure: Boolean = false
     var rankCheckEnforced: Boolean = false
     var rankJump: Int = 1
+    var enforceTaskParticipantLimitCheck: Boolean = false
 }

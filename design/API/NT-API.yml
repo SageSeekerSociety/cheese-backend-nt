@@ -656,6 +656,10 @@ paths:
                 deadline:
                   type: integer
                   format: int64
+                hasParticipantLimit:
+                  type: boolean
+                participantLimit:
+                  type: integer
                 defaultDeadline:
                   type: integer
                   format: int64
@@ -908,6 +912,8 @@ paths:
                 deadline:
                   type: integer
                   format: int64
+                participantLimit:
+                  type: integer
                 defaultDeadline:
                   type: integer
                   format: int64
@@ -2204,6 +2210,8 @@ components:
         deadline:
           type: integer
           format: int64
+        participantLimit:
+          type: integer
         resubmittable:
           type: boolean
           x-stoplight:

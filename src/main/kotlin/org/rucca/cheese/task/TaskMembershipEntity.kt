@@ -56,6 +56,8 @@ interface TaskMembershipRepository : JpaRepository<TaskMembership, IdType> {
 
     fun existsByTaskId(taskId: IdType): Boolean
 
+    fun countByTaskIdAndApproved(taskId: IdType, approved: ApproveType): Int
+
     @Query(
         "SELECT tm FROM TaskMembership tm WHERE tm.task.id = :taskId AND EXISTS (SELECT 1 FROM TaskSubmission ts WHERE ts.membership.id = tm.id)"
     )
