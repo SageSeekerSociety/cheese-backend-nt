@@ -166,6 +166,7 @@ class TaskMembershipService(
                 realNameInfo = realNameInfo?.convert() ?: DefaultTaskMembershipRealNameInfo
             )
         )
+        autoRejectParticipantAfterReachesLimit(taskId)
     }
 
     fun updateTaskMembershipDeadline(
@@ -194,11 +195,33 @@ class TaskMembershipService(
         }
     }
 
+    fun autoRejectParticipantAfterReachesLimit(taskId: IdType) {
+        if (applicationConfig.autoRejectParticipantAfterReachesLimit) {
+            val task = getTask(taskId)
+            if (task.participantLimit != null) {
+                val actual =
+                    taskMembershipRepository.countByTaskIdAndApproved(taskId, ApproveType.APPROVED)
+                if (actual >= task.participantLimit!!) {
+                    val participants =
+                        taskMembershipRepository.findAllByTaskIdAndApproved(
+                            taskId,
+                            ApproveType.NONE
+                        )
+                    participants.forEach {
+                        it.approved = ApproveType.DISAPPROVED
+                        taskMembershipRepository.save(it)
+                    }
+                }
+            }
+        }
+    }
+
     fun updateTaskMembershipApproved(taskId: IdType, memberId: IdType, approved: ApproveType) {
         if (approved == ApproveType.APPROVED) ensureTaskParticipantNotReachedLimit(taskId)
         val participant = getTaskMembership(taskId, memberId)
         participant.approved = approved
         taskMembershipRepository.save(participant)
+        autoRejectParticipantAfterReachesLimit(taskId)
     }
 
     fun updateTaskMembershipRealNameInfo(

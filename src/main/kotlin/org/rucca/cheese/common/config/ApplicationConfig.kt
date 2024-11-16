@@ -14,4 +14,5 @@ class ApplicationConfig {
     var rankCheckEnforced: Boolean = false
     var rankJump: Int = 1
     var enforceTaskParticipantLimitCheck: Boolean = false
+    var autoRejectParticipantAfterReachesLimit: Boolean = false
 }
