@@ -195,7 +195,7 @@ class TaskMembershipService(
     }
 
     fun updateTaskMembershipApproved(taskId: IdType, memberId: IdType, approved: ApproveType) {
-        ensureTaskParticipantNotReachedLimit(taskId)
+        if (approved == ApproveType.APPROVED) ensureTaskParticipantNotReachedLimit(taskId)
         val participant = getTaskMembership(taskId, memberId)
         participant.approved = approved
         taskMembershipRepository.save(participant)
