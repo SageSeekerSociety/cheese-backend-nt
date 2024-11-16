@@ -154,7 +154,6 @@ class TaskMembershipService(
         approved: ApproveType,
         realNameInfo: TaskParticipantRealNameInfoDTO?,
     ) {
-        ensureTaskParticipantNotReachedLimit(taskId)
         val errorOpt = isTaskJoinable(getTask(taskId), memberId)
         if (errorOpt != null) throw errorOpt
         taskMembershipRepository.save(
@@ -272,6 +271,23 @@ class TaskMembershipService(
             val acturalRank = spaceUserRankService.getRank(task.space!!.id!!, memberId)
             if (acturalRank < requiredRank)
                 return YourRankIsNotHighEnoughError(acturalRank, requiredRank)
+        }
+
+        // Is not full
+        if (applicationConfig.enforceTaskParticipantLimitCheck) {
+            if (task.participantLimit != null) {
+                val actual =
+                    taskMembershipRepository.countByTaskIdAndApproved(
+                        task.id!!,
+                        ApproveType.APPROVED
+                    )
+                if (actual >= task.participantLimit!!)
+                    return TaskParticipantsReachedLimitError(
+                        task.id!!,
+                        task.participantLimit!!,
+                        actual
+                    )
+            }
         }
 
         return null
