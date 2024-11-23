@@ -895,7 +895,6 @@ paths:
               required:
                 - name
                 - submitterType
-                - defaultDeadline
                 - resubmittable
                 - editable
                 - intro

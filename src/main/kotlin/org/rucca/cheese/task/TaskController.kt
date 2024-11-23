@@ -637,7 +637,7 @@ class TaskController(
                     taskService.convertTaskSubmitterType(postTaskRequestDTO.submitterType),
                 deadline = postTaskRequestDTO.deadline?.toLocalDateTime(),
                 participantLimit = postTaskRequestDTO.participantLimit,
-                defaultDeadline = postTaskRequestDTO.defaultDeadline,
+                defaultDeadline = postTaskRequestDTO.defaultDeadline ?: 30,
                 resubmittable = postTaskRequestDTO.resubmittable,
                 editable = postTaskRequestDTO.editable,
                 intro = postTaskRequestDTO.intro,
