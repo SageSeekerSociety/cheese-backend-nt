@@ -273,7 +273,6 @@ paths:
                 - description
                 - name
                 - avatarId
-                - enableRank
                 - announcements
                 - taskTemplates
               properties:

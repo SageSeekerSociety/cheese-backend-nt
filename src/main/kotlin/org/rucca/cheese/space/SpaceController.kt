@@ -173,7 +173,7 @@ class SpaceController(
                 description = postSpaceRequestDTO.description,
                 avatarId = postSpaceRequestDTO.avatarId,
                 ownerId = authenticationService.getCurrentUserId(),
-                enableRank = postSpaceRequestDTO.enableRank,
+                enableRank = postSpaceRequestDTO.enableRank ?: false,
                 announcements = postSpaceRequestDTO.announcements,
                 taskTemplates = postSpaceRequestDTO.taskTemplates,
                 classificationTopics = postSpaceRequestDTO.classificationTopics ?: emptyList()
