@@ -133,7 +133,8 @@ class RolePermissionService {
                                 "modify-reject-reason",
                             ),
                         authorizedResource = AuthorizedResource(types = listOf("task")),
-                        customLogic = "is-space-admin-of-task || is-team-admin-of-task"
+                        customLogic =
+                            "is-space-admin-of-task || is-team-admin-of-task || (owned && is-modifying-approved-to-none)"
                     ),
                     Permission(
                         authorizedActions =

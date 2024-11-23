@@ -288,6 +288,18 @@ class TaskController(
                 ownerId == userId
             }
         }
+        authorizationService.customAuthLogics.register("is-modifying-approved-to-none") {
+            _: IdType,
+            _: AuthorizedAction,
+            _: String,
+            _: IdType?,
+            authInfo: Map<String, Any>,
+            _: IdGetter?,
+            _: Any?,
+            ->
+            val approved = authInfo["approved"] as? ApproveTypeDTO
+            approved == ApproveTypeDTO.NONE
+        }
     }
 
     @Guard("delete", "task")
@@ -486,7 +498,12 @@ class TaskController(
         patchTaskRequestDTO: PatchTaskRequestDTO
     ): ResponseEntity<GetTask200ResponseDTO> {
         if (patchTaskRequestDTO.approved != null) {
-            authorizationService.audit("modify-approved", "task", taskId)
+            authorizationService.audit(
+                "modify-approved",
+                "task",
+                taskId,
+                mapOf("approved" to patchTaskRequestDTO.approved)
+            )
             taskService.updateApproved(taskId, patchTaskRequestDTO.approved.convert())
         }
         if (patchTaskRequestDTO.rejectReason != null) {
