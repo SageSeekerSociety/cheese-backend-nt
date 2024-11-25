@@ -1,5 +1,5 @@
 #!/bin/sh
-sudo systemctl start docker
-sudo docker stop elasticsearch postgres cheese_legacy
-sudo docker rm elasticsearch postgres cheese_legacy
-sudo docker network rm cheese_network
+systemctl start docker
+docker stop elasticsearch postgres cheese_legacy
+docker rm elasticsearch postgres cheese_legacy
+docker network rm cheese_network

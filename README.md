@@ -10,8 +10,7 @@ To get started, you need to install JDK 21. Make sure you have the correct versi
 
 You also need to set up several services. We recommend using Docker to run these services. Make sure you have installed
 Docker and run ```doc/script/dependency-start.sh``` and ```doc/script/dependency-restart.sh```
-in Unix shell or the bash in Docker Desktop to start the services. (You may need to remove ```sudo``` and run the commands
-one by one manually if you want to do it on Windows in Docker Desktop)
+in Unix shell or the bash in Docker Desktop to start the services. `sudo` may be required for the scripts.
 
 ### Build
 To build the project, run ```./mvnw install``` in Unix shell or PowerShell. This will generate API interfaces from the

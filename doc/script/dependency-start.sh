@@ -1,9 +1,9 @@
 #!/bin/sh
-sudo systemctl start docker.service
+systemctl start docker.service
 
-sudo docker network create cheese_network
+docker network create cheese_network
 
-sudo docker run -d \
+docker run -d \
     --name elasticsearch \
     --network cheese_network \
     -e discovery.type=single-node \
@@ -17,7 +17,7 @@ sudo docker run -d \
     -p 9200:9200 \
     docker.elastic.co/elasticsearch/elasticsearch:8.12.1
 
-sudo docker run -d \
+docker run -d \
     --name postgres \
     --network cheese_network \
     -e POSTGRES_PASSWORD=postgres \
@@ -29,14 +29,14 @@ sudo docker run -d \
     postgres
 echo "Wait for 5 seconds please..."
 sleep 5
-sudo docker exec -i postgres bash << EOF
+docker exec -i postgres bash << EOF
     sed -i -e 's/max_connections = 100/max_connections = 1000/' /var/lib/postgresql/data/postgresql.conf
     sed -i -e 's/shared_buffers = 128MB/shared_buffers = 2GB/' /var/lib/postgresql/data/postgresql.conf
 EOF
-sudo docker restart --time 0 postgres
+docker restart --time 0 postgres
 
-sudo docker pull ghcr.io/sageseekersociety/cheese-backend-dev:dev # Update local image
-sudo docker run -d \
+docker pull ghcr.io/sageseekersociety/cheese-backend-dev:dev # Update local image
+docker run -d \
     --name cheese_legacy \
     --network cheese_network \
     -p 3000:3000 \
