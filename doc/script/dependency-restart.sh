@@ -1,3 +1,3 @@
 #!/bin/sh
-sudo systemctl start docker
-sudo docker restart elasticsearch postgres cheese_legacy
+systemctl start docker
+docker restart elasticsearch postgres cheese_legacy
