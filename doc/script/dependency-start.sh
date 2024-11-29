@@ -54,6 +54,10 @@ docker run -d \
     -e EMAIL_SMTP_USERNAME=user@example.com \
     -e EMAIL_SMTP_PASSWORD=a_super_strong_password \
     -e EMAIL_DEFAULT_FROM="No Reply <noreply@example.com>" \
+    -e CORS_ORIGINS=http://localhost:3001 \
+    -e CORS_METHODS=GET,POST,PUT,PATCH,DELETE \
+    -e CORS_HEADERS=Content-Type,Authorization \
+    -e CORS_CREDENTIALS=true \
     ghcr.io/sageseekersociety/cheese-backend-dev:dev \
     bash -c '
     if [ ! -f "FLAG_INIT" ]; then
