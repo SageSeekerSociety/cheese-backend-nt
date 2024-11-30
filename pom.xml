@@ -325,6 +325,11 @@
                         </includes>
                         <dbeaver/>
                     </sql>
+                    <markdown>
+                        <includes>
+                            <include>**/*.md</include>
+                        </includes>
+                    </markdown>
                 </configuration>
                 <executions>
                     <execution>
