@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the Space entity and its repository.
+ *               It stores the information of a space.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.space
 
 import jakarta.persistence.*

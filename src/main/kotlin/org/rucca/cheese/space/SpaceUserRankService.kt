@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the SpaceService class.
+ *               It is responsible for managing a user's rank in a space.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.space
 
 import org.rucca.cheese.common.error.NotFoundError

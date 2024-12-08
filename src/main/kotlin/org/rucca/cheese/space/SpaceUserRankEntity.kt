@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the SpaceUserRank entity and its repository.
+ *               It stores the rank of a user in a space.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.space
 
 import jakarta.persistence.*
