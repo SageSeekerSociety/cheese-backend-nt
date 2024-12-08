@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the TopicService class.
+ *               It is responsible for providing topic's DTO.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.topic
 
 import org.rucca.cheese.common.error.NotFoundError
