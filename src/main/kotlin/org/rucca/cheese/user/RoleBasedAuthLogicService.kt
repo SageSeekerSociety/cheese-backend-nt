@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the RoleBasedAuthLogicService class.
+ *               It provides the logic for role-based authorization.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.user
 
 import javax.annotation.PostConstruct
