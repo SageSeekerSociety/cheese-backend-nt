@@ -1,5 +1,5 @@
 /*
- *  Description: This file implements the SpaceService class.
+ *  Description: This file implements the SpaceUserRankService class.
  *               It is responsible for managing a user's rank in a space.
  *
  *  Author(s):
