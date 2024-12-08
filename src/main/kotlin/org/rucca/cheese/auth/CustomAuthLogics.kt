@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the CustomAuthLogics class.
+ *               It is responsible for parsing and evaluating custom authorization logic expressions.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth
 
 import org.parboiled.BaseParser

@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the JWT token payload,
+ *               which is compatible with the legacy service.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth
 
 import org.rucca.cheese.common.persistent.IdType

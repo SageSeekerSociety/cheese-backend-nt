@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the AuthorizationService class.
+ *               It is responsible for verifying the JWT token and auditing the user's actions.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth
 
 import com.auth0.jwt.JWT
