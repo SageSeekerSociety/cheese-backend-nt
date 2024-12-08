@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TeamController class.
+ *               It provides endpoints of /teams
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.team
 
 import javax.annotation.PostConstruct

@@ -1,3 +1,13 @@
+/*
+ *  Description: This file implements the TeamElasticSearchSyncListener class.
+ *               It is responsible to operate the TeamElasticSearchRepository
+ *               when the Team entity is operated.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.team
 
 import jakarta.persistence.PrePersist

@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the Team entity and its repository.
+ *               It stores the information of a team.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.team
 
 import jakarta.persistence.*
