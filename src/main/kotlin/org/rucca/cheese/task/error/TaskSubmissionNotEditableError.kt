@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TaskSubmissionNotEditableError class.
+ *               It is thrown when a submission is not editable.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task.error
 
 import org.rucca.cheese.common.error.BaseError

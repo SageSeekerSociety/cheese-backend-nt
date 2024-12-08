@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TaskController class.
+ *               It provides endpoints of /tasks.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task
 
 import javax.annotation.PostConstruct

@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TaskParticipantNotApprovedError class.
+ *               It is thrown when a user's participation in a task has not been approved.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task.error
 
 import org.rucca.cheese.common.error.BaseError

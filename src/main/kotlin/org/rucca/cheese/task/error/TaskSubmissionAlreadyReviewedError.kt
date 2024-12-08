@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TaskSubmissionAlreadyReviewedError class.
+ *               It is thrown when a submission has already been reviewed.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task.error
 
 import org.rucca.cheese.common.error.BaseError

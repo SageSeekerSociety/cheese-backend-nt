@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TaskVersionNotSubmittedYetError class.
+ *               It is thrown when a version of a task has not been submitted yet.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task.error
 
 import org.rucca.cheese.common.error.BaseError
