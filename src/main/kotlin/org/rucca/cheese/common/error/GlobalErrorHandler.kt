@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements GlobalErrorHandler class.
+ *               It handles all exceptions thrown by controllers.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.common.error
 
 import org.slf4j.LoggerFactory

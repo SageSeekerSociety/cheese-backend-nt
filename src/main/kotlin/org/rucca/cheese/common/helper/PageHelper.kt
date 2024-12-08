@@ -1,4 +1,13 @@
 /*
+ *  Description: This file implements the PageHelper class.
+ *               It is responsible for paginating data.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
+/*
  *
  * This file has exactly the same logic as the one in the legacy project.
  * See: https://github.com/SageSeekerSociety/cheese-backend/blob/dev/src/common/helper/page.helper.ts

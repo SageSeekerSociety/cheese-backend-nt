@@ -1,3 +1,11 @@
+/*
+ *  Description: Responsible for creating users in the legacy system and logging in.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.utils
 
 import at.favre.lib.crypto.bcrypt.BCrypt

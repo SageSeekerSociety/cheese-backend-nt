@@ -1,3 +1,14 @@
+/*
+ *  Description: This file implements the TaskSubmissionService class.
+ *               It is responsible for CRUD of task submissions.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *      HuanCheng65
+ *      nameisyui
+ *
+ */
+
 package org.rucca.cheese.task
 
 import jakarta.persistence.EntityManager

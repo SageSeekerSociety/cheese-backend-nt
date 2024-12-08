@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the TaskTopicsService class.
+ *               It is responsible for CRUD of a team.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.team
 
 import java.time.LocalDateTime

@@ -1,3 +1,11 @@
+/*
+ *  Description: Unit tests for the AuthorizationAspect class
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth
 
 import com.ninjasquad.springmockk.SpykBean

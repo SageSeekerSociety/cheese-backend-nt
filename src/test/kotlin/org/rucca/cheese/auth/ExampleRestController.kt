@@ -1,3 +1,11 @@
+/*
+ *  Description: A controller class for testing the AuthorizationAspect class
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth
 
 import org.rucca.cheese.auth.annotation.AuthInfo

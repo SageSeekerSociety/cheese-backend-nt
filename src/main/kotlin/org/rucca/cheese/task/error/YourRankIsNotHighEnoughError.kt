@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the YourRankIsNotHighEnoughError class.
+ *               It is thrown when a user's rank is not high enough to perform an action.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task.error
 
 import org.rucca.cheese.common.error.BaseError

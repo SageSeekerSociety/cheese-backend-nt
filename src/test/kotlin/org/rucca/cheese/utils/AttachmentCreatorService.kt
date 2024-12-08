@@ -1,3 +1,11 @@
+/*
+ *  Description: Responsible for creating attachments in the legacy system.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.utils
 
 import jakarta.ws.rs.client.ClientBuilder

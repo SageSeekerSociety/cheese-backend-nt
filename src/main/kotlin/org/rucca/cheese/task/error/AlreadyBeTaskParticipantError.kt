@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the AlreadyBeTaskParticipantError class.
+ *               It is thrown when a member is already a participant of a task.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task.error
 
 import org.rucca.cheese.common.error.BaseError

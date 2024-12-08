@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the SpaceClassificationTopicsRelation entity and its repository.
+ *               It stores the relationship between a space and its classification topics.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.space
 
 import jakarta.persistence.*

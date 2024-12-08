@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the TaskMembershipService class.
+ *               It is responsible for CRUD of task's membership.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task
 
 import jakarta.persistence.EntityManager

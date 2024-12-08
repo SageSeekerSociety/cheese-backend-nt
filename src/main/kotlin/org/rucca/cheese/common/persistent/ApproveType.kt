@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the ApproveType enum class.
+ *               It is a generic enum class for approval status of something.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.common.persistent
 
 import org.rucca.cheese.model.ApproveTypeDTO

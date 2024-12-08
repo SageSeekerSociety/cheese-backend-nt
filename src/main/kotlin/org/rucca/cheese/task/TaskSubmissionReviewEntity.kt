@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TaskSubmissionReview entity and its repository.
+ *               It stores the information of the review of a submission.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task
 
 import jakarta.persistence.*

@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the AttachmentService class.
+ *               It is responsible for invoking the legacy service to operate on attachments.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.attachment
 
 import jakarta.ws.rs.client.ClientBuilder

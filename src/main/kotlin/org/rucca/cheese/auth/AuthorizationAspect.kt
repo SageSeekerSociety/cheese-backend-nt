@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the AuthorizationAspect class.
+ *               It is responsible for intercepting controller methods.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth
 
 import org.aspectj.lang.JoinPoint

@@ -1,3 +1,11 @@
+/*
+ *  Description: Responsible for converting a JSONArray to a List of JSONObjects.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.utils
 
 import org.json.JSONArray

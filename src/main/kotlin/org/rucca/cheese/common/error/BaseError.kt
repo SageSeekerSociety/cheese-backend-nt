@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines BaseError class and ErrorSerializer class.
+ *               All http error classes should extend BaseError.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.common.error
 
 import com.fasterxml.jackson.core.JsonGenerator

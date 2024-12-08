@@ -1,3 +1,12 @@
+/*
+ *  Description: It tests the feature of a user's rank in a space.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *      nameisyui
+ *
+ */
+
 package org.rucca.cheese.api
 
 import java.time.LocalDateTime

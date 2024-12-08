@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TeamElasticSearch entity and its repository.
+ *               It stores the information of a team in the Elasticsearch database.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.team
 
 import jakarta.persistence.Id

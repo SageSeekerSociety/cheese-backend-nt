@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TaskParticipantsReachedLimitError class.
+ *               It is thrown when a task has reached its limit for approved participants.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task.error
 
 import org.rucca.cheese.common.error.BaseError
