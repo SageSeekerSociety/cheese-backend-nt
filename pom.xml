@@ -281,6 +281,7 @@
                                 <echo append="true" file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md">All files in this directory are generated, including this markdown, so DO NOT MODIFY them!${line.separator}${line.separator}</echo>
                                 <echo append="true" file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md">If you want to modify the API, modify the OpenAPI specification file and run ```./mvnw install``` again.${line.separator}${line.separator}</echo>
                                 <copy file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md" todir="src/main/kotlin/org/rucca/cheese/api"/>
+                                <delete dir="target/generated-sources/openapi"/>
                             </target>
                         </configuration>
                     </execution>
