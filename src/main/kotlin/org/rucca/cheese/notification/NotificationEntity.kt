@@ -35,8 +35,7 @@ class NotificationContent(
 
 interface NotificationRepository : JpaRepository<Notification, IdType> {
 
-    fun findAllByIdAndReceiverIdAndTypeAndRead(
-        id: Long,
+    fun findAllByReceiverIdAndTypeAndRead(
         receiverId: Long,
         type: NotificationType? = null,
         read: Boolean? = null

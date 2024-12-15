@@ -22,8 +22,7 @@ open class NotificationService(
     ): Pair<List<NotificationDTO>, PageDTO> {
         val notification = notificationRepository.findById(pageStart)
         val notifications =
-            notificationRepository.findAllByIdAndReceiverIdAndTypeAndRead(
-                pageStart,
+            notificationRepository.findAllByReceiverIdAndTypeAndRead(
                 notification.get().receiverId,
                 type,
                 read
