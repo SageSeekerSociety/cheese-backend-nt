@@ -138,7 +138,7 @@ CREATE
     TABLE
         notification(
             READ BOOLEAN NOT NULL,
-            TYPE SMALLINT CHECK(
+            TYPE SMALLINT NOT NULL CHECK(
                 TYPE BETWEEN 0 AND 4
             ),
             created_at TIMESTAMP(6) NOT NULL,

@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
+import javax.validation.constraints.NotNull
 import org.rucca.cheese.model.ListNotifications200ResponseDTO
 import org.rucca.cheese.model.NotificationsReadPostRequestDTO
 import org.rucca.cheese.model.NotificationsUnreadCountGet200ResponseDTO
@@ -53,6 +54,16 @@ interface NotificationsApi {
         produces = ["application/json"]
     )
     fun listNotifications(
+        @NotNull
+        @Parameter(description = "Page Start Index", required = true)
+        @Valid
+        @RequestParam(value = "page_start", required = true)
+        pageStart: kotlin.Long,
+        @NotNull
+        @Parameter(description = "Page Size", required = true)
+        @Valid
+        @RequestParam(value = "page_size", required = true)
+        pageSize: kotlin.Int,
         @Parameter(description = "Notification Type")
         @Valid
         @RequestParam(value = "type", required = false)
@@ -60,15 +71,7 @@ interface NotificationsApi {
         @Parameter(description = "Whether to filter read notifications")
         @Valid
         @RequestParam(value = "read", required = false)
-        read: kotlin.Boolean?,
-        @Parameter(description = "Page Start Index")
-        @Valid
-        @RequestParam(value = "page_start", required = false)
-        pageStart: kotlin.Long?,
-        @Parameter(description = "Page Size")
-        @Valid
-        @RequestParam(value = "page_size", required = false)
-        pageSize: kotlin.Int?
+        read: kotlin.Boolean?
     ): ResponseEntity<ListNotifications200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
