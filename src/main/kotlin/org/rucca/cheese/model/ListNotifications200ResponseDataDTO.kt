@@ -8,7 +8,7 @@ import javax.validation.Valid
  * @param notifications
  * @param page
  */
-data class NotificationsGet200ResponseDataDTO(
+data class ListNotifications200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("notifications", required = true)

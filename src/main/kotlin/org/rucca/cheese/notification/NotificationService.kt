@@ -7,14 +7,16 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.NotificationContentDTO
 import org.rucca.cheese.model.NotificationDTO
 import org.rucca.cheese.model.PageDTO
+import org.springframework.stereotype.Service
 
+@Service
 open class NotificationService(
     private val notificationRepository: NotificationRepository,
 ) {
 
     fun listNotifications(
-        type: NotificationType,
-        read: Boolean,
+        type: NotificationType? = null,
+        read: Boolean? = null,
         pageStart: IdType,
         pageSize: Int,
     ): Pair<List<NotificationDTO>, PageDTO> {

@@ -1,5 +1,6 @@
 package org.rucca.cheese.notification
 
+import jakarta.persistence.Column
 import jakarta.persistence.Embeddable
 import jakarta.persistence.Entity
 import org.hibernate.annotations.SQLRestriction
@@ -18,10 +19,10 @@ enum class NotificationType(type: String) {
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 class Notification(
-    val type: NotificationType,
-    val receiverId: Long,
-    var content: NotificationContent,
-    var read: Boolean = false,
+    @Column(nullable = false) val type: NotificationType,
+    @Column(nullable = false) val receiverId: Long,
+    @Column(nullable = true) var content: NotificationContent,
+    @Column(nullable = false) var read: Boolean = false,
 ) : BaseEntity()
 
 @Embeddable

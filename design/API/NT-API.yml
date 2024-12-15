@@ -2071,34 +2071,34 @@ paths:
     get:
       summary: List Notifications
       tags: [ ]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - type
-                - read
-                - page_start
-                - page_size
-              properties:
-                type:
-                  type: string
-                  enum:
-                    - mention
-                    - reply
-                    - reaction
-                    - project_invite
-                    - deadline_remind
-                page_start:
-                  type: integer
-                  format: int64
-                page_size:
-                  type: integer
-                  format: int32
-                read:
-                  type: boolean
+      parameters:
+        - schema:
+            type: object
+          in: query
+          name: type
+          description: Notification Type
+          required: false
+        - schema:
+            type: boolean
+          in: query
+          name: read
+          description: Whether to filter read notifications
+          required: false
+        - schema:
+            type: integer
+            format: int64
+          in: query
+          name: page_start
+          description: Page Start Index
+          required: true
+        - schema:
+            type: integer
+            format: int32
+          in: query
+          name: page_size
+          description: Page Size
+          required: true
+      operationId: list-notifications
       responses:
         "200":
           description: OK

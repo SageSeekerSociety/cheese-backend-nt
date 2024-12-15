@@ -10,8 +10,7 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
-import org.rucca.cheese.model.NotificationsGet200ResponseDTO
-import org.rucca.cheese.model.NotificationsGetRequestDTO
+import org.rucca.cheese.model.ListNotifications200ResponseDTO
 import org.rucca.cheese.model.NotificationsReadPostRequestDTO
 import org.rucca.cheese.model.NotificationsUnreadCountGet200ResponseDTO
 import org.rucca.cheese.model.NotificationsUnreadCountGetRequestDTO
@@ -30,7 +29,7 @@ interface NotificationsApi {
                 "default",
             ],
         summary = "List Notifications",
-        operationId = "notificationsGet",
+        operationId = "listNotifications",
         description = """""",
         responses =
             [
@@ -41,7 +40,7 @@ interface NotificationsApi {
                         [
                             Content(
                                 schema =
-                                    Schema(implementation = NotificationsGet200ResponseDTO::class)
+                                    Schema(implementation = ListNotifications200ResponseDTO::class)
                             )
                         ]
                 )
@@ -51,15 +50,26 @@ interface NotificationsApi {
     @RequestMapping(
         method = [RequestMethod.GET],
         value = ["/notifications"],
-        produces = ["application/json"],
-        consumes = ["application/json"]
+        produces = ["application/json"]
     )
-    fun notificationsGet(
-        @Parameter(description = "", required = true)
+    fun listNotifications(
+        @Parameter(description = "Notification Type")
         @Valid
-        @RequestBody
-        notificationsGetRequestDTO: NotificationsGetRequestDTO
-    ): ResponseEntity<NotificationsGet200ResponseDTO> {
+        @RequestParam(value = "type", required = false)
+        type: kotlin.Any?,
+        @Parameter(description = "Whether to filter read notifications")
+        @Valid
+        @RequestParam(value = "read", required = false)
+        read: kotlin.Boolean?,
+        @Parameter(description = "Page Start Index")
+        @Valid
+        @RequestParam(value = "page_start", required = false)
+        pageStart: kotlin.Long?,
+        @Parameter(description = "Page Size")
+        @Valid
+        @RequestParam(value = "page_size", required = false)
+        pageSize: kotlin.Int?
+    ): ResponseEntity<ListNotifications200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 

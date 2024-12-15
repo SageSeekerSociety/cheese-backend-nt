@@ -3,7 +3,9 @@ package org.rucca.cheese.notification
 import org.rucca.cheese.api.NotificationsApi
 import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.*
 
+@RestController
 class NotificationController(private val notificationService: NotificationService) :
     NotificationsApi {
 
@@ -15,31 +17,40 @@ class NotificationController(private val notificationService: NotificationServic
         notificationService.deleteNotification(notificationId)
     }
 
+    @PostMapping("/notifications")
     fun listNotifications(
-        notificationsGetRequestDTO: NotificationsGetRequestDTO
-    ): ResponseEntity<NotificationsGet200ResponseDTO> {
+        @RequestParam("type") type: String?,
+        @RequestParam("read") read: Boolean?,
+        @RequestParam("page_start") pageStart: Long,
+        @RequestParam("page_size") pageSize: Int,
+    ): ResponseEntity<ListNotifications200ResponseDTO> {
         val notifications =
             notificationService.listNotifications(
-                NotificationType.valueOf(notificationsGetRequestDTO.type.name),
-                notificationsGetRequestDTO.read,
-                notificationsGetRequestDTO.pageStart,
-                notificationsGetRequestDTO.pageSize
+                when (type) {
+                    null -> null
+                    else -> NotificationType.valueOf(type)
+                },
+                read,
+                pageStart,
+                pageSize
             )
         return ResponseEntity.ok(
-            NotificationsGet200ResponseDTO(
+            ListNotifications200ResponseDTO(
                 0,
                 "success",
-                NotificationsGet200ResponseDataDTO(notifications.first, notifications.second)
+                ListNotifications200ResponseDataDTO(notifications.first, notifications.second)
             )
         )
     }
 
+    @PostMapping("/notifications/read")
     fun markAsRead(
         notificationsReadPostRequestDTO: NotificationsReadPostRequestDTO,
     ) {
         notificationService.markAsRead(notificationsReadPostRequestDTO.notificationIds)
     }
 
+    @PostMapping("/notifications/unread/count")
     fun getUnreadCount(
         notificationsUnreadCountGetRequestDTO: NotificationsUnreadCountGetRequestDTO,
     ): ResponseEntity<NotificationsUnreadCountGet200ResponseDTO> {
