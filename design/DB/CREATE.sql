@@ -38,6 +38,11 @@ START WITH
     1 INCREMENT BY 1;
 
 CREATE
+    SEQUENCE notification_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE space_admin_relation_seq
 START WITH
     1 INCREMENT BY 50;
@@ -126,6 +131,25 @@ CREATE
     TABLE
         avatar(
             id INTEGER DEFAULT nextval('avatar_id_seq') NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        notification(
+            READ BOOLEAN NOT NULL,
+            TYPE SMALLINT CHECK(
+                TYPE BETWEEN 0 AND 4
+            ),
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            discussion_id BIGINT,
+            id BIGINT NOT NULL,
+            knowledge_id BIGINT,
+            project_id BIGINT,
+            receiver_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            text VARCHAR(255),
             PRIMARY KEY(id)
         );
 

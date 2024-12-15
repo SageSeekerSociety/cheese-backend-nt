@@ -11,8 +11,10 @@ import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
 import org.rucca.cheese.model.NotificationsGet200ResponseDTO
+import org.rucca.cheese.model.NotificationsGetRequestDTO
 import org.rucca.cheese.model.NotificationsReadPostRequestDTO
 import org.rucca.cheese.model.NotificationsUnreadCountGet200ResponseDTO
+import org.rucca.cheese.model.NotificationsUnreadCountGetRequestDTO
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -49,9 +51,15 @@ interface NotificationsApi {
     @RequestMapping(
         method = [RequestMethod.GET],
         value = ["/notifications"],
-        produces = ["application/json"]
+        produces = ["application/json"],
+        consumes = ["application/json"]
     )
-    fun notificationsGet(): ResponseEntity<NotificationsGet200ResponseDTO> {
+    fun notificationsGet(
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        notificationsGetRequestDTO: NotificationsGetRequestDTO
+    ): ResponseEntity<NotificationsGet200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -118,9 +126,15 @@ interface NotificationsApi {
     @RequestMapping(
         method = [RequestMethod.GET],
         value = ["/notifications/unread/count"],
-        produces = ["application/json"]
+        produces = ["application/json"],
+        consumes = ["application/json"]
     )
-    fun notificationsUnreadCountGet(): ResponseEntity<NotificationsUnreadCountGet200ResponseDTO> {
+    fun notificationsUnreadCountGet(
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        notificationsUnreadCountGetRequestDTO: NotificationsUnreadCountGetRequestDTO
+    ): ResponseEntity<NotificationsUnreadCountGet200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 }

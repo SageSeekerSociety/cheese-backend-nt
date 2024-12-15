@@ -12,9 +12,9 @@ data class NotificationsGet200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("notifications", required = true)
-    val notifications: NotificationsGet200ResponseDataNotificationsDTO,
+    val notifications: kotlin.collections.List<NotificationDTO>,
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("page", required = true)
-    val page: NotificationsGet200ResponseDataPageDTO
+    val page: PageDTO
 ) {}

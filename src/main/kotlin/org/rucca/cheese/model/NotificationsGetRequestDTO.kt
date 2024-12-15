@@ -4,36 +4,26 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
 import io.swagger.v3.oas.annotations.media.Schema
-import javax.validation.Valid
 
 /**
- * @param id
  * @param type
- * @param receiverId
- * @param content
+ * @param pageStart
+ * @param pageSize
  * @param read
- * @param createdAt
  */
-data class NotificationDTO(
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("id", required = true)
-    val id: kotlin.Long,
+data class NotificationsGetRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("type", required = true)
-    val type: NotificationDTO.Type,
+    val type: NotificationsGetRequestDTO.Type,
     @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("receiverId", required = true)
-    val receiverId: kotlin.Long,
-    @field:Valid
+    @get:JsonProperty("page_start", required = true)
+    val pageStart: kotlin.Long,
     @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("content", required = true)
-    val content: NotificationContentDTO,
+    @get:JsonProperty("page_size", required = true)
+    val pageSize: kotlin.Int,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("read", required = true)
-    val read: kotlin.Boolean = false,
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("createdAt", required = true)
-    val createdAt: kotlin.Long
+    val read: kotlin.Boolean
 ) {
 
     /** Values: mention,reply,reaction,project_invite,deadline_remind */
