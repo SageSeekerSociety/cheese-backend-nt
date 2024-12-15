@@ -16,8 +16,6 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.convert
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.SpaceService
-import org.rucca.cheese.task.option.TaskEnumerateOptions
-import org.rucca.cheese.task.option.TaskQueryOptions
 import org.rucca.cheese.team.TeamService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
