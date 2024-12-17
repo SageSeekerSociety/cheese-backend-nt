@@ -3,6 +3,7 @@ package org.rucca.cheese.notification
 import jakarta.persistence.Column
 import jakarta.persistence.Embeddable
 import jakarta.persistence.Entity
+import java.util.*
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
@@ -34,6 +35,8 @@ class NotificationContent(
 )
 
 interface NotificationRepository : JpaRepository<Notification, IdType> {
+
+    fun findByIdAndReceiverId(id: IdType, receiverId: Long): Optional<Notification>
 
     fun findAllByReceiverIdAndTypeAndRead(
         receiverId: Long,

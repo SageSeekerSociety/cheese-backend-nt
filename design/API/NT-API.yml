@@ -2146,6 +2146,7 @@ paths:
                   items:
                     type: integer
                     format: int64
+      operationId: mark-notifications-as-read
       responses:
         "200":
           description: OK
@@ -2156,7 +2157,7 @@ paths:
                 properties: {}
   /notifications/unread/count:
     get:
-      summary: Get Unread Notification Count
+      summary: Get Unread Notifications Count
       tags: [ ]
       requestBody:
         required: true
@@ -2170,6 +2171,7 @@ paths:
                 receiverId:
                   type: integer
                   format: int64
+      operationId: get-unread-notifications-count
       responses:
         "200":
           description: OK

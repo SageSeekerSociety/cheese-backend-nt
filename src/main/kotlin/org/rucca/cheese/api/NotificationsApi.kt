@@ -11,10 +11,10 @@ import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
 import javax.validation.constraints.NotNull
+import org.rucca.cheese.model.GetUnreadNotificationsCount200ResponseDTO
+import org.rucca.cheese.model.GetUnreadNotificationsCountRequestDTO
 import org.rucca.cheese.model.ListNotifications200ResponseDTO
-import org.rucca.cheese.model.NotificationsReadPostRequestDTO
-import org.rucca.cheese.model.NotificationsUnreadCountGet200ResponseDTO
-import org.rucca.cheese.model.NotificationsUnreadCountGetRequestDTO
+import org.rucca.cheese.model.MarkNotificationsAsReadRequestDTO
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -23,6 +23,48 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @Validated
 interface NotificationsApi {
+
+    @Operation(
+        tags =
+            [
+                "default",
+            ],
+        summary = "Get Unread Notifications Count",
+        operationId = "getUnreadNotificationsCount",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation =
+                                            GetUnreadNotificationsCount200ResponseDTO::class
+                                    )
+                            )
+                        ]
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")]
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/notifications/unread/count"],
+        produces = ["application/json"],
+        consumes = ["application/json"]
+    )
+    fun getUnreadNotificationsCount(
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        getUnreadNotificationsCountRequestDTO: GetUnreadNotificationsCountRequestDTO
+    ): ResponseEntity<GetUnreadNotificationsCount200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
 
     @Operation(
         tags =
@@ -82,7 +124,7 @@ interface NotificationsApi {
                 "default",
             ],
         summary = "Mark Notifications as Read",
-        operationId = "notificationsReadPost",
+        operationId = "markNotificationsAsRead",
         description = """""",
         responses =
             [
@@ -100,54 +142,12 @@ interface NotificationsApi {
         produces = ["application/json"],
         consumes = ["application/json"]
     )
-    fun notificationsReadPost(
+    fun markNotificationsAsRead(
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
-        notificationsReadPostRequestDTO: NotificationsReadPostRequestDTO
+        markNotificationsAsReadRequestDTO: MarkNotificationsAsReadRequestDTO
     ): ResponseEntity<kotlin.Any> {
-        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
-    }
-
-    @Operation(
-        tags =
-            [
-                "default",
-            ],
-        summary = "Get Unread Notification Count",
-        operationId = "notificationsUnreadCountGet",
-        description = """""",
-        responses =
-            [
-                ApiResponse(
-                    responseCode = "200",
-                    description = "OK",
-                    content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(
-                                        implementation =
-                                            NotificationsUnreadCountGet200ResponseDTO::class
-                                    )
-                            )
-                        ]
-                )
-            ],
-        security = [SecurityRequirement(name = "bearerAuth")]
-    )
-    @RequestMapping(
-        method = [RequestMethod.GET],
-        value = ["/notifications/unread/count"],
-        produces = ["application/json"],
-        consumes = ["application/json"]
-    )
-    fun notificationsUnreadCountGet(
-        @Parameter(description = "", required = true)
-        @Valid
-        @RequestBody
-        notificationsUnreadCountGetRequestDTO: NotificationsUnreadCountGetRequestDTO
-    ): ResponseEntity<NotificationsUnreadCountGet200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 }
