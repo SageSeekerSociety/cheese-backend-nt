@@ -2067,6 +2067,135 @@ paths:
       summary: Update Team Membership Info
       x-stoplight:
         id: 5kzla05sox4wy
+  /notifications:
+    get:
+      summary: List Notifications
+      tags: [ ]
+      parameters:
+        - schema:
+            type: object
+          in: query
+          name: type
+          description: Notification Type
+          required: false
+        - schema:
+            type: boolean
+          in: query
+          name: read
+          description: Whether to filter read notifications
+          required: false
+        - schema:
+            type: integer
+            format: int64
+          in: query
+          name: page_start
+          description: Page Start Index
+          required: true
+        - schema:
+            type: integer
+            format: int32
+          in: query
+          name: page_size
+          description: Page Size
+          required: true
+      operationId: list-notifications
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    required:
+                      - notifications
+                      - page
+                    properties:
+                      notifications:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Notification"
+                      page:
+                        $ref: "#/components/schemas/Page"
+  /notifications/read:
+    post:
+      summary: Mark Notifications as Read
+      tags: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - notificationIds
+              properties:
+                notificationIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+      operationId: mark-notifications-as-read
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+  /notifications/unread/count:
+    get:
+      summary: Get Unread Notifications Count
+      tags: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - receiverId
+              properties:
+                receiverId:
+                  type: integer
+                  format: int64
+      operationId: get-unread-notifications-count
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        default: 5
 components:
   schemas:
     Space:
@@ -2820,6 +2949,50 @@ components:
       required:
         - id
         - name
+    Notification:
+      type: object
+      required:
+        - id
+        - type
+        - receiverId
+        - content
+        - read
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          type: string
+          enum:
+            - mention
+            - reply
+            - reaction
+            - project_invite
+            - deadline_remind
+        receiverId:
+          type: integer
+          format: int64
+        content:
+          type: object
+          properties:
+            text:
+              type: string
+            projectId:
+              type: integer
+              format: int64
+            discussionId:
+              type: integer
+              format: int64
+            knowledgeId:
+              type: integer
+              format: int64
+        read:
+          type: boolean
+          default: false
+        createdAt:
+          type: integer
+          format: int64
   securitySchemes:
     bearerAuth:
       description: The access token is used in this way.
