@@ -44,10 +44,12 @@ open class NotificationService(
         return Pair(curr.map { it.toNotificationDTO(it) }, page)
     }
 
+//  unused function
     fun createNotification(notification: Notification) {
         notificationRepository.save(notification)
     }
 
+//  unused function
     fun deleteNotification(notificationId: Long) {
         notificationRepository.delete(notificationRepository.findById(notificationId).get())
     }
