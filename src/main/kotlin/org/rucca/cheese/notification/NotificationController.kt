@@ -2,6 +2,8 @@ package org.rucca.cheese.notification
 
 import io.swagger.v3.oas.annotations.Parameter
 import javax.annotation.PostConstruct
+import javax.validation.Valid
+import javax.validation.constraints.NotNull
 import org.rucca.cheese.api.NotificationsApi
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
@@ -13,8 +15,6 @@ import org.rucca.cheese.model.*
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import javax.validation.Valid
-import javax.validation.constraints.NotNull
 
 @RestController
 class NotificationController(
@@ -73,7 +73,7 @@ class NotificationController(
         @Valid
         @RequestParam(value = "read", required = false)
         read: kotlin.Boolean?,
-): ResponseEntity<ListNotifications200ResponseDTO> {
+    ): ResponseEntity<ListNotifications200ResponseDTO> {
         val notifications =
             notificationService.listNotifications(
                 when (type) {
