@@ -1,9 +1,6 @@
 package org.rucca.cheese.notification
 
-import io.swagger.v3.oas.annotations.Parameter
 import javax.annotation.PostConstruct
-import javax.validation.Valid
-import javax.validation.constraints.NotNull
 import org.rucca.cheese.api.NotificationsApi
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
@@ -45,33 +42,21 @@ class NotificationController(
         }
     }
 
+    //  unused function
     fun createNotification(notification: Notification) {
         notificationService.createNotification(notification)
     }
 
+    //  unused function
     fun deleteNotification(notificationId: Long) {
         notificationService.deleteNotification(notificationId)
     }
 
     @Guard("list-notifications", "notifications")
     override fun listNotifications(
-        @NotNull
-        @Parameter(description = "Page Start Index", required = true)
-        @Valid
-        @RequestParam(value = "page_start", required = true)
         pageStart: kotlin.Long,
-        @NotNull
-        @Parameter(description = "Page Size", required = true)
-        @Valid
-        @RequestParam(value = "page_size", required = true)
         pageSize: kotlin.Int,
-        @Parameter(description = "Notification Type")
-        @Valid
-        @RequestParam(value = "type", required = false)
         type: kotlin.Any?,
-        @Parameter(description = "Whether to filter read notifications")
-        @Valid
-        @RequestParam(value = "read", required = false)
         read: kotlin.Boolean?,
     ): ResponseEntity<ListNotifications200ResponseDTO> {
         val notifications =
@@ -95,9 +80,6 @@ class NotificationController(
 
     @Guard("mark-as-read", "notifications")
     override fun markNotificationsAsRead(
-        @Parameter(description = "", required = true)
-        @Valid
-        @RequestBody
         markNotificationsAsReadRequestDTO: MarkNotificationsAsReadRequestDTO
     ): ResponseEntity<kotlin.Any> {
         notificationService.markAsRead(markNotificationsAsReadRequestDTO.notificationIds)
@@ -106,9 +88,6 @@ class NotificationController(
 
     @Guard("get-unread-count", "notifications")
     override fun getUnreadNotificationsCount(
-        @Parameter(description = "", required = true)
-        @Valid
-        @RequestBody
         getUnreadNotificationsCountRequestDTO: GetUnreadNotificationsCountRequestDTO,
     ): ResponseEntity<GetUnreadNotificationsCount200ResponseDTO> {
         return ResponseEntity.ok(
