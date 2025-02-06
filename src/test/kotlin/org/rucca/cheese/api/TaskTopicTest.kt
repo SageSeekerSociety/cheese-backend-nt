@@ -50,10 +50,7 @@ constructor(
     private val taskDescription = "This is a test task."
     private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
     private val taskSubmissionSchema =
-        listOf(
-            Pair("Text Entry", "TEXT"),
-            Pair("Attachment Entry", "FILE"),
-        )
+        listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE"))
     private val testTopicsCount = 4
     private val testTopics = mutableListOf<Pair<IdType, String>>()
 
@@ -136,7 +133,7 @@ constructor(
                 submissionSchema = taskSubmissionSchema,
                 team = null,
                 space = null,
-                listOf(testTopics[0].first, testTopics[1].first)
+                listOf(testTopics[0].first, testTopics[1].first),
             )
     }
 

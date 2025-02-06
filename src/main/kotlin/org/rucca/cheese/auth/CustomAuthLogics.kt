@@ -36,10 +36,7 @@ class CustomAuthLogics {
     private val parser = createParser(CustomAuthLogicsExpressionParser::class.java)
     private val logger = LoggerFactory.getLogger(CustomAuthLogics::class.java)
 
-    fun register(
-        name: String,
-        handler: CustomAuthLogicHandler,
-    ) {
+    fun register(name: String, handler: CustomAuthLogicHandler) {
         if (logics.containsKey(name))
             throw RuntimeException("Custom auth logic '$name' already exists.")
         logics[name] = handler
@@ -64,7 +61,7 @@ class CustomAuthLogics {
                 resourceId,
                 authInfo,
                 resourceOwnerIdGetter,
-                customLogicData
+                customLogicData,
             )
         logger.debug(
             "Invoked custom auth logic '{}'. Result: {}, userId: {}, action: {}, resourceType: {}, resourceId: {}, authInfo: {}, resourceOwnerIdGetter: {}, customLogicData: {}",
@@ -76,7 +73,7 @@ class CustomAuthLogics {
             resourceId,
             authInfo,
             resourceOwnerIdGetter,
-            customLogicData
+            customLogicData,
         )
         return result
     }
@@ -107,7 +104,7 @@ class CustomAuthLogics {
             logger.debug(
                 "Parsed complex custom auth logic expression. Original: '{}', parsed: {}",
                 expression,
-                root
+                root,
             )
         fun evaluator(node: CustomAuthLogicsExpressionNode): Boolean {
             return when (node) {
@@ -123,7 +120,7 @@ class CustomAuthLogics {
                         resourceId,
                         authInfo,
                         resourceOwnerIdGetter,
-                        customLogicData
+                        customLogicData,
                     )
             }
         }
@@ -135,7 +132,7 @@ sealed class CustomAuthLogicsExpressionNode
 
 class CustomAuthLogicsAndNode(
     val left: CustomAuthLogicsExpressionNode,
-    val right: CustomAuthLogicsExpressionNode
+    val right: CustomAuthLogicsExpressionNode,
 ) : CustomAuthLogicsExpressionNode() {
     override fun toString(): String {
         return "($left && $right)"
@@ -144,16 +141,15 @@ class CustomAuthLogicsAndNode(
 
 class CustomAuthLogicsOrNode(
     val left: CustomAuthLogicsExpressionNode,
-    val right: CustomAuthLogicsExpressionNode
+    val right: CustomAuthLogicsExpressionNode,
 ) : CustomAuthLogicsExpressionNode() {
     override fun toString(): String {
         return "($left || $right)"
     }
 }
 
-class CustomAuthLogicsNotNode(
-    val child: CustomAuthLogicsExpressionNode,
-) : CustomAuthLogicsExpressionNode() {
+class CustomAuthLogicsNotNode(val child: CustomAuthLogicsExpressionNode) :
+    CustomAuthLogicsExpressionNode() {
     override fun toString(): String {
         return "(!$child)"
     }
@@ -179,9 +175,9 @@ open class CustomAuthLogicsExpressionParser : BaseParser<CustomAuthLogicsExpress
                             push(
                                 CustomAuthLogicsAndNode(
                                     pop(1) as CustomAuthLogicsExpressionNode,
-                                    pop() as CustomAuthLogicsExpressionNode
+                                    pop() as CustomAuthLogicsExpressionNode,
                                 )
-                            )
+                            ),
                         ),
                         Sequence(
                             OrOperator(),
@@ -189,14 +185,14 @@ open class CustomAuthLogicsExpressionParser : BaseParser<CustomAuthLogicsExpress
                             push(
                                 CustomAuthLogicsOrNode(
                                     pop(1) as CustomAuthLogicsExpressionNode,
-                                    pop() as CustomAuthLogicsExpressionNode
+                                    pop() as CustomAuthLogicsExpressionNode,
                                 )
-                            )
-                        )
+                            ),
+                        ),
                     )
-                )
+                ),
             ),
-            NotExpression()
+            NotExpression(),
         )
     }
 
@@ -217,28 +213,20 @@ open class CustomAuthLogicsExpressionParser : BaseParser<CustomAuthLogicsExpress
                         CharRange('a', 'z'),
                         CharRange('A', 'Z'),
                         CharRange('0', '9'),
-                        AnyOf("-_")
+                        AnyOf("-_"),
                     )
-                )
+                ),
             ),
-            push(CustomAuthLogicsVariableNode(match()))
+            push(CustomAuthLogicsVariableNode(match())),
         )
     }
 
     open fun AndOperator(): Rule {
-        return Sequence(
-            WhiteSpace(),
-            "&&",
-            WhiteSpace(),
-        )
+        return Sequence(WhiteSpace(), "&&", WhiteSpace())
     }
 
     open fun OrOperator(): Rule {
-        return Sequence(
-            WhiteSpace(),
-            "||",
-            WhiteSpace(),
-        )
+        return Sequence(WhiteSpace(), "||", WhiteSpace())
     }
 
     open fun NotExpression(): Rule {
@@ -246,7 +234,7 @@ open class CustomAuthLogicsExpressionParser : BaseParser<CustomAuthLogicsExpress
             Ch('!'),
             WhiteSpace(),
             Term(),
-            push(CustomAuthLogicsNotNode(pop() as CustomAuthLogicsExpressionNode))
+            push(CustomAuthLogicsNotNode(pop() as CustomAuthLogicsExpressionNode)),
         )
     }
 

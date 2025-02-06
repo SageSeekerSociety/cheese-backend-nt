@@ -45,8 +45,8 @@ import org.springframework.data.jpa.repository.JpaRepository
     indexes =
         [
             Index(name = "IDX_78a916df40e02a9deb1c4b75ed", columnList = "username", unique = true),
-            Index(name = "IDX_e12875dfb3b1d92d7d7c5377e2", columnList = "email", unique = true)
-        ]
+            Index(name = "IDX_e12875dfb3b1d92d7d7c5377e2", columnList = "email", unique = true),
+        ],
 )
 @SQLRestriction("deleted_at IS NULL")
 open class User {

@@ -19,9 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest
 @SpringBootTest
 class UserCreatorServiceTest
 @Autowired
-constructor(
-    private val userCreatorService: UserCreatorService,
-) {
+constructor(private val userCreatorService: UserCreatorService) {
     private val logger = LoggerFactory.getLogger(UserCreatorServiceTest::class.java)
 
     @Test

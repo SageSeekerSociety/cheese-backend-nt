@@ -76,7 +76,7 @@ constructor(
             topics.add(
                 topicCreatorService.createTopic(
                     creatorToken,
-                    "Topic (${floor(Math.random() * 10000000000).toLong()}) ($i)"
+                    "Topic (${floor(Math.random() * 10000000000).toLong()}) ($i)",
                 )
             )
         }
@@ -161,7 +161,7 @@ constructor(
             spaceDescription,
             spaceAvatarId,
             spaceAnnouncements,
-            spaceTaskTemplates
+            spaceTaskTemplates,
         )
         spaceId =
             createSpace(
@@ -172,7 +172,7 @@ constructor(
                 spaceAvatarId,
                 spaceAnnouncements,
                 spaceTaskTemplates,
-                classificationTopics = listOf(topics[0], topics[1])
+                classificationTopics = listOf(topics[0], topics[1]),
             )
         spaceIdOfSecond =
             createSpace(
@@ -182,7 +182,7 @@ constructor(
                 spaceDescription,
                 spaceAvatarId,
                 spaceAnnouncements,
-                spaceTaskTemplates
+                spaceTaskTemplates,
             )
         createSpace(
             creatorToken,
@@ -191,7 +191,7 @@ constructor(
             spaceDescription,
             spaceAvatarId,
             spaceAnnouncements,
-            spaceTaskTemplates
+            spaceTaskTemplates,
         )
         spaceIdOfBeforeLast =
             createSpace(
@@ -201,7 +201,7 @@ constructor(
                 spaceDescription,
                 spaceAvatarId,
                 spaceAnnouncements,
-                spaceTaskTemplates
+                spaceTaskTemplates,
             )
         spaceIdOfLast =
             createSpace(
@@ -211,7 +211,7 @@ constructor(
                 spaceDescription,
                 spaceAvatarId,
                 spaceAnnouncements,
-                spaceTaskTemplates
+                spaceTaskTemplates,
             )
     }
 

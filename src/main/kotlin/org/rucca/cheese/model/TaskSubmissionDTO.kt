@@ -42,5 +42,5 @@ data class TaskSubmissionDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("review")
-    val review: TaskSubmissionReviewDTO? = null
+    val review: TaskSubmissionReviewDTO? = null,
 ) {}

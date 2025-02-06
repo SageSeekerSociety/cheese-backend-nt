@@ -24,7 +24,7 @@ class NotificationController(
     fun initialize() {
         authorizationService.ownerIds.register(
             "notifications",
-            notificationService::getNotificationOwner
+            notificationService::getNotificationOwner,
         )
         authorizationService.customAuthLogics.register("is-notification-admin") {
             userId: IdType,
@@ -33,11 +33,10 @@ class NotificationController(
             resourceId: IdType?,
             _: Map<String, Any?>?,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             notificationService.isNotificationAdmin(
                 resourceId ?: throw IllegalArgumentException("resourceId is null"),
-                userId
+                userId,
             )
         }
     }
@@ -67,13 +66,13 @@ class NotificationController(
                 },
                 read,
                 pageStart,
-                pageSize
+                pageSize,
             )
         return ResponseEntity.ok(
             ListNotifications200ResponseDTO(
                 0,
                 "success",
-                ListNotifications200ResponseDataDTO(notifications.first, notifications.second)
+                ListNotifications200ResponseDataDTO(notifications.first, notifications.second),
             )
         )
     }
@@ -88,7 +87,7 @@ class NotificationController(
 
     @Guard("get-unread-count", "notifications")
     override fun getUnreadNotificationsCount(
-        getUnreadNotificationsCountRequestDTO: GetUnreadNotificationsCountRequestDTO,
+        getUnreadNotificationsCountRequestDTO: GetUnreadNotificationsCountRequestDTO
     ): ResponseEntity<GetUnreadNotificationsCount200ResponseDTO> {
         return ResponseEntity.ok(
             GetUnreadNotificationsCount200ResponseDTO(
@@ -98,7 +97,7 @@ class NotificationController(
                     notificationService.getUnreadCount(
                         getUnreadNotificationsCountRequestDTO.receiverId
                     )
-                )
+                ),
             )
         )
     }

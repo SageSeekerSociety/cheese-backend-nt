@@ -50,7 +50,7 @@ class SpaceClassificationTopicsService(
             val relation =
                 SpaceClassificationTopicsRelation(
                     space = Space().apply { id = spaceId },
-                    topic = Topic().apply { id = it.toInt() }
+                    topic = Topic().apply { id = it.toInt() },
                 )
             topicsRelationRepository.save(relation)
         }

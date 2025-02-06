@@ -100,7 +100,7 @@ class TeamService(
     fun enumerateTeams(
         query: String,
         pageStart: IdType?,
-        pageSize: Int
+        pageSize: Int,
     ): Pair<List<TeamDTO>, PageDTO> {
         val id = query.toLongOrNull()
         if (id != null) {
@@ -119,7 +119,7 @@ class TeamService(
                 pageStart,
                 pageSize,
                 { it.id!! },
-                { id -> throw NotFoundError("team", id) }
+                { id -> throw NotFoundError("team", id) },
             )
         return Pair(teams.map { getTeamDto(it.id!!) }, page)
     }
@@ -150,7 +150,7 @@ class TeamService(
     fun getTeamsThatUserJoinedTaskAsWithApprovedType(
         taskId: IdType,
         userId: IdType,
-        approveType: ApproveType
+        approveType: ApproveType,
     ): List<TeamSummaryDTO> {
         return teamRepository
             .getTeamsThatUserJoinedTaskAsWithApprovedType(taskId, userId, approveType)
@@ -208,7 +208,7 @@ class TeamService(
         intro: String,
         description: String,
         avatarId: IdType,
-        ownerId: IdType
+        ownerId: IdType,
     ): IdType {
         ensureTeamNameNotExists(name)
         val team =
@@ -217,14 +217,14 @@ class TeamService(
                     name = name,
                     intro = intro,
                     description = description,
-                    avatar = Avatar().apply { id = avatarId.toInt() }
+                    avatar = Avatar().apply { id = avatarId.toInt() },
                 )
             )
         teamUserRelationRepository.save(
             TeamUserRelation(
                 team = team,
                 role = TeamMemberRole.OWNER,
-                user = User().apply { id = ownerId.toInt() }
+                user = User().apply { id = ownerId.toInt() },
             )
         )
         return team.id!!
@@ -327,7 +327,7 @@ class TeamService(
                 teamId,
                 userId,
                 ownershipNewOptional.get().role!!,
-                TeamMemberRole.OWNER
+                TeamMemberRole.OWNER,
             )
         } else {
             teamUserRelationRepository.save(ownershipOriginal)

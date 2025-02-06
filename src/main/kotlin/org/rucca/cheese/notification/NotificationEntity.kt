@@ -14,7 +14,7 @@ enum class NotificationType(type: String) {
     REPLY("reply"),
     REACTION("reaction"),
     PROJECT_INVITE("project_invite"),
-    DEADLINE_REMIND("deadline_remind")
+    DEADLINE_REMIND("deadline_remind"),
 }
 
 @Entity
@@ -31,7 +31,7 @@ class NotificationContent(
     val text: String,
     val projectId: Long,
     val discussionId: Long,
-    val knowledgeId: Long
+    val knowledgeId: Long,
 )
 
 interface NotificationRepository : JpaRepository<Notification, IdType> {
@@ -41,7 +41,7 @@ interface NotificationRepository : JpaRepository<Notification, IdType> {
     fun findAllByReceiverIdAndTypeAndRead(
         receiverId: Long,
         type: NotificationType? = null,
-        read: Boolean? = null
+        read: Boolean? = null,
     ): List<Notification>
 
     fun findAllByReceiverId(receiverId: Long): List<Notification>

@@ -16,5 +16,5 @@ data class ListNotifications200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("page", required = true)
-    val page: PageDTO
+    val page: PageDTO,
 ) {}

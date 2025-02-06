@@ -55,7 +55,7 @@ class SpaceUserRankService(
                 SpaceUserRank(
                     space = Space().apply { id = spaceId },
                     user = User().apply { id = userId.toInt() },
-                    rank = Math.max(0, rank)
+                    rank = Math.max(0, rank),
                 )
             spaceUserRankRepository.save(spaceUserRank)
             return rank > 0

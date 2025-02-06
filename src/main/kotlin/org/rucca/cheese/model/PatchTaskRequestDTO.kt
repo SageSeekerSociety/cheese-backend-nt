@@ -72,5 +72,5 @@ data class PatchTaskRequestDTO(
     val rejectReason: kotlin.String? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("topics")
-    val topics: kotlin.collections.List<kotlin.Long>? = null
+    val topics: kotlin.collections.List<kotlin.Long>? = null,
 ) {}

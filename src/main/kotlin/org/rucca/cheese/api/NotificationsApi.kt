@@ -25,10 +25,7 @@ import org.springframework.web.bind.annotation.*
 interface NotificationsApi {
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "Get Unread Notifications Count",
         operationId = "getUnreadNotificationsCount",
         description = """""",
@@ -46,16 +43,16 @@ interface NotificationsApi {
                                             GetUnreadNotificationsCount200ResponseDTO::class
                                     )
                             )
-                        ]
+                        ],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.GET],
         value = ["/notifications/unread/count"],
         produces = ["application/json"],
-        consumes = ["application/json"]
+        consumes = ["application/json"],
     )
     fun getUnreadNotificationsCount(
         @Parameter(description = "", required = true)
@@ -67,10 +64,7 @@ interface NotificationsApi {
     }
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "List Notifications",
         operationId = "listNotifications",
         description = """""",
@@ -85,15 +79,15 @@ interface NotificationsApi {
                                 schema =
                                     Schema(implementation = ListNotifications200ResponseDTO::class)
                             )
-                        ]
+                        ],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.GET],
         value = ["/notifications"],
-        produces = ["application/json"]
+        produces = ["application/json"],
     )
     fun listNotifications(
         @NotNull
@@ -113,16 +107,13 @@ interface NotificationsApi {
         @Parameter(description = "Whether to filter read notifications")
         @Valid
         @RequestParam(value = "read", required = false)
-        read: kotlin.Boolean?
+        read: kotlin.Boolean?,
     ): ResponseEntity<ListNotifications200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "Mark Notifications as Read",
         operationId = "markNotificationsAsRead",
         description = """""",
@@ -131,16 +122,16 @@ interface NotificationsApi {
                 ApiResponse(
                     responseCode = "200",
                     description = "OK",
-                    content = [Content(schema = Schema(implementation = kotlin.Any::class))]
+                    content = [Content(schema = Schema(implementation = kotlin.Any::class))],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.POST],
         value = ["/notifications/read"],
         produces = ["application/json"],
-        consumes = ["application/json"]
+        consumes = ["application/json"],
     )
     fun markNotificationsAsRead(
         @Parameter(description = "", required = true)

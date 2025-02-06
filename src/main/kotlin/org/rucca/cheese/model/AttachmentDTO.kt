@@ -27,7 +27,7 @@ data class AttachmentDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("meta")
-    val meta: AttachmentMetaDTO? = null
+    val meta: AttachmentMetaDTO? = null,
 ) {
 
     /** 类型 Values: image,video,audio,file */

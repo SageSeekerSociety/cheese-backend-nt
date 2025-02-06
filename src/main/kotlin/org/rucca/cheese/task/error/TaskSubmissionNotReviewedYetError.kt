@@ -17,5 +17,5 @@ class TaskSubmissionNotReviewedYetError(submissionId: IdType) :
     BaseError(
         HttpStatus.NOT_FOUND,
         "Submission with id $submissionId has not been reviewed yet",
-        mapOf("submissionId" to submissionId)
+        mapOf("submissionId" to submissionId),
     )

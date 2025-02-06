@@ -17,5 +17,5 @@ data class PostTaskSubmissionReviewRequestDTO(
     val score: kotlin.Int,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("comment", required = true)
-    val comment: kotlin.String
+    val comment: kotlin.String,
 ) {}

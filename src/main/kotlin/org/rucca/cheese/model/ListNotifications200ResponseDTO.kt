@@ -19,5 +19,5 @@ data class ListNotifications200ResponseDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("data", required = true)
-    val `data`: ListNotifications200ResponseDataDTO
+    val `data`: ListNotifications200ResponseDataDTO,
 ) {}

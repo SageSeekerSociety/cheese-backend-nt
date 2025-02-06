@@ -45,5 +45,5 @@ data class TaskParticipantRealNameInfoDTO(
     val personalAdvantage: kotlin.String,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("remark", required = true)
-    val remark: kotlin.String
+    val remark: kotlin.String,
 ) {}

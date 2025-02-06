@@ -39,11 +39,10 @@ class TeamController(
             resourceId: IdType?,
             _: Map<String, Any?>?,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             teamService.isTeamAdmin(
                 resourceId ?: throw IllegalArgumentException("resourceId is null"),
-                userId
+                userId,
             )
         }
         authorizationService.customAuthLogics.register("member-is-self") {
@@ -53,8 +52,7 @@ class TeamController(
             _: IdType?,
             authInfo: Map<String, Any?>?,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             userId == authInfo?.get("member")
         }
     }
@@ -68,7 +66,7 @@ class TeamController(
     @NoAuth
     override fun deleteTeamMember(
         @ResourceId teamId: Long,
-        userId: Long
+        userId: Long,
     ): ResponseEntity<GetTeam200ResponseDTO> {
         val role = teamService.getTeamMemberRole(teamId, userId)
         when (role) {
@@ -83,7 +81,7 @@ class TeamController(
                     "remove-normal-member",
                     "team",
                     teamId,
-                    mapOf("member" to userId)
+                    mapOf("member" to userId),
                 )
                 teamService.removeTeamMember(teamId, userId)
             }
@@ -106,7 +104,7 @@ class TeamController(
     override fun getTeams(
         query: String,
         pageStart: Long?,
-        pageSize: Int
+        pageSize: Int,
     ): ResponseEntity<GetTeams200ResponseDTO> {
         val (teamDTOs, page) = teamService.enumerateTeams(query, pageStart, pageSize)
         return ResponseEntity.ok(
@@ -135,7 +133,7 @@ class TeamController(
     @Guard("modify", "team")
     override fun patchTeam(
         @ResourceId teamId: Long,
-        patchTeamRequestDTO: PatchTeamRequestDTO
+        patchTeamRequestDTO: PatchTeamRequestDTO,
     ): ResponseEntity<GetTeam200ResponseDTO> {
         if (patchTeamRequestDTO.name != null) {
             teamService.updateTeamName(teamId, patchTeamRequestDTO.name)
@@ -159,7 +157,7 @@ class TeamController(
     override fun patchTeamMember(
         @ResourceId teamId: Long,
         userId: Long,
-        patchTeamMemberRequestDTO: PatchTeamMemberRequestDTO
+        patchTeamMemberRequestDTO: PatchTeamMemberRequestDTO,
     ): ResponseEntity<GetTeam200ResponseDTO> {
         if (patchTeamMemberRequestDTO.role != null) {
             when (patchTeamMemberRequestDTO.role) {
@@ -178,7 +176,7 @@ class TeamController(
                         "add-normal-member",
                         "team",
                         teamId,
-                        mapOf("member" to userId)
+                        mapOf("member" to userId),
                     )
                     teamService.removeTeamMember(teamId, userId)
                     teamService.addTeamNormalMember(teamId, userId)
@@ -201,7 +199,7 @@ class TeamController(
                 intro = postTeamRequestDTO.intro,
                 description = postTeamRequestDTO.description,
                 avatarId = postTeamRequestDTO.avatarId,
-                ownerId = authenticationService.getCurrentUserId()
+                ownerId = authenticationService.getCurrentUserId(),
             )
         val teamDTO = teamService.getTeamDto(teamId)
         return ResponseEntity.ok(
@@ -212,7 +210,7 @@ class TeamController(
     @NoAuth
     override fun postTeamMember(
         @ResourceId teamId: Long,
-        postTeamMemberRequestDTO: PostTeamMemberRequestDTO
+        postTeamMemberRequestDTO: PostTeamMemberRequestDTO,
     ): ResponseEntity<GetTeam200ResponseDTO> {
         when (postTeamMemberRequestDTO.role) {
             TeamMemberRoleTypeDTO.OWNER -> {
@@ -228,7 +226,7 @@ class TeamController(
                     "add-normal-member",
                     "team",
                     teamId,
-                    mapOf("member" to postTeamMemberRequestDTO.userId)
+                    mapOf("member" to postTeamMemberRequestDTO.userId),
                 )
                 teamService.addTeamNormalMember(teamId, postTeamMemberRequestDTO.userId)
             }

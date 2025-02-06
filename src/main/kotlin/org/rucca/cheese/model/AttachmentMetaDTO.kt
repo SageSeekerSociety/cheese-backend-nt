@@ -37,5 +37,5 @@ data class AttachmentMetaDTO(
     val thumbnail: kotlin.String? = null,
     @Schema(example = "null", description = "时长")
     @get:JsonProperty("duration")
-    val duration: kotlin.Long? = null
+    val duration: kotlin.Long? = null,
 ) {}

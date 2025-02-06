@@ -27,5 +27,5 @@ data class UserDTO(
     val nickname: kotlin.String,
     @Schema(example = "cheese", required = true, description = "用户名")
     @get:JsonProperty("username", required = true)
-    val username: kotlin.String
+    val username: kotlin.String,
 ) {}

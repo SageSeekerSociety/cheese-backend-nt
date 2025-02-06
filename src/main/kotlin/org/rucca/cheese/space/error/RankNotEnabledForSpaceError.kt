@@ -17,5 +17,5 @@ class RankNotEnabledForSpaceError(spaceId: IdType) :
     BaseError(
         HttpStatus.BAD_REQUEST,
         "Rank is not enabled for space $spaceId",
-        mapOf("spaceId" to spaceId)
+        mapOf("spaceId" to spaceId),
     )

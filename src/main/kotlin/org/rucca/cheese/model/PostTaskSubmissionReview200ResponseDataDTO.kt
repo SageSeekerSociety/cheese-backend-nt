@@ -15,5 +15,5 @@ data class PostTaskSubmissionReview200ResponseDataDTO(
     val submission: TaskSubmissionDTO,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("hasUpgradedParticipantRank", required = true)
-    val hasUpgradedParticipantRank: kotlin.Boolean
+    val hasUpgradedParticipantRank: kotlin.Boolean,
 ) {}

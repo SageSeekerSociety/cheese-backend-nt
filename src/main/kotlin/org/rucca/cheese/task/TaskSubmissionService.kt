@@ -138,17 +138,14 @@ class TaskSubmissionService(
         return submission.toTaskSubmissionDTO(entries, schema)
     }
 
-    private fun deleteTaskSubmission(
-        participant: TaskMembership,
-        version: Int,
-    ) {
+    private fun deleteTaskSubmission(participant: TaskMembership, version: Int) {
         val entries =
             taskSubmissionRepository.findAllByMembershipIdAndVersion(participant.id!!, version)
         if (entries.isEmpty()) {
             throw TaskVersionNotSubmittedYetError(
                 participant.task!!.id!!,
                 participant.memberId!!,
-                version
+                version,
             )
         }
         for (entry in entries) {
@@ -161,7 +158,7 @@ class TaskSubmissionService(
         taskId: IdType,
         memberId: IdType,
         submitterId: IdType,
-        submission: List<TaskSubmissionEntry>
+        submission: List<TaskSubmissionEntry>,
     ): TaskSubmissionDTO {
         validateSubmission(taskId, submission)
         val participant =
@@ -182,7 +179,7 @@ class TaskSubmissionService(
         memberId: IdType,
         submitterId: IdType,
         version: Int,
-        submission: List<TaskSubmissionEntry>
+        submission: List<TaskSubmissionEntry>,
     ): TaskSubmissionDTO {
         validateSubmission(taskId, submission)
         val participant =
@@ -247,10 +244,10 @@ class TaskSubmissionService(
                                 attachmentService.getAttachmentDto(
                                     it.value.contentAttachment!!.id!!.toLong()
                                 )
-                            else null
+                            else null,
                     )
                 },
-            review = if (queryReview) taskSubmissionReviewService.getReviewDTO(this.id!!) else null
+            review = if (queryReview) taskSubmissionReviewService.getReviewDTO(this.id!!) else null,
         )
     }
 
@@ -273,7 +270,7 @@ class TaskSubmissionService(
         predicts.add(
             cb.equal(
                 root.get<TaskMembership>("membership").get<IdType>("task").get<IdType>("id"),
-                taskId
+                taskId,
             )
         )
         if (member != null) {
@@ -289,7 +286,7 @@ class TaskSubmissionService(
                 .where(
                     cb.equal(
                         subRoot.get<TaskMembership>("membership"),
-                        root.get<TaskMembership>("membership")
+                        root.get<TaskMembership>("membership"),
                     )
                 )
             predicts.add(cb.equal(root.get<Int>("version"), subquery))
@@ -299,9 +296,7 @@ class TaskSubmissionService(
             val subRoot = subquery.from(TaskSubmissionReview::class.java)
             subquery
                 .select(cb.literal(true))
-                .where(
-                    cb.equal(subRoot.get<TaskSubmission>("submission"), root),
-                )
+                .where(cb.equal(subRoot.get<TaskSubmission>("submission"), root))
             if (reviewed) predicts.add(cb.exists(subquery))
             else predicts.add(cb.not(cb.exists(subquery)))
         }
@@ -325,7 +320,7 @@ class TaskSubmissionService(
                 pageStart,
                 pageSize,
                 { it.id!! },
-                { id -> throw NotFoundError("task submission", id) }
+                { id -> throw NotFoundError("task submission", id) },
             )
         return Pair(curr.map { it.toTaskSubmissionDTO(queryReview = queryReview) }, page)
     }

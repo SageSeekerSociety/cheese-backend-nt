@@ -50,7 +50,7 @@ class TaskTopicsService(
             val relation =
                 TaskTopicsRelation(
                     task = Task().apply { id = taskId },
-                    topic = Topic().apply { id = it.toInt() }
+                    topic = Topic().apply { id = it.toInt() },
                 )
             topicsRelationRepository.save(relation)
         }

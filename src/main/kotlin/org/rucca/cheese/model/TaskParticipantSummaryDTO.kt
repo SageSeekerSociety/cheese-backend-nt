@@ -21,5 +21,5 @@ data class TaskParticipantSummaryDTO(
     val name: kotlin.String,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("avatarId", required = true)
-    val avatarId: kotlin.Long
+    val avatarId: kotlin.Long,
 ) {}

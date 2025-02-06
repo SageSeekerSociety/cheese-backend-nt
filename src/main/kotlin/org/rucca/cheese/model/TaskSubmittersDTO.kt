@@ -15,5 +15,5 @@ data class TaskSubmittersDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("examples", required = true)
-    val examples: kotlin.collections.List<TaskSubmittersExamplesInnerDTO>
+    val examples: kotlin.collections.List<TaskSubmittersExamplesInnerDTO>,
 ) {}

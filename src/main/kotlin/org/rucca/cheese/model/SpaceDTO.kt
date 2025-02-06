@@ -60,8 +60,8 @@ data class SpaceDTO(
     val classificationTopics: kotlin.collections.List<TopicDTO>,
     @Schema(
         example = "null",
-        description = "Only has value when: 'queryJoinablity' == true && 'enableRank' == true"
+        description = "Only has value when: 'queryJoinablity' == true && 'enableRank' == true",
     )
     @get:JsonProperty("myRank")
-    val myRank: kotlin.Int? = null
+    val myRank: kotlin.Int? = null,
 ) {}

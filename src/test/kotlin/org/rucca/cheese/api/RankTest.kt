@@ -36,10 +36,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 @TestMethodOrder(OrderAnnotation::class)
 class RankTest
 @Autowired
-constructor(
-    private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-) {
+constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCreatorService) {
     private val logger = LoggerFactory.getLogger(javaClass)
     lateinit var creator: UserCreatorService.CreateUserResponse
     lateinit var creatorToken: String
@@ -55,10 +52,7 @@ constructor(
     private val taskDescription = "Description of task"
     private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
     private val taskMembershipDeadline = LocalDateTime.now().plusMonths(1).toEpochMilli()
-    private val taskSubmissionSchema =
-        listOf(
-            Pair("Text Entry", "TEXT"),
-        )
+    private val taskSubmissionSchema = listOf(Pair("Text Entry", "TEXT"))
     private var taskId: IdType = -1
     private var taskId2: IdType = -1
     private var taskId3: IdType = -1
@@ -72,7 +66,7 @@ constructor(
         spaceName: String,
         spaceIntro: String,
         spaceDescription: String,
-        spaceAvatarId: IdType
+        spaceAvatarId: IdType,
     ): IdType {
         val request =
             MockMvcRequestBuilders.post("/spaces")
@@ -154,10 +148,7 @@ constructor(
         return taskId
     }
 
-    fun approveTask(
-        taskId: IdType,
-        token: String,
-    ) {
+    fun approveTask(taskId: IdType, token: String) {
         val request =
             MockMvcRequestBuilders.patch("/tasks/$taskId")
                 .header("Authorization", "Bearer $token")
@@ -181,9 +172,11 @@ constructor(
                 .header("Authorization", "Bearer $token")
                 .queryParam("member", userId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                 {}
-            """)
+            """
+                )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -253,7 +246,7 @@ constructor(
                 taskSubmissionSchema,
                 null,
                 spaceId,
-                1
+                1,
             )
         approveTask(taskId, creatorToken)
         addParticipantUser(participantToken, taskId, participant.userId)
@@ -272,7 +265,7 @@ constructor(
                 taskSubmissionSchema,
                 null,
                 spaceId,
-                2
+                2,
             )
         approveTask(taskId2, creatorToken)
         addParticipantUser(participantToken, taskId2, participant.userId)
@@ -291,7 +284,7 @@ constructor(
                 taskSubmissionSchema,
                 null,
                 spaceId,
-                1
+                1,
             )
         approveTask(taskId3, creatorToken)
         addParticipantUser(participantToken, taskId3, participant.userId)
@@ -310,7 +303,7 @@ constructor(
                 taskSubmissionSchema,
                 null,
                 spaceId,
-                2
+                2,
             )
         approveTask(taskId4, creatorToken)
     }
@@ -395,9 +388,11 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participant.userId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                     {}
-                """)
+                """
+                )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isBadRequest)
@@ -473,9 +468,11 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participant.userId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                     {}
-                """)
+                """
+                )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 

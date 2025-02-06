@@ -31,7 +31,7 @@ open class NotificationService(
             notificationRepository.findAllByReceiverIdAndTypeAndRead(
                 notification.get().receiverId,
                 type,
-                read
+                read,
             )
         val (curr, page) =
             PageHelper.pageFromAll(
@@ -39,7 +39,7 @@ open class NotificationService(
                 pageStart,
                 pageSize,
                 { it.id!! },
-                { id -> throw NotFoundError("notification", id) }
+                { id -> throw NotFoundError("notification", id) },
             )
         return Pair(curr.map { it.toNotificationDTO(it) }, page)
     }
@@ -95,7 +95,7 @@ open class NotificationService(
             read = notification.read,
             receiverId = notification.receiverId,
             content = notification.content.toNotificationContentDTO(notification.content),
-            createdAt = notification.createdAt!!.toEpochMilli()
+            createdAt = notification.createdAt!!.toEpochMilli(),
         )
     }
 
@@ -106,7 +106,7 @@ open class NotificationService(
             content.text,
             content.projectId,
             content.discussionId,
-            content.knowledgeId
+            content.knowledgeId,
         )
     }
 }

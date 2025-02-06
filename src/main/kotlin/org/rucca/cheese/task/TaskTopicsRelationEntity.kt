@@ -19,13 +19,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(
-    indexes =
-        [
-            Index(columnList = "task_id"),
-            Index(columnList = "topic_id"),
-        ]
-)
+@Table(indexes = [Index(columnList = "task_id"), Index(columnList = "topic_id")])
 class TaskTopicsRelation(
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val task: Task? = null,
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val topic: Topic? = null,

@@ -54,10 +54,7 @@ constructor(
     private val taskDescription = "A lengthy text. ".repeat(1000)
     private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
     private val taskSubmissionSchema =
-        listOf(
-            Pair("Text Entry", "TEXT"),
-            Pair("Attachment Entry", "FILE"),
-        )
+        listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE"))
 
     fun createTask(
         name: String,
@@ -115,9 +112,11 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participantId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                     {}
-                """)
+                """
+                )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 

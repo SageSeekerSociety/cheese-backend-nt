@@ -146,7 +146,7 @@ class TaskService(
                 taskMembershipService.getJoinedWithApproveType(
                     this,
                     userId,
-                    ApproveType.DISAPPROVED
+                    ApproveType.DISAPPROVED,
                 )
             else Pair(null, null)
         val joinedNotApprovedOrDisapproved =
@@ -175,7 +175,7 @@ class TaskService(
                     .map {
                         TaskSubmissionSchemaEntryDTO(
                             it.description!!,
-                            convertTaskSubmissionEntryType(it.type!!)
+                            convertTaskSubmissionEntryType(it.type!!),
                         )
                     },
             submitters = getTaskSubmittersSummary(this.id!!),
@@ -214,7 +214,7 @@ class TaskService(
         creatorId: IdType,
         teamId: IdType?,
         spaceId: IdType?,
-        rank: Int? = null
+        rank: Int? = null,
     ): IdType {
         val task =
             taskRepository.save(
@@ -412,7 +412,7 @@ class TaskService(
                 .select(subroot)
                 .where(
                     cb.equal(subroot.get<Task>("task").get<IdType>("id"), root.get<IdType>("id")),
-                    subroot.get<Topic>("topic").get<Int>("id").`in`(options.topics)
+                    subroot.get<Topic>("topic").get<Int>("id").`in`(options.topics),
                 )
             predicates.add(cb.exists(subquery))
         }
@@ -444,7 +444,7 @@ class TaskService(
                 pageStart,
                 pageSize,
                 { it.id!! },
-                { id -> throw NotFoundError("task", id) }
+                { id -> throw NotFoundError("task", id) },
             )
         return Pair(curr.map { it.toTaskDTO(queryOptions) }, page)
     }
@@ -490,7 +490,7 @@ class TaskService(
                 pageStart,
                 pageSize,
                 { it.id!! },
-                { id -> throw NotFoundError("task", id) }
+                { id -> throw NotFoundError("task", id) },
             )
         val dtos = tasks.map { getTaskDto(it.id!!, queryOptions) }
         return Pair(dtos, page)

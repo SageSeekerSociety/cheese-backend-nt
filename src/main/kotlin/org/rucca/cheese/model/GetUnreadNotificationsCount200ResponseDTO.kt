@@ -19,5 +19,5 @@ data class GetUnreadNotificationsCount200ResponseDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("data", required = true)
-    val `data`: GetUnreadNotificationsCount200ResponseDataDTO
+    val `data`: GetUnreadNotificationsCount200ResponseDataDTO,
 ) {}

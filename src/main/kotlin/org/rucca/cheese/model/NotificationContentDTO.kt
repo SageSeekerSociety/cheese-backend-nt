@@ -21,5 +21,5 @@ data class NotificationContentDTO(
     val discussionId: kotlin.Long? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("knowledgeId")
-    val knowledgeId: kotlin.Long? = null
+    val knowledgeId: kotlin.Long? = null,
 ) {}

@@ -31,5 +31,5 @@ data class PageDTO(
     val prevStart: kotlin.Long? = null,
     @Schema(example = "null", description = "下一页第一个 item 的 ID")
     @get:JsonProperty("next_start")
-    val nextStart: kotlin.Long? = null
+    val nextStart: kotlin.Long? = null,
 ) {}

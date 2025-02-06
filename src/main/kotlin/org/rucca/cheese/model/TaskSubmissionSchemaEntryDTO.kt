@@ -15,5 +15,5 @@ data class TaskSubmissionSchemaEntryDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("type", required = true)
-    val type: TaskSubmissionTypeDTO
+    val type: TaskSubmissionTypeDTO,
 ) {}

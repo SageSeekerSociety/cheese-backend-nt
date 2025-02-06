@@ -17,5 +17,5 @@ data class PatchTaskSubmissionReviewRequestDTO(
     val score: kotlin.Int? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("comment")
-    val comment: kotlin.String? = null
+    val comment: kotlin.String? = null,
 ) {}

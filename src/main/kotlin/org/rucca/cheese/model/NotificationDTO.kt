@@ -33,7 +33,7 @@ data class NotificationDTO(
     val read: kotlin.Boolean = false,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("createdAt", required = true)
-    val createdAt: kotlin.Long
+    val createdAt: kotlin.Long,
 ) {
 
     /** Values: mention,reply,reaction,project_invite,deadline_remind */

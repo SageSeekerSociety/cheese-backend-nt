@@ -125,7 +125,7 @@ class TaskSubmissionReviewService(
             return spaceUserRankService.upgradeRank(
                 task.space!!.id!!,
                 membership.memberId!!,
-                task.rank!!
+                task.rank!!,
             )
         } else return false
     }

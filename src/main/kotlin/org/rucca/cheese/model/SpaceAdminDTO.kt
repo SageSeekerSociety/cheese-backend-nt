@@ -24,5 +24,5 @@ data class SpaceAdminDTO(
     val updatedAt: kotlin.Long,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("createdAt", required = true)
-    val createdAt: kotlin.Long
+    val createdAt: kotlin.Long,
 ) {}
