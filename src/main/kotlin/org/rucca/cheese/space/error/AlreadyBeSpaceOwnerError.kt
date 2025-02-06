@@ -8,5 +8,5 @@ class AlreadyBeSpaceOwnerError(spaceId: IdType, userId: IdType) :
     BaseError(
         HttpStatus.CONFLICT,
         "$userId is already the owner of space $spaceId",
-        mapOf("spaceId" to spaceId, "userId" to userId)
+        mapOf("spaceId" to spaceId, "userId" to userId),
     )

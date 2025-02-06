@@ -14,10 +14,5 @@ class TeamRoleConflictError(
     BaseError(
         HttpStatus.CONFLICT,
         "User $userId in team $teamId is already $already, cannot be $request",
-        mapOf(
-            "teamId" to teamId,
-            "userId" to userId,
-            "already" to already,
-            "request" to request,
-        ),
+        mapOf("teamId" to teamId, "userId" to userId, "already" to already, "request" to request),
     )

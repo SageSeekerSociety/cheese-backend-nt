@@ -152,5 +152,5 @@ data class TaskDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("topics")
-    val topics: kotlin.collections.List<TopicDTO>? = null
+    val topics: kotlin.collections.List<TopicDTO>? = null,
 ) {}

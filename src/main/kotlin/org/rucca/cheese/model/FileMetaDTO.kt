@@ -23,5 +23,5 @@ data class FileMetaDTO(
     val mime: kotlin.String? = null,
     @Schema(example = "null", description = "文件哈希")
     @get:JsonProperty("hash")
-    val hash: kotlin.String? = null
+    val hash: kotlin.String? = null,
 ) {}

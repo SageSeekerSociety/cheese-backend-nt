@@ -118,7 +118,7 @@ constructor(
                 "query",
                 "example",
                 123,
-                mapOf("str" to "abc", "id" to 456.toLong())
+                mapOf("str" to "abc", "id" to 456.toLong()),
             )
         }
     }

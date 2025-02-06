@@ -64,5 +64,5 @@ data class PostTaskRequestDTO(
     val rank: kotlin.Int? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("topics")
-    val topics: kotlin.collections.List<kotlin.Long>? = arrayListOf()
+    val topics: kotlin.collections.List<kotlin.Long>? = arrayListOf(),
 ) {}

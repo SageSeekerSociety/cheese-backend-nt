@@ -9,9 +9,7 @@ import org.rucca.cheese.common.persistent.IdType
 import org.springframework.stereotype.Service
 
 @Service
-class TopicCreatorService(
-    private val applicationConfig: ApplicationConfig,
-) {
+class TopicCreatorService(private val applicationConfig: ApplicationConfig) {
     fun createTopic(token: String, name: String): IdType {
         val client = ClientBuilder.newBuilder().build()
         val target = client.target(applicationConfig.legacyUrl).path("/topics")

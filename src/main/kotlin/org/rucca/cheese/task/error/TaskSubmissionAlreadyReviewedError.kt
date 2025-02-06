@@ -8,5 +8,5 @@ class TaskSubmissionAlreadyReviewedError(submissionId: IdType) :
     BaseError(
         HttpStatus.CONFLICT,
         "Submission with id $submissionId has already been reviewed",
-        mapOf("submissionId" to submissionId)
+        mapOf("submissionId" to submissionId),
     )

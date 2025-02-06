@@ -29,10 +29,7 @@ import org.springframework.web.bind.annotation.*
 interface TeamsApi {
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "Delete Team",
         operationId = "deleteTeam",
         description = """""",
@@ -42,15 +39,15 @@ interface TeamsApi {
                     responseCode = "200",
                     description = "No Content",
                     content =
-                        [Content(schema = Schema(implementation = DeleteTeam200ResponseDTO::class))]
+                        [Content(schema = Schema(implementation = DeleteTeam200ResponseDTO::class))],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.DELETE],
         value = ["/teams/{teamId}"],
-        produces = ["application/json"]
+        produces = ["application/json"],
     )
     fun deleteTeam(
         @Parameter(description = "Team ID", required = true)
@@ -61,10 +58,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "Kick Out Team Member",
         operationId = "deleteTeamMember",
         description = """""",
@@ -74,15 +68,15 @@ interface TeamsApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [Content(schema = Schema(implementation = GetTeam200ResponseDTO::class))]
+                        [Content(schema = Schema(implementation = GetTeam200ResponseDTO::class))],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.DELETE],
         value = ["/teams/{teamId}/members/{userId}"],
-        produces = ["application/json"]
+        produces = ["application/json"],
     )
     fun deleteTeamMember(
         @Parameter(description = "Team ID", required = true)
@@ -90,16 +84,13 @@ interface TeamsApi {
         teamId: kotlin.Long,
         @Parameter(description = "Member User ID", required = true)
         @PathVariable("userId")
-        userId: kotlin.Long
+        userId: kotlin.Long,
     ): ResponseEntity<GetTeam200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "Query My Teams",
         operationId = "getMyTeams",
         description = """""",
@@ -109,25 +100,22 @@ interface TeamsApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [Content(schema = Schema(implementation = GetMyTeams200ResponseDTO::class))]
+                        [Content(schema = Schema(implementation = GetMyTeams200ResponseDTO::class))],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.GET],
         value = ["/teams/my-teams"],
-        produces = ["application/json"]
+        produces = ["application/json"],
     )
     fun getMyTeams(): ResponseEntity<GetMyTeams200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "Query Team",
         operationId = "getTeam",
         description = """""",
@@ -137,15 +125,15 @@ interface TeamsApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [Content(schema = Schema(implementation = GetTeam200ResponseDTO::class))]
+                        [Content(schema = Schema(implementation = GetTeam200ResponseDTO::class))],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.GET],
         value = ["/teams/{teamId}"],
-        produces = ["application/json"]
+        produces = ["application/json"],
     )
     fun getTeam(
         @Parameter(description = "Team ID", required = true)
@@ -156,10 +144,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "Enumerate Team Members",
         operationId = "getTeamMembers",
         description = """""",
@@ -174,15 +159,15 @@ interface TeamsApi {
                                 schema =
                                     Schema(implementation = GetTeamMembers200ResponseDTO::class)
                             )
-                        ]
+                        ],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.GET],
         value = ["/teams/{teamId}/members"],
-        produces = ["application/json"]
+        produces = ["application/json"],
     )
     fun getTeamMembers(
         @Parameter(description = "Team ID", required = true)
@@ -193,10 +178,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "Get Teams",
         operationId = "getTeams",
         description = """""",
@@ -206,15 +188,15 @@ interface TeamsApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [Content(schema = Schema(implementation = GetTeams200ResponseDTO::class))]
+                        [Content(schema = Schema(implementation = GetTeams200ResponseDTO::class))],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.GET],
         value = ["/teams"],
-        produces = ["application/json"]
+        produces = ["application/json"],
     )
     fun getTeams(
         @Parameter(description = "ID or Search Term", schema = Schema(defaultValue = ""))
@@ -228,16 +210,13 @@ interface TeamsApi {
         @Parameter(description = "", schema = Schema(defaultValue = "20"))
         @Valid
         @RequestParam(value = "page_size", required = false, defaultValue = "20")
-        pageSize: kotlin.Int
+        pageSize: kotlin.Int,
     ): ResponseEntity<GetTeams200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "Update Team",
         operationId = "patchTeam",
         description = """""",
@@ -247,16 +226,16 @@ interface TeamsApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [Content(schema = Schema(implementation = GetTeam200ResponseDTO::class))]
+                        [Content(schema = Schema(implementation = GetTeam200ResponseDTO::class))],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.PATCH],
         value = ["/teams/{teamId}"],
         produces = ["application/json"],
-        consumes = ["application/json"]
+        consumes = ["application/json"],
     )
     fun patchTeam(
         @Parameter(description = "Team ID", required = true)
@@ -265,16 +244,13 @@ interface TeamsApi {
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
-        patchTeamRequestDTO: PatchTeamRequestDTO
+        patchTeamRequestDTO: PatchTeamRequestDTO,
     ): ResponseEntity<GetTeam200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "Update Team Membership Info",
         operationId = "patchTeamMember",
         description = """""",
@@ -284,16 +260,16 @@ interface TeamsApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [Content(schema = Schema(implementation = GetTeam200ResponseDTO::class))]
+                        [Content(schema = Schema(implementation = GetTeam200ResponseDTO::class))],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.PATCH],
         value = ["/teams/{teamId}/members/{userId}"],
         produces = ["application/json"],
-        consumes = ["application/json"]
+        consumes = ["application/json"],
     )
     fun patchTeamMember(
         @Parameter(description = "Team ID", required = true)
@@ -305,16 +281,13 @@ interface TeamsApi {
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
-        patchTeamMemberRequestDTO: PatchTeamMemberRequestDTO
+        patchTeamMemberRequestDTO: PatchTeamMemberRequestDTO,
     ): ResponseEntity<GetTeam200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "Create Team",
         operationId = "postTeam",
         description = """""",
@@ -324,16 +297,16 @@ interface TeamsApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [Content(schema = Schema(implementation = GetTeam200ResponseDTO::class))]
+                        [Content(schema = Schema(implementation = GetTeam200ResponseDTO::class))],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.POST],
         value = ["/teams"],
         produces = ["application/json"],
-        consumes = ["application/json"]
+        consumes = ["application/json"],
     )
     fun postTeam(
         @Parameter(description = "", required = true)
@@ -345,10 +318,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags =
-            [
-                "default",
-            ],
+        tags = ["default"],
         summary = "Add Team Member",
         operationId = "postTeamMember",
         description = """""",
@@ -358,16 +328,16 @@ interface TeamsApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [Content(schema = Schema(implementation = GetTeam200ResponseDTO::class))]
+                        [Content(schema = Schema(implementation = GetTeam200ResponseDTO::class))],
                 )
             ],
-        security = [SecurityRequirement(name = "bearerAuth")]
+        security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.POST],
         value = ["/teams/{teamId}/members"],
         produces = ["application/json"],
-        consumes = ["application/json"]
+        consumes = ["application/json"],
     )
     fun postTeamMember(
         @Parameter(description = "Team ID", required = true)
@@ -376,7 +346,7 @@ interface TeamsApi {
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
-        postTeamMemberRequestDTO: PostTeamMemberRequestDTO
+        postTeamMemberRequestDTO: PostTeamMemberRequestDTO,
     ): ResponseEntity<GetTeam200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }

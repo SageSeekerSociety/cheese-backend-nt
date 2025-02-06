@@ -37,5 +37,5 @@ data class PostSpaceRequestDTO(
     val enableRank: kotlin.Boolean? = false,
     @Schema(example = "null", description = "")
     @get:JsonProperty("classificationTopics")
-    val classificationTopics: kotlin.collections.List<kotlin.Long>? = arrayListOf()
+    val classificationTopics: kotlin.collections.List<kotlin.Long>? = arrayListOf(),
 ) {}

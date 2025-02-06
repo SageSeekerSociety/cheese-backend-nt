@@ -9,12 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(
-    indexes =
-        [
-            Index(columnList = "task_submission_id"),
-        ]
-)
+@Table(indexes = [Index(columnList = "task_submission_id")])
 class TaskSubmissionEntry(
     @JoinColumn(nullable = false)
     @ManyToOne(fetch = FetchType.LAZY)

@@ -33,5 +33,5 @@ data class ImageMetaDTO(
     val width: kotlin.Int? = null,
     @Schema(example = "null", description = "缩略图 URL")
     @get:JsonProperty("thumbnail")
-    val thumbnail: kotlin.String? = null
+    val thumbnail: kotlin.String? = null,
 ) {}

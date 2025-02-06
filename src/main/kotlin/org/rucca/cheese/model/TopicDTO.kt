@@ -13,5 +13,5 @@ data class TopicDTO(
     val id: kotlin.Long,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("name", required = true)
-    val name: kotlin.String
+    val name: kotlin.String,
 ) {}

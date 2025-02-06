@@ -10,13 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(
-    indexes =
-        [
-            Index(columnList = "space_id"),
-            Index(columnList = "topic_id"),
-        ]
-)
+@Table(indexes = [Index(columnList = "space_id"), Index(columnList = "topic_id")])
 class SpaceClassificationTopicsRelation(
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) var space: Space? = null,
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) var topic: Topic? = null,
@@ -28,6 +22,6 @@ interface SpaceClassificationTopicsRelationRepository :
 
     fun findBySpaceIdAndTopicId(
         spaceId: IdType,
-        topicId: IdType
+        topicId: IdType,
     ): Optional<SpaceClassificationTopicsRelation>
 }

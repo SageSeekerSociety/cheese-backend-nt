@@ -40,8 +40,7 @@ class AuthorizationService(
             _: IdType?,
             _: Map<String, Any>,
             resourceOwnerIdGetter: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceOwnerIdGetter == null) false else resourceOwnerIdGetter() == userId
         }
     }
@@ -112,7 +111,7 @@ class AuthorizationService(
                         resourceId,
                         authInfo,
                         ownerIdGetter,
-                        permission.customLogicData
+                        permission.customLogicData,
                     )
                 if (!result) continue
             }
@@ -138,7 +137,7 @@ class AuthorizationService(
                 objectMapper.readValue(
                     verifier.verify(tokenWithoutBearer).getClaim("payload")?.toString()
                         ?: throw InvalidTokenError(),
-                    TokenPayload::class.java
+                    TokenPayload::class.java,
                 )
         } catch (e: TokenExpiredException) {
             throw TokenExpiredError()
@@ -148,7 +147,7 @@ class AuthorizationService(
             throw RuntimeException(
                 "The token is valid, but the payload of the token is not a TokenPayload object." +
                     " This is ether a bug or a malicious attack.",
-                e
+                e,
             )
         }
 

@@ -13,5 +13,5 @@ data class PostTaskSubmissionRequestInnerDTO(
     val contentText: kotlin.String? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("contentAttachmentId")
-    val contentAttachmentId: kotlin.Long? = null
+    val contentAttachmentId: kotlin.Long? = null,
 ) {}

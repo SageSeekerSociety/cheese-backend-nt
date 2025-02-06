@@ -29,10 +29,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 @TestMethodOrder(OrderAnnotation::class)
 class TaskTest
 @Autowired
-constructor(
-    private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-) {
+constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCreatorService) {
     private val logger = LoggerFactory.getLogger(javaClass)
     lateinit var creator: UserCreatorService.CreateUserResponse
     lateinit var creatorToken: String
@@ -64,17 +61,14 @@ constructor(
     private val taskDefaultDeadline = 30L
     private val taskMembershipDeadline = LocalDateTime.now().plusMonths(1).toEpochMilli()
     private val taskSubmissionSchema =
-        listOf(
-            Pair("Text Entry", "TEXT"),
-            Pair("Attachment Entry", "FILE"),
-        )
+        listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE"))
 
     fun createSpace(
         creatorToken: String,
         spaceName: String,
         spaceIntro: String,
         spaceDescription: String,
-        spaceAvatarId: IdType
+        spaceAvatarId: IdType,
     ): IdType {
         val request =
             MockMvcRequestBuilders.post("/spaces")
@@ -101,11 +95,7 @@ constructor(
         return spaceId
     }
 
-    fun addSpaceAdmin(
-        creatorToken: String,
-        spaceId: IdType,
-        adminId: IdType,
-    ) {
+    fun addSpaceAdmin(creatorToken: String, spaceId: IdType, adminId: IdType) {
         val request =
             MockMvcRequestBuilders.post("/spaces/$spaceId/managers")
                 .header("Authorization", "Bearer $creatorToken")
@@ -126,7 +116,7 @@ constructor(
         teamName: String,
         teamIntro: String,
         teamDescription: String,
-        teamAvatarId: IdType
+        teamAvatarId: IdType,
     ): IdType {
         val request =
             MockMvcRequestBuilders.post("/teams")
@@ -167,11 +157,7 @@ constructor(
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
-    fun addTeamAdmin(
-        creatorToken: String,
-        teamId: IdType,
-        adminId: IdType,
-    ) {
+    fun addTeamAdmin(creatorToken: String, teamId: IdType, adminId: IdType) {
         val request =
             MockMvcRequestBuilders.post("/teams/$teamId/members")
                 .header("Authorization", "Bearer $creatorToken")
@@ -301,10 +287,7 @@ constructor(
         logger.info("Created task: $taskId")
     }
 
-    fun approveTask(
-        taskId: IdType,
-        token: String,
-    ) {
+    fun approveTask(taskId: IdType, token: String) {
         val request =
             MockMvcRequestBuilders.patch("/tasks/$taskId")
                 .header("Authorization", "Bearer $token")
@@ -468,9 +451,11 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participant.userId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                     {}
-                """)
+                """
+                )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
@@ -891,9 +876,11 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participant.userId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                     {}
-                """)
+                """
+                )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -970,9 +957,11 @@ constructor(
                 .header("Authorization", "Bearer $creatorToken")
                 .queryParam("member", participant2.userId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                     {}
-                """)
+                """
+                )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
     }
 
@@ -984,9 +973,11 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participant.userId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                     {}
-                """)
+                """
+                )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isConflict)
@@ -1022,9 +1013,11 @@ constructor(
                 .header("Authorization", "Bearer $teamCreatorToken")
                 .queryParam("member", teamId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                     {}
-                """)
+                """
+                )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -1124,9 +1117,11 @@ constructor(
                 .header("Authorization", "Bearer $participantToken4")
                 .queryParam("member", participant4.userId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                     {}
-                """)
+                """
+                )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -1400,9 +1395,11 @@ constructor(
                 .header("Authorization", "Bearer $participantToken")
                 .queryParam("member", participant.userId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                     {}
-                """)
+                """
+                )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -1414,9 +1411,11 @@ constructor(
                 .header("Authorization", "Bearer $participantToken2")
                 .queryParam("member", participant2.userId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                     {}
-                """)
+                """
+                )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 
@@ -1428,9 +1427,11 @@ constructor(
                 .header("Authorization", "Bearer $teamCreatorToken")
                 .queryParam("member", teamId.toString())
                 .contentType("application/json")
-                .content("""
+                .content(
+                    """
                     {}
-                """)
+                """
+                )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 

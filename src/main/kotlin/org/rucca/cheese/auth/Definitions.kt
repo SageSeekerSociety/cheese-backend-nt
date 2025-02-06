@@ -18,13 +18,6 @@ data class Permission(
     val customLogicData: Any? = null,
 )
 
-data class Authorization(
-    val userId: IdType,
-    val permissions: List<Permission>,
-)
+data class Authorization(val userId: IdType, val permissions: List<Permission>)
 
-data class TokenPayload(
-    val authorization: Authorization,
-    val signedAt: Long,
-    val validUntil: Long,
-)
+data class TokenPayload(val authorization: Authorization, val signedAt: Long, val validUntil: Long)

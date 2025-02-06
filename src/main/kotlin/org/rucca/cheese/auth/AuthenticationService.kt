@@ -7,9 +7,7 @@ import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 
 @Service
-class AuthenticationService(
-    private val authorizationService: AuthorizationService,
-) {
+class AuthenticationService(private val authorizationService: AuthorizationService) {
     fun getToken(): String {
         return (RequestContextHolder.currentRequestAttributes() as ServletRequestAttributes)
             .request

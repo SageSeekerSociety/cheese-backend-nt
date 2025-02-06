@@ -55,7 +55,7 @@ class SpaceService(
                         convertAdminRole(it.role!!),
                         userService.getUserDto(it.user!!.id!!.toLong()),
                         createdAt = it.createdAt!!.toEpochMilli(),
-                        updatedAt = it.updatedAt!!.toEpochMilli()
+                        updatedAt = it.updatedAt!!.toEpochMilli(),
                     )
                 },
             updatedAt = this.updatedAt!!.toEpochMilli(),
@@ -70,7 +70,7 @@ class SpaceService(
 
     fun getSpaceDto(
         spaceId: IdType,
-        queryOptions: SpaceQueryOptions = SpaceQueryOptions.MINIMUM
+        queryOptions: SpaceQueryOptions = SpaceQueryOptions.MINIMUM,
     ): SpaceDTO {
         return getSpace(spaceId).toSpaceDTO(queryOptions)
     }
@@ -129,12 +129,12 @@ class SpaceService(
             SpaceAdminRelation(
                 space = space,
                 role = SpaceAdminRole.OWNER,
-                user = User().apply { id = ownerId.toInt() }
+                user = User().apply { id = ownerId.toInt() },
             )
         )
         spaceClassificationTopicsService.updateClassificationTopics(
             space.id!!,
-            classificationTopics
+            classificationTopics,
         )
         return space.id!!
     }
@@ -219,7 +219,7 @@ class SpaceService(
             SpaceAdminRelation(
                 space = Space().apply { id = spaceId },
                 user = User().apply { id = userId.toInt() },
-                role = SpaceAdminRole.ADMIN
+                role = SpaceAdminRole.ADMIN,
             )
         spaceAdminRelationRepository.save(relation)
     }
@@ -229,7 +229,7 @@ class SpaceService(
             spaceAdminRelationRepository.existsBySpaceIdAndUserIdAndRole(
                 spaceId,
                 userId,
-                SpaceAdminRole.OWNER
+                SpaceAdminRole.OWNER,
             )
         ) {
             throw AlreadyBeSpaceAdminError(spaceId, userId)
@@ -295,7 +295,7 @@ class SpaceService(
                 pageStart,
                 pageSize,
                 { it.id!! },
-                { id -> throw NotFoundError("space", id) }
+                { id -> throw NotFoundError("space", id) },
             )
         return Pair(curr.map { it.toSpaceDTO(queryOptions) }, page)
     }

@@ -17,9 +17,7 @@ import org.springframework.stereotype.Component
 
 @Aspect
 @Component
-class AuthorizationAspect(
-    private val authorizationService: AuthorizationService,
-) {
+class AuthorizationAspect(private val authorizationService: AuthorizationService) {
     @Before(
         "@within(org.springframework.web.bind.annotation.RestController) || " +
             "@within(org.springframework.stereotype.Controller)"

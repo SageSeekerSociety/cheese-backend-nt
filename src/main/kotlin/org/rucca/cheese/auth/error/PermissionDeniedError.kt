@@ -19,5 +19,5 @@ class PermissionDeniedError(
             "resourceType" to resourceType,
             "resourceId" to resourceId,
             "authInfo" to authInfo,
-        )
+        ),
     )

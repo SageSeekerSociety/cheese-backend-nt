@@ -8,5 +8,5 @@ class NotSpaceAdminYetError(spaceId: IdType, userId: IdType) :
     BaseError(
         HttpStatus.NOT_FOUND,
         "User $userId is not a space admin of space $spaceId yet",
-        mapOf("spaceId" to spaceId, "userId" to userId)
+        mapOf("spaceId" to spaceId, "userId" to userId),
     )

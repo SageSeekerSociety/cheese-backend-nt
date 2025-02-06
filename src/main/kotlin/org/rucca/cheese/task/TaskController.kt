@@ -54,8 +54,7 @@ class TaskController(
             resourceId: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val memberId = authInfo["member"] as? IdType
             if (resourceId == null || memberId == null) {
                 false
@@ -70,8 +69,7 @@ class TaskController(
             resourceId: IdType?,
             _: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceId == null) {
                 false
             } else {
@@ -85,8 +83,7 @@ class TaskController(
             resourceId: IdType?,
             _: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceId == null) {
                 false
             } else {
@@ -100,8 +97,7 @@ class TaskController(
             _: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val memberId = authInfo["member"] as? IdType
             if (memberId == null) {
                 false
@@ -116,8 +112,7 @@ class TaskController(
             _: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val memberId = authInfo["member"] as? IdType
             if (memberId == null) {
                 false
@@ -132,8 +127,7 @@ class TaskController(
             _: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val req = authInfo["req"] as? PostTaskParticipantRequestDTO
             req?.deadline != null
         }
@@ -144,8 +138,7 @@ class TaskController(
             _: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val submissionId = authInfo["submission"] as? IdType
             if (submissionId == null) {
                 false
@@ -160,8 +153,7 @@ class TaskController(
             resourceId: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val approvedQuery = (authInfo["approved"] as? ApproveTypeDTO) == ApproveTypeDTO.APPROVED
             val approvedOfInstance =
                 if (resourceId != null) taskService.isTaskApproved(resourceId) else false
@@ -174,8 +166,7 @@ class TaskController(
             resourceId: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val memberId = authInfo["member"] as? IdType
             if (resourceId != null && memberId != null)
                 taskService.isParticipantApproved(resourceId, memberId)
@@ -188,8 +179,7 @@ class TaskController(
             resourceId: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val spaceId = authInfo["space"] as? IdType
             val spaceQueryAndAdmin =
                 if (spaceId != null) {
@@ -211,8 +201,7 @@ class TaskController(
             resourceId: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val teamId = authInfo["team"] as? IdType
             val teamQueryAndAdmin =
                 if (teamId != null) {
@@ -234,8 +223,7 @@ class TaskController(
             resourceId: IdType?,
             _: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceId != null) taskService.getTaskSpaceId(resourceId) != null else false
         }
         authorizationService.customAuthLogics.register("is-task-in-team") {
@@ -245,8 +233,7 @@ class TaskController(
             resourceId: IdType?,
             _: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceId != null) taskService.getTaskTeamId(resourceId) != null else false
         }
         authorizationService.customAuthLogics.register("task-has-any-participant") {
@@ -256,8 +243,7 @@ class TaskController(
             resourceId: IdType?,
             _: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceId == null) false else taskService.taskHasAnyParticipant(resourceId)
         }
         authorizationService.customAuthLogics.register("task-has-any-submission") {
@@ -267,8 +253,7 @@ class TaskController(
             resourceId: IdType?,
             _: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceId == null) false
             else taskSubmissionService.taskHasAnySubmission(resourceId)
         }
@@ -279,8 +264,7 @@ class TaskController(
             _: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val ownerId = authInfo["owner"] as? IdType
             if (ownerId == null) {
                 false
@@ -295,8 +279,7 @@ class TaskController(
             _: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val approved = authInfo["approved"] as? ApproveTypeDTO
             approved == ApproveTypeDTO.NONE
         }
@@ -311,7 +294,7 @@ class TaskController(
     @Guard("remove-participant", "task")
     override fun deleteTaskParticipant(
         @ResourceId taskId: Long,
-        @AuthInfo("member") member: Long
+        @AuthInfo("member") member: Long,
     ): ResponseEntity<PostTaskParticipant200ResponseDTO> {
         taskMembershipService.removeTaskParticipant(taskId, member)
         val participants = taskMembershipService.getTaskMembershipDTOs(taskId, null)
@@ -319,7 +302,7 @@ class TaskController(
             PostTaskParticipant200ResponseDTO(
                 200,
                 PostTaskParticipant200ResponseDataDTO(participants),
-                "OK"
+                "OK",
             )
         )
     }
@@ -370,7 +353,7 @@ class TaskController(
             GetTaskParticipants200ResponseDTO(
                 200,
                 GetTaskParticipants200ResponseDataDTO(participants),
-                "OK"
+                "OK",
             )
         )
     }
@@ -385,7 +368,7 @@ class TaskController(
         pageSize: Int,
         pageStart: Long?,
         sortBy: String,
-        sortOrder: String
+        sortOrder: String,
     ): ResponseEntity<GetTaskSubmissions200ResponseDTO> {
         val by =
             when (sortBy) {
@@ -415,7 +398,7 @@ class TaskController(
             GetTaskSubmissions200ResponseDTO(
                 200,
                 GetTaskSubmissions200ResponseDataDTO(dtos, page),
-                "OK"
+                "OK",
             )
         )
     }
@@ -495,14 +478,14 @@ class TaskController(
     @Guard("modify", "task")
     override fun patchTask(
         @ResourceId taskId: Long,
-        patchTaskRequestDTO: PatchTaskRequestDTO
+        patchTaskRequestDTO: PatchTaskRequestDTO,
     ): ResponseEntity<GetTask200ResponseDTO> {
         if (patchTaskRequestDTO.approved != null) {
             authorizationService.audit(
                 "modify-approved",
                 "task",
                 taskId,
-                mapOf("approved" to patchTaskRequestDTO.approved)
+                mapOf("approved" to patchTaskRequestDTO.approved),
             )
             taskService.updateApproved(taskId, patchTaskRequestDTO.approved.convert())
         }
@@ -547,9 +530,9 @@ class TaskController(
                     TaskSubmissionSchema(
                         it.index,
                         it.value.prompt,
-                        taskSubmissionService.convertTaskSubmissionEntryType(it.value.type)
+                        taskSubmissionService.convertTaskSubmissionEntryType(it.value.type),
                     )
-                }
+                },
             )
         }
         if (patchTaskRequestDTO.rank != null) {
@@ -568,27 +551,27 @@ class TaskController(
     override fun patchTaskMembership(
         @ResourceId taskId: Long,
         @AuthInfo("member") member: Long,
-        patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO
+        patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO,
     ): ResponseEntity<PatchTaskMembership200ResponseDTO> {
         if (patchTaskMembershipRequestDTO.approved != null) {
             taskMembershipService.updateTaskMembershipApproved(
                 taskId,
                 member,
-                patchTaskMembershipRequestDTO.approved.convert()
+                patchTaskMembershipRequestDTO.approved.convert(),
             )
         }
         if (patchTaskMembershipRequestDTO.deadline != null) {
             taskMembershipService.updateTaskMembershipDeadline(
                 taskId,
                 member,
-                patchTaskMembershipRequestDTO.deadline
+                patchTaskMembershipRequestDTO.deadline,
             )
         }
         if (patchTaskMembershipRequestDTO.realNameInfo != null) {
             taskMembershipService.updateTaskMembershipRealNameInfo(
                 taskId,
                 member,
-                patchTaskMembershipRequestDTO.realNameInfo
+                patchTaskMembershipRequestDTO.realNameInfo,
             )
         }
         val participants = taskMembershipService.getTaskMembershipDTOs(taskId, null)
@@ -596,7 +579,7 @@ class TaskController(
             PatchTaskMembership200ResponseDTO(
                 200,
                 PatchTaskMembership200ResponseDataDTO(participants),
-                "OK"
+                "OK",
             )
         )
     }
@@ -606,7 +589,7 @@ class TaskController(
         @ResourceId taskId: Long,
         @AuthInfo("member") member: Long,
         version: Int,
-        postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>
+        postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>,
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
         val contents = postTaskSubmissionRequestInnerDTO.toEntryList()
         val submissions =
@@ -615,13 +598,13 @@ class TaskController(
                 member,
                 authenticationService.getCurrentUserId(),
                 version,
-                contents
+                contents,
             )
         return ResponseEntity.ok(
             PostTaskSubmission200ResponseDTO(
                 200,
                 PostTaskSubmission200ResponseDataDTO(submissions),
-                "OK"
+                "OK",
             )
         )
     }
@@ -647,13 +630,13 @@ class TaskController(
                         TaskSubmissionSchema(
                             it.index,
                             it.value.prompt,
-                            taskSubmissionService.convertTaskSubmissionEntryType(it.value.type)
+                            taskSubmissionService.convertTaskSubmissionEntryType(it.value.type),
                         )
                     },
                 creatorId = authenticationService.getCurrentUserId(),
                 teamId = postTaskRequestDTO.team,
                 spaceId = postTaskRequestDTO.space,
-                rank = postTaskRequestDTO.rank
+                rank = postTaskRequestDTO.rank,
             )
         taskTopicsService.updateTaskTopics(taskId, postTaskRequestDTO.topics ?: emptyList())
         val taskDTO = taskService.getTaskDto(taskId, TaskQueryOptions.MAXIMUM)
@@ -666,7 +649,7 @@ class TaskController(
     override fun postTaskParticipant(
         @ResourceId taskId: Long,
         @AuthInfo("member") member: Long,
-        @AuthInfo("req") postTaskParticipantRequestDTO: PostTaskParticipantRequestDTO
+        @AuthInfo("req") postTaskParticipantRequestDTO: PostTaskParticipantRequestDTO,
     ): ResponseEntity<PostTaskParticipant200ResponseDTO> {
         val approved =
             if (postTaskParticipantRequestDTO.deadline != null) ApproveType.APPROVED
@@ -683,7 +666,7 @@ class TaskController(
             PostTaskParticipant200ResponseDTO(
                 200,
                 PostTaskParticipant200ResponseDataDTO(participants),
-                "OK"
+                "OK",
             )
         )
     }
@@ -692,7 +675,7 @@ class TaskController(
     override fun postTaskSubmission(
         @ResourceId taskId: Long,
         @AuthInfo("member") member: Long,
-        postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>
+        postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>,
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
         val contents = postTaskSubmissionRequestInnerDTO.toEntryList()
         val submissions =
@@ -700,13 +683,13 @@ class TaskController(
                 taskId,
                 member,
                 authenticationService.getCurrentUserId(),
-                contents
+                contents,
             )
         return ResponseEntity.ok(
             PostTaskSubmission200ResponseDTO(
                 200,
                 PostTaskSubmission200ResponseDataDTO(submissions),
-                "OK"
+                "OK",
             )
         )
     }
@@ -714,7 +697,7 @@ class TaskController(
     @Guard("create-submission-review", "task")
     override fun postTaskSubmissionReview(
         @AuthInfo("submission") submissionId: Long,
-        postTaskSubmissionReviewRequestDTO: PostTaskSubmissionReviewRequestDTO
+        postTaskSubmissionReviewRequestDTO: PostTaskSubmissionReviewRequestDTO,
     ): ResponseEntity<PostTaskSubmissionReview200ResponseDTO> {
         val hasUpgradedParticipantRank =
             taskSubmissionReviewService.createReview(
@@ -729,9 +712,9 @@ class TaskController(
                 200,
                 PostTaskSubmissionReview200ResponseDataDTO(
                     submissionDTO,
-                    hasUpgradedParticipantRank
+                    hasUpgradedParticipantRank,
                 ),
-                "OK"
+                "OK",
             )
         )
     }
@@ -739,26 +722,26 @@ class TaskController(
     @Guard("modify-submission-review", "task")
     override fun patchTaskSubmissionReview(
         @AuthInfo("submission") submissionId: Long,
-        patchTaskSubmissionReviewRequestDTO: PatchTaskSubmissionReviewRequestDTO
+        patchTaskSubmissionReviewRequestDTO: PatchTaskSubmissionReviewRequestDTO,
     ): ResponseEntity<PostTaskSubmissionReview200ResponseDTO> {
         var hasUpgradedParticipantRank = false
         if (patchTaskSubmissionReviewRequestDTO.accepted != null) {
             hasUpgradedParticipantRank =
                 taskSubmissionReviewService.updateReviewAccepted(
                     submissionId = submissionId,
-                    accepted = patchTaskSubmissionReviewRequestDTO.accepted
+                    accepted = patchTaskSubmissionReviewRequestDTO.accepted,
                 )
         }
         if (patchTaskSubmissionReviewRequestDTO.score != null) {
             taskSubmissionReviewService.updateReviewScore(
                 submissionId = submissionId,
-                score = patchTaskSubmissionReviewRequestDTO.score
+                score = patchTaskSubmissionReviewRequestDTO.score,
             )
         }
         if (patchTaskSubmissionReviewRequestDTO.comment != null) {
             taskSubmissionReviewService.updateReviewComment(
                 submissionId = submissionId,
-                comment = patchTaskSubmissionReviewRequestDTO.comment
+                comment = patchTaskSubmissionReviewRequestDTO.comment,
             )
         }
         val submissionDTO = taskSubmissionService.getSubmissionDTO(submissionId, queryReview = true)
@@ -767,16 +750,16 @@ class TaskController(
                 200,
                 PostTaskSubmissionReview200ResponseDataDTO(
                     submissionDTO,
-                    hasUpgradedParticipantRank
+                    hasUpgradedParticipantRank,
                 ),
-                "OK"
+                "OK",
             )
         )
     }
 
     @Guard("delete-submission-review", "task")
     override fun deleteTaskSubmissionReview(
-        @AuthInfo("submission") submissionId: Long,
+        @AuthInfo("submission") submissionId: Long
     ): ResponseEntity<Unit> {
         taskSubmissionReviewService.deleteReview(submissionId)
         return ResponseEntity.ok().build()

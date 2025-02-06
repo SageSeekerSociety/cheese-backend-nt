@@ -64,7 +64,7 @@ open class Attachment {
     @SequenceGenerator(
         name = "attachment_id_gen",
         sequenceName = "attachment_id_seq",
-        allocationSize = 1
+        allocationSize = 1,
     )
     @Column(name = "id", nullable = false)
     open var id: Int? = null

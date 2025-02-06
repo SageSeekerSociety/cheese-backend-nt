@@ -15,5 +15,5 @@ data class PostTeamMemberRequestDTO(
     val role: TeamMemberRoleTypeDTO,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("user_id", required = true)
-    val userId: kotlin.Long
+    val userId: kotlin.Long,
 ) {}

@@ -53,7 +53,7 @@ class UserCreatorService(
             email,
             nickname,
             avatarId,
-            intro
+            intro,
         )
     }
 

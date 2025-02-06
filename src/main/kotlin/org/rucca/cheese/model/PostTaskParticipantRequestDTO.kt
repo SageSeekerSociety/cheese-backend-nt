@@ -15,5 +15,5 @@ data class PostTaskParticipantRequestDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("realNameInfo")
-    val realNameInfo: TaskParticipantRealNameInfoDTO? = null
+    val realNameInfo: TaskParticipantRealNameInfoDTO? = null,
 ) {}

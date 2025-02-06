@@ -11,12 +11,7 @@ import org.springframework.data.jpa.repository.Query
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(
-    indexes =
-        [
-            Index(columnList = "name"),
-        ]
-)
+@Table(indexes = [Index(columnList = "name")])
 @EntityListeners(TeamElasticSearchSyncListener::class)
 class Team(
     @Column(nullable = false) var name: String? = null,
@@ -77,8 +72,5 @@ interface TeamRepository : JpaRepository<Team, IdType> {
         AND taskMembership.task.id = :taskId
         """
     )
-    fun getTeamsThatUserJoinedTaskAs(
-        taskId: IdType,
-        userId: IdType,
-    ): List<Team>
+    fun getTeamsThatUserJoinedTaskAs(taskId: IdType, userId: IdType): List<Team>
 }

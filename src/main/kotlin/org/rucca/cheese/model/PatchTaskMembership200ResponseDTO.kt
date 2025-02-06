@@ -19,5 +19,5 @@ data class PatchTaskMembership200ResponseDTO(
     val `data`: PatchTaskMembership200ResponseDataDTO,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("message", required = true)
-    val message: kotlin.String
+    val message: kotlin.String,
 ) {}

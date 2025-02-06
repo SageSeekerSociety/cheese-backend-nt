@@ -8,5 +8,5 @@ class TaskNotResubmittableError(taskId: IdType) :
     BaseError(
         HttpStatus.BAD_REQUEST,
         "Task $taskId is not resubmittable",
-        mapOf("taskId" to taskId)
+        mapOf("taskId" to taskId),
     )

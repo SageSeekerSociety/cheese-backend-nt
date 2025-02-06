@@ -43,7 +43,7 @@ open class Avatar {
 @Table(
     name = "user_profile",
     schema = "public",
-    indexes = [Index(name = "IDX_51cb79b5555effaf7d69ba1cff", columnList = "id", unique = true)]
+    indexes = [Index(name = "IDX_51cb79b5555effaf7d69ba1cff", columnList = "id", unique = true)],
 )
 @SQLRestriction("deleted_at IS NULL")
 open class UserProfile {
@@ -52,7 +52,7 @@ open class UserProfile {
     @SequenceGenerator(
         name = "user_profile_id_gen",
         sequenceName = "user_profile_id_seq",
-        allocationSize = 1
+        allocationSize = 1,
     )
     @Column(name = "id", nullable = false)
     open var id: Int? = null
