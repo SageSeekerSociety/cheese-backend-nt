@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TeamRoleConflictError class.
+ *               It is thrown when a user is already in a team with a different role.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.team.error
 
 import org.rucca.cheese.common.error.BaseError

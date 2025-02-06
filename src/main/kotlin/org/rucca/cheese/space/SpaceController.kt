@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the SpaceController class.
+ *               It provides endpoints of /spaces.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.space
 
 import javax.annotation.PostConstruct

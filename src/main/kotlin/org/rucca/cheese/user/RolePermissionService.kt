@@ -1,3 +1,13 @@
+/*
+ *  Description: This file implements the RolePermissionService class.
+ *               It provides the permissions for different roles.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *      nameisyui
+ *
+ */
+
 package org.rucca.cheese.user
 
 import org.rucca.cheese.auth.Authorization

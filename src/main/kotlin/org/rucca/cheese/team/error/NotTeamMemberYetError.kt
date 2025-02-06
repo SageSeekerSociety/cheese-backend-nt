@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the NotTeamMemberYetError class.
+ *               It is thrown when a user is not a team member of a team yet.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.team.error
 
 import org.rucca.cheese.common.error.BaseError

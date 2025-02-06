@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the AlreadyBeSpaceAdminError class.
+ *               It is thrown when a user is already an admin of a space.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.space.error
 
 import org.rucca.cheese.common.error.BaseError

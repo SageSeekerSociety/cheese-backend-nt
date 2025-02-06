@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the web configuration properties.
+ *               It is used to config the web settings, especially the CORS settings.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.common.config
 
 import org.springframework.context.annotation.Configuration

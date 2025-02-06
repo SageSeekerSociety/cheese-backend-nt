@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TaskSubmissionNotReviewedYetError class.
+ *               It is thrown when a submission has not been reviewed yet.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task.error
 
 import org.rucca.cheese.common.error.BaseError

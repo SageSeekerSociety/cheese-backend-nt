@@ -1,3 +1,13 @@
+/*
+ *  Description: This file implements the TaskElasticSearchSyncListener class.
+ *               It is responsible to operate the TaskElasticSearchRepository
+ *               when the Task entity is operated.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task
 
 import jakarta.persistence.PrePersist

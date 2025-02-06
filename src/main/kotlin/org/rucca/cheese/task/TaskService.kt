@@ -1,3 +1,14 @@
+/*
+ *  Description: This file implements the TaskService class.
+ *               It is responsible for CRUD of a task.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *      HuanCheng65
+ *      nameisyui
+ *
+ */
+
 package org.rucca.cheese.task
 
 import jakarta.persistence.EntityManager

@@ -1,3 +1,15 @@
+/*
+ *  Description: This file defines the Task entity and its repository.
+ *               It stores the information of a task.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *      HuanCheng65
+ *      nameisyui
+ *      CH3COOH-JYR
+ *
+ */
+
 package org.rucca.cheese.task
 
 import jakarta.persistence.*
