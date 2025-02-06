@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the SpaceService class.
+ *               It is responsible for CRUD of a space.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.space
 
 import jakarta.persistence.EntityManager

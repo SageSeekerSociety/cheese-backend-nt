@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the NotFoundError class.
+ *               It is a generic error thrown when a resource with a specific id is not found.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.common.error
 
 import org.rucca.cheese.common.persistent.IdType

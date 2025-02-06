@@ -1,3 +1,12 @@
+/*
+ *  Description: This is the main class of the application.
+ *               It is responsible for starting the Spring Boot application.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese
 
 import org.rucca.cheese.common.config.ApplicationConfig

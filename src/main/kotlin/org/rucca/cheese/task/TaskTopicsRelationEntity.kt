@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TaskTopicsRelation entity and its repository.
+ *               It stores the relation between a task and a topic.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task
 
 import jakarta.persistence.*

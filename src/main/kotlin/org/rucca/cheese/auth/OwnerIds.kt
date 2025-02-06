@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the OwnerIds class.
+ *               It is responsible for managing owner ID providers.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth
 
 import org.rucca.cheese.common.persistent.IdGetter

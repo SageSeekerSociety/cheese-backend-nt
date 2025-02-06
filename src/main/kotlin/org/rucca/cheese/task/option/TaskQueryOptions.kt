@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TaskQueryOptions data class.
+ *               It is used to specify options when querying tasks or things containing tasks.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task.option
 
 data class TaskQueryOptions(

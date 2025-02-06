@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TeamUserRelation entity and its repository.
+ *               It stores the relationship between a team and a user.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.team
 
 import jakarta.persistence.*

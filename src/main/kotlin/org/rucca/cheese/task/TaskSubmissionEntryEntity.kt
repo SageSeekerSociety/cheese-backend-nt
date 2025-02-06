@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TaskSubmissionEntry entity and its repository.
+ *               It stores the information of a single entry in a task submission.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task
 
 import jakarta.persistence.*
