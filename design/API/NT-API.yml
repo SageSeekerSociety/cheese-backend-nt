@@ -2196,6 +2196,468 @@ paths:
                       count:
                         type: integer
                         default: 5
+  /projects:
+    post:
+      summary: Create Project
+      tags: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - colorCode
+                - startDate
+                - endDate
+                - leaderId
+                - content
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                colorCode:
+                  type: string
+                  pattern: "^#[0-9A-Fa-f]{6}$"
+                startDate:
+                  type: integer
+                  format: int64
+                  description: 项目开始时间戳(毫秒)
+                endDate:
+                  type: integer
+                  format: int64
+                  description: 项目结束时间戳(毫秒)
+                parentId:
+                  type: integer
+                  format: int64
+                  description: 父项目ID
+                leaderId:
+                  type: integer
+                  format: int64
+                externalTaskId:
+                  type: integer
+                  format: int64
+                githubRepo:
+                  type: string
+                content:
+                  $ref: '#/components/schemas/ProjectContent'
+                externalCollaborators:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      userId:
+                        type: integer
+                        format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      project:
+                        $ref: '#/components/schemas/Project'
+    get:
+      summary: List Projects
+      tags: []
+      parameters:
+        - name: parent_id
+          in: query
+          description: 父项目ID (可选)
+          schema:
+            type: integer
+            format: int64
+        - name: leader_id
+          in: query
+          description: 负责人ID (可选)
+          schema:
+            type: integer
+            format: int64
+        - name: member_id
+          in: query
+          description: 成员ID (可选)
+          schema:
+            type: integer
+            format: int64
+        - name: status
+          in: query
+          description: 状态 (可选)
+          schema:
+            type: string
+        - name: page_start
+          in: query
+          description: 起始ID
+          schema:
+            type: integer
+            format: int64
+        - name: page_size
+          in: query
+          description: 每页数量 (默认20)
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      projects:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Project'
+                      page:
+                        $ref: '#/components/schemas/Page'
+  /projects/{projectId}/discussions:
+    post:
+      summary: Create Discussion
+      tags: []
+      parameters:
+        - name: projectId
+          in: path
+          description: 项目ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  $ref: '#/components/schemas/ProjectContent'
+                parentId:
+                  type: integer
+                  format: int64
+                  description: 回复某条讨论 (可选)
+                mentionedUserIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                  description: 提及的用户ID (可选)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      discussion:
+                        $ref: '#/components/schemas/Discussion'
+    get:
+      summary: List Discussions
+      tags: []
+      parameters:
+        - name: projectId
+          in: path
+          description: 项目ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: project_filter
+          in: query
+          description: 项目过滤器
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [projects, tree]
+              projectIds:
+                type: array
+                items:
+                  type: integer
+                  format: int64
+              rootProjectId:
+                type: integer
+                format: int64
+              includeRoot:
+                type: boolean
+        - name: before
+          in: query
+          description: 时间戳(毫秒)
+          schema:
+            type: integer
+            format: int64
+        - name: page_start
+          in: query
+          description: 起始ID
+          schema:
+            type: integer
+            format: int64
+        - name: page_size
+          in: query
+          description: 每页数量 (默认20)
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      discussions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Discussion'
+                      page:
+                        $ref: '#/components/schemas/Page'
+  /projects/{projectId}/discussions/{discussionId}/reactions:
+    post:
+      summary: React to Discussion
+      tags: []
+      parameters:
+        - name: projectId
+          in: path
+          description: 项目ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: discussionId
+          in: path
+          description: 讨论ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - emoji
+              properties:
+                emoji:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      reaction:
+                        type: object
+                        properties:
+                          emoji:
+                            type: string
+                          count:
+                            type: integer
+                          users:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/User'
+  /knowledge:
+    post:
+      summary: Create Knowledge Item
+      tags: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - type
+                - content
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                type:
+                  type: string
+                  enum: [document, link, text, image]
+                content:
+                  $ref: '#/components/schemas/ProjectContent'
+                projectIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                labels:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      knowledge:
+                        $ref: '#/components/schemas/Knowledge'
+    get:
+      summary: List Knowledge Items
+      tags: []
+      parameters:
+        - name: project_ids
+          in: query
+          description: 项目ID列表 (可选)
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+        - name: type
+          in: query
+          description: 类型 (可选)
+          schema:
+            type: string
+        - name: labels
+          in: query
+          description: 标签列表 (可选)
+          schema:
+            type: array
+            items:
+              type: string
+        - name: query
+          in: query
+          description: 搜索关键词 (可选)
+          schema:
+            type: string
+        - name: page_start
+          in: query
+          description: 起始ID
+          schema:
+            type: integer
+            format: int64
+        - name: page_size
+          in: query
+          description: 每页数量 (默认20)
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      knowledge:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Knowledge'
+                      page:
+                        $ref: '#/components/schemas/Page'
 components:
   schemas:
     Space:
@@ -2468,7 +2930,7 @@ components:
           x-stoplight:
             id: ijaf5jbzth1jv
         type:
-          $ref: "#/components/schemas/TaskSubmissionType"
+          $ref: '#/components/schemas/TaskSubmissionType'
     TaskSubmissionType:
       title: TaskSubmissionType
       x-stoplight:
@@ -2516,9 +2978,9 @@ components:
           type: integer
           format: int64
         member:
-          $ref: "#/components/schemas/TaskParticipantSummary"
+          $ref: '#/components/schemas/TaskParticipantSummary'
         submitter:
-          $ref: "#/components/schemas/User"
+          $ref: '#/components/schemas/User'
         version:
           type: integer
         createdAt:
@@ -2530,7 +2992,7 @@ components:
         content:
           type: array
           items:
-              $ref: "#/components/schemas/TaskSubmissionContentEntry"
+              $ref: '#/components/schemas/TaskSubmissionContentEntry'
         review:
           $ref: '#/components/schemas/TaskSubmissionReview'
     TaskSubmissionContentEntry:
@@ -2543,13 +3005,13 @@ components:
         title:
           type: string
         type:
-          $ref: "#/components/schemas/TaskSubmissionType"
+          $ref: '#/components/schemas/TaskSubmissionType'
         contentText:
           type: string
           x-stoplight:
             id: 3jylp7lpjh288
         contentAttachment:
-          $ref: "#/components/schemas/Attachment"
+          $ref: '#/components/schemas/Attachment'
     Team:
       title: Team
       type: object
@@ -2590,7 +3052,7 @@ components:
             id: u7o0iiyxuow4g
           format: int64
         owner:
-          $ref: "#/components/schemas/User"
+          $ref: '#/components/schemas/User'
         admins:
           type: object
           x-stoplight:
@@ -2609,7 +3071,7 @@ components:
               x-stoplight:
                 id: lk6mqsfxsq91p
               items:
-                $ref: "#/components/schemas/User"
+                $ref: '#/components/schemas/User'
         updatedAt:
           type: integer
           x-stoplight:
@@ -2637,7 +3099,7 @@ components:
               x-stoplight:
                 id: 9ijkfpj25gbr7
               items:
-                $ref: "#/components/schemas/User"
+                $ref: '#/components/schemas/User'
         joined:
           type: boolean
         role:
@@ -2681,7 +3143,7 @@ components:
           type: integer
           format: int64
         member:
-          $ref: "#/components/schemas/TaskParticipantSummary"
+          $ref: '#/components/schemas/TaskParticipantSummary'
         createdAt:
           type: integer
           format: int64
@@ -2752,9 +3214,9 @@ components:
     TeamMember:
       properties:
         role:
-          $ref: "#/components/schemas/TeamMemberRoleType"
+          $ref: '#/components/schemas/TeamMemberRoleType'
         user:
-          $ref: "#/components/schemas/User"
+          $ref: '#/components/schemas/User'
         updatedAt:
           type: integer
           x-stoplight:
@@ -2874,13 +3336,13 @@ components:
           description: 访问 URL
         meta:
           oneOf:
-            - $ref: "#/components/schemas/ImageMeta"
-            - $ref: "#/components/schemas/VideoMeta"
-            - $ref: "#/components/schemas/AudioMeta"
-            - $ref: "#/components/schemas/FileMeta"
+            - $ref: '#/components/schemas/ImageMeta'
+            - $ref: '#/components/schemas/VideoMeta'
+            - $ref: '#/components/schemas/AudioMeta'
+            - $ref: '#/components/schemas/FileMeta'
     ImageMeta:
       allOf:
-        - $ref: "#/components/schemas/FileMeta"
+        - $ref: '#/components/schemas/FileMeta'
         - type: object
           description: 图片元数据
           properties:
@@ -2895,7 +3357,7 @@ components:
               description: 缩略图 URL
     VideoMeta:
       allOf:
-        - $ref: "#/components/schemas/FileMeta"
+        - $ref: '#/components/schemas/FileMeta'
         - type: object
           description: 视频元数据
           properties:
@@ -2913,7 +3375,7 @@ components:
               description: 缩略图 URL
     AudioMeta:
       allOf:
-        - $ref: "#/components/schemas/FileMeta"
+        - $ref: '#/components/schemas/FileMeta'
         - type: object
           description: 音频元数据
           properties:
@@ -2991,6 +3453,161 @@ components:
           type: boolean
           default: false
         createdAt:
+          type: integer
+          format: int64
+    ProjectContent:
+      type: object
+      description: 项目富文本内容
+      properties:
+        raw:
+          type: string
+          description: 原始markdown内容
+        html:
+          type: string
+          description: 渲染后的HTML
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+    Project:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - startDate
+        - endDate
+        - leaderId
+        - content
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        colorCode:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+        startDate:
+          type: integer
+          format: int64
+          description: 项目开始时间戳(毫秒)
+        endDate:
+          type: integer
+          format: int64
+          description: 项目结束时间戳(毫秒)
+        parentId:
+          type: integer
+          format: int64
+          description: 父项目ID
+        leaderId:
+          type: integer
+          format: int64
+        externalTaskId:
+          type: integer
+          format: int64
+        githubRepo:
+          type: string
+        content:
+          $ref: '#/components/schemas/ProjectContent'
+        path:
+          type: array
+          items:
+            type: string
+          description: 项目路径
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+    Discussion:
+      type: object
+      required:
+        - id
+        - projectId
+        - content
+        - senderId
+      properties:
+        id:
+          type: integer
+          format: int64
+        projectId:
+          type: integer
+          format: int64
+        content:
+          $ref: '#/components/schemas/ProjectContent'
+        parentId:
+          type: integer
+          format: int64
+          description: 回复的讨论ID
+        sender:
+          $ref: '#/components/schemas/User'
+        mentionedUsers:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        reactions:
+          type: array
+          items:
+            type: object
+            properties:
+              emoji:
+                type: string
+              count:
+                type: integer
+              users:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        createdAt:
+          type: integer
+          format: int64
+    Knowledge:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - content
+        - createdById
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum:
+            - document
+            - link
+            - text
+            - image
+        content:
+          $ref: '#/components/schemas/ProjectContent'
+        materialId:
+          type: integer
+          format: int64
+        projectIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        labels:
+          type: array
+          items:
+            type: string
+        creator:
+          $ref: '#/components/schemas/User'
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
           type: integer
           format: int64
   securitySchemes:
