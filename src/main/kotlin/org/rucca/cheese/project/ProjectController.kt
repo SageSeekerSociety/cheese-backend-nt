@@ -12,7 +12,8 @@ class ProjectController : ProjectsApi {
     override fun projectsPost(
         projectsPostRequestDTO: ProjectsPostRequestDTO
     ): ResponseEntity<ProjectsPost200ResponseDTO> {
-        return super.projectsPost(projectsPostRequestDTO)
+        // TODO: Implement
+        TODO()
     }
 
     @Guard("query", "project")
@@ -24,7 +25,8 @@ class ProjectController : ProjectsApi {
         pageStart: Long?,
         pageSize: Int,
     ): ResponseEntity<ProjectsGet200ResponseDTO> {
-        return super.projectsGet(parentId, leaderId, memberId, status, pageStart, pageSize)
+        // TODO: Implement
+        TODO()
     }
 
     @Guard("create-discussion", "project")
@@ -32,10 +34,8 @@ class ProjectController : ProjectsApi {
         projectId: Long,
         projectsProjectIdDiscussionsPostRequestDTO: ProjectsProjectIdDiscussionsPostRequestDTO,
     ): ResponseEntity<ProjectsProjectIdDiscussionsPost200ResponseDTO> {
-        return super.projectsProjectIdDiscussionsPost(
-            projectId,
-            projectsProjectIdDiscussionsPostRequestDTO,
-        )
+        // TODO: Implement
+        TODO()
     }
 
     @Guard("query-discussion", "project")
@@ -46,13 +46,8 @@ class ProjectController : ProjectsApi {
         pageStart: Long?,
         pageSize: Int,
     ): ResponseEntity<ProjectsProjectIdDiscussionsGet200ResponseDTO> {
-        return super.projectsProjectIdDiscussionsGet(
-            projectId,
-            projectFilter,
-            before,
-            pageStart,
-            pageSize,
-        )
+        // TODO: Implement
+        TODO()
     }
 
     @Guard("create-reaction", "project")
@@ -62,10 +57,7 @@ class ProjectController : ProjectsApi {
         projectsProjectIdDiscussionsDiscussionIdReactionsPostRequestDTO:
             ProjectsProjectIdDiscussionsDiscussionIdReactionsPostRequestDTO,
     ): ResponseEntity<ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDTO> {
-        return super.projectsProjectIdDiscussionsDiscussionIdReactionsPost(
-            projectId,
-            discussionId,
-            projectsProjectIdDiscussionsDiscussionIdReactionsPostRequestDTO,
-        )
+        // TODO: Implement
+        TODO()
     }
 }

@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @Table(indexes = [Index(columnList = "project_discussion_id"), Index(columnList = "user_id")])
-class DiscussionReaction(
+class ProjectDiscussionReaction(
     @JoinColumn(nullable = false)
     @ManyToOne(fetch = FetchType.LAZY)
     var projectDiscussion: ProjectDiscussion? = null,
@@ -18,4 +18,4 @@ class DiscussionReaction(
     @Column(nullable = false) var emoji: String? = null,
 ) : BaseEntity()
 
-interface DiscussionReactionRepository : JpaRepository<DiscussionReaction, IdType> {}
+interface ProjectDiscussionReactionRepository : JpaRepository<ProjectDiscussionReaction, IdType> {}

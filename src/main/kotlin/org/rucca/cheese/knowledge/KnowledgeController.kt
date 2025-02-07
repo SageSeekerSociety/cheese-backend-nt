@@ -10,12 +10,13 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class KnowledgeController : KnowledgeApi {
+class KnowledgeController(private val knowledgeService: KnowledgeService) : KnowledgeApi {
     @Guard("create", "knowledge")
     override fun knowledgePost(
         knowledgePostRequestDTO: KnowledgePostRequestDTO
     ): ResponseEntity<KnowledgePost200ResponseDTO> {
-        return super.knowledgePost(knowledgePostRequestDTO)
+        // TODO: Implement
+        TODO()
     }
 
     @Guard("query", "knowledge")
@@ -27,6 +28,7 @@ class KnowledgeController : KnowledgeApi {
         pageStart: Long?,
         pageSize: Int,
     ): ResponseEntity<KnowledgeGet200ResponseDTO> {
-        return super.knowledgeGet(projectIds, type, labels, query, pageStart, pageSize)
+        // TODO: Implement
+        TODO()
     }
 }

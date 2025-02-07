@@ -38,11 +38,6 @@ START WITH
     1 INCREMENT BY 1;
 
 CREATE
-    SEQUENCE discussion_reaction_seq
-START WITH
-    1 INCREMENT BY 50;
-
-CREATE
     SEQUENCE knowledge_label_entity_seq
 START WITH
     1 INCREMENT BY 50;
@@ -64,6 +59,11 @@ START WITH
 
 CREATE
     SEQUENCE notification_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
+    SEQUENCE project_discussion_reaction_seq
 START WITH
     1 INCREMENT BY 50;
 
@@ -171,19 +171,6 @@ CREATE
     TABLE
         avatar(
             id INTEGER DEFAULT nextval('avatar_id_seq') NOT NULL,
-            PRIMARY KEY(id)
-        );
-
-CREATE
-    TABLE
-        discussion_reaction(
-            "user_id" INTEGER NOT NULL,
-            created_at TIMESTAMP(6) NOT NULL,
-            deleted_at TIMESTAMP(6),
-            id BIGINT NOT NULL,
-            project_discussion_id BIGINT NOT NULL,
-            updated_at TIMESTAMP(6) NOT NULL,
-            emoji VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
 
@@ -321,6 +308,19 @@ CREATE
             project_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
             content jsonb NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        project_discussion_reaction(
+            "user_id" INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            project_discussion_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            emoji VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
 
@@ -553,14 +553,6 @@ CREATE
         );
 
 CREATE
-    INDEX IDX8m2oj3rv2nhnewpebc0nd86gw ON
-    discussion_reaction(project_discussion_id);
-
-CREATE
-    INDEX IDX5nbqod2cht2v7tdkuwdrv6g3h ON
-    discussion_reaction(user_id);
-
-CREATE
     INDEX IDXaj3gr2rwnv7uamdf03p78372m ON
     knowledge(name);
 
@@ -599,6 +591,14 @@ CREATE
 CREATE
     INDEX IDXgbv14riv3876fsd5bir8fik52 ON
     project_discussion(parent_id);
+
+CREATE
+    INDEX IDXafswtrwv5hq0ml0gulagy7b3b ON
+    project_discussion_reaction(project_discussion_id);
+
+CREATE
+    INDEX IDX43kw6o6kjlj006asay8wxedn3 ON
+    project_discussion_reaction(user_id);
 
 CREATE
     INDEX IDXs4ljf8ihivq2aim4m44e6c3if ON
@@ -683,12 +683,6 @@ ALTER TABLE
     IF EXISTS public.user_profile ADD CONSTRAINT FKqcd5nmg7d7ement27tt9sf3bi FOREIGN KEY(user_id) REFERENCES public."user";
 
 ALTER TABLE
-    IF EXISTS discussion_reaction ADD CONSTRAINT FK85eicawnfwb46qmibchmg43gk FOREIGN KEY(project_discussion_id) REFERENCES project_discussion;
-
-ALTER TABLE
-    IF EXISTS discussion_reaction ADD CONSTRAINT FKkqj873iwqwqo4v6gkc1g5o0ji FOREIGN KEY("user_id") REFERENCES public."user";
-
-ALTER TABLE
     IF EXISTS knowledge ADD CONSTRAINT FKacal20h046lgv8bl4bkl2di1f FOREIGN KEY("created_by_id") REFERENCES public."user";
 
 ALTER TABLE
@@ -737,6 +731,12 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS project_discussion ADD CONSTRAINT FKacbplng6k4nd13jimdq7smr7d FOREIGN KEY("sender_id") REFERENCES public."user";
+
+ALTER TABLE
+    IF EXISTS project_discussion_reaction ADD CONSTRAINT FKgwp92ko43m29ulofqhm9l4ecx FOREIGN KEY(project_discussion_id) REFERENCES project_discussion;
+
+ALTER TABLE
+    IF EXISTS project_discussion_reaction ADD CONSTRAINT FKcmgufje6xw5v10l5xkl7c7tg9 FOREIGN KEY("user_id") REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS project_external_collaborator ADD CONSTRAINT FKg743uet6baba96l4nvt09si6b FOREIGN KEY(project_id) REFERENCES project;
