@@ -307,8 +307,15 @@ CREATE
             parent_id BIGINT,
             project_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            content jsonb NOT NULL,
+            content VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        project_discussion_mentioned_user_ids(
+            mentioned_user_ids BIGINT,
+            project_discussion_id BIGINT NOT NULL
         );
 
 CREATE
@@ -731,6 +738,9 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS project_discussion ADD CONSTRAINT FKacbplng6k4nd13jimdq7smr7d FOREIGN KEY("sender_id") REFERENCES public."user";
+
+ALTER TABLE
+    IF EXISTS project_discussion_mentioned_user_ids ADD CONSTRAINT FKr8ld761738u9nn7c6qhet6eo8 FOREIGN KEY(project_discussion_id) REFERENCES project_discussion;
 
 ALTER TABLE
     IF EXISTS project_discussion_reaction ADD CONSTRAINT FKgwp92ko43m29ulofqhm9l4ecx FOREIGN KEY(project_discussion_id) REFERENCES project_discussion;

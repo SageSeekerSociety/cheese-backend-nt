@@ -23,7 +23,8 @@ class ProjectDiscussion(
     @JoinColumn(nullable = true)
     @ManyToOne(fetch = FetchType.LAZY)
     var parent: ProjectDiscussion? = null,
-    @Column(columnDefinition = "jsonb", nullable = false) var content: String? = null,
+    @Column(nullable = false) var content: String? = null,
+    @ElementCollection var mentionedUserIds: Set<IdType> = HashSet(),
 ) : BaseEntity()
 
 interface ProjectDiscussionRepository : JpaRepository<ProjectDiscussion, IdType> {}

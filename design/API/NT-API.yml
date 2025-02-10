@@ -2243,7 +2243,7 @@ paths:
                 githubRepo:
                   type: string
                 content:
-                  $ref: '#/components/schemas/ProjectContent'
+                  type: string
                 externalCollaborators:
                   type: array
                   items:
@@ -2361,9 +2361,10 @@ paths:
               type: object
               required:
                 - content
+                - mentionedUserIds
               properties:
                 content:
-                  $ref: '#/components/schemas/ProjectContent'
+                  type: string
                 parentId:
                   type: integer
                   format: int64
@@ -2557,7 +2558,7 @@ paths:
                   type: string
                   enum: [document, link, text, image]
                 content:
-                  $ref: '#/components/schemas/ProjectContent'
+                  type: string
                 projectIds:
                   type: array
                   items:
@@ -3511,7 +3512,7 @@ components:
         githubRepo:
           type: string
         content:
-          $ref: '#/components/schemas/ProjectContent'
+          type: string
         path:
           type: array
           items:
@@ -3530,6 +3531,7 @@ components:
         - projectId
         - content
         - senderId
+        - mentionedUserIds
       properties:
         id:
           type: integer
@@ -3538,7 +3540,7 @@ components:
           type: integer
           format: int64
         content:
-          $ref: '#/components/schemas/ProjectContent'
+          type: string
         parentId:
           type: integer
           format: int64
@@ -3589,7 +3591,7 @@ components:
             - text
             - image
         content:
-          $ref: '#/components/schemas/ProjectContent'
+          type: string
         materialId:
           type: integer
           format: int64

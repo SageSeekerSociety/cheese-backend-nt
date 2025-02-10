@@ -2,7 +2,6 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
-import javax.validation.Valid
 import javax.validation.constraints.Pattern
 
 /**
@@ -40,10 +39,9 @@ data class ProjectDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("leaderId", required = true)
     val leaderId: kotlin.Long,
-    @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
-    val content: ProjectContentDTO,
+    val content: kotlin.String,
     @get:Pattern(regexp = "^#[0-9A-Fa-f]{6}$")
     @Schema(example = "null", description = "")
     @get:JsonProperty("colorCode")

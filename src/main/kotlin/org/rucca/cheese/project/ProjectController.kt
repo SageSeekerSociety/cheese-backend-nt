@@ -1,13 +1,17 @@
 package org.rucca.cheese.project
 
 import org.rucca.cheese.api.ProjectsApi
+import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class ProjectController : ProjectsApi {
+class ProjectController(
+    private val authenticationService: AuthenticationService,
+    private val projectDiscussionService: ProjectDiscussionService,
+) : ProjectsApi {
     @Guard("create", "project")
     override fun projectsPost(
         projectsPostRequestDTO: ProjectsPostRequestDTO
@@ -34,8 +38,23 @@ class ProjectController : ProjectsApi {
         projectId: Long,
         projectsProjectIdDiscussionsPostRequestDTO: ProjectsProjectIdDiscussionsPostRequestDTO,
     ): ResponseEntity<ProjectsProjectIdDiscussionsPost200ResponseDTO> {
-        // TODO: Implement
-        TODO()
+        val userId = authenticationService.getCurrentUserId()
+        val discussionId =
+            projectDiscussionService.createDiscussion(
+                projectId,
+                userId,
+                projectsProjectIdDiscussionsPostRequestDTO.content,
+                projectsProjectIdDiscussionsPostRequestDTO.parentId,
+                projectsProjectIdDiscussionsPostRequestDTO.mentionedUserIds.toSet(),
+            )
+        val discussionDTO = projectDiscussionService.getDiscussion(discussionId)
+        return ResponseEntity.ok(
+            ProjectsProjectIdDiscussionsPost200ResponseDTO(
+                code = 200,
+                message = "OK",
+                data = ProjectsProjectIdDiscussionsPost200ResponseDataDTO(discussionDTO),
+            )
+        )
     }
 
     @Guard("query-discussion", "project")
