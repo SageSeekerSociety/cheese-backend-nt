@@ -284,6 +284,7 @@ CREATE
             start_date TIMESTAMP(6) NOT NULL,
             team_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
+            content text NOT NULL,
             description text NOT NULL,
             github_repo VARCHAR(255),
             name VARCHAR(255) NOT NULL,
