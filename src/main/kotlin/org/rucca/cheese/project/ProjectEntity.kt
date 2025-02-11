@@ -23,6 +23,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 class Project(
     @Column(nullable = false) var name: String? = null,
     @Column(nullable = false, columnDefinition = "text") var description: String? = null,
+    @Column(nullable = false, columnDefinition = "text") var content: String? = null,
     @Column(nullable = false, length = 7) var colorCode: String? = null,
     @Column(nullable = false) var startDate: LocalDateTime? = null,
     @Column(nullable = false) var endDate: LocalDateTime? = null,

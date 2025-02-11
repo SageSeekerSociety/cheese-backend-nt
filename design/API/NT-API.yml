@@ -2243,7 +2243,7 @@ paths:
                 githubRepo:
                   type: string
                 content:
-                  $ref: '#/components/schemas/ProjectContent'
+                  type: string
                 externalCollaborators:
                   type: array
                   items:
@@ -2363,7 +2363,7 @@ paths:
                 - content
               properties:
                 content:
-                  $ref: '#/components/schemas/ProjectContent'
+                  type: string
                 parentId:
                   type: integer
                   format: int64
@@ -2557,7 +2557,7 @@ paths:
                   type: string
                   enum: [document, link, text, image]
                 content:
-                  $ref: '#/components/schemas/ProjectContent'
+                  type: string
                 projectIds:
                   type: array
                   items:
@@ -3455,20 +3455,20 @@ components:
         createdAt:
           type: integer
           format: int64
-    ProjectContent:
-      type: object
-      description: 项目富文本内容
-      properties:
-        raw:
-          type: string
-          description: 原始markdown内容
-        html:
-          type: string
-          description: 渲染后的HTML
-        attachments:
-          type: array
-          items:
-            $ref: '#/components/schemas/Attachment'
+#    ProjectContent:
+#      type: object
+#      description: 项目富文本内容
+#      properties:
+#        raw:
+#          type: string
+#          description: 原始markdown内容
+#        html:
+#          type: string
+#          description: 渲染后的HTML
+#        attachments:
+#          type: array
+#          items:
+#            $ref: '#/components/schemas/Attachment'
     Project:
       type: object
       required:
@@ -3511,12 +3511,12 @@ components:
         githubRepo:
           type: string
         content:
-          $ref: '#/components/schemas/ProjectContent'
-        path:
-          type: array
-          items:
-            type: string
-          description: 项目路径
+          type: string
+#        path:
+#          type: array
+#          items:
+#            type: string
+#          description: 项目路径
         createdAt:
           type: integer
           format: int64
@@ -3538,7 +3538,7 @@ components:
           type: integer
           format: int64
         content:
-          $ref: '#/components/schemas/ProjectContent'
+          type: string
         parentId:
           type: integer
           format: int64
@@ -3589,7 +3589,7 @@ components:
             - text
             - image
         content:
-          $ref: '#/components/schemas/ProjectContent'
+          type: string
         materialId:
           type: integer
           format: int64

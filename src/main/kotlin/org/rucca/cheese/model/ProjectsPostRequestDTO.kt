@@ -38,10 +38,9 @@ data class ProjectsPostRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("leaderId", required = true)
     val leaderId: kotlin.Long,
-    @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
-    val content: ProjectContentDTO,
+    val content: kotlin.String,
     @Schema(example = "null", description = "父项目ID")
     @get:JsonProperty("parentId")
     val parentId: kotlin.Long? = null,
