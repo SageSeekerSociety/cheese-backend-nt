@@ -18,4 +18,6 @@ class ProjectDiscussionReaction(
     @Column(nullable = false) var emoji: String? = null,
 ) : BaseEntity()
 
-interface ProjectDiscussionReactionRepository : JpaRepository<ProjectDiscussionReaction, IdType> {}
+interface ProjectDiscussionReactionRepository : JpaRepository<ProjectDiscussionReaction, IdType> {
+    fun findAllByProjectDiscussionId(discussionId: IdType): List<ProjectDiscussionReaction>
+}

@@ -65,8 +65,25 @@ class ProjectController(
         pageStart: Long?,
         pageSize: Int,
     ): ResponseEntity<ProjectsProjectIdDiscussionsGet200ResponseDTO> {
-        // TODO: Implement
-        TODO()
+        val (discussions, page) =
+            projectDiscussionService.getDiscussions(
+                projectId,
+                projectFilter,
+                before,
+                pageStart,
+                pageSize,
+            )
+        return ResponseEntity.ok(
+            ProjectsProjectIdDiscussionsGet200ResponseDTO(
+                code = 200,
+                message = "OK",
+                data =
+                    ProjectsProjectIdDiscussionsGet200ResponseDataDTO(
+                        discussions = discussions,
+                        page = page,
+                    ),
+            )
+        )
     }
 
     @Guard("create-reaction", "project")
