@@ -29,10 +29,9 @@ data class KnowledgeDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("type", required = true)
     val type: KnowledgeDTO.Type,
-    @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
-    val content: ProjectContentDTO,
+    val content: kotlin.String,
     @Schema(example = "null", description = "")
     @get:JsonProperty("description")
     val description: kotlin.String? = null,

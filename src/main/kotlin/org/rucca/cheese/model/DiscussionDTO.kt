@@ -21,10 +21,9 @@ data class DiscussionDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("projectId", required = true)
     val projectId: kotlin.Long,
-    @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
-    val content: ProjectContentDTO,
+    val content: kotlin.String,
     @Schema(example = "null", description = "回复的讨论ID")
     @get:JsonProperty("parentId")
     val parentId: kotlin.Long? = null,
