@@ -126,4 +126,47 @@ class ProjectDiscussionService(
 
         return Pair(discussionDTOs, page)
     }
+
+    fun createReaction(
+        projectId: IdType,
+        discussionId: IdType,
+        userId: IdType,
+        emoji: String,
+    ): ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO {
+        val discussion =
+            projectDiscussionRepository.findById(discussionId).orElseThrow {
+                NotFoundError("project discussion", discussionId)
+            }
+
+        if (discussion.project?.id != projectId) {
+            throw NotFoundError("project discussion", discussionId)
+        }
+
+        val reaction =
+            ProjectDiscussionReaction(
+                projectDiscussion = discussion,
+                user = User().apply { this.id = userId.toInt() },
+                emoji = emoji,
+            )
+        projectDiscussionReactionRepository.save(reaction)
+
+        val reactions =
+            projectDiscussionReactionRepository.findAllByProjectDiscussionId(discussionId)
+        val reactionsByEmoji = reactions.groupBy { it.emoji!! }
+        val reactionDTO =
+            reactionsByEmoji[emoji]?.let { reactionList ->
+                ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO(
+                    emoji = emoji,
+                    count = reactionList.size,
+                    users = reactionList.map { userService.getUserDto(it.user!!.id!!.toLong()) },
+                )
+            }
+                ?: ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO(
+                    emoji = emoji,
+                    count = 0,
+                    users = emptyList(),
+                )
+
+        return reactionDTO
+    }
 }

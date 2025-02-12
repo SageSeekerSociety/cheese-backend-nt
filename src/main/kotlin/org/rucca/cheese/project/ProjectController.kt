@@ -93,7 +93,23 @@ class ProjectController(
         projectsProjectIdDiscussionsDiscussionIdReactionsPostRequestDTO:
             ProjectsProjectIdDiscussionsDiscussionIdReactionsPostRequestDTO,
     ): ResponseEntity<ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDTO> {
-        // TODO: Implement
-        TODO()
+        val userId = authenticationService.getCurrentUserId()
+        val reactionDTO =
+            projectDiscussionService.createReaction(
+                projectId,
+                discussionId,
+                userId,
+                projectsProjectIdDiscussionsDiscussionIdReactionsPostRequestDTO.emoji,
+            )
+        return ResponseEntity.ok(
+            ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDTO(
+                code = 200,
+                message = "OK",
+                data =
+                    ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataDTO(
+                        reaction = reactionDTO
+                    ),
+            )
+        )
     }
 }
