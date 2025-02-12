@@ -1,13 +1,12 @@
 package org.rucca.cheese.project
 
 import org.rucca.cheese.common.error.NotFoundError
+import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 
 @Service
@@ -76,16 +75,19 @@ class ProjectDiscussionService(
                 null -> listOf(projectId)
             }
 
-        val pageable =
-            PageRequest.of(
-                if (pageStart != null) (pageStart / pageSize).toInt() else 0,
+        val discussions = projectDiscussionRepository.findAllByProjectIdIn(projectIds)
+
+        val (curr, page) =
+            PageHelper.pageFromAll(
+                discussions,
+                pageStart,
                 pageSize,
-                Sort.by(Sort.Direction.DESC, "createdAt"),
+                { it.id!! },
+                { id -> throw NotFoundError("space", id) },
             )
 
-        val discussions = projectDiscussionRepository.findAllByProjectIdIn(projectIds, pageable)
         val discussionDTOs =
-            discussions.content.map { discussion ->
+            curr.map { discussion ->
                 val reactions =
                     projectDiscussionReactionRepository.findAllByProjectDiscussionId(
                         discussion.id!!
@@ -112,18 +114,6 @@ class ProjectDiscussionService(
                     createdAt = discussion.createdAt!!.toEpochMilli(),
                 )
             }
-
-        val firstId = if (discussions.content.isNotEmpty()) discussions.content[0].id!! else 0L
-        val page =
-            PageDTO(
-                pageStart = firstId,
-                pageSize = pageSize,
-                hasPrev = discussions.hasPrevious(),
-                hasMore = discussions.hasNext(),
-                prevStart = null, // TODO: 如果需要，可以添加前一页的起始ID
-                nextStart = if (discussions.hasNext()) discussions.content.last().id!! else null,
-            )
-
         return Pair(discussionDTOs, page)
     }
 

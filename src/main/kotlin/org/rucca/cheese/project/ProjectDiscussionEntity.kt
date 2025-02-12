@@ -5,8 +5,6 @@ import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.user.User
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
@@ -30,5 +28,5 @@ class ProjectDiscussion(
 ) : BaseEntity()
 
 interface ProjectDiscussionRepository : JpaRepository<ProjectDiscussion, IdType> {
-    fun findAllByProjectIdIn(projectIds: List<IdType>, pageable: Pageable): Page<ProjectDiscussion>
+    fun findAllByProjectIdIn(projectIds: List<IdType>): List<ProjectDiscussion>
 }
