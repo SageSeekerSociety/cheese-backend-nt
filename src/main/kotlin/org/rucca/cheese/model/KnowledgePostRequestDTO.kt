@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
 import io.swagger.v3.oas.annotations.media.Schema
-import javax.validation.Valid
 
 /**
  * @param name
@@ -21,10 +20,9 @@ data class KnowledgePostRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("type", required = true)
     val type: KnowledgePostRequestDTO.Type,
-    @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
-    val content: ProjectContentDTO,
+    val content: kotlin.String,
     @Schema(example = "null", description = "")
     @get:JsonProperty("description")
     val description: kotlin.String? = null,

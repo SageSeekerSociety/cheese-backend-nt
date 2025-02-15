@@ -2,7 +2,6 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
-import javax.validation.Valid
 
 /**
  * @param content
@@ -10,10 +9,9 @@ import javax.validation.Valid
  * @param mentionedUserIds 提及的用户ID (可选)
  */
 data class ProjectsProjectIdDiscussionsPostRequestDTO(
-    @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
-    val content: ProjectContentDTO,
+    val content: kotlin.String,
     @Schema(example = "null", description = "回复某条讨论 (可选)")
     @get:JsonProperty("parentId")
     val parentId: kotlin.Long? = null,
