@@ -2067,6 +2067,34 @@ paths:
       summary: Update Team Membership Info
       x-stoplight:
         id: 5kzla05sox4wy
+  /notifications/{notificationId}:
+    delete:
+      parameters:
+        - description: Notification ID
+          in: path
+          name: notificationId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: OK
+      tags: [ ]
+      operationId: delete-notification
+      summary: Delete Notification
   /notifications:
     get:
       summary: List Notifications
@@ -2128,6 +2156,69 @@ paths:
                           $ref: "#/components/schemas/Notification"
                       page:
                         $ref: "#/components/schemas/Page"
+    post:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      notification:
+                        $ref: "#/components/schemas/Notification"
+                    required:
+                      - notification
+                    type: object
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+      tags: [ ]
+      operationId: post-notification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - receiverId
+                - content
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - mention
+                    - reply
+                    - reaction
+                    - project_invite
+                    - deadline_remind
+                receiverId:
+                  type: integer
+                  format: int64
+                content:
+                  type: object
+                  properties:
+                    text:
+                      type: string
+                    projectId:
+                      type: integer
+                      format: int64
+                    discussionId:
+                      type: integer
+                      format: int64
+                    knowledgeId:
+                      type: integer
+                      format: int64
+      summary: Create Notification
   /notifications/read:
     post:
       summary: Mark Notifications as Read

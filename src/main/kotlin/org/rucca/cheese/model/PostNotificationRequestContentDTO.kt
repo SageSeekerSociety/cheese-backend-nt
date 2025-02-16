@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema
  * @param discussionId
  * @param knowledgeId
  */
-data class NotificationContentDTO(
+data class PostNotificationRequestContentDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("text")
     val text: kotlin.String? = null,

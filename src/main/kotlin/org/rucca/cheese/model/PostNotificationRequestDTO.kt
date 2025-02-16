@@ -7,20 +7,14 @@ import io.swagger.v3.oas.annotations.media.Schema
 import javax.validation.Valid
 
 /**
- * @param id
  * @param type
  * @param receiverId
  * @param content
- * @param read
- * @param createdAt
  */
-data class NotificationDTO(
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("id", required = true)
-    val id: kotlin.Long,
+data class PostNotificationRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("type", required = true)
-    val type: NotificationDTO.Type,
+    val type: PostNotificationRequestDTO.Type,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("receiverId", required = true)
     val receiverId: kotlin.Long,
@@ -28,12 +22,6 @@ data class NotificationDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
     val content: PostNotificationRequestContentDTO,
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("read", required = true)
-    val read: kotlin.Boolean = false,
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("createdAt", required = true)
-    val createdAt: kotlin.Long,
 ) {
 
     /** Values: mention,reply,reaction,project_invite,deadline_remind */

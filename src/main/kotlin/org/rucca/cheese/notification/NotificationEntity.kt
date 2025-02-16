@@ -1,5 +1,7 @@
 package org.rucca.cheese.notification
 
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonValue
 import jakarta.persistence.Column
 import jakarta.persistence.Embeddable
 import jakarta.persistence.Entity
@@ -9,12 +11,38 @@ import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.springframework.data.jpa.repository.JpaRepository
 
-enum class NotificationType(type: String) {
-    MENTION("mention"),
-    REPLY("reply"),
-    REACTION("reaction"),
-    PROJECT_INVITE("project_invite"),
-    DEADLINE_REMIND("deadline_remind"),
+// enum class NotificationType(@JsonValue val type: String) {
+//    MENTION("mention"),
+//    REPLY("reply"),
+//    REACTION("reaction"),
+//    PROJECT_INVITE("project_invite"),
+//    DEADLINE_REMIND("deadline_remind");
+//
+//    companion object {
+//        @JsonCreator
+//        @JvmStatic
+//        fun fromString(value: String): NotificationType {
+//            return entries.find { it.type.equals(value, ignoreCase = true) }
+//                ?: throw IllegalArgumentException("Unknown notification type: $value")
+//        }
+//    }
+// }
+
+enum class NotificationType(@JsonValue val value: kotlin.String) {
+    mention("mention"),
+    reply("reply"),
+    reaction("reaction"),
+    project_invite("project_invite"),
+    deadline_remind("deadline_remind");
+
+    companion object {
+        @JvmStatic
+        @JsonCreator(mode = JsonCreator.Mode.DELEGATING) // 关键！
+        fun forValue(value: kotlin.String): NotificationType {
+            return values().find { it.value == value }
+                ?: throw IllegalArgumentException("Unknown notification type: $value")
+        }
+    }
 }
 
 @Entity
@@ -27,12 +55,19 @@ class Notification(
 ) : BaseEntity()
 
 @Embeddable
-class NotificationContent(
-    val text: String,
-    val projectId: Long,
-    val discussionId: Long,
-    val knowledgeId: Long,
-)
+class NotificationContent() {
+    var text: String = ""
+    var projectId: Long? = null
+    var discussionId: Long? = null
+    var knowledgeId: Long? = null
+
+    constructor(text: String, projectId: Long?, discussionId: Long?, knowledgeId: Long?) : this() {
+        this.text = text
+        this.projectId = projectId
+        this.discussionId = discussionId
+        this.knowledgeId = knowledgeId
+    }
+}
 
 interface NotificationRepository : JpaRepository<Notification, IdType> {
 
@@ -49,4 +84,10 @@ interface NotificationRepository : JpaRepository<Notification, IdType> {
     fun findAllByReceiverIdAndRead(receiverId: Long, read: Boolean): List<Notification>
 
     fun countByReceiverIdAndRead(receiverId: Long, read: Boolean): Long
+
+    fun findFirstByReceiverIdAndTypeAndReadOrderByIdAsc(
+        receiverId: Long,
+        type: NotificationType?,
+        read: Boolean?,
+    ): Notification?
 }

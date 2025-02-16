@@ -11,10 +11,13 @@ import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
 import javax.validation.constraints.NotNull
+import org.rucca.cheese.model.DeleteNotification200ResponseDTO
 import org.rucca.cheese.model.GetUnreadNotificationsCount200ResponseDTO
 import org.rucca.cheese.model.GetUnreadNotificationsCountRequestDTO
 import org.rucca.cheese.model.ListNotifications200ResponseDTO
 import org.rucca.cheese.model.MarkNotificationsAsReadRequestDTO
+import org.rucca.cheese.model.PostNotification200ResponseDTO
+import org.rucca.cheese.model.PostNotificationRequestDTO
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -23,6 +26,40 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @Validated
 interface NotificationsApi {
+
+    @Operation(
+        tags = ["default"],
+        summary = "Delete Notification",
+        operationId = "deleteNotification",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(implementation = DeleteNotification200ResponseDTO::class)
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.DELETE],
+        value = ["/notifications/{notificationId}"],
+        produces = ["application/json"],
+    )
+    fun deleteNotification(
+        @Parameter(description = "Notification ID", required = true)
+        @PathVariable("notificationId")
+        notificationId: kotlin.Long
+    ): ResponseEntity<DeleteNotification200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
 
     @Operation(
         tags = ["default"],
@@ -139,6 +176,42 @@ interface NotificationsApi {
         @RequestBody
         markNotificationsAsReadRequestDTO: MarkNotificationsAsReadRequestDTO
     ): ResponseEntity<kotlin.Any> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["default"],
+        summary = "Create Notification",
+        operationId = "postNotification",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(implementation = PostNotification200ResponseDTO::class)
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.POST],
+        value = ["/notifications"],
+        produces = ["application/json"],
+        consumes = ["application/json"],
+    )
+    fun postNotification(
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        postNotificationRequestDTO: PostNotificationRequestDTO
+    ): ResponseEntity<PostNotification200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 }

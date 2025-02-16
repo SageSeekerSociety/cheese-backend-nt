@@ -6,10 +6,10 @@ import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
 import org.rucca.cheese.auth.AuthorizedAction
 import org.rucca.cheese.auth.annotation.Guard
+import org.rucca.cheese.auth.annotation.ResourceId
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -23,35 +23,64 @@ class NotificationController(
     @PostConstruct
     fun initialize() {
         authorizationService.ownerIds.register(
-            "notifications",
+            "notification",
             notificationService::getNotificationOwner,
         )
-        authorizationService.customAuthLogics.register("is-notification-admin") {
+
+        authorizationService.customAuthLogics.register("is-notification-owner") {
             userId: IdType,
-            _: AuthorizedAction,
+            action: AuthorizedAction,
             _: String,
             resourceId: IdType?,
             _: Map<String, Any?>?,
             _: IdGetter?,
             _: Any? ->
-            notificationService.isNotificationAdmin(
-                resourceId ?: throw IllegalArgumentException("resourceId is null"),
-                userId,
-            )
+            when (action) {
+                "delete" -> {
+                    if (resourceId == null) {
+                        return@register false
+                    }
+                    return@register notificationService.isNotificationAdmin(resourceId, userId)
+                }
+                else -> {
+                    return@register true
+                }
+            }
         }
     }
 
-    //  unused function
-    fun createNotification(notification: Notification) {
-        notificationService.createNotification(notification)
+    @Guard("create", "notification")
+    override fun postNotification(
+        postNotificationRequestDTO: PostNotificationRequestDTO
+    ): ResponseEntity<PostNotification200ResponseDTO> {
+        val notificationId =
+            notificationService.createNotification(
+                NotificationType.valueOf(postNotificationRequestDTO.type.value),
+                postNotificationRequestDTO.receiverId,
+                postNotificationRequestDTO.content.text ?: " ",
+                postNotificationRequestDTO.content.projectId,
+                postNotificationRequestDTO.content.discussionId,
+                postNotificationRequestDTO.content.knowledgeId,
+            )
+        val notificationDTO = notificationService.getNotificationDTO(notificationId)
+        return ResponseEntity.ok(
+            PostNotification200ResponseDTO(
+                200,
+                PostNotification200ResponseDataDTO(notificationDTO),
+                "ok",
+            )
+        )
     }
 
-    //  unused function
-    fun deleteNotification(notificationId: Long) {
+    @Guard("delete", "notification")
+    override fun deleteNotification(
+        @ResourceId notificationId: kotlin.Long
+    ): ResponseEntity<DeleteNotification200ResponseDTO> {
         notificationService.deleteNotification(notificationId)
+        return ResponseEntity.ok(DeleteNotification200ResponseDTO(200, "ok"))
     }
 
-    @Guard("list-notifications", "notifications")
+    @Guard("list-notifications", "notification")
     override fun listNotifications(
         pageStart: kotlin.Long,
         pageSize: kotlin.Int,
@@ -77,15 +106,15 @@ class NotificationController(
         )
     }
 
-    @Guard("mark-as-read", "notifications")
+    @Guard("mark-as-read", "notification")
     override fun markNotificationsAsRead(
         markNotificationsAsReadRequestDTO: MarkNotificationsAsReadRequestDTO
     ): ResponseEntity<kotlin.Any> {
         notificationService.markAsRead(markNotificationsAsReadRequestDTO.notificationIds)
-        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+        return ResponseEntity.ok("Notifications marked as read")
     }
 
-    @Guard("get-unread-count", "notifications")
+    @Guard("get-unread-count", "notification")
     override fun getUnreadNotificationsCount(
         getUnreadNotificationsCountRequestDTO: GetUnreadNotificationsCountRequestDTO
     ): ResponseEntity<GetUnreadNotificationsCount200ResponseDTO> {

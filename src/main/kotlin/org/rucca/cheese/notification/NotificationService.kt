@@ -6,9 +6,9 @@ import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.model.NotificationContentDTO
 import org.rucca.cheese.model.NotificationDTO
 import org.rucca.cheese.model.PageDTO
+import org.rucca.cheese.model.PostNotificationRequestContentDTO
 import org.springframework.stereotype.Service
 
 @Service
@@ -17,15 +17,37 @@ open class NotificationService(
     private val authenticateService: AuthenticationService,
 ) {
 
+    fun getNotificationDTO(notificationId: IdType): NotificationDTO {
+        val notification = notificationRepository.findById(notificationId)
+        if (!notification.isPresent) {
+            throw NotFoundError("notification", notificationId)
+        }
+        return notification.get().toNotificationDTO(notification.get())
+    }
+
     fun listNotifications(
         type: NotificationType? = null,
         read: Boolean? = null,
-        pageStart: IdType,
+        pageStart: IdType?,
         pageSize: Int,
     ): Pair<List<NotificationDTO>, PageDTO> {
-        val notification = notificationRepository.findById(pageStart)
+        val actualPageStart =
+            when {
+                pageStart == null || pageStart == 0L -> {
+                    notificationRepository
+                        .findFirstByReceiverIdAndTypeAndReadOrderByIdAsc(
+                            authenticateService.getCurrentUserId(),
+                            type,
+                            read,
+                        )
+                        ?.id ?: return Pair(emptyList(), PageDTO(0, 0, false, false)) // 如果找不到，返回空
+                }
+                else -> pageStart
+            }
+
+        val notification = notificationRepository.findById(actualPageStart)
         if (!notification.isPresent) {
-            throw NotFoundError("notification", pageStart)
+            throw NotFoundError("notification", actualPageStart)
         }
         val notifications =
             notificationRepository.findAllByReceiverIdAndTypeAndRead(
@@ -36,7 +58,7 @@ open class NotificationService(
         val (curr, page) =
             PageHelper.pageFromAll(
                 notifications,
-                pageStart,
+                actualPageStart,
                 pageSize,
                 { it.id!! },
                 { id -> throw NotFoundError("notification", id) },
@@ -44,24 +66,52 @@ open class NotificationService(
         return Pair(curr.map { it.toNotificationDTO(it) }, page)
     }
 
-    //  unused function
-    fun createNotification(notification: Notification) {
-        notificationRepository.save(notification)
+    fun createNotification(
+        type: NotificationType,
+        receiverId: Long,
+        text: String,
+        projectId: Long? = null,
+        discussionId: Long? = null,
+        knowledgeId: Long? = null,
+    ): IdType {
+        val notification =
+            notificationRepository.save(
+                Notification(
+                    type = type,
+                    receiverId = receiverId,
+                    content =
+                        NotificationContent(
+                            text = text,
+                            projectId = projectId,
+                            discussionId = discussionId,
+                            knowledgeId = knowledgeId,
+                        ),
+                    read = false,
+                )
+            )
+        return notification.id!!
     }
 
-    //  unused function
     fun deleteNotification(notificationId: Long) {
-        notificationRepository.delete(notificationRepository.findById(notificationId).get())
+        val notification =
+            notificationRepository.findById(notificationId).orElseThrow {
+                NotFoundError("notification", notificationId)
+            }
+        notificationRepository.delete(notification)
     }
 
     fun markAsRead(notificationIds: List<Long>) {
         val notification = mutableListOf<Notification>()
         for (id in notificationIds) {
-            val entity: Optional<Notification> = notificationRepository.findById(id)
+            val entity: Optional<Notification> =
+                notificationRepository.findByIdAndReceiverId(
+                    id,
+                    authenticateService.getCurrentUserId(),
+                )
             if (entity.isPresent) {
                 notification.add(entity.get())
             } else {
-                throw NotFoundError("notification", id)
+                //                throw NotFoundError("notification", id)
             }
         }
         notification.forEach { it.read = true }
@@ -80,12 +130,14 @@ open class NotificationService(
         return notification.get().receiverId
     }
 
-    fun isNotificationAdmin(notificationId: IdType, userId: IdType): Boolean {
-        val notification = notificationRepository.findByIdAndReceiverId(notificationId, userId)
-        if (!notification.isPresent) {
-            throw NotFoundError("notification", notificationId)
-        }
-        return notification.get().receiverId == authenticateService.getCurrentUserId()
+    fun isNotificationAdmin(notificationId: IdType?, userId: IdType): Boolean {
+        require(notificationId != null) { "notificationId cannot be null for this operation" }
+        val notification =
+            notificationRepository.findByIdAndReceiverId(notificationId, userId).orElseThrow {
+                NotFoundError("notification", notificationId)
+            }
+
+        return notification.receiverId == authenticateService.getCurrentUserId()
     }
 
     fun Notification.toNotificationDTO(notification: Notification): NotificationDTO {
@@ -101,8 +153,8 @@ open class NotificationService(
 
     fun NotificationContent.toNotificationContentDTO(
         content: NotificationContent
-    ): NotificationContentDTO {
-        return NotificationContentDTO(
+    ): PostNotificationRequestContentDTO {
+        return PostNotificationRequestContentDTO(
             content.text,
             content.projectId,
             content.discussionId,
