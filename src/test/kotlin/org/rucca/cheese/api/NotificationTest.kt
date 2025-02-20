@@ -27,15 +27,14 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     private var notificationId: IdType = -1
 
     @BeforeAll
-    fun setup() {
-        // 创建用户
+    fun prepare() {
         user = userCreatorService.createUser()
         token = userCreatorService.login(user.username, user.password)
     }
 
     @Test
     @Order(1)
-    fun testCreateNotification() {
+    fun createNotification() {
         val request =
             MockMvcRequestBuilders.post("/notifications")
                 .header("Authorization", "Bearer $token")
@@ -47,7 +46,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                     "receiverId": ${user.userId},
                     "content": {
                         "text": "Hello, you were mentioned!",
-                        "projectId": null,
+                        "projectId": 2001,
                         "discussionId": null,
                         "knowledgeId": null
                     }
@@ -72,7 +71,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
 
     @Test
     @Order(2)
-    fun testListNotifications() {
+    fun listNotifications() {
         val request =
             MockMvcRequestBuilders.get("/notifications")
                 .header("Authorization", "Bearer $token")
@@ -89,7 +88,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
 
     @Test
     @Order(3)
-    fun testMarkNotificationsAsRead() {
+    fun markNotificationsAsRead() {
         val request =
             MockMvcRequestBuilders.post("/notifications/read")
                 .header("Authorization", "Bearer $token")
@@ -107,7 +106,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
 
     @Test
     @Order(4)
-    fun testGetUnreadNotificationsCount() {
+    fun getUnreadNotificationsCount() {
         val request =
             MockMvcRequestBuilders.get("/notifications/unread/count")
                 .header("Authorization", "Bearer $token")
@@ -130,7 +129,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
 
     @Test
     @Order(5)
-    fun testDeleteNotification() {
+    fun deleteNotification() {
         val request =
             MockMvcRequestBuilders.delete("/notifications/$notificationId")
                 .header("Authorization", "Bearer $token")
