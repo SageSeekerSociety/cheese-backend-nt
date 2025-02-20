@@ -6,14 +6,10 @@ import io.swagger.v3.oas.annotations.media.Schema
  * @param message
  */
 data class DeleteKnowledge200ResponseDTO(
-    @Schema(example = "", required = true, description = "状态码")
+    @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("code", required = true)
     val code: kotlin.Int,
-    @Schema(
-        example = "Knowledge item deleted successfully",
-        required = true,
-        description = "删除操作的消息",
-    )
+    @Schema(  example = "null",required = true, description = "",)
     @get:JsonProperty("message", required = true)
     val message: kotlin.String,
 ){}
