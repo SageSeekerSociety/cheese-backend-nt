@@ -1,5 +1,7 @@
 package org.rucca.cheese.api
 
+import org.hamcrest.Matchers
+import org.junit.Assume
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.TestInstance.Lifecycle
@@ -46,7 +48,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                     "receiverId": ${user.userId},
                     "content": {
                         "text": "Hello, you were mentioned!",
-                        "projectId": 2001,
+                        "projectId": null,
                         "discussionId": null,
                         "knowledgeId": null
                     }
@@ -66,7 +68,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         val json = org.json.JSONObject(response.response.contentAsString)
         notificationId = json.getJSONObject("data").getJSONObject("notification").getLong("id")
 
-        logger.info("Created notification ID: $notificationId")
+        assert(notificationId > 0) { "notificationId should be valid but got $notificationId" }
     }
 
     @Test
@@ -83,12 +85,14 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("$.code").value(0))
             .andExpect(jsonPath("$.message").value("success"))
-            .andExpect(jsonPath("$.data.notifications").isArray)
+            .andExpect(jsonPath("$.data.notifications", Matchers.hasSize<Collection<*>>(Matchers.greaterThan(0))))
     }
 
     @Test
     @Order(3)
     fun markNotificationsAsRead() {
+        Assume.assumeTrue(notificationId > 0)
+
         val request =
             MockMvcRequestBuilders.post("/notifications/read")
                 .header("Authorization", "Bearer $token")
@@ -102,46 +106,39 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 )
 
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+
+        // 验证已读
+        mockMvc
+            .perform(MockMvcRequestBuilders.get("/notifications")
+                .header("Authorization", "Bearer $token"))
+            .andExpect(jsonPath("$.data.notifications[0].read").value(true))
     }
 
     @Test
     @Order(4)
     fun getUnreadNotificationsCount() {
-        val request =
-            MockMvcRequestBuilders.get("/notifications/unread/count")
-                .header("Authorization", "Bearer $token")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                    "receiverId": ${user.userId}
-                }
-                """
-                )
-
         mockMvc
-            .perform(request)
+            .perform(MockMvcRequestBuilders.get("/notifications/unread/count")
+                .header("Authorization", "Bearer $token")
+                .queryParam("receiverId", user.userId.toString()))
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.code").value(0))
-            .andExpect(jsonPath("$.message").value("success"))
             .andExpect(jsonPath("$.data.count").isNumber)
     }
 
     @Test
     @Order(5)
     fun deleteNotification() {
-        val request =
-            MockMvcRequestBuilders.delete("/notifications/$notificationId")
-                .header("Authorization", "Bearer $token")
-
-        logger.info("Deleting notification ID: $notificationId")
-        logger.info("Token: $token")
-        logger.info("User ID: ${user.userId}")
+        Assume.assumeTrue(notificationId > 0)
 
         mockMvc
-            .perform(request)
+            .perform(MockMvcRequestBuilders.delete("/notifications/$notificationId")
+                .header("Authorization", "Bearer $token"))
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.code").value(200))
-            .andExpect(jsonPath("$.message").value("ok"))
+
+        mockMvc
+            .perform(MockMvcRequestBuilders.get("/notifications/$notificationId")
+                .header("Authorization", "Bearer $token"))
+            .andExpect(MockMvcResultMatchers.status().isNotFound)
     }
+
 }

@@ -47,4 +47,8 @@ class UserService(
     fun existsUser(userId: IdType): Boolean {
         return userRepository.existsById(userId.toInt())
     }
+
+    fun getUserById(userId: IdType): User? {
+        return userRepository.findById(userId.toInt()).orElse(null)
+    }
 }

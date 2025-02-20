@@ -1,20 +1,22 @@
 package org.rucca.cheese.notification
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import java.util.*
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
-import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.NotificationDTO
 import org.rucca.cheese.model.PageDTO
-import org.rucca.cheese.model.PostNotificationRequestContentDTO
+import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
 
 @Service
 open class NotificationService(
     private val notificationRepository: NotificationRepository,
+    private val userService: UserService,
     private val authenticateService: AuthenticationService,
+    private val objectMapper: ObjectMapper,
 ) {
 
     fun getNotificationDTO(notificationId: IdType): NotificationDTO {
@@ -51,7 +53,7 @@ open class NotificationService(
         }
         val notifications =
             notificationRepository.findAllByReceiverIdAndTypeAndRead(
-                notification.get().receiverId,
+                notification.get().receiver.id!!.toLong(),
                 type,
                 read,
             )
@@ -78,13 +80,15 @@ open class NotificationService(
             notificationRepository.save(
                 Notification(
                     type = type,
-                    receiverId = receiverId,
+                    receiver = userService.getUserById(receiverId)!!,
                     content =
-                        NotificationContent(
-                            text = text,
-                            projectId = projectId,
-                            discussionId = discussionId,
-                            knowledgeId = knowledgeId,
+                        objectMapper.writeValueAsString(
+                            NotificationContent(
+                                text = text,
+                                projectId = projectId,
+                                discussionId = discussionId,
+                                knowledgeId = knowledgeId,
+                            )
                         ),
                     read = false,
                 )
@@ -111,7 +115,7 @@ open class NotificationService(
             if (entity.isPresent) {
                 notification.add(entity.get())
             } else {
-                //                throw NotFoundError("notification", id)
+                throw NotFoundError("notification", id)
             }
         }
         notification.forEach { it.read = true }
@@ -127,7 +131,7 @@ open class NotificationService(
         if (!notification.isPresent) {
             throw NotFoundError("notification", notificationId)
         }
-        return notification.get().receiverId
+        return notification.get().receiver.id!!.toLong()
     }
 
     fun isNotificationAdmin(notificationId: IdType?, userId: IdType): Boolean {
@@ -137,7 +141,7 @@ open class NotificationService(
                 NotFoundError("notification", notificationId)
             }
 
-        return notification.receiverId == authenticateService.getCurrentUserId()
+        return notification.receiver.id!!.toLong() == authenticateService.getCurrentUserId()
     }
 
     fun Notification.toNotificationDTO(notification: Notification): NotificationDTO {
@@ -145,20 +149,9 @@ open class NotificationService(
             id = notification.id!!,
             type = NotificationDTO.Type.valueOf(notification.type.name),
             read = notification.read,
-            receiverId = notification.receiverId,
-            content = notification.content.toNotificationContentDTO(notification.content),
-            createdAt = notification.createdAt!!.toEpochMilli(),
-        )
-    }
-
-    fun NotificationContent.toNotificationContentDTO(
-        content: NotificationContent
-    ): PostNotificationRequestContentDTO {
-        return PostNotificationRequestContentDTO(
-            content.text,
-            content.projectId,
-            content.discussionId,
-            content.knowledgeId,
+            receiverId = notification.receiver.id!!.toLong(),
+            content = notification.content,
+            createdAt = notification.createdAt,
         )
     }
 }

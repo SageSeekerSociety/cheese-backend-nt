@@ -3526,20 +3526,10 @@ components:
         receiverId:
           type: integer
           format: int64
+          description: "The ID of the user who will receive the notification. This will be mapped to a User entity in the backend."
         content:
-          type: object
-          properties:
-            text:
-              type: string
-            projectId:
-              type: integer
-              format: int64
-            discussionId:
-              type: integer
-              format: int64
-            knowledgeId:
-              type: integer
-              format: int64
+          type: string
+          description: "JSON string representing notification content, including text, projectId, discussionId, and knowledgeId."
         read:
           type: boolean
           default: false

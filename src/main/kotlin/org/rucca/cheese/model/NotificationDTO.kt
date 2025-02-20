@@ -4,13 +4,14 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
 import io.swagger.v3.oas.annotations.media.Schema
-import javax.validation.Valid
 
 /**
  * @param id
  * @param type
- * @param receiverId
- * @param content
+ * @param receiverId The ID of the user who will receive the notification. This will be mapped to a
+ *   User entity in the backend.
+ * @param content JSON string representing notification content, including text, projectId,
+ *   discussionId, and knowledgeId.
  * @param read
  * @param createdAt
  */
@@ -21,13 +22,22 @@ data class NotificationDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("type", required = true)
     val type: NotificationDTO.Type,
-    @Schema(example = "null", required = true, description = "")
+    @Schema(
+        example = "null",
+        required = true,
+        description =
+            "The ID of the user who will receive the notification. This will be mapped to a User entity in the backend.",
+    )
     @get:JsonProperty("receiverId", required = true)
     val receiverId: kotlin.Long,
-    @field:Valid
-    @Schema(example = "null", required = true, description = "")
+    @Schema(
+        example = "null",
+        required = true,
+        description =
+            "JSON string representing notification content, including text, projectId, discussionId, and knowledgeId.",
+    )
     @get:JsonProperty("content", required = true)
-    val content: PostNotificationRequestContentDTO,
+    val content: kotlin.String,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("read", required = true)
     val read: kotlin.Boolean = false,
