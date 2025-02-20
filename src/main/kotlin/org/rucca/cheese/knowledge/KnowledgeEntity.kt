@@ -33,4 +33,6 @@ class Knowledge(
     var projectIds: Set<Long> = HashSet(),
 ) : BaseEntity()
 
-interface KnowledgeRepository : JpaRepository<Knowledge, IdType> {}
+interface KnowledgeRepository : JpaRepository<Knowledge, IdType> {}//???
+{
+}
