@@ -23,7 +23,6 @@ enum class NotificationType(@JsonValue val type: String) {
             return entries.find { it.type.equals(value, ignoreCase = true) }
                 ?: throw IllegalArgumentException("Unknown notification type: $value")
         }
-
     }
 }
 

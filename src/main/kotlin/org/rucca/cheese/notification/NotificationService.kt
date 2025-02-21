@@ -8,6 +8,7 @@ import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.NotificationDTO
 import org.rucca.cheese.model.PageDTO
+import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
 
@@ -80,7 +81,7 @@ open class NotificationService(
             notificationRepository.save(
                 Notification(
                     type = type,
-                    receiver = userService.getUserById(receiverId)!!,
+                    receiver = User().apply { id = receiverId.toInt() },
                     content =
                         objectMapper.writeValueAsString(
                             NotificationContent(
