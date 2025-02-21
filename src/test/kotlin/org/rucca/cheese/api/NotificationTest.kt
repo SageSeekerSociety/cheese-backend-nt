@@ -24,14 +24,19 @@ class NotificationTest
 @Autowired
 constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCreatorService) {
     private val logger = LoggerFactory.getLogger(javaClass)
+    private lateinit var receiver: UserCreatorService.CreateUserResponse
     private lateinit var user: UserCreatorService.CreateUserResponse
-    private lateinit var token: String
+    private lateinit var receiverToken: String
+    private lateinit var userToken: String
     private var notificationId: IdType = -1
 
     @BeforeAll
     fun prepare() {
+        receiver = userCreatorService.createUser()
+        receiverToken = userCreatorService.login(receiver.username, receiver.password)
         user = userCreatorService.createUser()
-        token = userCreatorService.login(user.username, user.password)
+        userToken = userCreatorService.login(user.username, user.password)
+
     }
 
     @Test
@@ -39,13 +44,13 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     fun createNotification() {
         val request =
             MockMvcRequestBuilders.post("/notifications")
-                .header("Authorization", "Bearer $token")
+                .header("Authorization", "Bearer $receiverToken")
                 .contentType("application/json")
                 .content(
                     """
                 {
                     "type": "mention",
-                    "receiverId": ${user.userId},
+                    "receiverId": ${receiver.userId},
                     "content": {
                         "text": "Hello, you were mentioned!",
                         "projectId": null,
@@ -76,7 +81,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     fun listNotifications() {
         val request =
             MockMvcRequestBuilders.get("/notifications")
-                .header("Authorization", "Bearer $token")
+                .header("Authorization", "Bearer $receiverToken")
                 .queryParam("page_start", "0")
                 .queryParam("page_size", "10")
 
@@ -95,7 +100,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
 
         val request =
             MockMvcRequestBuilders.post("/notifications/read")
-                .header("Authorization", "Bearer $token")
+                .header("Authorization", "Bearer $receiverToken")
                 .contentType("application/json")
                 .content(
                     """
@@ -110,7 +115,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         // 验证已读
         mockMvc
             .perform(MockMvcRequestBuilders.get("/notifications")
-                .header("Authorization", "Bearer $token"))
+                .header("Authorization", "Bearer $receiverToken"))
             .andExpect(jsonPath("$.data.notifications[0].read").value(true))
     }
 
@@ -119,8 +124,8 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     fun getUnreadNotificationsCount() {
         mockMvc
             .perform(MockMvcRequestBuilders.get("/notifications/unread/count")
-                .header("Authorization", "Bearer $token")
-                .queryParam("receiverId", user.userId.toString()))
+                .header("Authorization", "Bearer $receiverToken")
+                .queryParam("receiverId", receiver.userId.toString()))
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("$.data.count").isNumber)
     }
@@ -132,13 +137,48 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
 
         mockMvc
             .perform(MockMvcRequestBuilders.delete("/notifications/$notificationId")
-                .header("Authorization", "Bearer $token"))
+                .header("Authorization", "Bearer $receiverToken"))
             .andExpect(MockMvcResultMatchers.status().isOk)
 
         mockMvc
             .perform(MockMvcRequestBuilders.get("/notifications/$notificationId")
-                .header("Authorization", "Bearer $token"))
+                .header("Authorization", "Bearer $receiverToken"))
             .andExpect(MockMvcResultMatchers.status().isNotFound)
     }
+
+    @Test
+    @Order(6)
+    fun testListNotificationsWhenEmpty() {
+        val request =
+            MockMvcRequestBuilders.get("/notifications")
+                .header("Authorization", "Bearer $userToken")
+                .queryParam("page_start", "0")
+                .queryParam("page_size", "10")
+
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.message").value("success"))
+            .andExpect(jsonPath("$.data.notifications").isArray)
+            .andExpect(jsonPath("$.data.notifications", Matchers.hasSize<Collection<*>>(Matchers.greaterThan(0))))
+    }
+
+    @Test
+    @Order(7)
+    fun testNonReceiverCannotDeleteNotification() {
+        Assume.assumeTrue(notificationId > 0)
+
+        val request =
+            MockMvcRequestBuilders.delete("/notifications/$notificationId")
+                .header("Authorization", "Bearer $userToken")
+
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isForbidden)
+            .andExpect(jsonPath("$.code").value(403))
+            .andExpect(jsonPath("$.message").value(Matchers.containsString("not authorized")))
+    }
+
 
 }
