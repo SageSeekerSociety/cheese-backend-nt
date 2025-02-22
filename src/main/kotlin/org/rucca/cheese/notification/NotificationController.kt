@@ -55,9 +55,9 @@ class NotificationController(
     ): ResponseEntity<PostNotification200ResponseDTO> {
         val notificationId =
             notificationService.createNotification(
-                NotificationType.valueOf(postNotificationRequestDTO.type.value),
+                NotificationType.fromString(postNotificationRequestDTO.type.value),
                 postNotificationRequestDTO.receiverId,
-                postNotificationRequestDTO.content.text ?: " ",
+                postNotificationRequestDTO.content.text?.ifBlank { " " } ?: " ",
                 postNotificationRequestDTO.content.projectId,
                 postNotificationRequestDTO.content.discussionId,
                 postNotificationRequestDTO.content.knowledgeId,

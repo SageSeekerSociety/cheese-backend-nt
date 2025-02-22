@@ -5,6 +5,7 @@ import java.util.*
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
+import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.NotificationDTO
 import org.rucca.cheese.model.PageDTO
@@ -84,12 +85,7 @@ open class NotificationService(
                     receiver = User().apply { id = receiverId.toInt() },
                     content =
                         objectMapper.writeValueAsString(
-                            NotificationContent(
-                                text = text,
-                                projectId = projectId,
-                                discussionId = discussionId,
-                                knowledgeId = knowledgeId,
-                            )
+                            NotificationContent(text, projectId, discussionId, knowledgeId)
                         ),
                     read = false,
                 )
@@ -108,16 +104,15 @@ open class NotificationService(
     fun markAsRead(notificationIds: List<Long>) {
         val notification = mutableListOf<Notification>()
         for (id in notificationIds) {
-            val entity: Optional<Notification> =
+            val entity =
                 notificationRepository.findByIdAndReceiverId(
                     id,
                     authenticateService.getCurrentUserId(),
                 )
-            if (entity.isPresent) {
-                notification.add(entity.get())
-            } else {
-                throw NotFoundError("notification", id)
-            }
+            entity.ifPresentOrElse(
+                { notification.add(it) },
+                { throw NotFoundError("Notification not found", id) },
+            )
         }
         notification.forEach { it.read = true }
         notificationRepository.saveAll(notification)
@@ -152,7 +147,7 @@ open class NotificationService(
             read = notification.read,
             receiverId = notification.receiver.id!!.toLong(),
             content = notification.content,
-            createdAt = notification.createdAt,
+            createdAt = notification.createdAt!!.toEpochMilli(),
         )
     }
 }
