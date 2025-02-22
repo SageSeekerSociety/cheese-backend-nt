@@ -13,7 +13,6 @@ import javax.validation.Valid
 import javax.validation.constraints.NotNull
 import org.rucca.cheese.model.DeleteNotification200ResponseDTO
 import org.rucca.cheese.model.GetUnreadNotificationsCount200ResponseDTO
-import org.rucca.cheese.model.GetUnreadNotificationsCountRequestDTO
 import org.rucca.cheese.model.ListNotifications200ResponseDTO
 import org.rucca.cheese.model.MarkNotificationsAsReadRequestDTO
 import org.rucca.cheese.model.PostNotification200ResponseDTO
@@ -89,13 +88,13 @@ interface NotificationsApi {
         method = [RequestMethod.GET],
         value = ["/notifications/unread/count"],
         produces = ["application/json"],
-        consumes = ["application/json"],
     )
     fun getUnreadNotificationsCount(
+        @NotNull
         @Parameter(description = "", required = true)
         @Valid
-        @RequestBody
-        getUnreadNotificationsCountRequestDTO: GetUnreadNotificationsCountRequestDTO
+        @RequestParam(value = "receiverId", required = true)
+        receiverId: kotlin.Long
     ): ResponseEntity<GetUnreadNotificationsCount200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -137,11 +136,18 @@ interface NotificationsApi {
         @Valid
         @RequestParam(value = "page_size", required = true)
         pageSize: kotlin.Int,
-        @Parameter(description = "Notification Type")
+        @Parameter(
+            description = "Notification Type",
+            schema =
+                Schema(
+                    allowableValues =
+                        ["mention", "reply", "reaction", "project_invite", "deadline_remind"]
+                ),
+        )
         @Valid
         @RequestParam(value = "type", required = false)
-        type: kotlin.Any?,
-        @Parameter(description = "Whether to filter read notifications")
+        type: kotlin.String?,
+        @Parameter(description = "Whether to filter read or unread notifications")
         @Valid
         @RequestParam(value = "read", required = false)
         read: kotlin.Boolean?,

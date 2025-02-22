@@ -2101,7 +2101,13 @@ paths:
       tags: [ ]
       parameters:
         - schema:
-            type: object
+            type: string
+            enum:
+              - mention
+              - reply
+              - reaction
+              - project_invite
+              - deadline_remind
           in: query
           name: type
           description: Notification Type
@@ -2110,7 +2116,7 @@ paths:
             type: boolean
           in: query
           name: read
-          description: Whether to filter read notifications
+          description: Whether to filter read or unread notifications
           required: false
         - schema:
             type: integer
@@ -2250,18 +2256,13 @@ paths:
     get:
       summary: Get Unread Notifications Count
       tags: [ ]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - receiverId
-              properties:
-                receiverId:
-                  type: integer
-                  format: int64
+      parameters:
+        - name: receiverId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
       operationId: get-unread-notifications-count
       responses:
         "200":
@@ -2286,7 +2287,8 @@ paths:
                     properties:
                       count:
                         type: integer
-                        default: 5
+                        nullable: false
+                        default: 0
   /projects:
     post:
       summary: Create Project
@@ -3518,11 +3520,11 @@ components:
         type:
           type: string
           enum:
-            - mention
-            - reply
-            - reaction
-            - project_invite
-            - deadline_remind
+            - MENTION
+            - REPLY
+            - REACTION
+            - PROJECT_INVITE
+            - DEADLINE_REMIND
         receiverId:
           type: integer
           format: int64

@@ -35,30 +35,43 @@ open class NotificationService(
         pageStart: IdType?,
         pageSize: Int,
     ): Pair<List<NotificationDTO>, PageDTO> {
+        val currentUser = User().apply { id = authenticateService.getCurrentUserId().toInt() }
+
         val actualPageStart =
             when {
                 pageStart == null || pageStart == 0L -> {
-                    notificationRepository
-                        .findFirstByReceiverIdAndTypeAndReadOrderByIdAsc(
-                            authenticateService.getCurrentUserId(),
-                            type,
-                            read,
-                        )
-                        ?.id ?: return Pair(emptyList(), PageDTO(0, 0, false, false)) // 如果找不到，返回空
+                    val firstNotification =
+                        when {
+                            type == null && read == null ->
+                                notificationRepository.findFirstByReceiver(currentUser)
+                            type != null && read == null ->
+                                notificationRepository.findFirstByReceiverAndType(currentUser, type)
+                            type == null && read != null ->
+                                notificationRepository.findFirstByReceiverAndRead(currentUser, read)
+                            else ->
+                                notificationRepository.findFirstByReceiverAndTypeAndRead(
+                                    currentUser,
+                                    type,
+                                    read,
+                                )
+                        }
+                    firstNotification?.id
+                        ?: return Pair(emptyList(), PageDTO(0, pageSize, false, false))
                 }
                 else -> pageStart
             }
 
-        val notification = notificationRepository.findById(actualPageStart)
-        if (!notification.isPresent) {
-            throw NotFoundError("notification", actualPageStart)
-        }
+        val notification =
+            notificationRepository.findById(actualPageStart).orElseThrow {
+                NotFoundError("notification", actualPageStart)
+            }
+
         val notifications =
-            notificationRepository.findAllByReceiverIdAndTypeAndRead(
-                notification.get().receiver.id!!.toLong(),
-                type,
-                read,
-            )
+            notificationRepository
+                .findAllByReceiver(currentUser)
+                .filter { type == null || it.type == type }
+                .filter { read == null || it.read == read }
+
         val (curr, page) =
             PageHelper.pageFromAll(
                 notifications,
@@ -67,6 +80,7 @@ open class NotificationService(
                 { it.id!! },
                 { id -> throw NotFoundError("notification", id) },
             )
+
         return Pair(curr.map { it.toNotificationDTO(it) }, page)
     }
 
@@ -103,15 +117,15 @@ open class NotificationService(
 
     fun markAsRead(notificationIds: List<Long>) {
         val notification = mutableListOf<Notification>()
-        for (id in notificationIds) {
+        for (notificationId in notificationIds) {
             val entity =
-                notificationRepository.findByIdAndReceiverId(
-                    id,
-                    authenticateService.getCurrentUserId(),
+                notificationRepository.findByIdAndReceiver(
+                    notificationId,
+                    User().apply { id = authenticateService.getCurrentUserId().toInt() },
                 )
             entity.ifPresentOrElse(
                 { notification.add(it) },
-                { throw NotFoundError("Notification not found", id) },
+                { throw NotFoundError("Notification not found", notificationId) },
             )
         }
         notification.forEach { it.read = true }
@@ -119,7 +133,10 @@ open class NotificationService(
     }
 
     fun getUnreadCount(receiverId: Long): Int {
-        return notificationRepository.countByReceiverIdAndRead(receiverId, false).toInt()
+        return notificationRepository.countByReceiverAndRead(
+            User().apply { id = receiverId.toInt() },
+            false,
+        )
     }
 
     fun getNotificationOwner(notificationId: IdType): IdType {
@@ -133,9 +150,9 @@ open class NotificationService(
     fun isNotificationAdmin(notificationId: IdType?, userId: IdType): Boolean {
         require(notificationId != null) { "notificationId cannot be null for this operation" }
         val notification =
-            notificationRepository.findByIdAndReceiverId(notificationId, userId).orElseThrow {
-                NotFoundError("notification", notificationId)
-            }
+            notificationRepository
+                .findByIdAndReceiver(notificationId, User().apply { id = userId.toInt() })
+                .orElseThrow { NotFoundError("notification", notificationId) }
 
         return notification.receiver.id!!.toLong() == authenticateService.getCurrentUserId()
     }

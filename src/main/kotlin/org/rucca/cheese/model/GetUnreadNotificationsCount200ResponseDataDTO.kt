@@ -7,5 +7,5 @@ import io.swagger.v3.oas.annotations.media.Schema
 data class GetUnreadNotificationsCount200ResponseDataDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("count")
-    val count: kotlin.Int? = 5
+    val count: kotlin.Int? = 0
 ) {}

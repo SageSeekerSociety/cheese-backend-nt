@@ -46,14 +46,14 @@ data class NotificationDTO(
     val createdAt: kotlin.Long,
 ) {
 
-    /** Values: mention,reply,reaction,project_invite,deadline_remind */
+    /** Values: MENTION,REPLY,REACTION,PROJECT_INVITE,DEADLINE_REMIND */
     enum class Type(@get:JsonValue val value: kotlin.String) {
 
-        mention("mention"),
-        reply("reply"),
-        reaction("reaction"),
-        project_invite("project_invite"),
-        deadline_remind("deadline_remind");
+        MENTION("MENTION"),
+        REPLY("REPLY"),
+        REACTION("REACTION"),
+        PROJECT_INVITE("PROJECT_INVITE"),
+        DEADLINE_REMIND("DEADLINE_REMIND");
 
         companion object {
             @JvmStatic

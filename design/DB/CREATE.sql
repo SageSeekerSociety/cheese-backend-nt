@@ -11,7 +11,7 @@ CREATE
             deleted_at TIMESTAMP(6) WITH TIME ZONE,
             updated_at TIMESTAMP(6) WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             email text NOT NULL,
-            hashed_password text NOT NULL,
+            hashed_password text,
             username text NOT NULL,
             PRIMARY KEY(id),
             CONSTRAINT IDX_78a916df40e02a9deb1c4b75ed UNIQUE(username),
@@ -255,18 +255,21 @@ CREATE
     TABLE
         notification(
             READ BOOLEAN NOT NULL,
-            TYPE SMALLINT NOT NULL CHECK(
-                TYPE BETWEEN 0 AND 4
-            ),
+            receiver_id INTEGER NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
-            discussion_id BIGINT,
             id BIGINT NOT NULL,
-            knowledge_id BIGINT,
-            project_id BIGINT,
-            receiver_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            text VARCHAR(255),
+            content VARCHAR(255) NOT NULL,
+            TYPE VARCHAR(255) NOT NULL CHECK(
+                TYPE IN(
+                    'MENTION',
+                    'REPLY',
+                    'REACTION',
+                    'PROJECT_INVITE',
+                    'DEADLINE_REMIND'
+                )
+            ),
             PRIMARY KEY(id)
         );
 
@@ -711,6 +714,9 @@ ALTER TABLE
     IF EXISTS materialbundles_relation ADD CONSTRAINT FK62blmnwrqevg0whwwv5231b5g FOREIGN KEY(material_id) REFERENCES material ON
     DELETE
         RESTRICT;
+
+ALTER TABLE
+    IF EXISTS notification ADD CONSTRAINT FKs951ba5cqr6ibbu6w295b3ljg FOREIGN KEY(receiver_id) REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS project ADD CONSTRAINT FKo1hhpy5548w2mkqptfoejhn9l FOREIGN KEY("leader_id") REFERENCES public."user";

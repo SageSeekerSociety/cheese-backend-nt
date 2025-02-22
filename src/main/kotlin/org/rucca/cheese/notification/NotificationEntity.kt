@@ -53,29 +53,39 @@ class Notification(
 
 interface NotificationRepository : JpaRepository<Notification, IdType> {
 
-    fun findByIdAndReceiverId(id: IdType, receiverId: Long): Optional<Notification>
+    //    fun findByIdAndReceiverId(id: IdType, receiverId: Long): Optional<Notification>
 
-    fun countByReceiverIdAndRead(receiverId: Long, read: Boolean): Long
+    //    fun findAllByReceiverId(receiverId: Long): List<Notification>
 
-    fun findFirstByReceiverIdAndTypeAndReadOrderByIdAsc(
-        receiverId: Long,
+    //    fun countByReceiverIdAndRead(receiverId: Long, read: Boolean): Int
+
+    //    fun findFirstByReceiverIdAndTypeAndRead(
+    //        receiverId: Long,
+    //        type: NotificationType?,
+    //        read: Boolean?,
+    //    ): Notification?
+
+    fun findByIdAndReceiver(id: IdType, receiver: User): Optional<Notification>
+
+    fun findAllByReceiver(receiver: User): List<Notification>
+
+    fun countByReceiverAndRead(receiver: User, read: Boolean): Int
+
+    fun findFirstByReceiver(receiver: User): Notification?
+
+    fun findFirstByReceiverAndType(receiver: User, type: NotificationType): Notification?
+
+    fun findFirstByReceiverAndRead(receiver: User, read: Boolean): Notification?
+
+    fun findFirstByReceiverAndTypeAndRead(
+        receiver: User,
         type: NotificationType?,
         read: Boolean?,
     ): Notification?
-
-    fun findAllByReceiverIdAndTypeAndRead(
-        receiverId: Long,
-        type: NotificationType?,
-        read: Boolean?,
-    ): List<Notification>
-
-    fun findByIdAndReceiver(id: IdType, receiver: User): Optional<Notification>
 
     fun findAllByReceiverAndTypeAndRead(
         receiver: User,
         type: NotificationType? = null,
         read: Boolean? = null,
     ): List<Notification>
-
-    fun countByReceiverAndRead(receiver: User, read: Boolean): Long
 }

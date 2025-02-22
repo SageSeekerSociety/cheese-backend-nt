@@ -10,12 +10,14 @@ import org.rucca.cheese.auth.annotation.ResourceId
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.user.UserService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
 class NotificationController(
     private val notificationService: NotificationService,
+    private val userService: UserService,
     private val authorizationService: AuthorizationService,
     private val authenticationService: AuthenticationService,
 ) : NotificationsApi {
@@ -53,6 +55,9 @@ class NotificationController(
     override fun postNotification(
         postNotificationRequestDTO: PostNotificationRequestDTO
     ): ResponseEntity<PostNotification200ResponseDTO> {
+        if (!userService.existsUser(postNotificationRequestDTO.receiverId)) {
+            return ResponseEntity.badRequest().build()
+        }
         val notificationId =
             notificationService.createNotification(
                 NotificationType.fromString(postNotificationRequestDTO.type.value),
@@ -84,14 +89,14 @@ class NotificationController(
     override fun listNotifications(
         pageStart: kotlin.Long,
         pageSize: kotlin.Int,
-        type: kotlin.Any?,
+        type: kotlin.String?,
         read: kotlin.Boolean?,
     ): ResponseEntity<ListNotifications200ResponseDTO> {
         val notifications =
             notificationService.listNotifications(
                 when (type) {
                     null -> null
-                    else -> NotificationType.valueOf(type.toString())
+                    else -> NotificationType.fromString(type)
                 },
                 read,
                 pageStart,
@@ -116,16 +121,14 @@ class NotificationController(
 
     @Guard("get-unread-count", "notification")
     override fun getUnreadNotificationsCount(
-        getUnreadNotificationsCountRequestDTO: GetUnreadNotificationsCountRequestDTO
+        receiverId: kotlin.Long
     ): ResponseEntity<GetUnreadNotificationsCount200ResponseDTO> {
         return ResponseEntity.ok(
             GetUnreadNotificationsCount200ResponseDTO(
                 0,
                 "success",
                 GetUnreadNotificationsCount200ResponseDataDTO(
-                    notificationService.getUnreadCount(
-                        getUnreadNotificationsCountRequestDTO.receiverId
-                    )
+                    notificationService.getUnreadCount(receiverId)
                 ),
             )
         )
