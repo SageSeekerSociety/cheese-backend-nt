@@ -54,6 +54,7 @@ class TaskController(
     private val teamService: TeamService,
     private val taskTopicsService: TaskTopicsService,
     private val taskMembershipService: TaskMembershipService,
+    private val taskAIAdviceService: TaskAIAdviceService,
 ) : TasksApi {
     @PostConstruct
     fun initialize() {
@@ -774,5 +775,32 @@ class TaskController(
     ): ResponseEntity<Unit> {
         taskSubmissionReviewService.deleteReview(submissionId)
         return ResponseEntity.ok().build()
+    }
+
+    @Guard("query", "task")
+    override fun getTaskAiAdvice(
+        @ResourceId taskId: Long
+    ): ResponseEntity<GetTaskAiAdvice200ResponseDTO> {
+        return ResponseEntity.ok(
+            GetTaskAiAdvice200ResponseDTO(200, taskAIAdviceService.getTaskAIAdvice(taskId), "OK")
+        )
+    }
+
+    @Guard("query", "task")
+    override fun getTaskAiAdviceStatus(
+        @ResourceId taskId: kotlin.Long
+    ): ResponseEntity<RequestTaskAiAdvice200ResponseDTO> {
+        val userId = authenticationService.getCurrentUserId()
+        val data = taskAIAdviceService.getTaskAIAdviceStatus(taskId, userId)
+        return ResponseEntity.ok(RequestTaskAiAdvice200ResponseDTO(200, data, "OK"))
+    }
+
+    @Guard("query", "task")
+    override fun requestTaskAiAdvice(
+        @ResourceId taskId: kotlin.Long
+    ): ResponseEntity<RequestTaskAiAdvice200ResponseDTO> {
+        val userId = authenticationService.getCurrentUserId()
+        val data = taskAIAdviceService.requestTaskAIAdvice(taskId, userId)
+        return ResponseEntity.ok(RequestTaskAiAdvice200ResponseDTO(200, data, "OK"))
     }
 }

@@ -9,8 +9,12 @@
 
 package org.rucca.cheese.common.error
 
+import jakarta.servlet.http.HttpServletRequest
+import org.rucca.cheese.auth.annotation.NoAuth
+import org.rucca.cheese.auth.error.AuthenticationRequiredError
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageConversionException
 import org.springframework.web.bind.MissingServletRequestParameterException
@@ -27,6 +31,41 @@ class GlobalErrorHandler {
     @ResponseBody
     fun handleBaseError(e: BaseError): ResponseEntity<BaseError> {
         return ResponseEntity.status(e.status).body(e)
+    }
+
+    @ExceptionHandler(AuthenticationRequiredError::class)
+    @ResponseBody
+    @NoAuth
+    fun handleAuthenticationRequiredError(
+        e: AuthenticationRequiredError,
+        request: HttpServletRequest,
+    ): ResponseEntity<*> {
+        // 检查是否是 SSE 请求
+        val acceptHeader = request.getHeader("Accept")
+        if (acceptHeader?.contains("text/event-stream") == true) {
+            // 手动构造 SSE 格式的错误响应
+            val errorJson =
+                """
+                {
+                    "code": ${e.status.value()},
+                    "message": "${e.message}",
+                    "error": {
+                        "name": "${e::class.simpleName}",
+                        "message": "${e.message}"
+                    }
+                }
+            """
+                    .trimIndent()
+
+            val sseData = "data: $errorJson\n\n"
+
+            return ResponseEntity.status(e.status)
+                .contentType(MediaType.TEXT_EVENT_STREAM)
+                .body(sseData)
+        }
+
+        // 普通 JSON 响应
+        return ResponseEntity.status(e.status).contentType(MediaType.APPLICATION_JSON).body(e)
     }
 
     @ExceptionHandler(MissingServletRequestParameterException::class)

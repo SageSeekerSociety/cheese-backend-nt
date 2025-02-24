@@ -30,6 +30,11 @@ class RolePermissionService {
             userId = userId,
             permissions =
                 listOf(
+                    // AI permissions
+                    Permission(
+                        authorizedActions = listOf("query"),
+                        authorizedResource = AuthorizedResource(types = listOf("ai:quota")),
+                    ),
                     // Space permissions
                     Permission(
                         authorizedActions =
