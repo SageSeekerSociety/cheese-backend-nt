@@ -31,7 +31,7 @@ jobs:
         run: doc/script/dependency-start.sh
 
       - name: Build with Maven
-        run: mvn install
+        run: mvn -s ${{ github.workspace }}/.m2/settings.xml install
 
       - name: Check uncommitted changes to ensure format applied
         run: |
