@@ -35,31 +35,6 @@ class AIConversationEntity : BaseEntity() {
 
     @OneToMany(mappedBy = "conversation", cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
     var messages: MutableList<AIMessageEntity> = mutableListOf()
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-        name = "context_id",
-        referencedColumnName = "id",
-        insertable = false,
-        updatable = false,
-    )
-    var taskContext: TaskAIAdviceContext? = null
-
-    // 用于向前兼容的转换方法
-    fun toTaskAIAdviceDTO(taskId: IdType): AIConversationDTO {
-        return AIConversationDTO(
-            id = id ?: 0,
-            conversationId = conversationId,
-            title = title!!,
-            moduleType = moduleType,
-            contextId = contextId!!,
-            ownerId = ownerId,
-            modelType = modelType,
-            messageCount = messages.size,
-            createdAt = OffsetDateTime.of(createdAt, OffsetDateTime.now().offset),
-            updatedAt = OffsetDateTime.of(updatedAt ?: createdAt, OffsetDateTime.now().offset),
-        )
-    }
 }
 
 /** 表示对话中的单条消息 */

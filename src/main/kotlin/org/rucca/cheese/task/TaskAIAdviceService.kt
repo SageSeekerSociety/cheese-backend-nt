@@ -216,7 +216,7 @@ $sectionContent
             // 查找或创建整体任务的上下文
             return taskAIAdviceContextRepository
                 .findByTaskIdAndSectionAndSectionIndex(taskId, null, null)
-                .orElse(
+                .orElseGet {
                     TaskAIAdviceContext()
                         .apply {
                             this.taskId = taskId
@@ -224,12 +224,12 @@ $sectionContent
                             this.sectionIndex = sectionIndex
                         }
                         .let { taskAIAdviceContextRepository.save(it) }
-                )
+                }
         } else {
             // 查找或创建特定部分的上下文
             return taskAIAdviceContextRepository
                 .findByTaskIdAndSectionAndSectionIndex(taskId, section.toString(), sectionIndex)
-                .orElse(
+                .orElseGet {
                     TaskAIAdviceContext()
                         .apply {
                             this.taskId = taskId
@@ -237,7 +237,7 @@ $sectionContent
                             this.sectionIndex = sectionIndex
                         }
                         .let { taskAIAdviceContextRepository.save(it) }
-                )
+                }
         }
     }
 
@@ -831,12 +831,12 @@ $description
     fun getConversationGroupedSummary(taskId: IdType): List<ConversationGroupSummaryDTO> {
         try {
             // 获取任务相关的所有上下文
-            val contexts = taskAIAdviceContextRepository.findByTaskId(taskId)
+            val contexts = taskAIAdviceContextRepository.findAllByTaskId(taskId)
             if (contexts.isEmpty()) {
                 return emptyList()
             }
 
-            val contextIds = contexts.mapNotNull { it.id }
+            val contextIds = contexts.mapNotNull { it.id }.distinct()
 
             // 使用 aiConversationService 获取会话信息
             val conversationSummaries =
