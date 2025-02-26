@@ -169,9 +169,9 @@
             <version>9.7.1</version>
         </dependency>
         <dependency>
-            <groupId>com.aallam.openai</groupId>
+            <groupId>com.huanchengfly.openai-kt</groupId>
             <artifactId>openai-client-jvm</artifactId>
-            <version>4.0.1</version>
+            <version>4.0.3</version>
         </dependency>
         <dependency>
             <groupId>io.ktor</groupId>
@@ -191,7 +191,34 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-coroutines-reactor</artifactId>
+            <version>1.8.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-63</artifactId>
+            <version>3.9.2</version>
+        </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>github</id>
+            <name>GitHub HuanCheng65 Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/HuanCheng65/openai-kotlin</url>
+        </repository>
+    </repositories>
 
     <!-- Build Configuration -->
     <build>
@@ -246,7 +273,6 @@
                                 <apiPackage>org.rucca.cheese.api</apiPackage>
                                 <useBeanValidation>true</useBeanValidation>
                                 <exceptionHandler>false</exceptionHandler>
-                                <!--                                <reactive>true</reactive>-->
                             </configOptions>
                         </configuration>
                     </execution>

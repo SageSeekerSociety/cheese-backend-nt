@@ -35,6 +35,10 @@ class RolePermissionService {
                         authorizedActions = listOf("query"),
                         authorizedResource = AuthorizedResource(types = listOf("ai:quota")),
                     ),
+                    Permission(
+                        authorizedActions = listOf("query", "create"),
+                        authorizedResource = AuthorizedResource(types = listOf("task/ai-advice")),
+                    ),
                     // Space permissions
                     Permission(
                         authorizedActions =

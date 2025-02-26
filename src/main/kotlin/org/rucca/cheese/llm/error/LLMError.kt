@@ -46,4 +46,11 @@ sealed class LLMError(status: HttpStatus, message: String, data: Any? = null) :
             "AI advice generation is still in progress. Current status: $status",
             data,
         )
+
+    class ModelNotFoundError(modelType: String, data: Any? = null) :
+        LLMError(
+            HttpStatus.BAD_REQUEST,
+            "Specified model type '$modelType' does not exist. Please use a valid model type.",
+            data,
+        )
 }

@@ -20,6 +20,8 @@ class TaskAIAdvice {
     @Enumerated(EnumType.STRING)
     var status: TaskAIAdviceStatus = TaskAIAdviceStatus.PENDING
 
+    @Column(name = "topic_summary", columnDefinition = "TEXT") var topicSummary: String? = null
+
     @Column(name = "knowledge_fields", columnDefinition = "TEXT")
     var knowledgeFields: String? = null
 

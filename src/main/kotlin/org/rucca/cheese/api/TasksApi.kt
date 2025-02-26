@@ -13,10 +13,15 @@ import javax.validation.Valid
 import javax.validation.constraints.NotNull
 import kotlin.collections.List
 import org.rucca.cheese.model.ApproveTypeDTO
+import org.rucca.cheese.model.CreateTaskAIAdviceConversationRequestDTO
+import org.rucca.cheese.model.CreateTaskAiAdviceConversation200ResponseDTO
 import org.rucca.cheese.model.DeleteTask200ResponseDTO
 import org.rucca.cheese.model.GetTask200ResponseDTO
 import org.rucca.cheese.model.GetTaskAiAdvice200ResponseDTO
 import org.rucca.cheese.model.GetTaskAiAdvice400ResponseDTO
+import org.rucca.cheese.model.GetTaskAiAdviceConversation200ResponseDTO
+import org.rucca.cheese.model.GetTaskAiAdviceConversationsGrouped200ResponseDTO
+import org.rucca.cheese.model.GetTaskAiAdviceStatus200ResponseDTO
 import org.rucca.cheese.model.GetTaskParticipants200ResponseDTO
 import org.rucca.cheese.model.GetTaskSubmissions200ResponseDTO
 import org.rucca.cheese.model.GetTasks200ResponseDTO
@@ -40,6 +45,46 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @Validated
 interface TasksApi {
+
+    @Operation(
+        tags = ["default"],
+        summary = "Create AI Advice Conversation",
+        operationId = "createTaskAiAdviceConversation",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation =
+                                            CreateTaskAiAdviceConversation200ResponseDTO::class
+                                    )
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.POST],
+        value = ["/tasks/{taskId}/ai-advice/conversations"],
+        produces = ["application/json"],
+        consumes = ["application/json"],
+    )
+    fun createTaskAiAdviceConversation(
+        @Parameter(description = "", required = true) @PathVariable("taskId") taskId: kotlin.Long,
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        createTaskAIAdviceConversationRequestDTO: CreateTaskAIAdviceConversationRequestDTO,
+    ): ResponseEntity<CreateTaskAiAdviceConversation200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
 
     @Operation(
         tags = ["default"],
@@ -274,6 +319,79 @@ interface TasksApi {
     }
 
     @Operation(
+        tags = ["Task AI Advice"],
+        summary = "获取指定会话ID的所有对话",
+        operationId = "getTaskAiAdviceConversation",
+        description = """获取特定会话ID下的所有对话记录""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation =
+                                            GetTaskAiAdviceConversation200ResponseDTO::class
+                                    )
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/tasks/{taskId}/ai-advice/conversations/{conversationId}"],
+        produces = ["application/json"],
+    )
+    fun getTaskAiAdviceConversation(
+        @Parameter(description = "", required = true) @PathVariable("taskId") taskId: kotlin.Long,
+        @Parameter(description = "", required = true)
+        @PathVariable("conversationId")
+        conversationId: kotlin.String,
+    ): ResponseEntity<GetTaskAiAdviceConversation200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Task AI Advice"],
+        summary = "获取按会话ID分组的对话历史",
+        operationId = "getTaskAiAdviceConversationsGrouped",
+        description = """获取指定任务的所有对话，按会话ID分组""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation =
+                                            GetTaskAiAdviceConversationsGrouped200ResponseDTO::class
+                                    )
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/tasks/{taskId}/ai-advice/conversations/grouped"],
+        produces = ["application/json"],
+    )
+    fun getTaskAiAdviceConversationsGrouped(
+        @Parameter(description = "", required = true) @PathVariable("taskId") taskId: kotlin.Long
+    ): ResponseEntity<GetTaskAiAdviceConversationsGrouped200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
         tags = ["default"],
         summary = "Get AI Advice Generation Status",
         operationId = "getTaskAiAdviceStatus",
@@ -288,7 +406,7 @@ interface TasksApi {
                             Content(
                                 schema =
                                     Schema(
-                                        implementation = RequestTaskAiAdvice200ResponseDTO::class
+                                        implementation = GetTaskAiAdviceStatus200ResponseDTO::class
                                     )
                             )
                         ],
@@ -305,7 +423,7 @@ interface TasksApi {
         @Parameter(description = "Task ID", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long
-    ): ResponseEntity<RequestTaskAiAdvice200ResponseDTO> {
+    ): ResponseEntity<GetTaskAiAdviceStatus200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 

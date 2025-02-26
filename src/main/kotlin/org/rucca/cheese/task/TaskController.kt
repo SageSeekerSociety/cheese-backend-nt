@@ -12,6 +12,7 @@
 package org.rucca.cheese.task
 
 import javax.annotation.PostConstruct
+import kotlinx.coroutines.flow.Flow
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.TasksApi
 import org.rucca.cheese.auth.AuthenticationService
@@ -25,11 +26,14 @@ import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.convert
+import org.rucca.cheese.llm.error.ConversationNotFoundError
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.SpaceService
 import org.rucca.cheese.task.option.TaskEnumerateOptions
 import org.rucca.cheese.task.option.TaskQueryOptions
 import org.rucca.cheese.team.TeamService
+import org.rucca.cheese.user.UserService
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -55,6 +59,7 @@ class TaskController(
     private val taskTopicsService: TaskTopicsService,
     private val taskMembershipService: TaskMembershipService,
     private val taskAIAdviceService: TaskAIAdviceService,
+    private val userService: UserService,
 ) : TasksApi {
     @PostConstruct
     fun initialize() {
@@ -777,30 +782,171 @@ class TaskController(
         return ResponseEntity.ok().build()
     }
 
-    @Guard("query", "task")
+    @Guard("query", "task/ai-advice")
     override fun getTaskAiAdvice(
-        @ResourceId taskId: Long
+        @ResourceId taskId: IdType
     ): ResponseEntity<GetTaskAiAdvice200ResponseDTO> {
         return ResponseEntity.ok(
             GetTaskAiAdvice200ResponseDTO(200, taskAIAdviceService.getTaskAIAdvice(taskId), "OK")
         )
     }
 
-    @Guard("query", "task")
+    @Guard("query", "task/ai-advice")
     override fun getTaskAiAdviceStatus(
-        @ResourceId taskId: kotlin.Long
-    ): ResponseEntity<RequestTaskAiAdvice200ResponseDTO> {
+        @ResourceId taskId: IdType
+    ): ResponseEntity<GetTaskAiAdviceStatus200ResponseDTO> {
         val userId = authenticationService.getCurrentUserId()
         val data = taskAIAdviceService.getTaskAIAdviceStatus(taskId, userId)
-        return ResponseEntity.ok(RequestTaskAiAdvice200ResponseDTO(200, data, "OK"))
+        return ResponseEntity.ok(GetTaskAiAdviceStatus200ResponseDTO(200, data, "OK"))
     }
 
-    @Guard("query", "task")
+    @Guard("create", "task/ai-advice")
     override fun requestTaskAiAdvice(
-        @ResourceId taskId: kotlin.Long
+        @ResourceId taskId: IdType
     ): ResponseEntity<RequestTaskAiAdvice200ResponseDTO> {
         val userId = authenticationService.getCurrentUserId()
         val data = taskAIAdviceService.requestTaskAIAdvice(taskId, userId)
         return ResponseEntity.ok(RequestTaskAiAdvice200ResponseDTO(200, data, "OK"))
+    }
+
+    /**
+     * 流式获取科研建议对话（支持历史上下文）
+     *
+     * @param taskId 任务ID
+     * @param question 用户问题
+     * @param section 可选，关注的具体章节
+     * @param index 可选，章节中的索引
+     * @param conversationId 可选，继续特定对话的会话ID
+     * @param parentId 可选，继续特定消息的消息ID
+     * @param modelType 可选，使用的模型类型
+     * @return 流式返回AI回答和相关信息
+     */
+    @Guard("create", "task/ai-advice")
+    @GetMapping(
+        "/tasks/{taskId}/ai-advice/conversations/stream",
+        produces = [MediaType.TEXT_EVENT_STREAM_VALUE],
+    )
+    suspend fun streamTaskAiAdviceConversation(
+        @PathVariable @ResourceId taskId: IdType,
+        @RequestParam question: String,
+        @RequestParam(required = false) section: String? = null,
+        @RequestParam(required = false) index: Int? = null,
+        @RequestParam(required = false) conversationId: String? = null,
+        @RequestParam(required = false) parentId: IdType? = null,
+        @RequestParam(required = false) modelType: String? = null,
+    ): Flow<String> {
+        val userId = authenticationService.getCurrentUserId()
+        val userDTO = userService.getUserDto(userId)
+        val context =
+            if (section != null) {
+                TaskAIAdviceConversationContextDTO(
+                    TaskAIAdviceConversationContextDTO.Section.valueOf(section),
+                    index,
+                )
+            } else {
+                null
+            }
+
+        return taskAIAdviceService.streamConversation(
+            taskId = taskId,
+            userId = userId,
+            question = question,
+            context = context,
+            conversationId = conversationId,
+            parentId = parentId,
+            modelType = modelType,
+            userNickname = userDTO.nickname,
+        )
+    }
+
+    /**
+     * 创建科研建议对话（支持历史上下文）
+     *
+     * @param taskId 任务ID
+     * @param createTaskAIAdviceConversationRequestDTO 包含问题、上下文、会话ID和模型类型的请求对象
+     * @return 对话DTO和配额信息
+     */
+    @Guard("create", "task/ai-advice")
+    override fun createTaskAiAdviceConversation(
+        @ResourceId taskId: IdType,
+        @RequestBody
+        createTaskAIAdviceConversationRequestDTO: CreateTaskAIAdviceConversationRequestDTO,
+    ): ResponseEntity<CreateTaskAiAdviceConversation200ResponseDTO> {
+        val userId = authenticationService.getCurrentUserId()
+        val userDTO = userService.getUserDto(userId)
+        val context =
+            createTaskAIAdviceConversationRequestDTO.context?.let {
+                TaskAIAdviceConversationContextDTO(
+                    TaskAIAdviceConversationContextDTO.Section.valueOf(it.section.toString()),
+                    it.index,
+                )
+            }
+
+        // 检查是继续对话还是新对话
+        val (conversation, quota) =
+            if (createTaskAIAdviceConversationRequestDTO.conversationId != null) {
+                // 继续已有对话
+                taskAIAdviceService.continueConversation(
+                    taskId = taskId,
+                    userId = userId,
+                    question = createTaskAIAdviceConversationRequestDTO.question,
+                    context = context,
+                    conversationId = createTaskAIAdviceConversationRequestDTO.conversationId,
+                    parentId = createTaskAIAdviceConversationRequestDTO.parentId,
+                    modelType = createTaskAIAdviceConversationRequestDTO.modelType,
+                    userNickname = userDTO.nickname,
+                )
+            } else {
+                // 创建新对话
+                taskAIAdviceService.startNewConversation(
+                    taskId = taskId,
+                    userId = userId,
+                    question = createTaskAIAdviceConversationRequestDTO.question,
+                    context = context,
+                    modelType = createTaskAIAdviceConversationRequestDTO.modelType,
+                    userNickname = userDTO.nickname,
+                )
+            }
+
+        return ResponseEntity.ok(
+            CreateTaskAiAdviceConversation200ResponseDTO(
+                code = 200,
+                data =
+                    TaskAIAdviceConversationResponseDTO(conversation = conversation, quota = quota),
+                message = "success",
+            )
+        )
+    }
+
+    @Guard("query", "task/ai-advice")
+    override fun getTaskAiAdviceConversationsGrouped(
+        @ResourceId taskId: Long
+    ): ResponseEntity<GetTaskAiAdviceConversationsGrouped200ResponseDTO> {
+        val conversationSummaries = taskAIAdviceService.getConversationGroupedSummary(taskId)
+        return ResponseEntity.ok(
+            GetTaskAiAdviceConversationsGrouped200ResponseDTO(
+                200,
+                GetTaskAiAdviceConversationsGrouped200ResponseDataDTO(conversationSummaries),
+                "OK",
+            )
+        )
+    }
+
+    @Guard("query", "task/ai-advice")
+    override fun getTaskAiAdviceConversation(
+        @ResourceId taskId: Long,
+        conversationId: String,
+    ): ResponseEntity<GetTaskAiAdviceConversation200ResponseDTO> {
+        val conversations = taskAIAdviceService.getConversationById(taskId, conversationId)
+        if (conversations.isEmpty() || conversations.first().taskId != taskId) {
+            throw ConversationNotFoundError(taskId, conversationId)
+        }
+        return ResponseEntity.ok(
+            GetTaskAiAdviceConversation200ResponseDTO(
+                200,
+                GetTaskAiAdviceConversation200ResponseDataDTO(conversations),
+                "OK",
+            )
+        )
     }
 }

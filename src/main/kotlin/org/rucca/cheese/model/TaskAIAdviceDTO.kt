@@ -5,12 +5,17 @@ import io.swagger.v3.oas.annotations.media.Schema
 import javax.validation.Valid
 
 /**
+ * @param topicSummary
  * @param knowledgeFields
  * @param learningPaths
  * @param methodology
  * @param teamTips
  */
 data class TaskAIAdviceDTO(
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("topic_summary")
+    val topicSummary: TaskAIAdviceTopicSummaryDTO? = null,
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("knowledge_fields")
