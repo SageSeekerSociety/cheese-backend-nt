@@ -796,7 +796,7 @@ class TaskController(
         @ResourceId taskId: IdType
     ): ResponseEntity<GetTaskAiAdviceStatus200ResponseDTO> {
         val userId = authenticationService.getCurrentUserId()
-        val data = taskAIAdviceService.getTaskAIAdviceStatus(taskId, userId)
+        val data = taskAIAdviceService.getTaskAIAdviceStatus(taskId)
         return ResponseEntity.ok(GetTaskAiAdviceStatus200ResponseDTO(200, data, "OK"))
     }
 

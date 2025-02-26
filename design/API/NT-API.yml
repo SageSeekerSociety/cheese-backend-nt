@@ -3503,9 +3503,6 @@ components:
           type: integer
           format: int64
           description: 所有者ID
-        modelType:
-          type: string
-          description: 模型类型
         messageCount:
           type: integer
           description: 消息数量
@@ -3524,7 +3521,6 @@ components:
         - moduleType
         - contextId
         - ownerId
-        - modelType
         - messageCount
         - createdAt
         - updatedAt
@@ -3542,6 +3538,9 @@ components:
         role:
           type: string
           description: 角色
+        modelType:
+          type: string
+          description: 模型类型
         content:
           type: string
           description: 消息内容
@@ -3557,11 +3556,7 @@ components:
           format: int64
           description: 推理时间（毫秒）
         metadata:
-          type: object
-          additionalProperties:
-            type: object
-          description: 元数据
-          example: { "followupQuestions": ["问题1", "问题2"] }
+          $ref: "#/components/schemas/AIMessageMetadata"
         createdAt:
           type: string
           format: date-time
@@ -3570,9 +3565,21 @@ components:
         - id
         - conversationId
         - role
+        - modelType
         - content
         - createdAt
-
+    AIMessageMetadata:
+      type: object
+      description: AI消息元数据
+      properties:
+        followupQuestions:
+          type: array
+          items:
+            type: string
+        references:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationReference"
     TaskAIAdvice:
       type: object
       properties:
@@ -3740,6 +3747,44 @@ components:
         - createdAt
         - updatedAt
         - messageCount
+    ConversationReference:
+      type: object
+      properties:
+        url:
+          type: string
+        logo_url:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        publish_time:
+          type: string
+        extra:
+          $ref: "#/components/schemas/ConversationReferenceExtra"
+      required:
+        - url
+        - logo_url
+        - title
+        - summary
+        - publish_time
+        - extra
+    ConversationReferenceExtra:
+      type: object
+      properties:
+        rel_info:
+          type: string
+        freshness_info:
+          type: string
+        auth_info:
+          type: string
+        final_ref:
+          type: string
+      required:
+        - rel_info
+        - freshness_info
+        - auth_info
+        - final_ref
     TaskAIAdviceConversation:
       type: object
       required:
@@ -3759,10 +3804,6 @@ components:
           type: integer
           format: int64
           description: 任务ID
-        title:
-          type: string
-          description: 对话标题
-          example: 机器学习模型选择
         question:
           type: string
           description: 用户问题
@@ -3785,6 +3826,11 @@ components:
           description: 后续问题
           items:
             type: string
+        references:
+          type: array
+          description: 参考文献
+          items:
+            $ref: "#/components/schemas/ConversationReference"
         conversationId:
           type: string
           description: 会话ID

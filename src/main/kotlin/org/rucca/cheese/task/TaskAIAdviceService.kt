@@ -284,7 +284,7 @@ $sectionContent
                 // 使用现有对话
                 val conversation =
                     withContext(Dispatchers.IO) {
-                        aiConversationRepository.findByConversationId(actualConversationId!!)
+                        aiConversationRepository.findByConversationId(actualConversationId)
                     }
 
                 if (conversation != null) {
@@ -302,10 +302,9 @@ $sectionContent
                     val newConversation =
                         withContext(Dispatchers.IO) {
                             aiConversationService.createConversation(
-                                conversationId = actualConversationId!!,
+                                conversationId = actualConversationId,
                                 moduleType = "task_ai_advice",
                                 ownerId = userId,
-                                modelType = modelType ?: "standard",
                                 contextId = taskContext.id,
                             )
                         }
@@ -320,7 +319,6 @@ $sectionContent
                             conversationId = actualConversationId,
                             moduleType = "task_ai_advice",
                             ownerId = userId,
-                            modelType = modelType ?: "standard",
                             contextId = taskContext.id,
                         )
                     }
@@ -440,7 +438,6 @@ $sectionContent
                             conversationId = actualConversationId,
                             moduleType = "task_ai_advice",
                             ownerId = userId,
-                            modelType = modelType ?: "standard",
                             contextId = taskContext.id,
                         )
                 }
@@ -452,7 +449,6 @@ $sectionContent
                         conversationId = actualConversationId,
                         moduleType = "task_ai_advice",
                         ownerId = userId,
-                        modelType = modelType ?: "standard",
                         contextId = taskContext.id,
                     )
             }
@@ -503,53 +499,6 @@ $sectionContent
             logger.error("Error in createConversation: ${e.message}", e)
             throw e
         }
-    }
-
-    fun getConversationHistory(taskId: IdType): List<TaskAIAdviceConversationDTO> {
-        // 查找该任务相关的所有上下文
-        val contexts = taskAIAdviceContextRepository.findByTaskId(taskId)
-        if (contexts.isEmpty()) {
-            return emptyList()
-        }
-
-        // 查找所有上下文关联的对话
-        val conversationDTOs = mutableListOf<TaskAIAdviceConversationDTO>()
-
-        for (context in contexts) {
-            val conversations =
-                aiConversationRepository.findByModuleTypeAndContextId(
-                    moduleType = "task_ai_advice",
-                    contextId = context.id!!,
-                )
-
-            for (conversation in conversations) {
-                // 对于每个对话，找出用户-助手消息对
-                val messages =
-                    aiMessageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.id!!)
-
-                // 将消息分组为用户-助手对
-                var i = 0
-                while (i < messages.size - 1) {
-                    val userMessage = messages[i]
-                    val assistantMessage = messages[i + 1]
-
-                    if (userMessage.role == "user" && assistantMessage.role == "assistant") {
-                        val dto =
-                            getTaskAIAdviceConversationDTO(
-                                conversation = conversation,
-                                userMessage = userMessage,
-                                assistantMessage = assistantMessage,
-                                taskId = taskId,
-                            )
-                        conversationDTOs.add(dto)
-                    }
-
-                    i += 2
-                }
-            }
-        }
-
-        return conversationDTOs.sortedBy { it.createdAt }
     }
 
     private fun getQuotaInfo(userId: IdType): QuotaInfoDTO {
@@ -860,26 +809,11 @@ $description
                         messageCount = summary.messageCount,
                         latestMessage =
                             summary.latestUserAssistantPair?.let {
-                                TaskAIAdviceConversationDTO(
-                                    id = it.assistantMessage.id ?: 0,
-                                    taskId = taskId,
-                                    question = it.userMessage.content,
-                                    response = it.assistantMessage.content,
-                                    modelType = summary.modelType,
-                                    reasoningContent = it.assistantMessage.reasoningContent,
-                                    reasoningTimeMs = it.assistantMessage.reasoningTimeMs,
-                                    followupQuestions =
-                                        (it.assistantMessage.metadata["followupQuestions"]
-                                                as? List<*>)
-                                            ?.map { it.toString() } ?: emptyList(),
+                                getTaskAIAdviceConversationDTO(
                                     conversationId = summary.conversationId,
-                                    parentId = it.userMessage.parentId,
-                                    title = summary.title ?: "新对话",
-                                    createdAt =
-                                        OffsetDateTime.of(
-                                            it.assistantMessage.createdAt,
-                                            OffsetDateTime.now().offset,
-                                        ),
+                                    userMessage = it.userMessage,
+                                    assistantMessage = it.assistantMessage,
+                                    taskId = taskId,
                                 )
                             },
                     )
@@ -898,26 +832,38 @@ $description
         assistantMessage: AIMessageEntity,
         taskId: IdType,
     ): TaskAIAdviceConversationDTO {
-        val followupQuestions =
-            (assistantMessage.metadata["followupQuestions"] as? List<*>)?.map { it.toString() }
-                ?: emptyList()
+        return getTaskAIAdviceConversationDTO(
+            conversationId = conversation.conversationId,
+            userMessage = userMessage,
+            assistantMessage = assistantMessage,
+            taskId = taskId,
+        )
+    }
 
-        // 确保获取最新的会话标题，如果为空则使用默认值
-        val conversationTitle =
-            aiConversationRepository.findById(conversation.id!!).orElse(null)?.title ?: "新对话"
+    private fun getTaskAIAdviceConversationDTO(
+        conversationId: String,
+        userMessage: AIMessageEntity,
+        assistantMessage: AIMessageEntity,
+        taskId: IdType,
+    ): TaskAIAdviceConversationDTO {
+        val followupQuestions = (assistantMessage.metadata?.followupQuestions ?: emptyList())
+
+        val references =
+            (assistantMessage.metadata?.references?.map { chatReference -> chatReference.toDTO() }
+                ?: emptyList())
 
         return TaskAIAdviceConversationDTO(
             id = assistantMessage.id ?: 0,
             taskId = taskId,
             question = userMessage.content,
             response = assistantMessage.content,
-            modelType = conversation.modelType,
+            modelType = assistantMessage.modelType,
             reasoningContent = assistantMessage.reasoningContent,
             reasoningTimeMs = assistantMessage.reasoningTimeMs,
             followupQuestions = followupQuestions,
-            conversationId = conversation.conversationId,
+            references = references,
+            conversationId = conversationId,
             parentId = userMessage.parentId,
-            title = conversationTitle,
             createdAt = OffsetDateTime.of(assistantMessage.createdAt, OffsetDateTime.now().offset),
         )
     }
@@ -925,7 +871,6 @@ $description
     /** 获取任务AI建议状态 */
     fun getTaskAIAdviceStatus(
         taskId: IdType,
-        userId: IdType,
         modelType: String? = null,
     ): GetTaskAiAdviceStatus200ResponseDataDTO {
         val task = taskService.getTaskDto(taskId)

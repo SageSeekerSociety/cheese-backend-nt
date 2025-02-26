@@ -10,12 +10,13 @@ import javax.validation.Valid
  * @param id 消息ID
  * @param conversationId 对话ID
  * @param role 角色
+ * @param modelType 模型类型
  * @param content 消息内容
  * @param createdAt 创建时间
  * @param parentId 父消息ID
  * @param reasoningContent 推理内容
  * @param reasoningTimeMs 推理时间（毫秒）
- * @param metadata 元数据
+ * @param metadata
  */
 data class AIMessageDTO(
     @Schema(example = "null", required = true, description = "消息ID")
@@ -27,6 +28,9 @@ data class AIMessageDTO(
     @Schema(example = "null", required = true, description = "角色")
     @get:JsonProperty("role", required = true)
     val role: kotlin.String,
+    @Schema(example = "null", required = true, description = "模型类型")
+    @get:JsonProperty("modelType", required = true)
+    val modelType: kotlin.String,
     @Schema(example = "null", required = true, description = "消息内容")
     @get:JsonProperty("content", required = true)
     val content: kotlin.String,
@@ -43,7 +47,7 @@ data class AIMessageDTO(
     @get:JsonProperty("reasoningTimeMs")
     val reasoningTimeMs: kotlin.Long? = null,
     @field:Valid
-    @Schema(example = "{\"followupQuestions\":[\"问题1\",\"问题2\"]}", description = "元数据")
+    @Schema(example = "null", description = "")
     @get:JsonProperty("metadata")
-    val metadata: kotlin.collections.Map<kotlin.String, kotlin.Any>? = null,
+    val metadata: AIMessageMetadataDTO? = null,
 ) {}

@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service
 class LLMService(private val llmClient: OpenAI, private val properties: LLMProperties) {
     private val logger = LoggerFactory.getLogger(LLMService::class.java)
 
+    val defaultModelType: String = properties.defaultModel.name
+
     /** 获取指定模型类型的ModelId */
     private fun getModelId(modelType: String?): ModelId {
         try {

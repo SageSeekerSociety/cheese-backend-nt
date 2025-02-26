@@ -1,13 +1,11 @@
 package org.rucca.cheese.llm
 
 import com.aallam.openai.api.chat.ChatMessage
+import com.aallam.openai.api.chat.ChatReference
 import com.aallam.openai.api.chat.ChatRole
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.persistence.EntityNotFoundException
-import java.time.OffsetDateTime
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -23,6 +21,7 @@ import org.rucca.cheese.model.AIMessageDTO
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.OffsetDateTime
 
 /** 通用AI对话服务，处理对话和消息的创建、查询和流式输出 */
 @Service
@@ -35,7 +34,6 @@ class AIConversationService(
     private val responseProcessorRegistry: ResponseProcessorRegistry,
 ) {
     private val logger = LoggerFactory.getLogger(AIConversationService::class.java)
-    private val coroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     /** 创建新的对话 */
     @Transactional
@@ -43,7 +41,6 @@ class AIConversationService(
         conversationId: String,
         moduleType: String,
         ownerId: IdType,
-        modelType: String,
         title: String? = null,
         contextId: IdType? = null,
     ): AIConversationEntity {
@@ -52,7 +49,6 @@ class AIConversationService(
                 this.conversationId = conversationId
                 this.moduleType = moduleType
                 this.ownerId = ownerId
-                this.modelType = modelType
                 this.title = title
                 this.contextId = contextId
             }
@@ -83,11 +79,12 @@ class AIConversationService(
     fun createMessage(
         conversationId: IdType,
         role: String,
+        modelType: String,
         content: String,
         parentId: IdType? = null,
         reasoningContent: String? = null,
         reasoningTimeMs: Long? = null,
-        metadata: Map<String, Any> = mapOf(),
+        metadata: AIMessageMetadata? = null,
     ): AIMessageEntity {
         val conversation =
             conversationRepository.findById(conversationId).orElseThrow {
@@ -98,6 +95,7 @@ class AIConversationService(
             AIMessageEntity().apply {
                 this.conversation = conversation
                 this.role = role
+                this.modelType = modelType
                 this.content = content
                 this.parentId = parentId
                 this.reasoningContent = reasoningContent
@@ -120,136 +118,154 @@ class AIConversationService(
         moduleType: String = "default",
     ): Flow<String> {
         return flow {
-                // 获取适合该模块的响应处理器
-                val responseProcessor = responseProcessorRegistry.getProcessor(moduleType)
-                logger.debug("使用响应处理器: ${responseProcessor.javaClass.simpleName} 处理模块: $moduleType")
+            // 获取适合该模块的响应处理器
+            val responseProcessor = responseProcessorRegistry.getProcessor(moduleType)
+            logger.debug("使用响应处理器: ${responseProcessor.javaClass.simpleName} 处理模块: $moduleType")
 
-                // 用于累积响应内容的缓冲区
-                val currentResponse = StringBuilder()
+            // 用于累积响应内容的缓冲区
+            val currentResponse = StringBuilder()
 
-                // 1. 构建对话消息
-                val chatMessages = buildChatMessages(systemPrompt, userMessage, historyMessages)
+            // 1. 构建对话消息
+            val chatMessages = buildChatMessages(systemPrompt, userMessage, historyMessages)
 
-                // 2. 收集响应
-                var currentReasoning = false
-                val currentReasoningContent = StringBuilder()
-                var tokensUsed = 0
+            // 2. 收集响应
+            var currentReasoning = false
+            val currentReasoningContent = StringBuilder()
+            var tokensUsed = 0
 
-                // 添加推理时间计时器
-                var reasoningStartTime: Long? = null
-                var reasoningEndTime: Long? = null
-                var totalReasoningTimeMs: Long = 0
+            // 添加推理时间计时器
+            var reasoningStartTime: Long? = null
+            var reasoningEndTime: Long? = null
+            var totalReasoningTimeMs: Long = 0
 
-                logger.info(
-                    "Starting conversation stream for user $userId, moduleType: $moduleType, modelType: $modelType"
-                )
+            logger.info(
+                "Starting conversation stream for user $userId, moduleType: $moduleType, modelType: $modelType"
+            )
 
-                try {
-                    // 3. 调用LLM服务
-                    llmService
-                        .streamCompletionWithHistory(
-                            messages = chatMessages,
-                            modelType = modelType,
-                            jsonResponse = false,
-                        )
-                        .collect { completion ->
-                            if (completion.choices.isEmpty()) {
-                                val totalToken =
-                                    completion.botUsage?.modelUsage?.sumOf { it.totalTokens ?: 0 }
-                                        ?: completion.usage?.totalTokens
-                                        ?: 0
-                                tokensUsed += totalToken
-                                logger.debug("Bot usage tokens: $totalToken")
+            var references: List<ChatReference>? = null
+            var followupQuestions: List<String>? = null
+
+            try {
+                // 3. 调用LLM服务
+                llmService
+                    .streamCompletionWithHistory(
+                        messages = chatMessages,
+                        modelType = modelType,
+                        jsonResponse = false,
+                    )
+                    .collect { completion ->
+                        if (!completion.references.isNullOrEmpty()) {
+                            references = completion.references!!
+                            emit(
+                                "[REFERENCES]${objectMapper.writeValueAsString(completion.references)}"
+                            )
+                            logger.debug("References: {}", completion.references)
+                        }
+                        if (completion.choices.isEmpty()) {
+                            val totalToken =
+                                completion.botUsage?.modelUsage?.sumOf { it.totalTokens ?: 0 }
+                                    ?: completion.usage?.totalTokens
+                                    ?: 0
+                            tokensUsed += totalToken
+                            logger.debug("Bot usage tokens: $totalToken")
+                        } else {
+                            val content = completion.choices.first().delta?.content ?: ""
+                            val reasoningContent =
+                                completion.choices.first().delta?.reasoningContent
+
+                            if (!reasoningContent.isNullOrEmpty()) {
+                                logger.debug("Reasoning content: $reasoningContent")
+                                if (!currentReasoning) {
+                                    currentReasoning = true
+                                    reasoningStartTime = System.currentTimeMillis()
+                                    emit("[REASONING_START]")
+                                }
+                                currentReasoningContent.append(reasoningContent)
+                                emit("[REASONING_PARTIAL]$reasoningContent")
                             } else {
-                                val content = completion.choices.first().delta?.content ?: ""
-                                val reasoningContent =
-                                    completion.choices.first().delta?.reasoningContent
-
-                                if (!reasoningContent.isNullOrEmpty()) {
-                                    logger.debug("Reasoning content: $reasoningContent")
-                                    if (!currentReasoning) {
-                                        currentReasoning = true
-                                        reasoningStartTime = System.currentTimeMillis()
-                                        emit("[REASONING_START]")
+                                logger.debug("Response content: $content")
+                                if (currentReasoning) {
+                                    currentReasoning = false
+                                    reasoningEndTime = System.currentTimeMillis()
+                                    if (reasoningStartTime != null) {
+                                        totalReasoningTimeMs =
+                                            reasoningEndTime!! - reasoningStartTime!!
+                                        emit("[REASONING_TIME]$totalReasoningTimeMs")
                                     }
-                                    currentReasoningContent.append(reasoningContent)
-                                    emit("[REASONING_PARTIAL]$reasoningContent")
-                                } else {
-                                    logger.debug("Response content: $content")
-                                    if (currentReasoning) {
-                                        currentReasoning = false
-                                        reasoningEndTime = System.currentTimeMillis()
-                                        if (reasoningStartTime != null) {
-                                            totalReasoningTimeMs =
-                                                reasoningEndTime!! - reasoningStartTime!!
-                                            emit("[REASONING_TIME]$totalReasoningTimeMs")
-                                        }
-                                        emit("[REASONING_END]$currentReasoningContent")
-                                    }
+                                    emit("[REASONING_END]$currentReasoningContent")
+                                }
 
-                                    // 使用响应处理器处理内容块
-                                    val result =
-                                        responseProcessor.processStreamChunk(
-                                            content,
-                                            currentResponse,
-                                        )
+                                // 使用响应处理器处理内容块
+                                val result =
+                                    responseProcessor.processStreamChunk(
+                                        content,
+                                        currentResponse,
+                                    )
 
-                                    if (!result.shouldSkip && result.content.isNotEmpty()) {
-                                        emit("[${result.eventType}]${result.content}")
-                                    }
+                                if (!result.shouldSkip && result.content.isNotEmpty()) {
+                                    emit("[${result.eventType}]${result.content}")
                                 }
                             }
                         }
-
-                    // 4. 处理配额
-                    val cacheKey = "ai_conversation:$userId:${System.currentTimeMillis()}"
-                    userQuotaService.checkAndDeductQuota(
-                        userId = userId,
-                        resourceType = AIResourceType.STANDARD,
-                        tokensUsed = tokensUsed,
-                        cacheKey = cacheKey,
-                    )
-
-                    // 5. 处理最终响应
-                    val processedResponse =
-                        responseProcessor.finalizeResponse(currentResponse.toString())
-                    emit("[RESPONSE]${processedResponse.mainContent}")
-
-                    // 6. 处理元数据
-                    processedResponse.metadata.forEach { (key, value) ->
-                        emit("[${key.uppercase()}]${objectMapper.writeValueAsString(value)}")
                     }
 
-                    // 7. 保存消息
-                    if (conversationId != null) {
-                        // 创建用户消息
-                        val userMessageEntity =
-                            createMessage(
-                                conversationId = conversationId,
-                                role = "user",
-                                content = userMessage,
-                                parentId = parentMessageId,
-                            )
+                // 4. 处理配额
+                val cacheKey = "ai_conversation:$userId:${System.currentTimeMillis()}"
+                userQuotaService.checkAndDeductQuota(
+                    userId = userId,
+                    resourceType = AIResourceType.STANDARD,
+                    tokensUsed = tokensUsed,
+                    cacheKey = cacheKey,
+                )
 
-                        // 创建助手消息
-                        val assistantMessage =
-                            createMessage(
-                                conversationId = conversationId,
-                                role = "assistant",
-                                content = processedResponse.mainContent,
-                                parentId = userMessageEntity.id,
-                                reasoningContent = currentReasoningContent.toString(),
-                                reasoningTimeMs = totalReasoningTimeMs,
-                                metadata = processedResponse.metadata,
-                            )
+                // 5. 处理最终响应
+                val processedResponse =
+                    responseProcessor.finalizeResponse(currentResponse.toString())
+                emit("[RESPONSE]${processedResponse.mainContent}")
 
-                        emit("[MESSAGE_ID]${assistantMessage.id}")
-                    }
-                } catch (e: Exception) {
-                    logger.error("Error in streamConversation: ${e.message}", e)
-                    emit("[ERROR]${e.message}")
+                // 6. 处理元数据
+                processedResponse.metadata["followupQuestions"]?.takeIf { it is List<*> }?.let {
+                    followupQuestions = (it as List<*>).filterIsInstance<String>()
                 }
+                processedResponse.metadata.forEach { (key, value) ->
+                    emit("[${key.uppercase()}]${objectMapper.writeValueAsString(value)}")
+                }
+
+                // 7. 保存消息
+                if (conversationId != null) {
+                    // 创建用户消息
+                    val userMessageEntity =
+                        createMessage(
+                            conversationId = conversationId,
+                            role = "user",
+                            modelType = modelType ?: llmService.defaultModelType,
+                            content = userMessage,
+                            parentId = parentMessageId,
+                        )
+
+                    // 创建助手消息
+                    val assistantMessage =
+                        createMessage(
+                            conversationId = conversationId,
+                            role = "assistant",
+                            modelType = modelType ?: llmService.defaultModelType,
+                            content = processedResponse.mainContent,
+                            parentId = userMessageEntity.id,
+                            reasoningContent = currentReasoningContent.toString(),
+                            reasoningTimeMs = totalReasoningTimeMs,
+                            metadata = AIMessageMetadata(
+                                followupQuestions = followupQuestions,
+                                references = references,
+                            ),
+                        )
+
+                    emit("[MESSAGE_ID]${assistantMessage.id}")
+                }
+            } catch (e: Exception) {
+                logger.error("Error in streamConversation: ${e.message}", e)
+                emit("[ERROR]${e.message}")
             }
+        }
             .flowOn(Dispatchers.IO)
     }
 
@@ -292,12 +308,17 @@ class AIConversationService(
 
         // 4. 处理响应
         val processedResponse = responseProcessor.process(response)
+        val followupQuestions =
+            processedResponse.metadata["followupQuestions"]?.takeIf { it is List<*> }
+                ?.let { it as List<*> }
+                ?.filterIsInstance<String>()
 
         // 5. 创建用户消息
         val userMessageEntity =
             createMessage(
                 conversationId = conversationId,
                 role = "user",
+                modelType = modelType ?: llmService.defaultModelType,
                 content = userMessage,
                 parentId = parentMessageId,
             )
@@ -306,11 +327,14 @@ class AIConversationService(
         return createMessage(
             conversationId = conversationId,
             role = "assistant",
+            modelType = modelType ?: llmService.defaultModelType,
             content = processedResponse.mainContent,
             parentId = userMessageEntity.id,
             reasoningContent = null, // 非流式对话没有推理内容
             reasoningTimeMs = reasoningTimeMs,
-            metadata = processedResponse.metadata,
+            metadata = AIMessageMetadata(
+                followupQuestions = followupQuestions,
+            ),
         )
     }
 
@@ -357,7 +381,6 @@ class AIConversationService(
             moduleType = conversation.moduleType,
             contextId = conversation.contextId!!,
             ownerId = conversation.ownerId,
-            modelType = conversation.modelType,
             messageCount = messageCount.toInt(),
             createdAt = OffsetDateTime.of(conversation.createdAt, OffsetDateTime.now().offset),
             updatedAt =
@@ -438,7 +461,6 @@ class AIConversationService(
     data class ConversationSummary(
         val conversationId: String,
         val title: String?,
-        val modelType: String,
         val messageCount: Int,
         val createdAt: OffsetDateTime,
         val updatedAt: OffsetDateTime,
@@ -490,7 +512,6 @@ class AIConversationService(
                         ConversationSummary(
                             conversationId = conversation.conversationId,
                             title = conversation.title,
-                            modelType = conversation.modelType,
                             messageCount = messageCount.toInt(),
                             createdAt =
                                 OffsetDateTime.of(
@@ -518,7 +539,6 @@ class AIConversationService(
                 ConversationSummary(
                     conversationId = conversation.conversationId,
                     title = conversation.title,
-                    modelType = conversation.modelType,
                     messageCount = messageCount.toInt(),
                     createdAt =
                         OffsetDateTime.of(conversation.createdAt, OffsetDateTime.now().offset),

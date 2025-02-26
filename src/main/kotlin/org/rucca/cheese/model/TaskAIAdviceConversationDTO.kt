@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import javax.validation.Valid
 
 /**
  * @param id 对话ID
@@ -11,9 +12,9 @@ import io.swagger.v3.oas.annotations.media.Schema
  * @param modelType 模型类型
  * @param followupQuestions 后续问题
  * @param createdAt 会话创建时间
- * @param title 对话标题
  * @param reasoningContent 推理内容
  * @param reasoningTimeMs 推理所用时间（毫秒）
+ * @param references 参考文献
  * @param conversationId 会话ID
  * @param parentId 父消息ID
  */
@@ -39,15 +40,16 @@ data class TaskAIAdviceConversationDTO(
     @Schema(example = "null", required = true, description = "会话创建时间")
     @get:JsonProperty("createdAt", required = true)
     val createdAt: java.time.OffsetDateTime,
-    @Schema(example = "机器学习模型选择", description = "对话标题")
-    @get:JsonProperty("title")
-    val title: kotlin.String? = null,
     @Schema(example = "null", description = "推理内容")
     @get:JsonProperty("reasoningContent")
     val reasoningContent: kotlin.String? = null,
     @Schema(example = "1000", description = "推理所用时间（毫秒）")
     @get:JsonProperty("reasoningTimeMs")
     val reasoningTimeMs: kotlin.Long? = null,
+    @field:Valid
+    @Schema(example = "null", description = "参考文献")
+    @get:JsonProperty("references")
+    val references: kotlin.collections.List<ConversationReferenceDTO>? = null,
     @Schema(example = "null", description = "会话ID")
     @get:JsonProperty("conversationId")
     val conversationId: kotlin.String? = null,
