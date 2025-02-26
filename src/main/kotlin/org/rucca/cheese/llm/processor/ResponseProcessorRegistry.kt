@@ -41,8 +41,6 @@ class ResponseProcessorRegistry(processors: List<ResponseProcessor>) {
     private fun getAllModuleTypes(): List<String> {
         // 这里可以从配置或其他地方动态获取
         // 暂时硬编码一些已知的模块类型
-        return listOf(
-            "task_ai_advice",
-        )
+        return listOf("task_ai_advice")
     }
 }

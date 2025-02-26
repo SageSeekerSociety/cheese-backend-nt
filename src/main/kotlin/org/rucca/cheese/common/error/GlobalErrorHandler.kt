@@ -33,38 +33,33 @@ class GlobalErrorHandler {
     private fun ResponseEntity.BodyBuilder.handleSseOrJson(
         request: HttpServletRequest,
         message: String,
-        jsonBody: Any
+        jsonBody: Any,
     ): ResponseEntity<*> {
         return if (request.isSSE()) {
-            contentType(MediaType.TEXT_EVENT_STREAM)
-                .body("event: error\ndata: $message\n\n")
+            contentType(MediaType.TEXT_EVENT_STREAM).body("event: error\ndata: $message\n\n")
         } else {
-            contentType(MediaType.APPLICATION_JSON)
-                .body(jsonBody)
+            contentType(MediaType.APPLICATION_JSON).body(jsonBody)
         }
     }
 
     @ExceptionHandler(BaseError::class)
     @ResponseBody
     fun handleBaseError(e: BaseError, request: HttpServletRequest): ResponseEntity<*> =
-        ResponseEntity.status(e.status)
-            .handleSseOrJson(request, e.message, e)
+        ResponseEntity.status(e.status).handleSseOrJson(request, e.message, e)
 
     @ExceptionHandler(AuthenticationRequiredError::class)
     @ResponseBody
     @NoAuth
     fun handleAuthenticationRequiredError(
         e: AuthenticationRequiredError,
-        request: HttpServletRequest
-    ): ResponseEntity<*> =
-        ResponseEntity.status(e.status)
-            .handleSseOrJson(request, e.message, e)
+        request: HttpServletRequest,
+    ): ResponseEntity<*> = ResponseEntity.status(e.status).handleSseOrJson(request, e.message, e)
 
     @ExceptionHandler(MissingServletRequestParameterException::class)
     @ResponseBody
     fun handleMissingServletRequestParameterException(
         e: MissingServletRequestParameterException,
-        request: HttpServletRequest
+        request: HttpServletRequest,
     ): ResponseEntity<*> =
         ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .handleSseOrJson(request, e.message, BadRequestError(e.message))
@@ -73,26 +68,22 @@ class GlobalErrorHandler {
     @ResponseBody
     fun handleMethodArgumentTypeMismatchException(
         e: MethodArgumentTypeMismatchException,
-        request: HttpServletRequest
+        request: HttpServletRequest,
     ): ResponseEntity<*> =
         ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .handleSseOrJson(
-                request,
-                e.message,
-                BadRequestError(e.message)
-            )
+            .handleSseOrJson(request, e.message, BadRequestError(e.message))
 
     @ExceptionHandler(HttpMessageConversionException::class)
     @ResponseBody
     fun handleHttpMessageConversionException(
         e: HttpMessageConversionException,
-        request: HttpServletRequest
+        request: HttpServletRequest,
     ): ResponseEntity<*> =
         ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .handleSseOrJson(
                 request,
                 e.message ?: "Invalid request caused http message conversion error",
-                BadRequestError(e.message ?: "Invalid request caused http message conversion error")
+                BadRequestError(e.message ?: "Invalid request caused http message conversion error"),
             )
 
     @ExceptionHandler(Exception::class)
