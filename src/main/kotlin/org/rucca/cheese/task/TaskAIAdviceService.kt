@@ -607,6 +607,10 @@ $sectionContent
         return conversationDTOs
     }
 
+    fun deleteConversation(conversationId: String) {
+        aiConversationService.deleteConversationByConversationId(conversationId)
+    }
+
     /** 开始新的对话 */
     fun startNewConversation(
         taskId: IdType,

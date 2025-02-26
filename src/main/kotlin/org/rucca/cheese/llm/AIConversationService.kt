@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.llm.error.ConversationNotFoundError
 import org.rucca.cheese.llm.model.AIResourceType
 import org.rucca.cheese.llm.processor.ResponseProcessorRegistry
 import org.rucca.cheese.llm.service.LLMService
@@ -532,5 +533,13 @@ class AIConversationService(
         }
 
         return result.sortedByDescending { it.updatedAt }
+    }
+
+    fun deleteConversationByConversationId(conversationId: String) {
+        val conversation =
+            conversationRepository.findByConversationId(conversationId)
+                ?: throw ConversationNotFoundError(conversationId)
+
+        conversationRepository.delete(conversation)
     }
 }

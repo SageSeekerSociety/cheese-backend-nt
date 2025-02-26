@@ -117,6 +117,27 @@ interface TasksApi {
 
     @Operation(
         tags = ["default"],
+        summary = "Delete AI Advice Conversation",
+        operationId = "deleteTaskAiAdviceConversation",
+        description = """""",
+        responses = [ApiResponse(responseCode = "204", description = "No Content")],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.DELETE],
+        value = ["/tasks/{taskId}/ai-advice/conversations/{conversationId}"],
+    )
+    fun deleteTaskAiAdviceConversation(
+        @Parameter(description = "", required = true) @PathVariable("taskId") taskId: kotlin.Long,
+        @Parameter(description = "", required = true)
+        @PathVariable("conversationId")
+        conversationId: kotlin.String,
+    ): ResponseEntity<Unit> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["default"],
         summary = "Leave Task",
         operationId = "deleteTaskParticipant",
         description = """""",

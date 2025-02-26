@@ -831,7 +831,7 @@ class TaskController(
         @RequestParam question: String,
         @RequestParam(required = false) section: String? = null,
         @RequestParam(required = false) index: Int? = null,
-        @RequestParam(required = false) conversationId: String? = null,
+        @RequestParam(required = false) @AuthInfo("conversationId") conversationId: String? = null,
         @RequestParam(required = false) parentId: IdType? = null,
         @RequestParam(required = false) modelType: String? = null,
     ): Flow<String> {
@@ -935,11 +935,11 @@ class TaskController(
     @Guard("query", "task/ai-advice")
     override fun getTaskAiAdviceConversation(
         @ResourceId taskId: Long,
-        conversationId: String,
+        @AuthInfo("conversationId") conversationId: String,
     ): ResponseEntity<GetTaskAiAdviceConversation200ResponseDTO> {
         val conversations = taskAIAdviceService.getConversationById(taskId, conversationId)
         if (conversations.isEmpty() || conversations.first().taskId != taskId) {
-            throw ConversationNotFoundError(taskId, conversationId)
+            throw ConversationNotFoundError(conversationId)
         }
         return ResponseEntity.ok(
             GetTaskAiAdviceConversation200ResponseDTO(
@@ -948,5 +948,14 @@ class TaskController(
                 "OK",
             )
         )
+    }
+
+    @Guard("delete", "task/ai-advice")
+    override fun deleteTaskAiAdviceConversation(
+        @ResourceId taskId: Long,
+        @AuthInfo("conversationId") conversationId: String,
+    ): ResponseEntity<Unit> {
+        taskAIAdviceService.deleteConversation(conversationId)
+        return ResponseEntity.noContent().build()
     }
 }

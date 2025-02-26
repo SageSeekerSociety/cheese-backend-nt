@@ -799,6 +799,25 @@ paths:
                           $ref: "#/components/schemas/TaskAIAdviceConversation"
                   message:
                     type: string
+    delete:
+      summary: Delete AI Advice Conversation
+      tags: []
+      operationId: delete-task-ai-advice-conversation
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
   /tasks/{taskId}/ai-advice:
     get:
       summary: Get AI Advice
