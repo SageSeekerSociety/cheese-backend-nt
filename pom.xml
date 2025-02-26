@@ -215,8 +215,8 @@
     <repositories>
         <repository>
             <id>github</id>
-            <name>GitHub HuanCheng65 Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/HuanCheng65/openai-kotlin</url>
+            <name>GitHub SageSeekerSociety Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/SageSeekerSociety/openai-kotlin</url>
         </repository>
     </repositories>
 
