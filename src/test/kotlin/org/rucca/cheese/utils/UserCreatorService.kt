@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service
 class UserCreatorService(
     private val applicationConfig: ApplicationConfig,
     private val userRepository: UserRepository,
+    private val avatarRepository: AvatarRepository,
     private val userProfileRepository: UserProfileRepository,
 ) {
     class CreateUserResponse(
@@ -50,7 +51,7 @@ class UserCreatorService(
         val userId = userRepository.save(user).id!!
         val userProfile = UserProfile()
         userProfile.nickname = nickname
-        userProfile.avatar = Avatar().also { it.id = avatarId.toInt() }
+        userProfile.avatar = avatarRepository.getReferenceById(1)
         userProfile.intro = intro
         userProfile.user = user
         userProfileRepository.save(userProfile)
