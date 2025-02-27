@@ -3561,6 +3561,15 @@ components:
           type: string
           format: date-time
           description: 创建时间
+        tokensUsed:
+          type: integer
+          description: 消耗的token数量
+          example: 100
+        seuConsumed:
+          type: number
+          format: double
+          description: 消耗的SEU数量
+          example: 0.10
       required:
         - id
         - conversationId
@@ -3568,6 +3577,8 @@ components:
         - modelType
         - content
         - createdAt
+        - tokensUsed
+        - seuConsumed
     AIMessageMetadata:
       type: object
       description: AI消息元数据
@@ -3795,6 +3806,8 @@ components:
         - modelType
         - followupQuestions
         - createdAt
+        - tokensUsed
+        - seuConsumed
       properties:
         id:
           type: integer
@@ -3842,6 +3855,15 @@ components:
           type: string
           format: date-time
           description: 会话创建时间
+        tokensUsed:
+          type: integer
+          description: 消耗的token数量
+          example: 100
+        seuConsumed:
+          type: number
+          format: double
+          description: 消耗的SEU数量
+          example: 0.10
     TeamMemberRoleType:
       description: 小组角色
       enum:

@@ -8,6 +8,7 @@ import org.rucca.cheese.model.GetUserAiQuota200ResponseDTO
 import org.rucca.cheese.model.QuotaInfoDTO
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
+import java.math.RoundingMode
 
 @RestController
 class AIController(
@@ -23,8 +24,8 @@ class AIController(
             GetUserAiQuota200ResponseDTO(
                 200,
                 QuotaInfoDTO(
-                    remaining = quota.remainingSeu.toDouble(),
-                    total = quota.dailySeuQuota.toDouble(),
+                    remaining = quota.remainingSeu.setScale(2, RoundingMode.HALF_UP).toDouble(),
+                    total = quota.dailySeuQuota.setScale(2, RoundingMode.HALF_UP).toDouble(),
                     resetTime = userQuotaService.getUserResetTime(),
                 ),
                 "OK",

@@ -66,6 +66,11 @@ class AIMessageEntity : BaseEntity() {
     @Column(name = "reasoning_time_ms", nullable = true)
     var reasoningTimeMs: Long? = null // AI的推理时间，仅对assistant角色有效
 
+    @Column(name = "tokens_used", nullable = true) var tokensUsed: Int? = null // 消息消耗的token数量
+
+    @Column(name = "seu_consumed", nullable = true, precision = 10, scale = 4)
+    var seuConsumed: java.math.BigDecimal? = null // 消息消耗的SEU数量
+
     @Type(JsonBinaryType::class)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "JSONB")
@@ -81,6 +86,8 @@ class AIMessageEntity : BaseEntity() {
             parentId = parentId,
             reasoningContent = reasoningContent,
             reasoningTimeMs = reasoningTimeMs,
+            tokensUsed = tokensUsed ?: 0,
+            seuConsumed = seuConsumed?.setScale(2, java.math.RoundingMode.HALF_UP)?.toDouble() ?: 0.0,
             metadata = metadata?.toDTO(),
             createdAt = OffsetDateTime.of(createdAt, OffsetDateTime.now().offset),
         )

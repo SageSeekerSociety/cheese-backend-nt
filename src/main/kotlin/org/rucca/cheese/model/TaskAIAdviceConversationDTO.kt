@@ -12,6 +12,8 @@ import javax.validation.Valid
  * @param modelType 模型类型
  * @param followupQuestions 后续问题
  * @param createdAt 会话创建时间
+ * @param tokensUsed 消耗的token数量
+ * @param seuConsumed 消耗的SEU数量
  * @param reasoningContent 推理内容
  * @param reasoningTimeMs 推理所用时间（毫秒）
  * @param references 参考文献
@@ -40,6 +42,12 @@ data class TaskAIAdviceConversationDTO(
     @Schema(example = "null", required = true, description = "会话创建时间")
     @get:JsonProperty("createdAt", required = true)
     val createdAt: java.time.OffsetDateTime,
+    @Schema(example = "100", required = true, description = "消耗的token数量")
+    @get:JsonProperty("tokensUsed", required = true)
+    val tokensUsed: kotlin.Int,
+    @Schema(example = "0.1", required = true, description = "消耗的SEU数量")
+    @get:JsonProperty("seuConsumed", required = true)
+    val seuConsumed: kotlin.Double,
     @Schema(example = "null", description = "推理内容")
     @get:JsonProperty("reasoningContent")
     val reasoningContent: kotlin.String? = null,

@@ -13,6 +13,8 @@ import javax.validation.Valid
  * @param modelType 模型类型
  * @param content 消息内容
  * @param createdAt 创建时间
+ * @param tokensUsed 消耗的token数量
+ * @param seuConsumed 消耗的SEU数量
  * @param parentId 父消息ID
  * @param reasoningContent 推理内容
  * @param reasoningTimeMs 推理时间（毫秒）
@@ -37,6 +39,12 @@ data class AIMessageDTO(
     @Schema(example = "null", required = true, description = "创建时间")
     @get:JsonProperty("createdAt", required = true)
     val createdAt: java.time.OffsetDateTime,
+    @Schema(example = "100", required = true, description = "消耗的token数量")
+    @get:JsonProperty("tokensUsed", required = true)
+    val tokensUsed: kotlin.Int,
+    @Schema(example = "0.1", required = true, description = "消耗的SEU数量")
+    @get:JsonProperty("seuConsumed", required = true)
+    val seuConsumed: kotlin.Double,
     @Schema(example = "null", description = "父消息ID")
     @get:JsonProperty("parentId")
     val parentId: kotlin.Long? = null,

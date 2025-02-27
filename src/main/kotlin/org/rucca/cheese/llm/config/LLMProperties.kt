@@ -2,6 +2,7 @@ package org.rucca.cheese.llm.config
 
 import java.math.BigDecimal
 import org.rucca.cheese.llm.error.LLMError.ModelNotFoundError
+import org.rucca.cheese.llm.model.AIResourceType
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "cheese.llm")
@@ -15,6 +16,7 @@ data class LLMProperties(
 ) {
     data class ModelProperties(
         val name: String = "gpt-3.5-turbo",
+        val type: AIResourceType = AIResourceType.STANDARD,
         val temperature: Double = 0.7,
         val maxTokens: Int = 2048,
         val topP: Double = 1.0,

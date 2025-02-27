@@ -5,6 +5,7 @@ import com.aallam.openai.api.model.ModelId
 import com.aallam.openai.client.OpenAI
 import kotlinx.coroutines.flow.*
 import org.rucca.cheese.llm.config.LLMProperties
+import org.rucca.cheese.llm.model.AIResourceType
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -13,6 +14,16 @@ class LLMService(private val llmClient: OpenAI, private val properties: LLMPrope
     private val logger = LoggerFactory.getLogger(LLMService::class.java)
 
     val defaultModelType: String = properties.defaultModel.name
+
+    fun getModelResourceType(modelType: String?): AIResourceType {
+        try {
+            val modelConfig = properties.getModelConfig(modelType)
+            return modelConfig.type
+        } catch (e: Exception) {
+            logger.error("Failed to get model resource type for type: $modelType", e)
+            throw e
+        }
+    }
 
     /** 获取指定模型类型的ModelId */
     private fun getModelId(modelType: String?): ModelId {

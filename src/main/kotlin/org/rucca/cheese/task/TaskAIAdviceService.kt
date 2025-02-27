@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.RoundingMode
 
 @Service
 class TaskAIAdviceService(
@@ -861,6 +862,8 @@ $description
             reasoningContent = assistantMessage.reasoningContent,
             reasoningTimeMs = assistantMessage.reasoningTimeMs,
             followupQuestions = followupQuestions,
+            tokensUsed = assistantMessage.tokensUsed ?: 0,
+            seuConsumed = assistantMessage.seuConsumed?.setScale(2, RoundingMode.HALF_UP)?.toDouble() ?: 0.0,
             references = references,
             conversationId = conversationId,
             parentId = userMessage.parentId,
@@ -970,10 +973,11 @@ $description
 
             // 检查缓存并扣减配额
             val cacheKey = "task_ai_advice:$taskId:$modelHash"
+            val resourceType = llmService.getModelResourceType(modelType)
             val consumption =
                 userQuotaService.checkAndDeductQuota(
                     userId = userId,
-                    resourceType = AIResourceType.STANDARD, // 任务AI建议使用标准级处理
+                    resourceType = resourceType, // 任务AI建议使用标准级处理
                     tokensUsed = tokensUsed,
                     cacheKey = cacheKey,
                 )
