@@ -1,3 +1,11 @@
+/*
+ *  Description: Unit tests for the UserCreatorService class
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth
 
 import org.junit.jupiter.api.Disabled
@@ -11,9 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest
 @SpringBootTest
 class UserCreatorServiceTest
 @Autowired
-constructor(
-    private val userCreatorService: UserCreatorService,
-) {
+constructor(private val userCreatorService: UserCreatorService) {
     private val logger = LoggerFactory.getLogger(UserCreatorServiceTest::class.java)
 
     @Test

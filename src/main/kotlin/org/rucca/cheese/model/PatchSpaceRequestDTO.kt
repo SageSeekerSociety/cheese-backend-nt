@@ -37,5 +37,5 @@ data class PatchSpaceRequestDTO(
     val taskTemplates: kotlin.String? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("classificationTopics")
-    val classificationTopics: kotlin.collections.List<kotlin.Long>? = null
+    val classificationTopics: kotlin.collections.List<kotlin.Long>? = null,
 ) {}

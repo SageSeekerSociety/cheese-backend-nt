@@ -1,3 +1,13 @@
+/*
+ *  Description: This file defines the SpaceAdminRelation entity and its repository.
+ *               It stores the relationship between a space and its admin.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *      CH3COOH-JYR
+ *
+ */
+
 package org.rucca.cheese.space
 
 import jakarta.persistence.*
@@ -10,18 +20,12 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 enum class SpaceAdminRole {
     OWNER,
-    ADMIN
+    ADMIN,
 }
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(
-    indexes =
-        [
-            Index(columnList = "space_id"),
-            Index(columnList = "user_id"),
-        ]
-)
+@Table(indexes = [Index(columnList = "space_id"), Index(columnList = "user_id")])
 class SpaceAdminRelation(
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val space: Space? = null,
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val user: User? = null,
@@ -40,6 +44,6 @@ interface SpaceAdminRelationRepository : JpaRepository<SpaceAdminRelation, IdTyp
     fun existsBySpaceIdAndUserIdAndRole(
         spaceId: IdType,
         userId: IdType,
-        role: SpaceAdminRole
+        role: SpaceAdminRole,
     ): Boolean
 }

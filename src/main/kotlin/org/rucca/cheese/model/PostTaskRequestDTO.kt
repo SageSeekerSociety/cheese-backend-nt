@@ -7,7 +7,6 @@ import javax.validation.Valid
 /**
  * @param name
  * @param submitterType
- * @param defaultDeadline
  * @param resubmittable
  * @param editable
  * @param intro
@@ -15,6 +14,7 @@ import javax.validation.Valid
  * @param submissionSchema
  * @param deadline
  * @param participantLimit
+ * @param defaultDeadline
  * @param team
  * @param space
  * @param rank
@@ -28,9 +28,6 @@ data class PostTaskRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("submitterType", required = true)
     val submitterType: TaskSubmitterTypeDTO,
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("defaultDeadline", required = true)
-    val defaultDeadline: kotlin.Long = 30L,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("resubmittable", required = true)
     val resubmittable: kotlin.Boolean,
@@ -54,6 +51,9 @@ data class PostTaskRequestDTO(
     @get:JsonProperty("participantLimit")
     val participantLimit: kotlin.Int? = null,
     @Schema(example = "null", description = "")
+    @get:JsonProperty("defaultDeadline")
+    val defaultDeadline: kotlin.Long? = 30L,
+    @Schema(example = "null", description = "")
     @get:JsonProperty("team")
     val team: kotlin.Long? = null,
     @Schema(example = "null", description = "")
@@ -64,5 +64,5 @@ data class PostTaskRequestDTO(
     val rank: kotlin.Int? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("topics")
-    val topics: kotlin.collections.List<kotlin.Long>? = arrayListOf()
+    val topics: kotlin.collections.List<kotlin.Long>? = arrayListOf(),
 ) {}

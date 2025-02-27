@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the BaseEntity class.
+ *               Usually, all entities should inherit from this class.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.common.persistent
 
 import jakarta.persistence.*
@@ -31,7 +40,9 @@ abstract class BaseEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     var id: IdType? = null,
-    @Column(nullable = false) @CreationTimestamp val createdAt: LocalDateTime? = null,
+    @Column(nullable = false, updatable = false)
+    @CreationTimestamp
+    val createdAt: LocalDateTime? = null,
     @Column(nullable = false) @UpdateTimestamp val updatedAt: LocalDateTime? = null,
-    var deletedAt: LocalDateTime? = null, // nullable
+    var deletedAt: LocalDateTime? = null,
 )

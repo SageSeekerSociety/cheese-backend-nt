@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TaskSubmissionEntry entity and its repository.
+ *               It stores the information of a single entry in a task submission.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task
 
 import jakarta.persistence.*
@@ -9,12 +18,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(
-    indexes =
-        [
-            Index(columnList = "task_submission_id"),
-        ]
-)
+@Table(indexes = [Index(columnList = "task_submission_id")])
 class TaskSubmissionEntry(
     @JoinColumn(nullable = false)
     @ManyToOne(fetch = FetchType.LAZY)

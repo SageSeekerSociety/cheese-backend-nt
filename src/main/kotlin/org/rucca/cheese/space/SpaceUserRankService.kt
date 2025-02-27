@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the SpaceUserRankService class.
+ *               It is responsible for managing a user's rank in a space.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.space
 
 import org.rucca.cheese.common.error.NotFoundError
@@ -46,7 +55,7 @@ class SpaceUserRankService(
                 SpaceUserRank(
                     space = Space().apply { id = spaceId },
                     user = User().apply { id = userId.toInt() },
-                    rank = Math.max(0, rank)
+                    rank = Math.max(0, rank),
                 )
             spaceUserRankRepository.save(spaceUserRank)
             return rank > 0

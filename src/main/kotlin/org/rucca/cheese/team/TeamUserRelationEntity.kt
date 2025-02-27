@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the TeamUserRelation entity and its repository.
+ *               It stores the relationship between a team and a user.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.team
 
 import jakarta.persistence.*
@@ -17,13 +26,7 @@ enum class TeamMemberRole {
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(
-    indexes =
-        [
-            Index(columnList = "team_id"),
-            Index(columnList = "user_id"),
-        ]
-)
+@Table(indexes = [Index(columnList = "team_id"), Index(columnList = "user_id")])
 class TeamUserRelation(
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val user: User? = null,
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val team: Team? = null,

@@ -1,3 +1,11 @@
+/*
+ *  Description: It tests the feature of team.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.api
 
 import kotlin.math.floor
@@ -23,10 +31,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 @TestMethodOrder(OrderAnnotation::class)
 class TeamTest
 @Autowired
-constructor(
-    private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-) {
+constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCreatorService) {
     lateinit var creator: UserCreatorService.CreateUserResponse
     lateinit var creatorToken: String
     lateinit var newOwner: UserCreatorService.CreateUserResponse

@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the SpaceClassificationTopicsService class.
+ *               It is responsible for managing a space's classification topics.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.space
 
 import java.time.LocalDateTime
@@ -41,7 +50,7 @@ class SpaceClassificationTopicsService(
             val relation =
                 SpaceClassificationTopicsRelation(
                     space = Space().apply { id = spaceId },
-                    topic = Topic().apply { id = it.toInt() }
+                    topic = Topic().apply { id = it.toInt() },
                 )
             topicsRelationRepository.save(relation)
         }

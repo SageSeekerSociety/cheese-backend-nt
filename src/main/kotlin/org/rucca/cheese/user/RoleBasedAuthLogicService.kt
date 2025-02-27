@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the RoleBasedAuthLogicService class.
+ *               It provides the logic for role-based authorization.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.user
 
 import javax.annotation.PostConstruct
@@ -11,7 +20,7 @@ import org.springframework.stereotype.Service
 @Service
 class RoleBasedAuthLogicService(
     private val authorizationService: AuthorizationService,
-    private val rolePermissionService: RolePermissionService
+    private val rolePermissionService: RolePermissionService,
 ) {
     @PostConstruct
     fun initialize() {
@@ -22,8 +31,7 @@ class RoleBasedAuthLogicService(
             resourceId: IdType?,
             authInfo: Map<String, Any>,
             resourceOwnerIdGetter: IdGetter?,
-            customLogicData: Any?,
-            ->
+            customLogicData: Any? ->
             audit(
                 userId,
                 action,
@@ -52,13 +60,7 @@ class RoleBasedAuthLogicService(
                 )
         val authorization = rolePermissionService.getAuthorizationForUserWithRole(userId, role)
         try {
-            authorizationService.audit(
-                authorization,
-                action,
-                resourceType,
-                resourceId,
-                authInfo,
-            )
+            authorizationService.audit(authorization, action, resourceType, resourceId, authInfo)
             return true
         } catch (e: PermissionDeniedError) {
             return false

@@ -19,5 +19,5 @@ data class GetSpace200ResponseDTO(
     val `data`: GetSpace200ResponseDataDTO,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("message", required = true)
-    val message: kotlin.String
+    val message: kotlin.String,
 ) {}

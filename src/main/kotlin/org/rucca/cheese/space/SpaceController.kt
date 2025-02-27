@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the SpaceController class.
+ *               It provides endpoints of /spaces.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.space
 
 import javax.annotation.PostConstruct
@@ -31,11 +40,10 @@ class SpaceController(
             resourceId: IdType?,
             _: Map<String, Any?>?,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             spaceService.isSpaceAdmin(
                 resourceId ?: throw IllegalArgumentException("resourceId is null"),
-                userId
+                userId,
             )
         }
     }
@@ -49,7 +57,7 @@ class SpaceController(
     @Guard("remove-admin", "space")
     override fun deleteSpaceAdmin(
         @ResourceId spaceId: Long,
-        userId: Long
+        userId: Long,
     ): ResponseEntity<DeleteSpace200ResponseDTO> {
         spaceService.removeSpaceAdmin(spaceId, userId)
         return ResponseEntity.ok(DeleteSpace200ResponseDTO(200, "OK"))
@@ -60,10 +68,7 @@ class SpaceController(
         @ResourceId spaceId: Long,
         queryMyRank: Boolean,
     ): ResponseEntity<GetSpace200ResponseDTO> {
-        val queryOptions =
-            SpaceQueryOptions(
-                queryMyRank = queryMyRank,
-            )
+        val queryOptions = SpaceQueryOptions(queryMyRank = queryMyRank)
         val spaceDTO = spaceService.getSpaceDto(spaceId, queryOptions)
         return ResponseEntity.ok(
             GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
@@ -76,7 +81,7 @@ class SpaceController(
         pageSize: Int?,
         pageStart: Long?,
         sortBy: String,
-        sortOrder: String
+        sortOrder: String,
     ): ResponseEntity<GetSpaces200ResponseDTO> {
         val by =
             when (sortBy) {
@@ -90,10 +95,7 @@ class SpaceController(
                 "desc" -> SortDirection.DESCENDING
                 else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
             }
-        val queryOptions =
-            SpaceQueryOptions(
-                queryMyRank = queryMyRank,
-            )
+        val queryOptions = SpaceQueryOptions(queryMyRank = queryMyRank)
         val (spaces, page) =
             spaceService.enumerateSpaces(by, order, pageSize ?: 10, pageStart, queryOptions)
         return ResponseEntity.ok(
@@ -104,7 +106,7 @@ class SpaceController(
     @Guard("modify", "space")
     override fun patchSpace(
         @ResourceId spaceId: Long,
-        patchSpaceRequestDTO: PatchSpaceRequestDTO
+        patchSpaceRequestDTO: PatchSpaceRequestDTO,
     ): ResponseEntity<GetSpace200ResponseDTO> {
         if (patchSpaceRequestDTO.name != null) {
             spaceService.updateSpaceName(spaceId, patchSpaceRequestDTO.name)
@@ -130,7 +132,7 @@ class SpaceController(
         if (patchSpaceRequestDTO.classificationTopics != null) {
             spaceService.updateSpaceClassificationTopics(
                 spaceId,
-                patchSpaceRequestDTO.classificationTopics
+                patchSpaceRequestDTO.classificationTopics,
             )
         }
         val spaceDTO = spaceService.getSpaceDto(spaceId, SpaceQueryOptions.MAXIMUM)
@@ -143,7 +145,7 @@ class SpaceController(
     override fun patchSpaceAdmin(
         @ResourceId spaceId: Long,
         userId: Long,
-        patchSpaceAdminRequestDTO: PatchSpaceAdminRequestDTO
+        patchSpaceAdminRequestDTO: PatchSpaceAdminRequestDTO,
     ): ResponseEntity<GetSpace200ResponseDTO> {
         if (patchSpaceAdminRequestDTO.role != null) {
             when (patchSpaceAdminRequestDTO.role) {
@@ -173,10 +175,10 @@ class SpaceController(
                 description = postSpaceRequestDTO.description,
                 avatarId = postSpaceRequestDTO.avatarId,
                 ownerId = authenticationService.getCurrentUserId(),
-                enableRank = postSpaceRequestDTO.enableRank,
+                enableRank = postSpaceRequestDTO.enableRank ?: false,
                 announcements = postSpaceRequestDTO.announcements,
                 taskTemplates = postSpaceRequestDTO.taskTemplates,
-                classificationTopics = postSpaceRequestDTO.classificationTopics ?: emptyList()
+                classificationTopics = postSpaceRequestDTO.classificationTopics ?: emptyList(),
             )
         val spaceDTO = spaceService.getSpaceDto(spaceId, SpaceQueryOptions.MAXIMUM)
         return ResponseEntity.ok(
@@ -187,7 +189,7 @@ class SpaceController(
     @Guard("add-admin", "space")
     override fun postSpaceAdmin(
         @ResourceId spaceId: Long,
-        postSpaceAdminRequestDTO: PostSpaceAdminRequestDTO
+        postSpaceAdminRequestDTO: PostSpaceAdminRequestDTO,
     ): ResponseEntity<GetSpace200ResponseDTO> {
         spaceService.addSpaceAdmin(spaceId, postSpaceAdminRequestDTO.userId)
         when (postSpaceAdminRequestDTO.role) {

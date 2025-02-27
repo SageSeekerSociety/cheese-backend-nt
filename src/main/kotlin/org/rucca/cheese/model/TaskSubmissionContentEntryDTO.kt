@@ -24,5 +24,5 @@ data class TaskSubmissionContentEntryDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("contentAttachment")
-    val contentAttachment: AttachmentDTO? = null
+    val contentAttachment: AttachmentDTO? = null,
 ) {}

@@ -1,3 +1,11 @@
+/*
+ *  Description: A controller class for testing the AuthorizationAspect class
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth
 
 import org.rucca.cheese.auth.annotation.Guard
@@ -11,9 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam
 class ExampleController {
     @GetMapping("/example2/1")
     @Guard("query", "example")
-    fun withId(
-        @RequestParam("id") @ResourceId id: IdType,
-    ): String {
+    fun withId(@RequestParam("id") @ResourceId id: IdType): String {
         return "example_1"
     }
 }

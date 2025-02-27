@@ -1,6 +1,18 @@
+/*
+ *  Description: This file defines the TaskController class.
+ *               It provides endpoints of /tasks.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *      HuanCheng65
+ *      nameisyui
+ *
+ */
+
 package org.rucca.cheese.task
 
 import javax.annotation.PostConstruct
+import kotlinx.coroutines.flow.Flow
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.TasksApi
 import org.rucca.cheese.auth.AuthenticationService
@@ -14,11 +26,14 @@ import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.convert
+import org.rucca.cheese.llm.error.ConversationNotFoundError
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.SpaceService
 import org.rucca.cheese.task.option.TaskEnumerateOptions
 import org.rucca.cheese.task.option.TaskQueryOptions
 import org.rucca.cheese.team.TeamService
+import org.rucca.cheese.user.UserService
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -43,6 +58,8 @@ class TaskController(
     private val teamService: TeamService,
     private val taskTopicsService: TaskTopicsService,
     private val taskMembershipService: TaskMembershipService,
+    private val taskAIAdviceService: TaskAIAdviceService,
+    private val userService: UserService,
 ) : TasksApi {
     @PostConstruct
     fun initialize() {
@@ -54,8 +71,7 @@ class TaskController(
             resourceId: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val memberId = authInfo["member"] as? IdType
             if (resourceId == null || memberId == null) {
                 false
@@ -70,8 +86,7 @@ class TaskController(
             resourceId: IdType?,
             _: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceId == null) {
                 false
             } else {
@@ -85,8 +100,7 @@ class TaskController(
             resourceId: IdType?,
             _: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceId == null) {
                 false
             } else {
@@ -100,8 +114,7 @@ class TaskController(
             _: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val memberId = authInfo["member"] as? IdType
             if (memberId == null) {
                 false
@@ -116,8 +129,7 @@ class TaskController(
             _: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val memberId = authInfo["member"] as? IdType
             if (memberId == null) {
                 false
@@ -132,8 +144,7 @@ class TaskController(
             _: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val req = authInfo["req"] as? PostTaskParticipantRequestDTO
             req?.deadline != null
         }
@@ -144,8 +155,7 @@ class TaskController(
             _: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val submissionId = authInfo["submission"] as? IdType
             if (submissionId == null) {
                 false
@@ -160,8 +170,7 @@ class TaskController(
             resourceId: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val approvedQuery = (authInfo["approved"] as? ApproveTypeDTO) == ApproveTypeDTO.APPROVED
             val approvedOfInstance =
                 if (resourceId != null) taskService.isTaskApproved(resourceId) else false
@@ -174,8 +183,7 @@ class TaskController(
             resourceId: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val memberId = authInfo["member"] as? IdType
             if (resourceId != null && memberId != null)
                 taskService.isParticipantApproved(resourceId, memberId)
@@ -188,8 +196,7 @@ class TaskController(
             resourceId: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val spaceId = authInfo["space"] as? IdType
             val spaceQueryAndAdmin =
                 if (spaceId != null) {
@@ -211,8 +218,7 @@ class TaskController(
             resourceId: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val teamId = authInfo["team"] as? IdType
             val teamQueryAndAdmin =
                 if (teamId != null) {
@@ -234,8 +240,7 @@ class TaskController(
             resourceId: IdType?,
             _: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceId != null) taskService.getTaskSpaceId(resourceId) != null else false
         }
         authorizationService.customAuthLogics.register("is-task-in-team") {
@@ -245,8 +250,7 @@ class TaskController(
             resourceId: IdType?,
             _: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceId != null) taskService.getTaskTeamId(resourceId) != null else false
         }
         authorizationService.customAuthLogics.register("task-has-any-participant") {
@@ -256,8 +260,7 @@ class TaskController(
             resourceId: IdType?,
             _: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceId == null) false else taskService.taskHasAnyParticipant(resourceId)
         }
         authorizationService.customAuthLogics.register("task-has-any-submission") {
@@ -267,8 +270,7 @@ class TaskController(
             resourceId: IdType?,
             _: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             if (resourceId == null) false
             else taskSubmissionService.taskHasAnySubmission(resourceId)
         }
@@ -279,14 +281,24 @@ class TaskController(
             _: IdType?,
             authInfo: Map<String, Any>,
             _: IdGetter?,
-            _: Any?,
-            ->
+            _: Any? ->
             val ownerId = authInfo["owner"] as? IdType
             if (ownerId == null) {
                 false
             } else {
                 ownerId == userId
             }
+        }
+        authorizationService.customAuthLogics.register("is-modifying-approved-to-none") {
+            _: IdType,
+            _: AuthorizedAction,
+            _: String,
+            _: IdType?,
+            authInfo: Map<String, Any>,
+            _: IdGetter?,
+            _: Any? ->
+            val approved = authInfo["approved"] as? ApproveTypeDTO
+            approved == ApproveTypeDTO.NONE
         }
     }
 
@@ -299,7 +311,7 @@ class TaskController(
     @Guard("remove-participant", "task")
     override fun deleteTaskParticipant(
         @ResourceId taskId: Long,
-        @AuthInfo("member") member: Long
+        @AuthInfo("member") member: Long,
     ): ResponseEntity<PostTaskParticipant200ResponseDTO> {
         taskMembershipService.removeTaskParticipant(taskId, member)
         val participants = taskMembershipService.getTaskMembershipDTOs(taskId, null)
@@ -307,7 +319,7 @@ class TaskController(
             PostTaskParticipant200ResponseDTO(
                 200,
                 PostTaskParticipant200ResponseDataDTO(participants),
-                "OK"
+                "OK",
             )
         )
     }
@@ -358,7 +370,7 @@ class TaskController(
             GetTaskParticipants200ResponseDTO(
                 200,
                 GetTaskParticipants200ResponseDataDTO(participants),
-                "OK"
+                "OK",
             )
         )
     }
@@ -373,7 +385,7 @@ class TaskController(
         pageSize: Int,
         pageStart: Long?,
         sortBy: String,
-        sortOrder: String
+        sortOrder: String,
     ): ResponseEntity<GetTaskSubmissions200ResponseDTO> {
         val by =
             when (sortBy) {
@@ -403,7 +415,7 @@ class TaskController(
             GetTaskSubmissions200ResponseDTO(
                 200,
                 GetTaskSubmissions200ResponseDataDTO(dtos, page),
-                "OK"
+                "OK",
             )
         )
     }
@@ -483,10 +495,15 @@ class TaskController(
     @Guard("modify", "task")
     override fun patchTask(
         @ResourceId taskId: Long,
-        patchTaskRequestDTO: PatchTaskRequestDTO
+        patchTaskRequestDTO: PatchTaskRequestDTO,
     ): ResponseEntity<GetTask200ResponseDTO> {
         if (patchTaskRequestDTO.approved != null) {
-            authorizationService.audit("modify-approved", "task", taskId)
+            authorizationService.audit(
+                "modify-approved",
+                "task",
+                taskId,
+                mapOf("approved" to patchTaskRequestDTO.approved),
+            )
             taskService.updateApproved(taskId, patchTaskRequestDTO.approved.convert())
         }
         if (patchTaskRequestDTO.rejectReason != null) {
@@ -530,9 +547,9 @@ class TaskController(
                     TaskSubmissionSchema(
                         it.index,
                         it.value.prompt,
-                        taskSubmissionService.convertTaskSubmissionEntryType(it.value.type)
+                        taskSubmissionService.convertTaskSubmissionEntryType(it.value.type),
                     )
-                }
+                },
             )
         }
         if (patchTaskRequestDTO.rank != null) {
@@ -551,27 +568,27 @@ class TaskController(
     override fun patchTaskMembership(
         @ResourceId taskId: Long,
         @AuthInfo("member") member: Long,
-        patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO
+        patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO,
     ): ResponseEntity<PatchTaskMembership200ResponseDTO> {
         if (patchTaskMembershipRequestDTO.approved != null) {
             taskMembershipService.updateTaskMembershipApproved(
                 taskId,
                 member,
-                patchTaskMembershipRequestDTO.approved.convert()
+                patchTaskMembershipRequestDTO.approved.convert(),
             )
         }
         if (patchTaskMembershipRequestDTO.deadline != null) {
             taskMembershipService.updateTaskMembershipDeadline(
                 taskId,
                 member,
-                patchTaskMembershipRequestDTO.deadline
+                patchTaskMembershipRequestDTO.deadline,
             )
         }
         if (patchTaskMembershipRequestDTO.realNameInfo != null) {
             taskMembershipService.updateTaskMembershipRealNameInfo(
                 taskId,
                 member,
-                patchTaskMembershipRequestDTO.realNameInfo
+                patchTaskMembershipRequestDTO.realNameInfo,
             )
         }
         val participants = taskMembershipService.getTaskMembershipDTOs(taskId, null)
@@ -579,7 +596,7 @@ class TaskController(
             PatchTaskMembership200ResponseDTO(
                 200,
                 PatchTaskMembership200ResponseDataDTO(participants),
-                "OK"
+                "OK",
             )
         )
     }
@@ -589,7 +606,7 @@ class TaskController(
         @ResourceId taskId: Long,
         @AuthInfo("member") member: Long,
         version: Int,
-        postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>
+        postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>,
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
         val contents = postTaskSubmissionRequestInnerDTO.toEntryList()
         val submissions =
@@ -598,13 +615,13 @@ class TaskController(
                 member,
                 authenticationService.getCurrentUserId(),
                 version,
-                contents
+                contents,
             )
         return ResponseEntity.ok(
             PostTaskSubmission200ResponseDTO(
                 200,
                 PostTaskSubmission200ResponseDataDTO(submissions),
-                "OK"
+                "OK",
             )
         )
     }
@@ -620,7 +637,7 @@ class TaskController(
                     taskService.convertTaskSubmitterType(postTaskRequestDTO.submitterType),
                 deadline = postTaskRequestDTO.deadline?.toLocalDateTime(),
                 participantLimit = postTaskRequestDTO.participantLimit,
-                defaultDeadline = postTaskRequestDTO.defaultDeadline,
+                defaultDeadline = postTaskRequestDTO.defaultDeadline ?: 30,
                 resubmittable = postTaskRequestDTO.resubmittable,
                 editable = postTaskRequestDTO.editable,
                 intro = postTaskRequestDTO.intro,
@@ -630,13 +647,13 @@ class TaskController(
                         TaskSubmissionSchema(
                             it.index,
                             it.value.prompt,
-                            taskSubmissionService.convertTaskSubmissionEntryType(it.value.type)
+                            taskSubmissionService.convertTaskSubmissionEntryType(it.value.type),
                         )
                     },
                 creatorId = authenticationService.getCurrentUserId(),
                 teamId = postTaskRequestDTO.team,
                 spaceId = postTaskRequestDTO.space,
-                rank = postTaskRequestDTO.rank
+                rank = postTaskRequestDTO.rank,
             )
         taskTopicsService.updateTaskTopics(taskId, postTaskRequestDTO.topics ?: emptyList())
         val taskDTO = taskService.getTaskDto(taskId, TaskQueryOptions.MAXIMUM)
@@ -649,7 +666,7 @@ class TaskController(
     override fun postTaskParticipant(
         @ResourceId taskId: Long,
         @AuthInfo("member") member: Long,
-        @AuthInfo("req") postTaskParticipantRequestDTO: PostTaskParticipantRequestDTO
+        @AuthInfo("req") postTaskParticipantRequestDTO: PostTaskParticipantRequestDTO,
     ): ResponseEntity<PostTaskParticipant200ResponseDTO> {
         val approved =
             if (postTaskParticipantRequestDTO.deadline != null) ApproveType.APPROVED
@@ -666,7 +683,7 @@ class TaskController(
             PostTaskParticipant200ResponseDTO(
                 200,
                 PostTaskParticipant200ResponseDataDTO(participants),
-                "OK"
+                "OK",
             )
         )
     }
@@ -675,7 +692,7 @@ class TaskController(
     override fun postTaskSubmission(
         @ResourceId taskId: Long,
         @AuthInfo("member") member: Long,
-        postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>
+        postTaskSubmissionRequestInnerDTO: List<PostTaskSubmissionRequestInnerDTO>,
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
         val contents = postTaskSubmissionRequestInnerDTO.toEntryList()
         val submissions =
@@ -683,13 +700,13 @@ class TaskController(
                 taskId,
                 member,
                 authenticationService.getCurrentUserId(),
-                contents
+                contents,
             )
         return ResponseEntity.ok(
             PostTaskSubmission200ResponseDTO(
                 200,
                 PostTaskSubmission200ResponseDataDTO(submissions),
-                "OK"
+                "OK",
             )
         )
     }
@@ -697,7 +714,7 @@ class TaskController(
     @Guard("create-submission-review", "task")
     override fun postTaskSubmissionReview(
         @AuthInfo("submission") submissionId: Long,
-        postTaskSubmissionReviewRequestDTO: PostTaskSubmissionReviewRequestDTO
+        postTaskSubmissionReviewRequestDTO: PostTaskSubmissionReviewRequestDTO,
     ): ResponseEntity<PostTaskSubmissionReview200ResponseDTO> {
         val hasUpgradedParticipantRank =
             taskSubmissionReviewService.createReview(
@@ -712,9 +729,9 @@ class TaskController(
                 200,
                 PostTaskSubmissionReview200ResponseDataDTO(
                     submissionDTO,
-                    hasUpgradedParticipantRank
+                    hasUpgradedParticipantRank,
                 ),
-                "OK"
+                "OK",
             )
         )
     }
@@ -722,26 +739,26 @@ class TaskController(
     @Guard("modify-submission-review", "task")
     override fun patchTaskSubmissionReview(
         @AuthInfo("submission") submissionId: Long,
-        patchTaskSubmissionReviewRequestDTO: PatchTaskSubmissionReviewRequestDTO
+        patchTaskSubmissionReviewRequestDTO: PatchTaskSubmissionReviewRequestDTO,
     ): ResponseEntity<PostTaskSubmissionReview200ResponseDTO> {
         var hasUpgradedParticipantRank = false
         if (patchTaskSubmissionReviewRequestDTO.accepted != null) {
             hasUpgradedParticipantRank =
                 taskSubmissionReviewService.updateReviewAccepted(
                     submissionId = submissionId,
-                    accepted = patchTaskSubmissionReviewRequestDTO.accepted
+                    accepted = patchTaskSubmissionReviewRequestDTO.accepted,
                 )
         }
         if (patchTaskSubmissionReviewRequestDTO.score != null) {
             taskSubmissionReviewService.updateReviewScore(
                 submissionId = submissionId,
-                score = patchTaskSubmissionReviewRequestDTO.score
+                score = patchTaskSubmissionReviewRequestDTO.score,
             )
         }
         if (patchTaskSubmissionReviewRequestDTO.comment != null) {
             taskSubmissionReviewService.updateReviewComment(
                 submissionId = submissionId,
-                comment = patchTaskSubmissionReviewRequestDTO.comment
+                comment = patchTaskSubmissionReviewRequestDTO.comment,
             )
         }
         val submissionDTO = taskSubmissionService.getSubmissionDTO(submissionId, queryReview = true)
@@ -750,18 +767,195 @@ class TaskController(
                 200,
                 PostTaskSubmissionReview200ResponseDataDTO(
                     submissionDTO,
-                    hasUpgradedParticipantRank
+                    hasUpgradedParticipantRank,
                 ),
-                "OK"
+                "OK",
             )
         )
     }
 
     @Guard("delete-submission-review", "task")
     override fun deleteTaskSubmissionReview(
-        @AuthInfo("submission") submissionId: Long,
+        @AuthInfo("submission") submissionId: Long
     ): ResponseEntity<Unit> {
         taskSubmissionReviewService.deleteReview(submissionId)
         return ResponseEntity.ok().build()
+    }
+
+    @Guard("query", "task/ai-advice")
+    override fun getTaskAiAdvice(
+        @ResourceId taskId: IdType
+    ): ResponseEntity<GetTaskAiAdvice200ResponseDTO> {
+        return ResponseEntity.ok(
+            GetTaskAiAdvice200ResponseDTO(200, taskAIAdviceService.getTaskAIAdvice(taskId), "OK")
+        )
+    }
+
+    @Guard("query", "task/ai-advice")
+    override fun getTaskAiAdviceStatus(
+        @ResourceId taskId: IdType
+    ): ResponseEntity<GetTaskAiAdviceStatus200ResponseDTO> {
+        val userId = authenticationService.getCurrentUserId()
+        val data = taskAIAdviceService.getTaskAIAdviceStatus(taskId)
+        return ResponseEntity.ok(GetTaskAiAdviceStatus200ResponseDTO(200, data, "OK"))
+    }
+
+    @Guard("create", "task/ai-advice")
+    override fun requestTaskAiAdvice(
+        @ResourceId taskId: IdType
+    ): ResponseEntity<RequestTaskAiAdvice200ResponseDTO> {
+        val userId = authenticationService.getCurrentUserId()
+        val data = taskAIAdviceService.requestTaskAIAdvice(taskId, userId)
+        return ResponseEntity.ok(RequestTaskAiAdvice200ResponseDTO(200, data, "OK"))
+    }
+
+    /**
+     * 流式获取科研建议对话（支持历史上下文）
+     *
+     * @param taskId 任务ID
+     * @param question 用户问题
+     * @param section 可选，关注的具体章节
+     * @param index 可选，章节中的索引
+     * @param conversationId 可选，继续特定对话的会话ID
+     * @param parentId 可选，继续特定消息的消息ID
+     * @param modelType 可选，使用的模型类型
+     * @return 流式返回AI回答和相关信息
+     */
+    @Guard("create", "task/ai-advice")
+    @GetMapping(
+        "/tasks/{taskId}/ai-advice/conversations/stream",
+        produces = [MediaType.TEXT_EVENT_STREAM_VALUE],
+    )
+    suspend fun streamTaskAiAdviceConversation(
+        @PathVariable @ResourceId taskId: IdType,
+        @RequestParam question: String,
+        @RequestParam(required = false) section: String? = null,
+        @RequestParam(required = false) index: Int? = null,
+        @RequestParam(required = false) @AuthInfo("conversationId") conversationId: String? = null,
+        @RequestParam(required = false) parentId: IdType? = null,
+        @RequestParam(required = false) modelType: String? = null,
+    ): Flow<String> {
+        val userId = authenticationService.getCurrentUserId()
+        val userDTO = userService.getUserDto(userId)
+        val context =
+            if (section != null) {
+                TaskAIAdviceConversationContextDTO(
+                    TaskAIAdviceConversationContextDTO.Section.valueOf(section),
+                    index,
+                )
+            } else {
+                null
+            }
+
+        return taskAIAdviceService.streamConversation(
+            taskId = taskId,
+            userId = userId,
+            question = question,
+            context = context,
+            conversationId = conversationId,
+            parentId = parentId,
+            modelType = modelType,
+            userNickname = userDTO.nickname,
+        )
+    }
+
+    /**
+     * 创建科研建议对话（支持历史上下文）
+     *
+     * @param taskId 任务ID
+     * @param createTaskAIAdviceConversationRequestDTO 包含问题、上下文、会话ID和模型类型的请求对象
+     * @return 对话DTO和配额信息
+     */
+    @Guard("create", "task/ai-advice")
+    override fun createTaskAiAdviceConversation(
+        @ResourceId taskId: IdType,
+        @RequestBody
+        createTaskAIAdviceConversationRequestDTO: CreateTaskAIAdviceConversationRequestDTO,
+    ): ResponseEntity<CreateTaskAiAdviceConversation200ResponseDTO> {
+        val userId = authenticationService.getCurrentUserId()
+        val userDTO = userService.getUserDto(userId)
+        val context =
+            createTaskAIAdviceConversationRequestDTO.context?.let {
+                TaskAIAdviceConversationContextDTO(
+                    TaskAIAdviceConversationContextDTO.Section.valueOf(it.section.toString()),
+                    it.index,
+                )
+            }
+
+        // 检查是继续对话还是新对话
+        val (conversation, quota) =
+            if (createTaskAIAdviceConversationRequestDTO.conversationId != null) {
+                // 继续已有对话
+                taskAIAdviceService.continueConversation(
+                    taskId = taskId,
+                    userId = userId,
+                    question = createTaskAIAdviceConversationRequestDTO.question,
+                    context = context,
+                    conversationId = createTaskAIAdviceConversationRequestDTO.conversationId,
+                    parentId = createTaskAIAdviceConversationRequestDTO.parentId,
+                    modelType = createTaskAIAdviceConversationRequestDTO.modelType,
+                    userNickname = userDTO.nickname,
+                )
+            } else {
+                // 创建新对话
+                taskAIAdviceService.startNewConversation(
+                    taskId = taskId,
+                    userId = userId,
+                    question = createTaskAIAdviceConversationRequestDTO.question,
+                    context = context,
+                    modelType = createTaskAIAdviceConversationRequestDTO.modelType,
+                    userNickname = userDTO.nickname,
+                )
+            }
+
+        return ResponseEntity.ok(
+            CreateTaskAiAdviceConversation200ResponseDTO(
+                code = 200,
+                data =
+                    TaskAIAdviceConversationResponseDTO(conversation = conversation, quota = quota),
+                message = "success",
+            )
+        )
+    }
+
+    @Guard("query", "task/ai-advice")
+    override fun getTaskAiAdviceConversationsGrouped(
+        @ResourceId taskId: Long
+    ): ResponseEntity<GetTaskAiAdviceConversationsGrouped200ResponseDTO> {
+        val conversationSummaries = taskAIAdviceService.getConversationGroupedSummary(taskId)
+        return ResponseEntity.ok(
+            GetTaskAiAdviceConversationsGrouped200ResponseDTO(
+                200,
+                GetTaskAiAdviceConversationsGrouped200ResponseDataDTO(conversationSummaries),
+                "OK",
+            )
+        )
+    }
+
+    @Guard("query", "task/ai-advice")
+    override fun getTaskAiAdviceConversation(
+        @ResourceId taskId: Long,
+        @AuthInfo("conversationId") conversationId: String,
+    ): ResponseEntity<GetTaskAiAdviceConversation200ResponseDTO> {
+        val conversations = taskAIAdviceService.getConversationById(taskId, conversationId)
+        if (conversations.isEmpty() || conversations.first().taskId != taskId) {
+            throw ConversationNotFoundError(conversationId)
+        }
+        return ResponseEntity.ok(
+            GetTaskAiAdviceConversation200ResponseDTO(
+                200,
+                GetTaskAiAdviceConversation200ResponseDataDTO(conversations),
+                "OK",
+            )
+        )
+    }
+
+    @Guard("delete", "task/ai-advice")
+    override fun deleteTaskAiAdviceConversation(
+        @ResourceId taskId: Long,
+        @AuthInfo("conversationId") conversationId: String,
+    ): ResponseEntity<Unit> {
+        taskAIAdviceService.deleteConversation(conversationId)
+        return ResponseEntity.noContent().build()
     }
 }

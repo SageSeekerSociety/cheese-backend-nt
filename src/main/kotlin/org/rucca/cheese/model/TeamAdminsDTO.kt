@@ -17,5 +17,5 @@ data class TeamAdminsDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("examples", required = true)
-    val examples: kotlin.collections.List<UserDTO>
+    val examples: kotlin.collections.List<UserDTO>,
 ) {}

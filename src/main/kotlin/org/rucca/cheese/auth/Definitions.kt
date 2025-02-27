@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the JWT token payload,
+ *               which is compatible with the legacy service.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth
 
 import org.rucca.cheese.common.persistent.IdType
@@ -18,13 +27,6 @@ data class Permission(
     val customLogicData: Any? = null,
 )
 
-data class Authorization(
-    val userId: IdType,
-    val permissions: List<Permission>,
-)
+data class Authorization(val userId: IdType, val permissions: List<Permission>)
 
-data class TokenPayload(
-    val authorization: Authorization,
-    val signedAt: Long,
-    val validUntil: Long,
-)
+data class TokenPayload(val authorization: Authorization, val signedAt: Long, val validUntil: Long)

@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the TaskSubmissionReviewService class.
+ *               It is responsible for CRUD operations on task submission reviews.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task
 
 import java.time.LocalDateTime
@@ -116,7 +125,7 @@ class TaskSubmissionReviewService(
             return spaceUserRankService.upgradeRank(
                 task.space!!.id!!,
                 membership.memberId!!,
-                task.rank!!
+                task.rank!!,
             )
         } else return false
     }

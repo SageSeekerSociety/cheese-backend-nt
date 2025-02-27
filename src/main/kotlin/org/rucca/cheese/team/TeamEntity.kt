@@ -1,3 +1,13 @@
+/*
+ *  Description: This file defines the Team entity and its repository.
+ *               It stores the information of a team.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *      CH3COOH-JYR
+ *
+ */
+
 package org.rucca.cheese.team
 
 import jakarta.persistence.*
@@ -11,12 +21,7 @@ import org.springframework.data.jpa.repository.Query
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(
-    indexes =
-        [
-            Index(columnList = "name"),
-        ]
-)
+@Table(indexes = [Index(columnList = "name")])
 @EntityListeners(TeamElasticSearchSyncListener::class)
 class Team(
     @Column(nullable = false) var name: String? = null,
@@ -77,8 +82,5 @@ interface TeamRepository : JpaRepository<Team, IdType> {
         AND taskMembership.task.id = :taskId
         """
     )
-    fun getTeamsThatUserJoinedTaskAs(
-        taskId: IdType,
-        userId: IdType,
-    ): List<Team>
+    fun getTeamsThatUserJoinedTaskAs(taskId: IdType, userId: IdType): List<Team>
 }

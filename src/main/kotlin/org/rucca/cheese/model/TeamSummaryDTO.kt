@@ -29,5 +29,5 @@ data class TeamSummaryDTO(
     val updatedAt: kotlin.Long? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("createdAt")
-    val createdAt: kotlin.Long? = null
+    val createdAt: kotlin.Long? = null,
 ) {}

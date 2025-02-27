@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the AuthenticationService class.
+ *               It is responsible for providing the current user's authentication information.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth
 
 import org.rucca.cheese.auth.error.AuthenticationRequiredError
@@ -7,9 +16,7 @@ import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 
 @Service
-class AuthenticationService(
-    private val authorizationService: AuthorizationService,
-) {
+class AuthenticationService(private val authorizationService: AuthorizationService) {
     fun getToken(): String {
         return (RequestContextHolder.currentRequestAttributes() as ServletRequestAttributes)
             .request

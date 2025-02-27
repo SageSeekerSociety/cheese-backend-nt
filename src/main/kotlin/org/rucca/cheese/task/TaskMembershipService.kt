@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the TaskMembershipService class.
+ *               It is responsible for CRUD of task's membership.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task
 
 import jakarta.persistence.EntityManager
@@ -162,17 +171,13 @@ class TaskMembershipService(
                 memberId = memberId,
                 deadline = deadline,
                 approved = approved,
-                realNameInfo = realNameInfo?.convert() ?: DefaultTaskMembershipRealNameInfo
+                realNameInfo = realNameInfo?.convert() ?: DefaultTaskMembershipRealNameInfo,
             )
         )
         autoRejectParticipantAfterReachesLimit(taskId)
     }
 
-    fun updateTaskMembershipDeadline(
-        taskId: IdType,
-        memberId: IdType,
-        deadline: Long,
-    ) {
+    fun updateTaskMembershipDeadline(taskId: IdType, memberId: IdType, deadline: Long) {
         val participant = getTaskMembership(taskId, memberId)
         if (participant.approved == ApproveType.APPROVED) {
             participant.deadline = deadline.toLocalDateTime()
@@ -204,7 +209,7 @@ class TaskMembershipService(
                     val participants =
                         taskMembershipRepository.findAllByTaskIdAndApproved(
                             taskId,
-                            ApproveType.NONE
+                            ApproveType.NONE,
                         )
                     participants.forEach {
                         it.approved = ApproveType.DISAPPROVED
@@ -279,13 +284,13 @@ class TaskMembershipService(
                 val actual =
                     taskMembershipRepository.countByTaskIdAndApproved(
                         task.id!!,
-                        ApproveType.APPROVED
+                        ApproveType.APPROVED,
                     )
                 if (actual >= task.participantLimit!!)
                     return TaskParticipantsReachedLimitError(
                         task.id!!,
                         task.participantLimit!!,
-                        actual
+                        actual,
                     )
             }
         }
@@ -313,9 +318,9 @@ class TaskMembershipService(
                     taskMembershipRepository.existsByTaskIdAndMemberIdAndApproved(
                         task.id!!,
                         userId,
-                        ApproveType.APPROVED
+                        ApproveType.APPROVED,
                     ),
-                    null
+                    null,
                 )
             TaskSubmitterType.TEAM -> {
                 val teams = teamService.getTeamsThatUserCanUseToSubmitTask(task.id!!, userId)
@@ -328,11 +333,8 @@ class TaskMembershipService(
         when (task.submitterType!!) {
             TaskSubmitterType.USER ->
                 return Pair(
-                    taskMembershipRepository.existsByTaskIdAndMemberId(
-                        task.id!!,
-                        userId,
-                    ),
-                    null
+                    taskMembershipRepository.existsByTaskIdAndMemberId(task.id!!, userId),
+                    null,
                 )
             TaskSubmitterType.TEAM -> {
                 val teams = teamService.getTeamsThatUserJoinedTaskAs(task.id!!, userId)
@@ -344,7 +346,7 @@ class TaskMembershipService(
     fun getJoinedWithApproveType(
         task: Task,
         userId: IdType,
-        approveType: ApproveType
+        approveType: ApproveType,
     ): Pair<Boolean, List<TeamSummaryDTO>?> {
         when (task.submitterType!!) {
             TaskSubmitterType.USER ->
@@ -354,14 +356,14 @@ class TaskMembershipService(
                         userId,
                         approveType,
                     ),
-                    null
+                    null,
                 )
             TaskSubmitterType.TEAM -> {
                 val teams =
                     teamService.getTeamsThatUserJoinedTaskAsWithApprovedType(
                         task.id!!,
                         userId,
-                        approveType
+                        approveType,
                     )
                 return Pair(teams.isNotEmpty(), teams)
             }

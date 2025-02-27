@@ -1,3 +1,15 @@
+/*
+ *  Description: This file defines the TaskMembership entity and its repository.
+ *               It stores the information of a task's membership.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *      HuanCheng65
+ *      nameisyui
+ *      CH3COOH-JYR
+ *
+ */
+
 package org.rucca.cheese.task
 
 import jakarta.persistence.*
@@ -26,13 +38,7 @@ class TaskMembershipRealNameInfo(
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(
-    indexes =
-        [
-            Index(columnList = "task_id"),
-            Index(columnList = "member_id"),
-        ]
-)
+@Table(indexes = [Index(columnList = "task_id"), Index(columnList = "member_id")])
 class TaskMembership(
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val task: Task? = null,
     @Column(nullable = false) val memberId: IdType? = null,
@@ -53,7 +59,7 @@ interface TaskMembershipRepository : JpaRepository<TaskMembership, IdType> {
     fun existsByTaskIdAndMemberIdAndApproved(
         taskId: IdType,
         memberId: IdType,
-        approved: ApproveType
+        approved: ApproveType,
     ): Boolean
 
     fun existsByTaskId(taskId: IdType): Boolean

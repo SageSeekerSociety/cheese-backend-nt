@@ -16,5 +16,5 @@ data class GetTasks200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("page")
-    val page: PageDTO? = null
+    val page: PageDTO? = null,
 ) {}

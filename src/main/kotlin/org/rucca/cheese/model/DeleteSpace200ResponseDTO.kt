@@ -13,5 +13,5 @@ data class DeleteSpace200ResponseDTO(
     val code: kotlin.Int,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("message", required = true)
-    val message: kotlin.String
+    val message: kotlin.String,
 ) {}

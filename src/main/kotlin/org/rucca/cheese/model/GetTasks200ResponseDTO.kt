@@ -19,5 +19,5 @@ data class GetTasks200ResponseDTO(
     val `data`: GetTasks200ResponseDataDTO? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("message")
-    val message: kotlin.String? = null
+    val message: kotlin.String? = null,
 ) {}

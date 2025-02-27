@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the AuthorizationAspect class.
+ *               It is responsible for intercepting controller methods.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth
 
 import org.aspectj.lang.JoinPoint
@@ -17,16 +26,19 @@ import org.springframework.stereotype.Component
 
 @Aspect
 @Component
-class AuthorizationAspect(
-    private val authorizationService: AuthorizationService,
-) {
+class AuthorizationAspect(private val authorizationService: AuthorizationService) {
     @Before(
         "@within(org.springframework.web.bind.annotation.RestController) || " +
             "@within(org.springframework.stereotype.Controller)"
     )
     fun checkAuthorization(joinPoint: JoinPoint) {
+        if (joinPoint.target.javaClass.name.startsWith("org.springframework.boot")) {
+            return
+        }
+
         val method = (joinPoint.signature as MethodSignature).method
         val guardAnnotation: Guard? = method.getAnnotation<Guard>(Guard::class.java)
+
         val noAuthAnnotation: NoAuth? = method.getAnnotation<NoAuth>(NoAuth::class.java)
         if (noAuthAnnotation == null) {
             if (guardAnnotation == null)

@@ -1,3 +1,12 @@
+/*
+ *  Description: This file defines the PermissionDeniedError class.
+ *               It is thrown when the token does not have the permission to perform the action on the resource.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.auth.error
 
 import org.rucca.cheese.auth.AuthorizedAction
@@ -19,5 +28,5 @@ class PermissionDeniedError(
             "resourceType" to resourceType,
             "resourceId" to resourceId,
             "authInfo" to authInfo,
-        )
+        ),
     )

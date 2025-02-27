@@ -15,5 +15,5 @@ data class PostSpaceAdminRequestDTO(
     val role: SpaceAdminRoleTypeDTO,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("userId", required = true)
-    val userId: kotlin.Long
+    val userId: kotlin.Long,
 ) {}

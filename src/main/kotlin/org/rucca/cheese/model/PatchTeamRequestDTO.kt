@@ -21,5 +21,5 @@ data class PatchTeamRequestDTO(
     val name: kotlin.String? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("avatarId")
-    val avatarId: kotlin.Long? = null
+    val avatarId: kotlin.Long? = null,
 ) {}

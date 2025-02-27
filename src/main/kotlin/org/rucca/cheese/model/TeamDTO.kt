@@ -58,5 +58,5 @@ data class TeamDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("role")
-    val role: TeamMemberRoleTypeDTO? = null
+    val role: TeamMemberRoleTypeDTO? = null,
 ) {}

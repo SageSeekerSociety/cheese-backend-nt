@@ -1,4 +1,13 @@
 /*
+ *  Description: This file implements the PageHelper class.
+ *               It is responsible for paginating data.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
+/*
  *
  * This file has exactly the same logic as the one in the legacy project.
  * See: https://github.com/SageSeekerSociety/cheese-backend/blob/dev/src/common/helper/page.helper.ts
@@ -59,7 +68,7 @@ object PageHelper {
             pageSize,
             prev.isNotEmpty(),
             if (prev.isNotEmpty()) idGetterPrev(prev.last()) else null,
-            idGetter
+            idGetter,
         )
     }
 
@@ -76,13 +85,13 @@ object PageHelper {
         pageStart: IdType?,
         pageSize: Int,
         idGetter: (TData) -> IdType,
-        errorIfNotFound: ((IdType) -> Unit)?
+        errorIfNotFound: ((IdType) -> Unit)?,
     ): Pair<List<TData>, PageDTO> {
         if (pageStart == null) {
             return pageStart(
                 allData.subList(0, min(pageSize + 1, allData.size)),
                 pageSize,
-                idGetter
+                idGetter,
             )
         } else {
             val pageStartIndex = allData.indexOfFirst { idGetter(it) == pageStart }
@@ -117,7 +126,7 @@ object PageHelper {
                     prevStart = prevStart,
                     hasMore = false,
                     nextStart = null,
-                )
+                ),
             )
         } else if (data.size > pageSize) {
             return Pair(
@@ -129,7 +138,7 @@ object PageHelper {
                     prevStart = prevStart,
                     hasMore = true,
                     nextStart = idGetter(data[pageSize]),
-                )
+                ),
             )
         } else {
             return Pair(
@@ -141,7 +150,7 @@ object PageHelper {
                     prevStart = prevStart,
                     hasMore = false,
                     nextStart = null,
-                )
+                ),
             )
         }
     }

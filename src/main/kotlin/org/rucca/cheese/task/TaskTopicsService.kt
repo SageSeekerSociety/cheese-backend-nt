@@ -1,3 +1,12 @@
+/*
+ *  Description: This file implements the TaskTopicsService class.
+ *               It is responsible for CRUD of a task's topics.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.task
 
 import java.time.LocalDateTime
@@ -41,7 +50,7 @@ class TaskTopicsService(
             val relation =
                 TaskTopicsRelation(
                     task = Task().apply { id = taskId },
-                    topic = Topic().apply { id = it.toInt() }
+                    topic = Topic().apply { id = it.toInt() },
                 )
             topicsRelationRepository.save(relation)
         }

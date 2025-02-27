@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.5</version>
+        <version>3.4.2</version>
         <relativePath/>
     </parent>
 
@@ -31,7 +31,7 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <kotlin.version>2.0.21</kotlin.version>
+        <kotlin.version>2.1.10</kotlin.version>
     </properties>
 
     <!-- Project Dependencies -->
@@ -79,6 +79,10 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-kotlin</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
@@ -110,12 +114,12 @@
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations</artifactId>
-            <version>2.2.25</version>
+            <version>2.2.27</version>
         </dependency>
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-models</artifactId>
-            <version>2.2.25</version>
+            <version>2.2.28</version>
         </dependency>
         <dependency>
             <groupId>com.ninja-squad</groupId>
@@ -131,28 +135,28 @@
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
-            <version>4.4.0</version>
+            <version>4.5.0</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
-            <version>3.1.9</version>
+            <version>3.1.10</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-json-jackson</artifactId>
-            <version>3.1.9</version>
+            <version>3.1.10</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-multipart</artifactId>
-            <version>3.1.9</version>
+            <version>3.1.10</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.inject</groupId>
             <artifactId>jersey-hk2</artifactId>
-            <version>3.1.9</version>
+            <version>3.1.10</version>
         </dependency>
         <dependency>
             <groupId>org.parboiled</groupId>
@@ -163,6 +167,48 @@
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
             <version>9.7.1</version>
+        </dependency>
+        <dependency>
+            <groupId>top.huanchengfly.openai</groupId>
+            <artifactId>openai-client-jvm</artifactId>
+            <version>4.0.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-client-java-jvm</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-batch</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.batch</groupId>
+            <artifactId>spring-batch-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-coroutines-reactor</artifactId>
+            <version>1.8.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-63</artifactId>
+            <version>3.9.2</version>
         </dependency>
     </dependencies>
 
@@ -194,14 +240,14 @@
                     <dependency>
                         <groupId>org.jetbrains.kotlin</groupId>
                         <artifactId>kotlin-maven-noarg</artifactId>
-                        <version>2.0.21</version>
+                        <version>2.1.10</version>
                     </dependency>
                 </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>7.9.0</version>
+                <version>7.10.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -245,6 +291,8 @@
                                 <echo append="true" file="design/DB/CREATE.sql">-- The following content is generated by JPA according to entity classes --${line.separator}</echo>
                                 <echo append="true" file="design/DB/CREATE.sql">---------------------------------------------------------------------------${line.separator}</echo>
                                 <java failonerror="true" fork="true" jar="target/${project.build.finalName}.jar">
+                                    <!-- Disable web application type to avoid port conflict. -->
+                                    <arg value="--spring.main.web-application-type=NONE"/>
                                     <!-- See: https://www.datanucleus.org/products/accessplatform_6_0/jakarta/persistence.html#schema-generation -->
                                     <arg value="--spring.jpa.properties.jakarta.persistence.schema-generation.scripts.action=create"/>
                                     <arg value="--spring.jpa.properties.jakarta.persistence.schema-generation.scripts.create-target=design/DB/CREATE.sql"/>
@@ -279,6 +327,7 @@
                                 <echo append="true" file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md">All files in this directory are generated, including this markdown, so DO NOT MODIFY them!${line.separator}${line.separator}</echo>
                                 <echo append="true" file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md">If you want to modify the API, modify the OpenAPI specification file and run ```./mvnw install``` again.${line.separator}${line.separator}</echo>
                                 <copy file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md" todir="src/main/kotlin/org/rucca/cheese/api"/>
+                                <delete dir="target/generated-sources/openapi"/>
                             </target>
                         </configuration>
                     </execution>
@@ -301,7 +350,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.43.0</version>
+                <version>2.44.2</version>
                 <configuration>
                     <java>
                         <googleJavaFormat/>
@@ -323,6 +372,11 @@
                         </includes>
                         <dbeaver/>
                     </sql>
+                    <markdown>
+                        <includes>
+                            <include>**/*.md</include>
+                        </includes>
+                    </markdown>
                 </configuration>
                 <executions>
                     <execution>

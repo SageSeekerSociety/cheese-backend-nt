@@ -1,3 +1,11 @@
+/*
+ *  Description: Responsible for creating attachments in the legacy system.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
 package org.rucca.cheese.utils
 
 import jakarta.ws.rs.client.ClientBuilder
@@ -12,9 +20,7 @@ import org.rucca.cheese.common.persistent.IdType
 import org.springframework.stereotype.Service
 
 @Service
-class AttachmentCreatorService(
-    private val applicationConfig: ApplicationConfig,
-) {
+class AttachmentCreatorService(private val applicationConfig: ApplicationConfig) {
     fun createAttachment(token: String): IdType {
         val file = File.createTempFile("attachment", ".txt")
         file.writeText("This is a test attachment")
