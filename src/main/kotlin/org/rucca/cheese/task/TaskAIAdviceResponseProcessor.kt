@@ -19,10 +19,10 @@ class TaskAIAdviceResponseProcessor(private val objectMapper: ObjectMapper) :
 
     // 记录上次检查的缓冲区长度
     private var lastCheckedLength = 0
-    
+
     // 存储待处理的内容，包括可能需要确认是否为分隔符的内容
     private var pendingBuffer = StringBuilder()
-    
+
     // 标记是否已经遇到了分隔符，如果为true，则后续所有内容都不应该发送给前端
     private var foundDelimiter = false
 
@@ -79,44 +79,44 @@ class TaskAIAdviceResponseProcessor(private val objectMapper: ObjectMapper) :
         if (incrementalContent.isEmpty()) {
             return StreamChunkResult(content = "", shouldSkip = true)
         }
-        
+
         // 如果已经找到了分隔符，所有后续内容都不应该发送
         if (foundDelimiter) {
             logger.debug("已发现分隔符，跳过后续内容: $incrementalContent")
             return StreamChunkResult(content = "", shouldSkip = true)
         }
-        
+
         // 添加新增内容到待处理缓冲区
         pendingBuffer.append(incrementalContent)
         val pendingContent = pendingBuffer.toString()
-        
+
         // 1. 检查待处理缓冲区中是否包含完整分隔符
         if (pendingContent.contains(followupQuestionsDelimiter)) {
             val delimiterIndex = pendingContent.indexOf(followupQuestionsDelimiter)
             // 只发送分隔符之前的安全内容
             val safeContent = pendingContent.substring(0, delimiterIndex)
-            
+
             // 标记已找到分隔符，后续内容不应发送
             foundDelimiter = true
-            
+
             // 保留分隔符后的内容在待处理缓冲区中
             pendingBuffer.delete(0, delimiterIndex + followupQuestionsDelimiter.length)
-            
+
             logger.debug("检测到完整分隔符，发送分隔符之前的内容: $safeContent")
             logger.debug("保留分隔符后的内容: ${pendingBuffer.toString()}")
-            
+
             return StreamChunkResult(content = safeContent, shouldSkip = false)
         }
-        
+
         // 2. 检查待处理缓冲区末尾是否可能是分隔符的一部分
         var maxSafeLength = pendingContent.length
-        
+
         // 从最长的可能分隔符部分开始检查
         for (i in followupQuestionsDelimiter.length - 1 downTo 1) {
             if (pendingContent.length < i) {
                 continue // 内容长度不足以匹配这个长度
             }
-            
+
             val tailPart = pendingContent.takeLast(i)
             if (followupQuestionsDelimiter.startsWith(tailPart)) {
                 // 如果尾部与分隔符开头匹配，将这部分标记为不安全
@@ -125,13 +125,13 @@ class TaskAIAdviceResponseProcessor(private val objectMapper: ObjectMapper) :
                 break
             }
         }
-        
+
         // 如果整个待处理内容可能都是分隔符的一部分，不发送任何内容
         if (maxSafeLength <= 0) {
             logger.debug("所有待处理内容可能都是分隔符的一部分，不发送任何内容")
             return StreamChunkResult(content = "", shouldSkip = true)
         }
-        
+
         // 只发送安全部分，并从待处理缓冲区中移除
         val safeContent = pendingContent.substring(0, maxSafeLength)
         pendingBuffer.delete(0, maxSafeLength)

@@ -19,10 +19,8 @@ class SeuCalculationService(private val llmProperties: LLMProperties) {
                 AIResourceType.LIGHTWEIGHT -> BigDecimal.ONE
                 AIResourceType.STANDARD -> {
                     if (resourceType.dynamicCost) {
-                        calculateDynamicCost(
-                            tokensUsed,
-                            llmProperties.quota.standardTokenRatio,
-                        ).max(BigDecimal(resourceType.baseSeuCost))
+                        calculateDynamicCost(tokensUsed, llmProperties.quota.standardTokenRatio)
+                            .max(BigDecimal(resourceType.baseSeuCost))
                     } else {
                         BigDecimal(resourceType.baseSeuCost)
                     }

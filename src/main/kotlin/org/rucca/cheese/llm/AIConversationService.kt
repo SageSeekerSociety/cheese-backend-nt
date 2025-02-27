@@ -5,6 +5,7 @@ import com.aallam.openai.api.chat.ChatReference
 import com.aallam.openai.api.chat.ChatRole
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.persistence.EntityNotFoundException
+import java.math.RoundingMode
 import java.time.OffsetDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -13,7 +14,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.llm.error.ConversationNotFoundError
-import org.rucca.cheese.llm.model.AIResourceType
 import org.rucca.cheese.llm.processor.ResponseProcessorRegistry
 import org.rucca.cheese.llm.service.LLMService
 import org.rucca.cheese.llm.service.UserQuotaService
@@ -22,7 +22,6 @@ import org.rucca.cheese.model.AIMessageDTO
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.math.RoundingMode
 
 /** 通用AI对话服务，处理对话和消息的创建、查询和流式输出 */
 @Service
@@ -240,7 +239,9 @@ class AIConversationService(
 
                     // 发送token和SEU消耗信息
                     emit("[TOKENS_USED]${tokensUsed}")
-                    emit("[SEU_CONSUMED]${quotaConsumption.seuConsumed.setScale(2, RoundingMode.HALF_UP).toDouble()}")
+                    emit(
+                        "[SEU_CONSUMED]${quotaConsumption.seuConsumed.setScale(2, RoundingMode.HALF_UP).toDouble()}"
+                    )
 
                     // 7. 保存消息
                     if (conversationId != null) {

@@ -1,5 +1,6 @@
 package org.rucca.cheese.llm
 
+import java.math.RoundingMode
 import org.rucca.cheese.api.AiApi
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.annotation.Guard
@@ -8,7 +9,6 @@ import org.rucca.cheese.model.GetUserAiQuota200ResponseDTO
 import org.rucca.cheese.model.QuotaInfoDTO
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
-import java.math.RoundingMode
 
 @RestController
 class AIController(

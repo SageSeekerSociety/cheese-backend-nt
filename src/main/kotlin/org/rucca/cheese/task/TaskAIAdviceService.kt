@@ -3,6 +3,7 @@ package org.rucca.cheese.task
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import java.math.RoundingMode
 import java.security.MessageDigest
 import java.time.OffsetDateTime
 import kotlinx.coroutines.*
@@ -16,7 +17,6 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.llm.*
 import org.rucca.cheese.llm.config.LLMProperties
 import org.rucca.cheese.llm.error.LLMError.*
-import org.rucca.cheese.llm.model.AIResourceType
 import org.rucca.cheese.llm.service.LLMService
 import org.rucca.cheese.llm.service.UserQuotaService
 import org.rucca.cheese.model.*
@@ -25,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.math.RoundingMode
 
 @Service
 class TaskAIAdviceService(
@@ -863,7 +862,8 @@ $description
             reasoningTimeMs = assistantMessage.reasoningTimeMs,
             followupQuestions = followupQuestions,
             tokensUsed = assistantMessage.tokensUsed ?: 0,
-            seuConsumed = assistantMessage.seuConsumed?.setScale(2, RoundingMode.HALF_UP)?.toDouble() ?: 0.0,
+            seuConsumed =
+                assistantMessage.seuConsumed?.setScale(2, RoundingMode.HALF_UP)?.toDouble() ?: 0.0,
             references = references,
             conversationId = conversationId,
             parentId = userMessage.parentId,

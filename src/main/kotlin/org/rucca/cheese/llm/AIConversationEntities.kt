@@ -87,7 +87,8 @@ class AIMessageEntity : BaseEntity() {
             reasoningContent = reasoningContent,
             reasoningTimeMs = reasoningTimeMs,
             tokensUsed = tokensUsed ?: 0,
-            seuConsumed = seuConsumed?.setScale(2, java.math.RoundingMode.HALF_UP)?.toDouble() ?: 0.0,
+            seuConsumed =
+                seuConsumed?.setScale(2, java.math.RoundingMode.HALF_UP)?.toDouble() ?: 0.0,
             metadata = metadata?.toDTO(),
             createdAt = OffsetDateTime.of(createdAt, OffsetDateTime.now().offset),
         )

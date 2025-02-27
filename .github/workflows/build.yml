@@ -25,7 +25,27 @@ jobs:
           settings-path: ${{ github.workspace }} # location for the settings.xml file
 
       - name: Setup Services
-        run: doc/script/dependency-start.sh
+        run: |
+          docker compose -f docker-compose.yml up -d
+
+          echo "Waiting for services to be ready..."
+          timeout=180
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if docker compose ps | grep -q "healthy"; then
+              echo "All services are ready"
+              break
+            fi
+            echo "Waiting for health check... ${elapsed}s/${timeout}s"
+            sleep 10
+            elapsed=$((elapsed + 10))
+          done
+
+          if [ $elapsed -ge $timeout ]; then
+            echo "Services startup timeout!"
+            docker compose logs
+            exit 1
+          fi
 
       - name: Build with Maven
         run: ./mvnw install
