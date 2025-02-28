@@ -1,6 +1,7 @@
 package org.rucca.cheese.llm.service
 
 import java.math.BigDecimal
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.OffsetDateTime
@@ -20,7 +21,6 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.Duration
 
 @Service
 class UserQuotaService(
@@ -228,9 +228,10 @@ class UserQuotaService(
         val now = LocalDateTime.now()
         val resetTime = LocalTime.of(properties.quota.resetHour, properties.quota.resetMinute)
         val lastResetDateTime = quota.lastResetTime
-        val nextResetAfterLastReset = lastResetDateTime.toLocalDate()
-            .atTime(resetTime)
-            .let { if (lastResetDateTime.toLocalTime().isAfter(resetTime)) it.plusDays(1) else it }
+        val nextResetAfterLastReset =
+            lastResetDateTime.toLocalDate().atTime(resetTime).let {
+                if (lastResetDateTime.toLocalTime().isAfter(resetTime)) it.plusDays(1) else it
+            }
 
         if (now.isAfter(nextResetAfterLastReset)) {
             try {
@@ -239,12 +240,14 @@ class UserQuotaService(
                 // 同步更新 Redis
                 val quotaKey = "$QUOTA_KEY_PREFIX${quota.userId}"
                 val expirationSeconds = calculateSecondsUntilNextReset()
-                redisTemplate.opsForValue().set(
-                    quotaKey,
-                    quota.remainingSeu.toString(),
-                    expirationSeconds,
-                    TimeUnit.SECONDS,
-                )
+                redisTemplate
+                    .opsForValue()
+                    .set(
+                        quotaKey,
+                        quota.remainingSeu.toString(),
+                        expirationSeconds,
+                        TimeUnit.SECONDS,
+                    )
             } catch (e: Exception) {
                 logger.error("Failed to reset quota", e)
                 throw QuotaResetError("Failed to reset quota")

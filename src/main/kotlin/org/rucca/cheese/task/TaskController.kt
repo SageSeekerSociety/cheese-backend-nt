@@ -840,7 +840,7 @@ class TaskController(
         // 添加 X-Accel-Buffering: no 头部，防止 Nginx 缓冲 SSE 响应
         response.setHeader("X-Accel-Buffering", "no")
         response.setHeader("Cache-Control", "no-cache")
-        
+
         val userId = authenticationService.getCurrentUserId()
         val userDTO = userService.getUserDto(userId)
         val context =
