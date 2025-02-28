@@ -2,9 +2,14 @@ package org.rucca.cheese.notification
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType
 import jakarta.persistence.*
 import java.util.*
+import kotlinx.serialization.Serializable
+import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.SQLRestriction
+import org.hibernate.annotations.Type
+import org.hibernate.type.SqlTypes
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.user.User
@@ -27,6 +32,7 @@ enum class NotificationType(@JsonValue val type: String) {
     }
 }
 
+@Serializable
 data class NotificationContent(
     val text: String,
     val projectId: Long?,
@@ -38,17 +44,15 @@ data class NotificationContent(
 @Table(name = "notification")
 @SQLRestriction("deleted_at IS NULL")
 class Notification(
-    //    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: IdType? = null,
     @Enumerated(EnumType.STRING) @Column(nullable = false) var type: NotificationType,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id", nullable = false)
     var receiver: User,
-    //    @Column(columnDefinition = "jsonb", nullable = false)
-    //    var content: String, // JSON 格式存储 NotificationContent
-    @Column(nullable = false) var content: String,
+    @Type(JsonBinaryType::class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "content", columnDefinition = "JSONB")
+    var content: NotificationContent,
     @Column(nullable = false) var read: Boolean = false,
-    //    @Column(name = "created_at", nullable = false) var createdAt: Long =
-    // System.currentTimeMillis(),
 ) : BaseEntity()
 
 interface NotificationRepository : JpaRepository<Notification, IdType> {

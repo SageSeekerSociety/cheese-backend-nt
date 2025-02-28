@@ -2488,7 +2488,25 @@ paths:
             application/json:
               schema:
                 type: object
-                properties: {}
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      notificationIds:
+                        type: array
+                        items:
+                          type: integer
+                          format: int64
   /notifications/unread/count:
     get:
       summary: Get Unread Notifications Count
@@ -4152,8 +4170,22 @@ components:
           format: int64
           description: "The ID of the user who will receive the notification. This will be mapped to a User entity in the backend."
         content:
-          type: string
-          description: "JSON string representing notification content, including text, projectId, discussionId, and knowledgeId."
+          type: object
+          properties:
+            text:
+              type: string
+            projectId:
+              type: integer
+              format: int64
+              nullable: true
+            discussionId:
+              type: integer
+              format: int64
+              nullable: true
+            knowledgeId:
+              type: integer
+              format: int64
+              nullable: true
         read:
           type: boolean
           default: false

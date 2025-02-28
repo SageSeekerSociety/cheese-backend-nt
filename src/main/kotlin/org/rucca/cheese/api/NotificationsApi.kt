@@ -14,6 +14,7 @@ import javax.validation.constraints.NotNull
 import org.rucca.cheese.model.DeleteNotification200ResponseDTO
 import org.rucca.cheese.model.GetUnreadNotificationsCount200ResponseDTO
 import org.rucca.cheese.model.ListNotifications200ResponseDTO
+import org.rucca.cheese.model.MarkNotificationsAsRead200ResponseDTO
 import org.rucca.cheese.model.MarkNotificationsAsReadRequestDTO
 import org.rucca.cheese.model.PostNotification200ResponseDTO
 import org.rucca.cheese.model.PostNotificationRequestDTO
@@ -165,7 +166,16 @@ interface NotificationsApi {
                 ApiResponse(
                     responseCode = "200",
                     description = "OK",
-                    content = [Content(schema = Schema(implementation = kotlin.Any::class))],
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation =
+                                            MarkNotificationsAsRead200ResponseDTO::class
+                                    )
+                            )
+                        ],
                 )
             ],
         security = [SecurityRequirement(name = "bearerAuth")],
@@ -181,7 +191,7 @@ interface NotificationsApi {
         @Valid
         @RequestBody
         markNotificationsAsReadRequestDTO: MarkNotificationsAsReadRequestDTO
-    ): ResponseEntity<kotlin.Any> {
+    ): ResponseEntity<MarkNotificationsAsRead200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 

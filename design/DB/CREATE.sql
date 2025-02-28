@@ -324,7 +324,6 @@ CREATE
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            content VARCHAR(255) NOT NULL,
             TYPE VARCHAR(255) NOT NULL CHECK(
                 TYPE IN(
                     'MENTION',
@@ -334,6 +333,7 @@ CREATE
                     'DEADLINE_REMIND'
                 )
             ),
+            content JSONB,
             PRIMARY KEY(id)
         );
 

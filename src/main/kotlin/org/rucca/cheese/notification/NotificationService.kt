@@ -7,6 +7,7 @@ import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.model.NotificationContentDTO
 import org.rucca.cheese.model.NotificationDTO
 import org.rucca.cheese.model.PageDTO
 import org.rucca.cheese.user.User
@@ -26,7 +27,7 @@ open class NotificationService(
         if (!notification.isPresent) {
             throw NotFoundError("notification", notificationId)
         }
-        return notification.get().toNotificationDTO(notification.get())
+        return notification.get().toNotificationDTO()
     }
 
     fun listNotifications(
@@ -61,10 +62,9 @@ open class NotificationService(
                 else -> pageStart
             }
 
-        val notification =
-            notificationRepository.findById(actualPageStart).orElseThrow {
-                NotFoundError("notification", actualPageStart)
-            }
+        notificationRepository.findById(actualPageStart).orElseThrow {
+            NotFoundError("notification", actualPageStart)
+        }
 
         val notifications =
             notificationRepository
@@ -81,7 +81,7 @@ open class NotificationService(
                 { id -> throw NotFoundError("notification", id) },
             )
 
-        return Pair(curr.map { it.toNotificationDTO(it) }, page)
+        return Pair(curr.map { it.toNotificationDTO() }, page)
     }
 
     fun createNotification(
@@ -92,15 +92,15 @@ open class NotificationService(
         discussionId: Long? = null,
         knowledgeId: Long? = null,
     ): IdType {
+        if (!userService.existsUser(receiverId)) {
+            throw NotFoundError("user", receiverId)
+        }
         val notification =
             notificationRepository.save(
                 Notification(
                     type = type,
                     receiver = User().apply { id = receiverId.toInt() },
-                    content =
-                        objectMapper.writeValueAsString(
-                            NotificationContent(text, projectId, discussionId, knowledgeId)
-                        ),
+                    content = NotificationContent(text, projectId, discussionId, knowledgeId),
                     read = false,
                 )
             )
@@ -123,10 +123,11 @@ open class NotificationService(
                     notificationId,
                     User().apply { id = authenticateService.getCurrentUserId().toInt() },
                 )
-            entity.ifPresentOrElse(
-                { notification.add(it) },
-                { throw NotFoundError("Notification not found", notificationId) },
-            )
+            if (entity.isPresent) {
+                notification.add(entity.get())
+            } else {
+                throw NotFoundError("Notification not found", notificationId)
+            }
         }
         notification.forEach { it.read = true }
         notificationRepository.saveAll(notification)
@@ -157,14 +158,20 @@ open class NotificationService(
         return notification.receiver.id!!.toLong() == authenticateService.getCurrentUserId()
     }
 
-    fun Notification.toNotificationDTO(notification: Notification): NotificationDTO {
+    fun Notification.toNotificationDTO(): NotificationDTO {
         return NotificationDTO(
-            id = notification.id!!,
-            type = NotificationDTO.Type.valueOf(notification.type.name),
-            read = notification.read,
-            receiverId = notification.receiver.id!!.toLong(),
-            content = notification.content,
-            createdAt = notification.createdAt!!.toEpochMilli(),
+            id = this.id!!,
+            type = NotificationDTO.Type.valueOf(this.type.name),
+            read = this.read,
+            receiverId = this.receiver.id!!.toLong(),
+            content =
+                NotificationContentDTO(
+                    this.content.text,
+                    this.content.projectId,
+                    this.content.discussionId,
+                    this.content.knowledgeId,
+                ),
+            createdAt = this.createdAt!!.toEpochMilli(),
         )
     }
 }

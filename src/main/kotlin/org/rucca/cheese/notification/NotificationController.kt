@@ -10,14 +10,12 @@ import org.rucca.cheese.auth.annotation.ResourceId
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
-import org.rucca.cheese.user.UserService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
 class NotificationController(
     private val notificationService: NotificationService,
-    private val userService: UserService,
     private val authorizationService: AuthorizationService,
     private val authenticationService: AuthenticationService,
 ) : NotificationsApi {
@@ -55,9 +53,6 @@ class NotificationController(
     override fun postNotification(
         postNotificationRequestDTO: PostNotificationRequestDTO
     ): ResponseEntity<PostNotification200ResponseDTO> {
-        if (!userService.existsUser(postNotificationRequestDTO.receiverId)) {
-            return ResponseEntity.badRequest().build()
-        }
         val notificationId =
             notificationService.createNotification(
                 NotificationType.fromString(postNotificationRequestDTO.type.value),
@@ -114,9 +109,17 @@ class NotificationController(
     @Guard("mark-as-read", "notification")
     override fun markNotificationsAsRead(
         markNotificationsAsReadRequestDTO: MarkNotificationsAsReadRequestDTO
-    ): ResponseEntity<kotlin.Any> {
+    ): ResponseEntity<MarkNotificationsAsRead200ResponseDTO> {
         notificationService.markAsRead(markNotificationsAsReadRequestDTO.notificationIds)
-        return ResponseEntity.ok("Notifications marked as read")
+        return ResponseEntity.ok(
+            MarkNotificationsAsRead200ResponseDTO(
+                0,
+                "success",
+                MarkNotificationsAsRead200ResponseDataDTO(
+                    markNotificationsAsReadRequestDTO.notificationIds
+                ),
+            )
+        )
     }
 
     @Guard("get-unread-count", "notification")
