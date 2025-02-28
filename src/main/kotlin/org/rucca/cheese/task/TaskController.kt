@@ -11,6 +11,7 @@
 
 package org.rucca.cheese.task
 
+import jakarta.servlet.http.HttpServletResponse
 import javax.annotation.PostConstruct
 import kotlinx.coroutines.flow.Flow
 import org.hibernate.query.SortDirection
@@ -834,7 +835,12 @@ class TaskController(
         @RequestParam(required = false) @AuthInfo("conversationId") conversationId: String? = null,
         @RequestParam(required = false) parentId: IdType? = null,
         @RequestParam(required = false) modelType: String? = null,
+        response: HttpServletResponse,
     ): Flow<String> {
+        // 添加 X-Accel-Buffering: no 头部，防止 Nginx 缓冲 SSE 响应
+        response.setHeader("X-Accel-Buffering", "no")
+        response.setHeader("Cache-Control", "no-cache")
+        
         val userId = authenticationService.getCurrentUserId()
         val userDTO = userService.getUserDto(userId)
         val context =
