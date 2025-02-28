@@ -10,7 +10,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4g
+          memory: 2g
     healthcheck:
       test: ["CMD", "curl", "http://localhost:9200/_cluster/health"]
       interval: 10s
@@ -22,8 +22,31 @@ services:
     networks:
       - cheese_network
 
+  elasticsearch_test:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.1
+    container_name: elasticsearch_test
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ELASTIC_USERNAME=elastic
+      - ELASTIC_PASSWORD=elastic
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:9200/_cluster/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    ports:
+      - "9201:9200"
+    networks:
+      - cheese_network
+
   postgres:
-    image: postgres:latest
+    image: pgvector/pgvector:pg16
     container_name: postgres
     environment:
       - POSTGRES_PASSWORD=postgres
@@ -41,6 +64,25 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres-init.sh:/docker-entrypoint-initdb.d/postgres-init.sh
 
+  postgres_test:
+    image: pgvector/pgvector:pg16
+    container_name: postgres_test
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "5433:5432"
+    networks:
+      - cheese_network
+    volumes:
+      - postgres_data_test:/var/lib/postgresql/data
+      - ./postgres-init.sh:/docker-entrypoint-initdb.d/postgres-init.sh
+
   # Valkey is a Redis-compatible key-value store
   valkey:
     image: valkey/valkey:8.0.2
@@ -56,33 +98,40 @@ services:
       retries: 3
       start_period: 30s
 
+  valkey_test:
+    image: valkey/valkey:8.0.2
+    container_name: valkey_test
+    ports:
+      - "6380:6379"
+    networks:
+      - cheese_network
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
   cheese_legacy:
     image: ghcr.io/sageseekersociety/cheese-backend-dev:dev
     container_name: cheese_legacy
     ports:
       - "7777:7777"
     environment:
+      - APP_NAME=Cheese
       - PORT=7777
-      - JWT_SECRET=test-secret
       - PRISMA_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres?schema=public&connection_limit=16
       - ELASTICSEARCH_NODE=http://elasticsearch:9200/
       - ELASTICSEARCH_AUTH_USERNAME=elastic
       - ELASTICSEARCH_AUTH_PASSWORD=elastic
       - FILE_UPLOAD_PATH=/app/uploads
       - DEFAULT_AVATAR_NAME=default.jpg
-      - EMAIL_SMTP_HOST=smtphz.qiye.163.com
-      - EMAIL_SMTP_PORT=465
-      - EMAIL_SMTP_SSL_ENABLE=true
-      - EMAIL_SMTP_USERNAME=@ruc.edu.cn
-      - EMAIL_SMTP_PASSWORD=
-      - EMAIL_DEFAULT_FROM="No Reply <@ruc.edu.cn>"
-      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
-      - CORS_METHODS=GET,POST,PUT,DELETE,OPTIONS
-      - CORS_HEADERS=Content-Type,Authorization,Content-Length,Accept,X-Requested-With,X-Auth-Token
-      - CORS_CREDENTIALS=true
       - REDIS_HOST=valkey
       - REDIS_PORT=6379
       - REDIS_PASSWORD=
+      - WEB_AUTHN_RP_NAME=Cheese Community
+    env_file:
+      - .env
     volumes:
       - cheese_legacy_uploads:/app/uploads
     command: >
@@ -103,10 +152,53 @@ services:
     networks:
       - cheese_network
 
+  cheese_legacy_test:
+    image: ghcr.io/sageseekersociety/cheese-backend-dev:dev
+    container_name: cheese_legacy_test
+    ports:
+      - "7778:7777"
+    environment:
+      - APP_NAME=Cheese
+      - PORT=7777
+      - JWT_SECRET=test-secret
+      - PRISMA_DATABASE_URL=postgresql://postgres:postgres@postgres_test:5432/postgres?schema=public&connection_limit=16
+      - ELASTICSEARCH_NODE=http://elasticsearch_test:9200/
+      - ELASTICSEARCH_AUTH_USERNAME=elastic
+      - ELASTICSEARCH_AUTH_PASSWORD=elastic
+      - FILE_UPLOAD_PATH=/app/uploads
+      - DEFAULT_AVATAR_NAME=default.jpg
+      - REDIS_HOST=valkey_test
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - WEB_AUTHN_RP_NAME=Cheese Community
+    env_file:
+      - .env
+    volumes:
+      - cheese_legacy_uploads:/app/uploads
+    command: >
+      bash -c '
+        if [ ! -f "FLAG_INIT" ]; then
+          touch FLAG_INIT
+          pnpm prisma db push
+        fi
+        pnpm start
+      '
+    depends_on:
+      elasticsearch_test:
+        condition: service_healthy
+      postgres_test:
+        condition: service_healthy
+      valkey_test:
+        condition: service_healthy
+    networks:
+      - cheese_network
+
 networks:
   cheese_network:
     name: cheese_network
 
 volumes:
   postgres_data:
+  postgres_data_test:
   cheese_legacy_uploads:
+  cheese_legacy_uploads_test:
