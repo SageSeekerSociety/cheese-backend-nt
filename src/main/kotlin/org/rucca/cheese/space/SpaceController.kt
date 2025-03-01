@@ -108,33 +108,7 @@ class SpaceController(
         @ResourceId spaceId: Long,
         patchSpaceRequestDTO: PatchSpaceRequestDTO,
     ): ResponseEntity<GetSpace200ResponseDTO> {
-        if (patchSpaceRequestDTO.name != null) {
-            spaceService.updateSpaceName(spaceId, patchSpaceRequestDTO.name)
-        }
-        if (patchSpaceRequestDTO.intro != null) {
-            spaceService.updateSpaceIntro(spaceId, patchSpaceRequestDTO.intro)
-        }
-        if (patchSpaceRequestDTO.description != null) {
-            spaceService.updateSpaceDescription(spaceId, patchSpaceRequestDTO.description)
-        }
-        if (patchSpaceRequestDTO.avatarId != null) {
-            spaceService.updateSpaceAvatar(spaceId, patchSpaceRequestDTO.avatarId)
-        }
-        if (patchSpaceRequestDTO.enableRank != null) {
-            spaceService.updateSpaceEnableRank(spaceId, patchSpaceRequestDTO.enableRank)
-        }
-        if (patchSpaceRequestDTO.announcements != null) {
-            spaceService.updateSpaceAnnouncements(spaceId, patchSpaceRequestDTO.announcements)
-        }
-        if (patchSpaceRequestDTO.taskTemplates != null) {
-            spaceService.updateSpaceTaskTemplates(spaceId, patchSpaceRequestDTO.taskTemplates)
-        }
-        if (patchSpaceRequestDTO.classificationTopics != null) {
-            spaceService.updateSpaceClassificationTopics(
-                spaceId,
-                patchSpaceRequestDTO.classificationTopics,
-            )
-        }
+        spaceService.patchSpace(spaceId, patchSpaceRequestDTO)
         val spaceDTO = spaceService.getSpaceDto(spaceId, SpaceQueryOptions.MAXIMUM)
         return ResponseEntity.ok(
             GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
