@@ -1,4 +1,4 @@
-package org.rucca.cheese.project
+package org.rucca.cheese.knowledge
 
 import jakarta.persistence.*
 import org.hibernate.annotations.SQLRestriction
@@ -7,6 +7,7 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.material.Material
 import org.rucca.cheese.user.User
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
 
 enum class KnowledgeType {
     DOCUMENT,
@@ -33,6 +34,7 @@ class Knowledge(
     var projectIds: Set<Long> = HashSet(),
 ) : BaseEntity()
 
-interface KnowledgeRepository : JpaRepository<Knowledge, IdType> {}//???
-{
+interface KnowledgeRepository : JpaRepository<Knowledge, IdType> {
+    @Query("SELECT k FROM Knowledge k JOIN k.projectIds p WHERE p = :projectId")
+    fun findKnowledgeByProjectId(projectId: List<Long>?): List<Knowledge>
 }

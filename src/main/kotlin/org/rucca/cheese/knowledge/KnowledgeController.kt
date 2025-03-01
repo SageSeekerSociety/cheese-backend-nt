@@ -1,22 +1,29 @@
 package org.rucca.cheese.knowledge
 
+import java.util.*
+import javax.annotation.PostConstruct
 import org.rucca.cheese.api.KnowledgeApi
+import org.rucca.cheese.auth.AuthenticationService
+import org.rucca.cheese.auth.AuthorizationService
+import org.rucca.cheese.auth.AuthorizedAction
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.ResourceId
-import org.rucca.cheese.model.KnowledgeGet200ResponseDTO
-import org.rucca.cheese.model.KnowledgePost200ResponseDTO
-import org.rucca.cheese.model.KnowledgePostRequestDTO
+import org.rucca.cheese.common.persistent.IdGetter
+import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class KnowledgeController(private val knowledgeService: KnowledgeService) : KnowledgeApi {
-   @PostConstruct
-   fun initialize()
-   {
-        authenticationService.ownerIds.register("knowledge",KnowledgeService:getKnowledgeOwner)//?功能
-        authenticationService.customAuthLogics.register("is-Knowledge-admin")
-        {
+class KnowledgeController(
+    private val knowledgeService: KnowledgeService,
+    private val authorizationService: AuthorizationService,
+    private val authenticationService: AuthenticationService,
+) : KnowledgeApi {
+    @PostConstruct
+    fun initialize() {
+        authorizationService.ownerIds.register("knowledge", knowledgeService::getKnowledgeOwner)
+        authorizationService.customAuthLogics.register("is-Knowledge-admin") {
             userId: IdType,
             _: AuthorizedAction,
             _: String,
@@ -24,26 +31,30 @@ class KnowledgeController(private val knowledgeService: KnowledgeService) : Know
             _: Map<String, Any?>?,
             _: IdGetter?,
             _: Any? ->
-            KnowledgeService.isKnowledgeAdmin(
+            knowledgeService.isKnowledgeAdmin(
                 resourceId ?: throw IllegalArgumentException("resourceId is null"),
                 userId,
             )
         }
-   }
+    }
+
     @Guard("create", "knowledge")
     override fun knowledgePost(
         knowledgePostRequestDTO: KnowledgePostRequestDTO
     ): ResponseEntity<KnowledgePost200ResponseDTO> {
-        val Kid=KnowledgeService.createKnowledge(
-        name = knowledgePostRequestDTO.name,
-        type = knowledgePostRequestDTO.type, // 传递类型?按照knowledgePostRequestDTO填，space里好像不是这样
-        content = knowledgePostRequestDTO.content,
-        description = knowledgePostRequestDTO.description,
-        projectIds = knowledgePostRequestDTO.projectIds,
-        labels = knowledgePostRequestDTO.labels
-    )
-        val KnowledgeDTO = KnowledgeService.getKnowledgeDto(kid)
-        return ResponseEntity.ok(KnowledgeGet200ResponseDTO(200,KnowledgeGet200ResponseDTO(KnowledgeDTO)),"OK")//?
+        val kid =
+            knowledgeService.createKnowledge(
+                name = knowledgePostRequestDTO.name,
+                type = knowledgePostRequestDTO.type,
+                content = knowledgePostRequestDTO.content,
+                description = knowledgePostRequestDTO.description,
+                projectIds = knowledgePostRequestDTO.projectIds,
+                labels = knowledgePostRequestDTO.labels,
+            )
+        val knowledgeDTO = knowledgeService.getKnowledgeDTO(kid)
+        return ResponseEntity.ok(
+            KnowledgePost200ResponseDTO(200, "ok", KnowledgePost200ResponseDataDTO(knowledgeDTO))
+        )
     }
 
     @Guard("query", "knowledge")
@@ -55,51 +66,45 @@ class KnowledgeController(private val knowledgeService: KnowledgeService) : Know
         pageStart: Long?,
         pageSize: Int,
     ): ResponseEntity<KnowledgeGet200ResponseDTO> {
-        val kdto=knowledgeService.getKnowledgeDTO(projectIds);//val queryOptions = SpaceQueryOptions(queryMyRank = queryMyRank)?
-        return ResponseEntity.ok(KnowledgeGet200ResponseDTO(200,KnowledgeGet200ResponseDTO(kdto),"Ok"))
+
+        val keto = knowledgeService.getKnowledgeDTOByProjectId(projectIds)
+        // val queryOptions = SpaceQueryOptions(queryMyRank = queryMyRank)?
+        return ResponseEntity.ok(
+            KnowledgeGet200ResponseDTO(200, "success", KnowledgeGet200ResponseDataDTO(keto))
+        )
     }
 
-
-    @Guard("delete","knowledge")
-    override fun knowledgedelete(@ResourceId kid:long):ResponseEntity<DeleteKnowledge200DTO>
-    {
-        KnowledgeService.deleteknowledge(kid)
-        return ResponseEntity.ok(DeleteKnowledge200DTO(200,"OK"))
+    @Guard("delete", "knowledge")
+    override fun knowledgeDelete(id: Long): ResponseEntity<KnowledgeDelete200ResponseDTO> {
+        knowledgeService.deleteknowledge(id)
+        return ResponseEntity.ok(KnowledgeDelete200ResponseDTO(200, "OK"))
     }
-
-
-
-    @Guard("remove-admin", "knowledge")
-    override fun deleteknowledgeAdmin(
-        @ResourceId knowledgeId: Long,
-        userId: Long,
-    ): ResponseEntity<DeleteKnowledge200DTO> {
-        KnowledgeService.removeAdmin(knowledgeId, userId)
-        return ResponseEntity.ok(DeleteKnowledge200DTO(200, "OK"))
-    }
-
-
 
     @Guard("update", "knowledge")
-    @PutMapping("/knowledge/{id}")
-    fun knowledgeUp(
-        @PathVariable id:Long,//resoucesid???
-      knowledgePostRequestDTO: KnowledgePostRequestDTO
-    ): ResponseEntity<KnowledgePost200ResponseDTO> {
+    override fun knowledgePatch(
+        id: Long,
+        knowledgePatchRequestDTO: KnowledgePatchRequestDTO,
+    ): ResponseEntity<KnowledgePatch200ResponseDTO> {
+        // 更新知识点信息
+        knowledgeService.updateKnowledge(
+            id = id,
+            name = knowledgePatchRequestDTO.name,
+            description = knowledgePatchRequestDTO.description,
+            type = knowledgePatchRequestDTO.type,
+            content = knowledgePatchRequestDTO.content,
+            projectIds = knowledgePatchRequestDTO.projectIds,
+            labels = knowledgePatchRequestDTO.labels,
+        )
 
-        val DTOProperties = knowledgePostRequestDTO::class.memberProperties
-        DTOProperties.forEach{ property ->
-            val value =property.get(knowledgePostRequestDTO)
-            if( value !=null)
-            {
-                val updateMethod = knowledgeService::class.declaredFunctions
-                    .firstOrNull{it.name =="updateKnowledge${property.name.capitalize()}"}
-                updateMethod?.call(knowledgeService,id,value) 
-            }
-        }
-    val UpdateKnowledgeDTO= knowledgeService.getKnowledgeDTO(id)//postSpace?
-    return ResponseEntity.ok(
-        KnowledgePost200ResponseDTO(200, KnowledgePost200ResponseDataDTO(UpdateKnowledgeDTO), "OK")
+        // 获取更新后的知识点
+        val updatedKnowledge = knowledgeService.getKnowledgeDTO(id)
+
+        return ResponseEntity.ok(
+            KnowledgePatch200ResponseDTO(
+                code = 200,
+                data = KnowledgePatch200ResponseDataDTO(updatedKnowledge),
+                message = "OK",
+            )
         )
     }
 }

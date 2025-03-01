@@ -9,7 +9,7 @@ import javax.validation.Valid
  * @param message
  * @param &#x60;data&#x60;
  */
-data class KnowledgePost200ResponseDTO(
+data class KnowledgePatch200ResponseDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("code", required = true)
     val code: kotlin.Int = 0,
@@ -19,5 +19,5 @@ data class KnowledgePost200ResponseDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("data", required = true)
-    val `data`: KnowledgePost200ResponseDataDTO,
+    val `data`: KnowledgePatch200ResponseDataDTO,
 ) {}
