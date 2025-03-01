@@ -15,14 +15,12 @@ import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
-import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.model.PageDTO
-import org.rucca.cheese.model.SpaceAdminDTO
-import org.rucca.cheese.model.SpaceAdminRoleTypeDTO
-import org.rucca.cheese.model.SpaceDTO
-import org.rucca.cheese.model.TopicDTO
+import org.rucca.cheese.common.repository.cursorSpec
+import org.rucca.cheese.common.repository.toJpaDirection
+import org.rucca.cheese.common.repository.toPageDTO
+import org.rucca.cheese.model.*
 import org.rucca.cheese.space.error.AlreadyBeSpaceAdminError
 import org.rucca.cheese.space.error.NotSpaceAdminYetError
 import org.rucca.cheese.space.option.SpaceQueryOptions
@@ -335,30 +333,22 @@ class SpaceService(
         pageStart: Long?,
         queryOptions: SpaceQueryOptions,
     ): Pair<List<SpaceDTO>, PageDTO> {
-        val criteriaBuilder = entityManager.criteriaBuilder
-        val cq = criteriaBuilder.createQuery(Space::class.java)
-        val root = cq.from(Space::class.java)
-        val by =
-            when (sortBy) {
-                SpacesSortBy.CREATED_AT -> root.get<LocalDateTime>("createdAt")
-                SpacesSortBy.UPDATED_AT -> root.get<LocalDateTime>("updatedAt")
-            }
-        val order =
-            when (sortOrder) {
-                SortDirection.ASCENDING -> criteriaBuilder.asc(by)
-                SortDirection.DESCENDING -> criteriaBuilder.desc(by)
-            }
-        cq.orderBy(order)
-        val query = entityManager.createQuery(cq)
-        val result = query.resultList
-        val (curr, page) =
-            PageHelper.pageFromAll(
-                result,
-                pageStart,
-                pageSize,
-                { it.id!! },
-                { id -> throw NotFoundError("space", id) },
-            )
-        return Pair(curr.map { it.toSpaceDTO(queryOptions) }, page)
+        val direction = sortOrder.toJpaDirection()
+
+        val cursorSpec =
+            spaceRepository
+                .cursorSpec(Space::id)
+                .sortBy(
+                    when (sortBy) {
+                        SpacesSortBy.CREATED_AT -> Space::createdAt
+                        SpacesSortBy.UPDATED_AT -> Space::updatedAt
+                    },
+                    direction,
+                )
+                .build()
+
+        val result = spaceRepository.findAllWithCursor(cursorSpec, pageStart, pageSize)
+
+        return Pair(result.content.map { it.toSpaceDTO(queryOptions) }, result.pageInfo.toPageDTO())
     }
 }

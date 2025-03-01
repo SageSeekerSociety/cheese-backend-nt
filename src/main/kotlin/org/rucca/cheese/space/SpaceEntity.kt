@@ -14,8 +14,8 @@ import jakarta.persistence.*
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.common.repository.CursorPagingRepository
 import org.rucca.cheese.user.Avatar
-import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
@@ -30,6 +30,6 @@ class Space(
     @Column(nullable = false, columnDefinition = "TEXT") var taskTemplates: String? = null,
 ) : BaseEntity()
 
-interface SpaceRepository : JpaRepository<Space, IdType> {
+interface SpaceRepository : CursorPagingRepository<Space, IdType> {
     fun existsByName(name: String): Boolean
 }

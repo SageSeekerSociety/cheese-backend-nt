@@ -24,8 +24,6 @@ import org.rucca.cheese.common.persistent.convert
 import org.rucca.cheese.model.TaskMembershipDTO
 import org.rucca.cheese.model.TaskParticipantRealNameInfoDTO
 import org.rucca.cheese.model.TaskParticipantSummaryDTO
-import org.rucca.cheese.model.TaskSubmitterTypeDTO.TEAM
-import org.rucca.cheese.model.TaskSubmitterTypeDTO.USER
 import org.rucca.cheese.model.TeamSummaryDTO
 import org.rucca.cheese.space.SpaceUserRankService
 import org.rucca.cheese.task.error.*
