@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 
 /**
  * @param type
@@ -24,7 +25,7 @@ data class ProjectsProjectIdDiscussionsGetProjectFilterParameterDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("includeRoot")
     val includeRoot: kotlin.Boolean? = null,
-) {
+) : Serializable {
 
     /** Values: projects,tree */
     enum class Type(@get:JsonValue val value: kotlin.String) {
@@ -39,5 +40,9 @@ data class ProjectsProjectIdDiscussionsGetProjectFilterParameterDTO(
                 return values().first { it -> it.value == value }
             }
         }
+    }
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
     }
 }

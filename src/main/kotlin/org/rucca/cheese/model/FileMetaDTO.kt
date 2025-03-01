@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 
 /**
  * 文件元数据
@@ -24,4 +25,9 @@ data class FileMetaDTO(
     @Schema(example = "null", description = "文件哈希")
     @get:JsonProperty("hash")
     val hash: kotlin.String? = null,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

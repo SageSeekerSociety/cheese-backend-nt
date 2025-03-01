@@ -1,1 +1,3 @@
 * text eol=lf
+src/main/kotlin/org/rucca/cheese/api/* linguist-generated
+src/main/kotlin/org/rucca/cheese/model/* linguist-generated

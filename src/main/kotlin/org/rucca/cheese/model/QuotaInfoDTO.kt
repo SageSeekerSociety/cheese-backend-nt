@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 
 /**
  * 用户AI配额信息
@@ -20,4 +21,9 @@ data class QuotaInfoDTO(
     @Schema(example = "null", required = true, description = "配额重置时间")
     @get:JsonProperty("reset_time", required = true)
     val resetTime: java.time.OffsetDateTime,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

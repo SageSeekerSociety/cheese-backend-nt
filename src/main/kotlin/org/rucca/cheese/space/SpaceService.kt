@@ -49,25 +49,29 @@ class SpaceService(
         options: SpaceQueryOptions,
         admins: List<SpaceAdminDTO>? = null,
         topics: List<TopicDTO>? = null,
-        rank: Int? = null
+        rank: Int? = null,
     ): SpaceDTO {
-        val myRank = rank ?: if (options.queryMyRank && this.enableRank!!) {
-            val userId = authenticationService.getCurrentUserId()
-            spaceUserRankService.getRank(this.id!!, userId)
-        } else null
-        
-        val classificationTopics = topics 
-            ?: spaceClassificationTopicsService.getClassificationTopicDTOs(this.id!!)
-        
-        val adminDTOs = admins ?: spaceAdminRelationRepository.findAllBySpaceId(this.id!!).map {
-            SpaceAdminDTO(
-                convertAdminRole(it.role!!),
-                userService.getUserDto(it.user!!.id!!.toLong()),
-                createdAt = it.createdAt!!.toEpochMilli(),
-                updatedAt = it.updatedAt!!.toEpochMilli(),
-            )
-        }
-        
+        val myRank =
+            rank
+                ?: if (options.queryMyRank && this.enableRank!!) {
+                    val userId = authenticationService.getCurrentUserId()
+                    spaceUserRankService.getRank(this.id!!, userId)
+                } else null
+
+        val classificationTopics =
+            topics ?: spaceClassificationTopicsService.getClassificationTopicDTOs(this.id!!)
+
+        val adminDTOs =
+            admins
+                ?: spaceAdminRelationRepository.findAllBySpaceId(this.id!!).map {
+                    SpaceAdminDTO(
+                        convertAdminRole(it.role!!),
+                        userService.getUserDto(it.user!!.id!!.toLong()),
+                        createdAt = it.createdAt!!.toEpochMilli(),
+                        updatedAt = it.updatedAt!!.toEpochMilli(),
+                    )
+                }
+
         return SpaceDTO(
             id = this.id!!,
             intro = this.intro!!,
@@ -90,37 +94,39 @@ class SpaceService(
         queryOptions: SpaceQueryOptions = SpaceQueryOptions.MINIMUM,
     ): SpaceDTO {
         val space = getSpace(spaceId)
-        
+
         val admins = spaceAdminRelationRepository.findAllBySpaceIdFetchUser(spaceId)
-        val classificationTopics = spaceClassificationTopicsService.getClassificationTopicDTOs(spaceId)
-        
+        val classificationTopics =
+            spaceClassificationTopicsService.getClassificationTopicDTOs(spaceId)
+
         val myRank =
             if (queryOptions.queryMyRank && space.enableRank!!) {
                 val userId = authenticationService.getCurrentUserId()
                 spaceUserRankService.getRank(spaceId, userId)
             } else null
-        
+
         // 批量获取所有管理员的用户信息
         val adminUsers = admins.mapNotNull { it.user }
         val userDtosMap = userService.convertUsersToDto(adminUsers)
-        
+
         return SpaceDTO(
             id = space.id!!,
             intro = space.intro!!,
             description = space.description!!,
             name = space.name!!,
             avatarId = space.avatar!!.id!!.toLong(),
-            admins = admins.map { admin ->
-                val userId = admin.user!!.id!!.toLong()
-                val userDto = userDtosMap[userId] ?: userService.getUserDto(userId)
-                
-                SpaceAdminDTO(
-                    convertAdminRole(admin.role!!),
-                    userDto,
-                    createdAt = admin.createdAt!!.toEpochMilli(),
-                    updatedAt = admin.updatedAt!!.toEpochMilli(),
-                )
-            },
+            admins =
+                admins.map { admin ->
+                    val userId = admin.user!!.id!!.toLong()
+                    val userDto = userDtosMap[userId] ?: userService.getUserDto(userId)
+
+                    SpaceAdminDTO(
+                        convertAdminRole(admin.role!!),
+                        userDto,
+                        createdAt = admin.createdAt!!.toEpochMilli(),
+                        updatedAt = admin.updatedAt!!.toEpochMilli(),
+                    )
+                },
             updatedAt = space.updatedAt!!.toEpochMilli(),
             createdAt = space.createdAt!!.toEpochMilli(),
             enableRank = space.enableRank!!,

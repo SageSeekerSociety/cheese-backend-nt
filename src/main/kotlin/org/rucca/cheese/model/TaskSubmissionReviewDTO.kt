@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 
 /**
@@ -16,4 +17,9 @@ data class TaskSubmissionReviewDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("detail")
     val detail: TaskSubmissionReviewDetailDTO? = null,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

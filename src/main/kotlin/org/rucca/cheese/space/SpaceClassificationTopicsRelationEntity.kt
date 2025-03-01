@@ -30,7 +30,9 @@ interface SpaceClassificationTopicsRelationRepository :
     JpaRepository<SpaceClassificationTopicsRelation, IdType> {
     fun findAllBySpaceId(spaceId: IdType): List<SpaceClassificationTopicsRelation>
 
-    @Query("SELECT sctr FROM SpaceClassificationTopicsRelation sctr JOIN FETCH sctr.topic WHERE sctr.space.id = :spaceId AND sctr.deletedAt IS NULL")
+    @Query(
+        "SELECT sctr FROM SpaceClassificationTopicsRelation sctr JOIN FETCH sctr.topic WHERE sctr.space.id = :spaceId AND sctr.deletedAt IS NULL"
+    )
     fun findAllBySpaceIdFetchTopic(spaceId: IdType): List<SpaceClassificationTopicsRelation>
 
     fun findBySpaceIdAndTopicId(

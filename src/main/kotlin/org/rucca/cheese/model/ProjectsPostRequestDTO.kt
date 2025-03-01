@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 import javax.validation.constraints.Pattern
 
@@ -56,4 +57,9 @@ data class ProjectsPostRequestDTO(
     val externalCollaborators:
         kotlin.collections.List<ProjectsPostRequestExternalCollaboratorsInnerDTO>? =
         null,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

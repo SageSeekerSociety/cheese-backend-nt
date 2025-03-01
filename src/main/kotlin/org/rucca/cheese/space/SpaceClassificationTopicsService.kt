@@ -29,11 +29,9 @@ class SpaceClassificationTopicsService(
     fun getClassificationTopicDTOs(spaceId: IdType): List<TopicDTO> {
         // 使用一次查询获取所有主题关系及其主题数据
         val relationsWithTopics = topicsRelationRepository.findAllBySpaceIdFetchTopic(spaceId)
-        
+
         // 直接从已加载的关系中获取主题并转换为DTO
-        return relationsWithTopics.map { relation -> 
-            relation.topic!!.toDTO() 
-        }
+        return relationsWithTopics.map { relation -> relation.topic!!.toDTO() }
     }
 
     fun updateClassificationTopics(spaceId: IdType, topicIds: List<IdType>) {

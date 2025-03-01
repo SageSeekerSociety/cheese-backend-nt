@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 
 /**
  * @param propertySize 文件大小
@@ -38,4 +39,9 @@ data class VideoMetaDTO(
     @Schema(example = "null", description = "缩略图 URL")
     @get:JsonProperty("thumbnail")
     val thumbnail: kotlin.String? = null,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}
