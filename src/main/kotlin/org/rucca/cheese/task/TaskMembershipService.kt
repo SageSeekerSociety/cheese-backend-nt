@@ -11,7 +11,6 @@ package org.rucca.cheese.task
 
 import jakarta.persistence.EntityManager
 import jakarta.persistence.criteria.Predicate
-import java.time.LocalDateTime
 import org.rucca.cheese.auth.error.PermissionDeniedError
 import org.rucca.cheese.common.config.ApplicationConfig
 import org.rucca.cheese.common.error.BaseError
@@ -30,6 +29,7 @@ import org.rucca.cheese.task.error.*
 import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 val DefaultTaskMembershipRealNameInfo =
     TaskMembershipRealNameInfo(
@@ -271,9 +271,9 @@ class TaskMembershipService(
                 task.rank != null
         if (needToCheckRank) {
             val requiredRank = task.rank!! - applicationConfig.rankJump
-            val acturalRank = spaceUserRankService.getRank(task.space!!.id!!, memberId)
-            if (acturalRank < requiredRank)
-                return YourRankIsNotHighEnoughError(acturalRank, requiredRank)
+            val actualRank = spaceUserRankService.getRank(task.space.id!!, memberId)
+            if (actualRank < requiredRank)
+                return YourRankIsNotHighEnoughError(actualRank, requiredRank)
         }
 
         // Is not full

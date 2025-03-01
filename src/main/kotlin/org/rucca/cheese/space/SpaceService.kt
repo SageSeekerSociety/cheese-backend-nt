@@ -9,8 +9,6 @@
 
 package org.rucca.cheese.space
 
-import jakarta.persistence.EntityManager
-import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
@@ -30,6 +28,7 @@ import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 @Transactional
@@ -37,7 +36,6 @@ class SpaceService(
     private val spaceRepository: SpaceRepository,
     private val spaceAdminRelationRepository: SpaceAdminRelationRepository,
     private val userService: UserService,
-    private val entityManager: EntityManager,
     private val spaceUserRankService: SpaceUserRankService,
     private val authenticationService: AuthenticationService,
     private val topicService: TopicService,
