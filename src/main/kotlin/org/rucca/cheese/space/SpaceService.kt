@@ -19,11 +19,7 @@ import org.rucca.cheese.common.helper.EntityPatcher
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.model.PageDTO
-import org.rucca.cheese.model.PatchSpaceRequestDTO
-import org.rucca.cheese.model.SpaceAdminDTO
-import org.rucca.cheese.model.SpaceAdminRoleTypeDTO
-import org.rucca.cheese.model.SpaceDTO
+import org.rucca.cheese.model.*
 import org.rucca.cheese.space.error.AlreadyBeSpaceAdminError
 import org.rucca.cheese.space.error.NotSpaceAdminYetError
 import org.rucca.cheese.space.option.SpaceQueryOptions
@@ -197,16 +193,11 @@ class SpaceService(
 
         val updatedSpace =
             entityPatcher.patch(space, patchDto) {
-                handle<String>("name") { entity, value ->
-                    // Only perform association updates, no validation
-                    entity.name = value
+                handle(PatchSpaceRequestDTO::avatarId) { entity, value ->
+                    entity.avatar = avatarRepository.getReferenceById(value.toInt())
                 }
 
-                handle<Int>("avatarId") { entity, value ->
-                    entity.avatar = avatarRepository.getReferenceById(value)
-                }
-
-                handle<List<Long>>("classificationTopics") { _, value ->
+                handle(PatchSpaceRequestDTO::classificationTopics) { _, value ->
                     // Only perform association updates, no validation
                     spaceClassificationTopicsService.updateClassificationTopics(spaceId, value)
                 }

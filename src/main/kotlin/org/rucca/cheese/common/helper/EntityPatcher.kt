@@ -1,289 +1,125 @@
+/**
+ * EntityPatchService - A generic PATCH operation implementation for JPA entities
+ *
+ * This service provides a clean, type-safe way to update entity properties from DTOs with a single
+ * database operation while maintaining proper validation and business logic.
+ *
+ * Features:
+ * - Type-safe property updates using Kotlin property references
+ * - Protection of system fields and private properties
+ * - Single database update regardless of how many fields are modified
+ * - DSL-style API for custom field handling
+ *
+ * Usage:
+ * ```kotlin
+ * // In your service class
+ * @Transactional
+ * fun patchEntity(id: Long, patchDto: PatchDTO): Entity {
+ *   // 1. Load entity and perform validations
+ *   val entity = repository.findById(id).orElseThrow()
+ *
+ *   // 2. Validate fields that need business rule checks
+ *   if (patchDto.name != null && patchDto.name != entity.name) {
+ *     ensureNameNotExists(patchDto.name)
+ *   }
+ *
+ *   // 3. Apply patch with custom handlers as needed
+ *   entityPatchService.patch(entity, patchDto) {
+ *     // Simple property update
+ *     handle(Entity::name) { e, value -> e.name = value }
+ *
+ *     // Custom handling for special cases
+ *     handle(Entity::status) { e, value ->
+ *       e.status = value
+ *       e.statusChangedAt = LocalDateTime.now()
+ *     }
+ *   }
+ *
+ *   // 4. Save and return
+ *   return repository.save(entity)
+ * }
+ * ```
+ *
+ * Note on using with JPA/Hibernate: All database operations (validations, related entity lookups)
+ * should be done BEFORE applying the patch to avoid Hibernate's flush behavior causing multiple
+ * updates.
+ */
 package org.rucca.cheese.common.helper
 
 import jakarta.persistence.Id
-import java.util.Locale
-import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty1
-import kotlin.reflect.KType
+import kotlin.reflect.KProperty1
+import kotlin.reflect.KVisibility
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
 import org.springframework.stereotype.Component
 
-/**
- * Annotation to explicitly mark a field as patchable Use this on properties that should be
- * modifiable via PATCH operations
- */
+/** Marks a private field that should be updatable via PATCH operations */
 @Target(AnnotationTarget.FIELD, AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Patchable
-
-/**
- * Type conversion utility Provides conversion functionality for basic types and collection types
- */
-object TypeConverter {
-    /**
-     * Converts a value to the specified Kotlin type
-     *
-     * @param value The value to convert
-     * @param type Target Kotlin type
-     * @return Converted value or null
-     */
-    @Suppress("UNCHECKED_CAST")
-    fun convert(value: Any?, type: KType): Any? {
-        if (value == null) return null
-
-        val classifier = type.classifier as? KClass<*> ?: return value
-
-        // Return if value is already the target type
-        if (classifier.java.isAssignableFrom(value::class.java)) {
-            return value
-        }
-
-        return when (classifier) {
-            // Basic type conversions
-            String::class -> value.toString()
-            Int::class,
-            Integer::class -> convertToInt(value)
-            Long::class,
-            java.lang.Long::class -> convertToLong(value)
-            Double::class,
-            java.lang.Double::class -> convertToDouble(value)
-            Float::class,
-            java.lang.Float::class -> convertToFloat(value)
-            Boolean::class,
-            java.lang.Boolean::class -> convertToBoolean(value)
-
-            // Collection type conversions
-            List::class -> convertToList(value, type)
-            Set::class -> convertToSet(value, type)
-            Map::class -> convertToMap(value, type)
-
-            // Default: return original value
-            else -> value
-        }
-    }
-
-    /** Converts a value to Int */
-    fun convertToInt(value: Any): Any {
-        return when (value) {
-            is Number -> value.toInt()
-            is String -> value.toIntOrNull() ?: value
-            else -> value
-        }
-    }
-
-    /** Converts a value to Long */
-    fun convertToLong(value: Any): Any {
-        return when (value) {
-            is Number -> value.toLong()
-            is String -> value.toLongOrNull() ?: value
-            else -> value
-        }
-    }
-
-    /** Converts a value to Double */
-    fun convertToDouble(value: Any): Any {
-        return when (value) {
-            is Number -> value.toDouble()
-            is String -> value.toDoubleOrNull() ?: value
-            else -> value
-        }
-    }
-
-    /** Converts a value to Float */
-    fun convertToFloat(value: Any): Any {
-        return when (value) {
-            is Number -> value.toFloat()
-            is String -> value.toFloatOrNull() ?: value
-            else -> value
-        }
-    }
-
-    /** Converts a value to Boolean */
-    fun convertToBoolean(value: Any): Boolean {
-        return when (value) {
-            is Boolean -> value
-            is String -> value.lowercase(Locale.getDefault()) == "true" || value == "1"
-            is Number -> value.toInt() != 0
-            else -> false
-        }
-    }
-
-    /** Converts a value to List, considering the element type */
-    fun convertToList(value: Any, type: KType): List<*> {
-        if (value !is Collection<*>) return listOf(value)
-
-        // Try to get element type
-        val elementType = type.arguments.firstOrNull()?.type
-        if (elementType != null) {
-            // Convert each element to the target type
-            return value.map { element ->
-                if (element != null) convert(element, elementType) else null
-            }
-        }
-
-        // Return as is if element type is unknown
-        return value.toList()
-    }
-
-    /** Converts a value to Set, considering the element type */
-    internal fun convertToSet(value: Any, type: KType): Set<*> {
-        if (value !is Collection<*>) return setOf(value)
-
-        // Try to get element type
-        val elementType = type.arguments.firstOrNull()?.type
-        if (elementType != null) {
-            // Convert each element to the target type
-            return value
-                .map { element -> if (element != null) convert(element, elementType) else null }
-                .toSet()
-        }
-
-        // Return as is if element type is unknown
-        return value.toSet()
-    }
-
-    /** Converts a value to Map, considering key and value types */
-    internal fun convertToMap(value: Any, type: KType): Map<*, *> {
-        if (value !is Map<*, *>)
-            throw IllegalArgumentException("Cannot convert ${value::class.simpleName} to Map")
-
-        // Try to get key and value types
-        val keyType = type.arguments.getOrNull(0)?.type
-        val valueType = type.arguments.getOrNull(1)?.type
-
-        if (keyType != null && valueType != null) {
-            return value.entries.associate { (k, v) ->
-                val convertedKey = if (k != null) convert(k, keyType) else null
-                val convertedValue = if (v != null) convert(v, valueType) else null
-                convertedKey to convertedValue
-            }
-        }
-
-        // Return as is if key or value type is unknown
-        return value
-    }
-
-    /**
-     * Generic method to convert a value to a specified type
-     *
-     * @param value The value to convert
-     * @return Converted value of type V
-     * @throws IllegalArgumentException if conversion is not possible
-     */
-    @Suppress("UNCHECKED_CAST")
-    inline fun <reified V> convertTo(value: Any?): V {
-        if (value == null) {
-            // If V is nullable, return null, otherwise throw exception
-            if (null is V) return null as V
-            throw IllegalArgumentException(
-                "Cannot convert null to non-nullable ${V::class.simpleName}"
-            )
-        }
-
-        // Return if value is already the target type
-        if (value is V) return value
-
-        return when (V::class) {
-            // Basic type conversions
-            String::class -> value.toString() as V
-            Int::class -> convertToInt(value) as V
-            Long::class -> convertToLong(value) as V
-            Double::class -> convertToDouble(value) as V
-            Float::class -> convertToFloat(value) as V
-            Boolean::class -> convertToBoolean(value) as V
-
-            // Collection types - simple conversion since generic type info is lost
-            List::class -> {
-                when (value) {
-                    is Collection<*> -> value.toList() as V
-                    else -> listOf(value) as V
-                }
-            }
-            Set::class -> {
-                when (value) {
-                    is Collection<*> -> value.toSet() as V
-                    else -> setOf(value) as V
-                }
-            }
-            Map::class -> {
-                when (value) {
-                    is Map<*, *> -> value as V
-                    else ->
-                        throw IllegalArgumentException(
-                            "Cannot convert ${value::class.simpleName} to ${V::class.simpleName}"
-                        )
-                }
-            }
-
-            // Throw exception if conversion is not possible
-            else ->
-                throw IllegalArgumentException(
-                    "Cannot convert ${value::class.simpleName} to ${V::class.simpleName}"
-                )
-        }
-    }
-}
 
 /** Field handler function type */
 typealias FieldHandler<T> = (T, Any) -> Unit
 
 /** Patch handler DSL for configuring custom field handlers */
-class PatchHandlerDsl<T : Any> {
-    val handlers = mutableMapOf<String, FieldHandler<T>>()
+class PatchHandlerDSL<T : Any, P> {
+    private val handlers = mutableMapOf<String, FieldHandler<T>>()
 
     /**
      * Defines a type-safe handler for a specific field
      *
-     * @param field The field name to handle
+     * @param property The property in the PATCH DTO class to handle
      * @param handler The handler function for the field
      */
-    inline fun <reified V> handle(field: String, noinline handler: (entity: T, value: V) -> Unit) {
-        handlers[field] = { entity, anyValue ->
+    fun <V : Any> handle(property: KProperty1<P, V?>, handler: (entity: T, value: V) -> Unit) {
+        handlers[property.name] = { entity, anyValue ->
             try {
-                // Use the type converter
-                val convertedValue = TypeConverter.convertTo<V>(anyValue)
-                handler(entity, convertedValue)
-            } catch (e: IllegalArgumentException) {
-                throw IllegalArgumentException("Error processing field '$field': ${e.message}", e)
+                @Suppress("UNCHECKED_CAST") val value = anyValue as V
+                handler(entity, value)
+            } catch (e: ClassCastException) {
+                throw IllegalArgumentException(
+                    "Type mismatch: Field '${property.name}' expects type ${property.returnType}, " +
+                        "but received type ${anyValue::class.simpleName}",
+                    e,
+                )
             }
         }
     }
+
+    /** Get all registered handlers */
+    internal fun getHandlers(): Map<String, FieldHandler<T>> = handlers
 }
 
-/**
- * Generic entity patch service for handling PATCH requests
- *
- * Handles entity property updates only, does not persist to database
- */
+/** Generic entity patch service for handling PATCH operations */
 @Component
 class EntityPatcher {
-    // Protected system fields that shouldn't be modified via patch
+    // Default protected fields that shouldn't be modified
     private val defaultProtectedFields = setOf("id", "createdAt", "updatedAt", "deletedAt")
 
     /**
-     * Applies patch operations to an entity using DSL style configuration
+     * Apply a patch to an entity using DSL-style configuration
      *
      * @param entity The entity to update
-     * @param patchData The patch data (non-null fields)
-     * @param additionalProtectedFields Additional fields that should not be modified
-     * @param configure Custom handler configuration
-     * @return The updated entity (note: not persisted to database)
+     * @param patchData The DTO or Map containing update data
+     * @param additionalProtectedFields Additional fields to protect from updates
+     * @param configure DSL configuration block for custom field handling
+     * @return The updated entity (not yet persisted)
      */
-    fun <T : Any> patch(
+    fun <T : Any, P : Any> patch(
         entity: T,
-        patchData: Any,
+        patchData: P,
         additionalProtectedFields: Set<String> = emptySet(),
-        configure: PatchHandlerDsl<T>.() -> Unit = {},
+        configure: PatchHandlerDSL<T, P>.() -> Unit = {},
     ): T {
-        val dsl = PatchHandlerDsl<T>().apply(configure)
+        val dsl = PatchHandlerDSL<T, P>().apply(configure)
 
         // Get all protected fields
         val protectedFields = defaultProtectedFields + additionalProtectedFields
 
         // Apply patch and return updated entity (caller is responsible for saving)
-        return applyPatch(entity, patchData.convertToMap(), dsl.handlers, protectedFields)
+        return applyPatch(entity, patchData.convertToMap(), dsl.getHandlers(), protectedFields)
     }
 
     /** Applies patch to an entity */
@@ -305,7 +141,7 @@ class EntityPatcher {
                     // Skip fields with @Id annotation
                     property.findAnnotation<Id>() != null -> false
                     // Skip private fields without @Patchable annotation
-                    property.visibility?.name == "PRIVATE" &&
+                    property.visibility == KVisibility.PRIVATE &&
                         property.findAnnotation<Patchable>() == null -> false
                     // Allow modification by default
                     else -> true
@@ -315,7 +151,7 @@ class EntityPatcher {
         // Process each non-null field
         patchMap.forEach { (fieldName, value) ->
             if (value != null) {
-                // Use custom handler if available
+                // Prioritize custom handlers
                 if (handlers.containsKey(fieldName)) {
                     handlers[fieldName]?.invoke(entity, value)
                 } else {
@@ -323,10 +159,22 @@ class EntityPatcher {
                     val property = properties.find { it.name == fieldName }
                     if (property != null) {
                         property.isAccessible = true
-
-                        // Convert value type and set
-                        val convertedValue = TypeConverter.convert(value, property.returnType)
-                        property.set(entity, convertedValue)
+                        try {
+                            // Set property value directly without type conversion
+                            property.set(entity, value)
+                        } catch (e: ClassCastException) {
+                            throw IllegalArgumentException(
+                                "Type mismatch: Field '$fieldName' expects type ${property.returnType}, " +
+                                    "but received type ${value::class.simpleName}. Ensure DTO and Entity " +
+                                    "field types match, or use a custom handler.",
+                                e,
+                            )
+                        } catch (e: Exception) {
+                            throw IllegalArgumentException(
+                                "Error setting field '$fieldName': ${e.message}",
+                                e,
+                            )
+                        }
                     }
                 }
             }
