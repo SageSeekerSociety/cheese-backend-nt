@@ -109,7 +109,7 @@ class NotificationController(
             )
         return ResponseEntity.ok(
             ListNotifications200ResponseDTO(
-                0,
+                200,
                 "success",
                 ListNotifications200ResponseDataDTO(notifications.first, notifications.second),
             )
@@ -123,7 +123,7 @@ class NotificationController(
         notificationService.markAsRead(markNotificationsAsReadRequestDTO.notificationIds)
         return ResponseEntity.ok(
             MarkNotificationsAsRead200ResponseDTO(
-                0,
+                200,
                 "success",
                 MarkNotificationsAsRead200ResponseDataDTO(
                     markNotificationsAsReadRequestDTO.notificationIds
@@ -138,7 +138,7 @@ class NotificationController(
     ): ResponseEntity<GetUnreadNotificationsCount200ResponseDTO> {
         return ResponseEntity.ok(
             GetUnreadNotificationsCount200ResponseDTO(
-                0,
+                200,
                 "success",
                 GetUnreadNotificationsCount200ResponseDataDTO(
                     notificationService.getUnreadCount(receiverId)
