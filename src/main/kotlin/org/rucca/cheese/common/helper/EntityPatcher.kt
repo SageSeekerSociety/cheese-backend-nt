@@ -1,130 +1,248 @@
 package org.rucca.cheese.common.helper
 
+import jakarta.persistence.Id
 import java.util.Locale
 import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KType
+import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
 import org.springframework.stereotype.Component
 
 /**
- * 类型转换工具类 提供两种类型转换方法：
- * 1. convert(): 接收KType，用于反射场景
- * 2. convertTo<T>(): 使用泛型，用于类型安全的DSL场景
+ * Annotation to explicitly mark a field as patchable Use this on properties that should be
+ * modifiable via PATCH operations
+ */
+@Target(AnnotationTarget.FIELD, AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class Patchable
+
+/**
+ * Type conversion utility Provides conversion functionality for basic types and collection types
  */
 object TypeConverter {
-    /** 将值转换为指定的Kotlin类型 */
+    /**
+     * Converts a value to the specified Kotlin type
+     *
+     * @param value The value to convert
+     * @param type Target Kotlin type
+     * @return Converted value or null
+     */
     @Suppress("UNCHECKED_CAST")
     fun convert(value: Any?, type: KType): Any? {
         if (value == null) return null
 
         val classifier = type.classifier as? KClass<*> ?: return value
 
-        return when {
-            // 值已经是目标类型
-            classifier.java.isAssignableFrom(value::class.java) -> value
+        // Return if value is already the target type
+        if (classifier.java.isAssignableFrom(value::class.java)) {
+            return value
+        }
 
-            // 基本类型转换
-            classifier == String::class -> value.toString()
-            classifier == Int::class || classifier == java.lang.Integer::class ->
-                (value as? Number)?.toInt() ?: value.toString().toIntOrNull() ?: value
-            classifier == Long::class || classifier == java.lang.Long::class ->
-                (value as? Number)?.toLong() ?: value.toString().toLongOrNull() ?: value
-            classifier == Double::class || classifier == java.lang.Double::class ->
-                (value as? Number)?.toDouble() ?: value.toString().toDoubleOrNull() ?: value
-            classifier == Float::class || classifier == java.lang.Float::class ->
-                (value as? Number)?.toFloat() ?: value.toString().toFloatOrNull() ?: value
-            classifier == Boolean::class || classifier == java.lang.Boolean::class ->
-                when (value) {
-                    is Boolean -> value
-                    is String -> value.lowercase(Locale.getDefault()) == "true" || value == "1"
-                    is Number -> value.toInt() != 0
-                    else -> value
-                }
+        return when (classifier) {
+            // Basic type conversions
+            String::class -> value.toString()
+            Int::class,
+            Integer::class -> convertToInt(value)
+            Long::class,
+            java.lang.Long::class -> convertToLong(value)
+            Double::class,
+            java.lang.Double::class -> convertToDouble(value)
+            Float::class,
+            java.lang.Float::class -> convertToFloat(value)
+            Boolean::class,
+            java.lang.Boolean::class -> convertToBoolean(value)
 
-            // 集合类型转换
-            classifier == List::class && value is Collection<*> -> value.toList()
-            classifier == Set::class && value is Collection<*> -> value.toSet()
-            classifier == Map::class && value is Map<*, *> -> value
+            // Collection type conversions
+            List::class -> convertToList(value, type)
+            Set::class -> convertToSet(value, type)
+            Map::class -> convertToMap(value, type)
 
-            // 默认返回原值，由调用者决定处理方式
+            // Default: return original value
             else -> value
         }
     }
 
-    /** 将值转换为指定的实体类型 (用于DSL中的类型转换) */
+    /** Converts a value to Int */
+    fun convertToInt(value: Any): Any {
+        return when (value) {
+            is Number -> value.toInt()
+            is String -> value.toIntOrNull() ?: value
+            else -> value
+        }
+    }
+
+    /** Converts a value to Long */
+    fun convertToLong(value: Any): Any {
+        return when (value) {
+            is Number -> value.toLong()
+            is String -> value.toLongOrNull() ?: value
+            else -> value
+        }
+    }
+
+    /** Converts a value to Double */
+    fun convertToDouble(value: Any): Any {
+        return when (value) {
+            is Number -> value.toDouble()
+            is String -> value.toDoubleOrNull() ?: value
+            else -> value
+        }
+    }
+
+    /** Converts a value to Float */
+    fun convertToFloat(value: Any): Any {
+        return when (value) {
+            is Number -> value.toFloat()
+            is String -> value.toFloatOrNull() ?: value
+            else -> value
+        }
+    }
+
+    /** Converts a value to Boolean */
+    fun convertToBoolean(value: Any): Boolean {
+        return when (value) {
+            is Boolean -> value
+            is String -> value.lowercase(Locale.getDefault()) == "true" || value == "1"
+            is Number -> value.toInt() != 0
+            else -> false
+        }
+    }
+
+    /** Converts a value to List, considering the element type */
+    fun convertToList(value: Any, type: KType): List<*> {
+        if (value !is Collection<*>) return listOf(value)
+
+        // Try to get element type
+        val elementType = type.arguments.firstOrNull()?.type
+        if (elementType != null) {
+            // Convert each element to the target type
+            return value.map { element ->
+                if (element != null) convert(element, elementType) else null
+            }
+        }
+
+        // Return as is if element type is unknown
+        return value.toList()
+    }
+
+    /** Converts a value to Set, considering the element type */
+    internal fun convertToSet(value: Any, type: KType): Set<*> {
+        if (value !is Collection<*>) return setOf(value)
+
+        // Try to get element type
+        val elementType = type.arguments.firstOrNull()?.type
+        if (elementType != null) {
+            // Convert each element to the target type
+            return value
+                .map { element -> if (element != null) convert(element, elementType) else null }
+                .toSet()
+        }
+
+        // Return as is if element type is unknown
+        return value.toSet()
+    }
+
+    /** Converts a value to Map, considering key and value types */
+    internal fun convertToMap(value: Any, type: KType): Map<*, *> {
+        if (value !is Map<*, *>)
+            throw IllegalArgumentException("Cannot convert ${value::class.simpleName} to Map")
+
+        // Try to get key and value types
+        val keyType = type.arguments.getOrNull(0)?.type
+        val valueType = type.arguments.getOrNull(1)?.type
+
+        if (keyType != null && valueType != null) {
+            return value.entries.associate { (k, v) ->
+                val convertedKey = if (k != null) convert(k, keyType) else null
+                val convertedValue = if (v != null) convert(v, valueType) else null
+                convertedKey to convertedValue
+            }
+        }
+
+        // Return as is if key or value type is unknown
+        return value
+    }
+
+    /**
+     * Generic method to convert a value to a specified type
+     *
+     * @param value The value to convert
+     * @return Converted value of type V
+     * @throws IllegalArgumentException if conversion is not possible
+     */
     @Suppress("UNCHECKED_CAST")
-    inline fun <reified T> convertTo(value: Any?): T {
+    inline fun <reified V> convertTo(value: Any?): V {
         if (value == null) {
-            // 如果T是可空类型，返回null，否则抛出异常
-            if (null is T) return null as T
+            // If V is nullable, return null, otherwise throw exception
+            if (null is V) return null as V
             throw IllegalArgumentException(
-                "Cannot convert null to non-nullable ${T::class.simpleName}"
+                "Cannot convert null to non-nullable ${V::class.simpleName}"
             )
         }
 
-        return when {
-            // 值已经是目标类型
-            value is T -> value
+        // Return if value is already the target type
+        if (value is V) return value
 
-            // 基本类型转换
-            T::class == String::class -> value.toString() as T
-            T::class == Int::class && value is Number -> value.toInt() as T
-            T::class == Int::class && value is String ->
-                value.toIntOrNull() as? T
-                    ?: throw IllegalArgumentException("Cannot convert '$value' to Int")
-            T::class == Long::class && value is Number -> value.toLong() as T
-            T::class == Long::class && value is String ->
-                value.toLongOrNull() as? T
-                    ?: throw IllegalArgumentException("Cannot convert '$value' to Long")
-            T::class == Double::class && value is Number -> value.toDouble() as T
-            T::class == Double::class && value is String ->
-                value.toDoubleOrNull() as? T
-                    ?: throw IllegalArgumentException("Cannot convert '$value' to Double")
-            T::class == Float::class && value is Number -> value.toFloat() as T
-            T::class == Float::class && value is String ->
-                value.toFloatOrNull() as? T
-                    ?: throw IllegalArgumentException("Cannot convert '$value' to Float")
-            T::class == Boolean::class ->
+        return when (V::class) {
+            // Basic type conversions
+            String::class -> value.toString() as V
+            Int::class -> convertToInt(value) as V
+            Long::class -> convertToLong(value) as V
+            Double::class -> convertToDouble(value) as V
+            Float::class -> convertToFloat(value) as V
+            Boolean::class -> convertToBoolean(value) as V
+
+            // Collection types - simple conversion since generic type info is lost
+            List::class -> {
                 when (value) {
-                    is Boolean -> value as T
-                    is String ->
-                        (value.lowercase(Locale.getDefault()) == "true" || value == "1") as T
-                    is Number -> (value.toInt() != 0) as T
+                    is Collection<*> -> value.toList() as V
+                    else -> listOf(value) as V
+                }
+            }
+            Set::class -> {
+                when (value) {
+                    is Collection<*> -> value.toSet() as V
+                    else -> setOf(value) as V
+                }
+            }
+            Map::class -> {
+                when (value) {
+                    is Map<*, *> -> value as V
                     else ->
                         throw IllegalArgumentException(
-                            "Cannot convert ${value::class.simpleName} to Boolean"
+                            "Cannot convert ${value::class.simpleName} to ${V::class.simpleName}"
                         )
                 }
+            }
 
-            // 集合类型转换
-            // 注意：这些转换不考虑元素类型，可能需要进一步处理
-            T::class == List::class && value is Collection<*> -> value.toList() as T
-            T::class == Set::class && value is Collection<*> -> value.toSet() as T
-            T::class == Map::class && value is Map<*, *> -> value as T
-
-            // 无法转换时抛出异常
+            // Throw exception if conversion is not possible
             else ->
                 throw IllegalArgumentException(
-                    "Cannot convert ${value::class.simpleName} to ${T::class.simpleName}"
+                    "Cannot convert ${value::class.simpleName} to ${V::class.simpleName}"
                 )
         }
     }
 }
 
-/** 字段处理器函数类型 */
+/** Field handler function type */
 typealias FieldHandler<T> = (T, Any) -> Unit
 
-/** 补丁处理器DSL */
+/** Patch handler DSL for configuring custom field handlers */
 class PatchHandlerDsl<T : Any> {
     val handlers = mutableMapOf<String, FieldHandler<T>>()
 
-    /** 为指定字段定义类型安全的处理函数 */
+    /**
+     * Defines a type-safe handler for a specific field
+     *
+     * @param field The field name to handle
+     * @param handler The handler function for the field
+     */
     inline fun <reified V> handle(field: String, noinline handler: (entity: T, value: V) -> Unit) {
         handlers[field] = { entity, anyValue ->
             try {
-                // 使用统一的类型转换工具
+                // Use the type converter
                 val convertedValue = TypeConverter.convertTo<V>(anyValue)
                 handler(entity, convertedValue)
             } catch (e: IllegalArgumentException) {
@@ -134,56 +252,79 @@ class PatchHandlerDsl<T : Any> {
     }
 }
 
-/** 通用实体补丁服务，用于处理PATCH请求 只负责实体对象的属性更新，不负责数据库持久化 */
+/**
+ * Generic entity patch service for handling PATCH requests
+ *
+ * Handles entity property updates only, does not persist to database
+ */
 @Component
 class EntityPatcher {
+    // Protected system fields that shouldn't be modified via patch
+    private val defaultProtectedFields = setOf("id", "createdAt", "updatedAt", "deletedAt")
+
     /**
-     * 使用DSL风格定义补丁操作
+     * Applies patch operations to an entity using DSL style configuration
      *
-     * @param entity 要更新的实体
-     * @param patchData 补丁数据（非空字段）
-     * @param configure 自定义处理器配置
-     * @return 更新后的实体（注意：该实体未持久化到数据库，需要调用方保存）
+     * @param entity The entity to update
+     * @param patchData The patch data (non-null fields)
+     * @param additionalProtectedFields Additional fields that should not be modified
+     * @param configure Custom handler configuration
+     * @return The updated entity (note: not persisted to database)
      */
     fun <T : Any> patch(
         entity: T,
         patchData: Any,
+        additionalProtectedFields: Set<String> = emptySet(),
         configure: PatchHandlerDsl<T>.() -> Unit = {},
     ): T {
-        // 将patchData转换为Map
-        val patchMap = convertToMap(patchData)
-
-        // 配置自定义处理器
         val dsl = PatchHandlerDsl<T>().apply(configure)
 
-        // 应用补丁并返回更新后的实体（由调用方负责保存）
-        return applyPatch(entity, patchMap, dsl.handlers)
+        // Get all protected fields
+        val protectedFields = defaultProtectedFields + additionalProtectedFields
+
+        // Apply patch and return updated entity (caller is responsible for saving)
+        return applyPatch(entity, patchData.convertToMap(), dsl.handlers, protectedFields)
     }
 
-    /** 应用补丁到实体 */
+    /** Applies patch to an entity */
     private fun <T : Any> applyPatch(
         entity: T,
         patchMap: Map<String, Any?>,
         handlers: Map<String, FieldHandler<T>>,
+        protectedFields: Set<String>,
     ): T {
         val entityClass = entity::class
 
-        // 获取所有可修改属性
-        val properties = entityClass.memberProperties.filterIsInstance<KMutableProperty1<T, Any?>>()
+        // Get all modifiable properties, filtering out protected fields
+        val properties =
+            entityClass.memberProperties.filterIsInstance<KMutableProperty1<T, Any?>>().filter {
+                property ->
+                when {
+                    // Skip protected fields
+                    property.name in protectedFields -> false
+                    // Skip fields with @Id annotation
+                    property.findAnnotation<Id>() != null -> false
+                    // Skip private fields without @Patchable annotation
+                    property.visibility?.name == "PRIVATE" &&
+                        property.findAnnotation<Patchable>() == null -> false
+                    // Allow modification by default
+                    else -> true
+                }
+            }
 
-        // 处理每个非空字段
+        // Process each non-null field
         patchMap.forEach { (fieldName, value) ->
             if (value != null) {
-                // 优先使用自定义处理器
+                // Use custom handler if available
                 if (handlers.containsKey(fieldName)) {
                     handlers[fieldName]?.invoke(entity, value)
                 } else {
-                    // 查找匹配的属性
+                    // Find matching property
                     val property = properties.find { it.name == fieldName }
                     if (property != null) {
                         property.isAccessible = true
 
-                        // 转换值类型并设置
+                        // Convert value type and set
                         val convertedValue = TypeConverter.convert(value, property.returnType)
                         property.set(entity, convertedValue)
                     }
@@ -194,14 +335,14 @@ class EntityPatcher {
         return entity
     }
 
-    /** 将任何对象转换为Map，保留非空值 */
-    private fun convertToMap(obj: Any): Map<String, Any?> {
-        return when (obj) {
-            is Map<*, *> -> obj.filterKeys { it is String }.mapKeys { it.key as String }
+    /** Converts any object to a Map, preserving non-null values */
+    private fun Any.convertToMap(): Map<String, Any?> {
+        return when (this) {
+            is Map<*, *> -> this.filterKeys { it is String }.mapKeys { it.key as String }
             else -> {
-                obj::class
+                this::class
                     .memberProperties
-                    .associate { prop -> prop.name to prop.getter.call(obj) }
+                    .associate { prop -> prop.name to prop.getter.call(this) }
                     .filterValues { it != null }
             }
         }
