@@ -276,56 +276,15 @@ class TaskSubmissionService(
                 .cursorSpec(TaskSubmission::id)
                 .sortBy(sortByProperty, direction)
                 .specification { root, query, cb ->
-                    val predicates: MutableList<jakarta.persistence.criteria.Predicate> =
-                        mutableListOf()
-
-                    // Add base predicates
-                    predicates.add(
-                        cb.equal(
-                            root
-                                .get<TaskMembership>("membership")
-                                .get<IdType>("task")
-                                .get<IdType>("id"),
-                            taskId,
-                        )
+                    createSubmissionSpecification(
+                        root,
+                        query,
+                        cb,
+                        taskId,
+                        member,
+                        allVersions,
+                        reviewed,
                     )
-
-                    if (member != null) {
-                        predicates.add(
-                            cb.equal(
-                                root.get<TaskMembership>("membership").get<IdType>("memberId"),
-                                member,
-                            )
-                        )
-                    }
-
-                    // Handle version filtering
-                    if (!allVersions) {
-                        val subquery = query!!.subquery(Int::class.java)
-                        val subRoot = subquery.from(TaskSubmission::class.java)
-                        subquery
-                            .select(cb.max(subRoot.get<Int>("version")))
-                            .where(
-                                cb.equal(
-                                    subRoot.get<TaskMembership>("membership"),
-                                    root.get<TaskMembership>("membership"),
-                                )
-                            )
-                        predicates.add(cb.equal(root.get<Int>("version"), subquery))
-                    }
-
-                    // Handle review filtering
-                    if (reviewed != null) {
-                        val subquery = query!!.subquery(Boolean::class.java)
-                        val subRoot = subquery.from(TaskSubmissionReview::class.java)
-                        subquery
-                            .select(cb.literal(true))
-                            .where(cb.equal(subRoot.get<TaskSubmission>("submission"), root))
-                        if (reviewed) predicates.add(cb.exists(subquery))
-                        else predicates.add(cb.not(cb.exists(subquery)))
-                    }
-
-                    cb.and(*predicates.toTypedArray())
                 }
                 .build()
 
@@ -337,6 +296,66 @@ class TaskSubmissionService(
             cursorPage.content.map { it.toTaskSubmissionDTO(queryReview = queryReview) }
         val pageInfo = cursorPage.pageInfo.toPageDTO()
         return Pair(submissions, pageInfo)
+    }
+
+    /**
+     * Creates a JPA Specification for task submission queries with flexible filtering options.
+     *
+     * Builds predicates for filtering submissions by task, member, version, and review status. Uses
+     * subqueries for complex filtering conditions like "latest version only" and "reviewed status".
+     */
+    private fun createSubmissionSpecification(
+        root: jakarta.persistence.criteria.Root<TaskSubmission>,
+        query: jakarta.persistence.criteria.CriteriaQuery<*>?,
+        cb: jakarta.persistence.criteria.CriteriaBuilder,
+        taskId: IdType,
+        member: IdType?,
+        allVersions: Boolean,
+        reviewed: Boolean?,
+    ): jakarta.persistence.criteria.Predicate {
+        val predicates: MutableList<jakarta.persistence.criteria.Predicate> = mutableListOf()
+
+        // Add base predicates
+        predicates.add(
+            cb.equal(
+                root.get<TaskMembership>("membership").get<IdType>("task").get<IdType>("id"),
+                taskId,
+            )
+        )
+
+        if (member != null) {
+            predicates.add(
+                cb.equal(root.get<TaskMembership>("membership").get<IdType>("memberId"), member)
+            )
+        }
+
+        // Handle version filtering
+        if (!allVersions) {
+            val subquery = query!!.subquery(Int::class.java)
+            val subRoot = subquery.from(TaskSubmission::class.java)
+            subquery
+                .select(cb.max(subRoot.get<Int>("version")))
+                .where(
+                    cb.equal(
+                        subRoot.get<TaskMembership>("membership"),
+                        root.get<TaskMembership>("membership"),
+                    )
+                )
+            predicates.add(cb.equal(root.get<Int>("version"), subquery))
+        }
+
+        // Handle review filtering
+        if (reviewed != null) {
+            val subquery = query!!.subquery(Boolean::class.java)
+            val subRoot = subquery.from(TaskSubmissionReview::class.java)
+            subquery
+                .select(cb.literal(true))
+                .where(cb.equal(subRoot.get<TaskSubmission>("submission"), root))
+            if (reviewed) predicates.add(cb.exists(subquery))
+            else predicates.add(cb.not(cb.exists(subquery)))
+        }
+
+        return cb.and(*predicates.toTypedArray())
     }
 
     private fun getTask(taskId: IdType): Task {

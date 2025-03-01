@@ -11,12 +11,7 @@
 
 package org.rucca.cheese.task
 
-import jakarta.persistence.criteria.CriteriaBuilder
-import jakarta.persistence.criteria.CriteriaQuery
-import jakarta.persistence.criteria.JoinType
-import jakarta.persistence.criteria.Predicate
-import jakarta.persistence.criteria.Root
-import java.time.LocalDateTime
+import jakarta.persistence.criteria.*
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NotFoundError
@@ -29,7 +24,8 @@ import org.rucca.cheese.common.repository.cursorSpec
 import org.rucca.cheese.common.repository.toJpaDirection
 import org.rucca.cheese.common.repository.toPageDTO
 import org.rucca.cheese.model.*
-import org.rucca.cheese.model.TaskSubmitterTypeDTO.*
+import org.rucca.cheese.model.TaskSubmitterTypeDTO.TEAM
+import org.rucca.cheese.model.TaskSubmitterTypeDTO.USER
 import org.rucca.cheese.space.Space
 import org.rucca.cheese.space.SpaceService
 import org.rucca.cheese.task.option.TaskEnumerateOptions
@@ -45,6 +41,7 @@ import org.springframework.data.elasticsearch.core.SearchHitSupport
 import org.springframework.data.elasticsearch.core.query.Criteria
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class TaskService(
@@ -385,7 +382,21 @@ class TaskService(
         }
     }
 
-    /** Creates a JPA Specification for filtering tasks. */
+    /**
+     * Creates a JPA Specification for filtering tasks based on various criteria.
+     *
+     * SQL Example:
+     * ```
+     * SELECT t.* FROM task t
+     * WHERE t.space_id = ? AND t.team_id = ? AND t.approved = ?
+     *   AND t.creator_id = ?
+     *   AND EXISTS (
+     *     SELECT 1 FROM task_topics_relation ttr
+     *     WHERE ttr.task_id = t.id AND ttr.topic_id IN (?, ?, ?)
+     *   )
+     *   AND -- joined predicate (see createJoinedPredicate)
+     * ```
+     */
     private fun createTaskSpecification(
         options: TaskEnumerateOptions,
         currentUserId: IdType,
@@ -444,7 +455,25 @@ class TaskService(
         }
     }
 
-    /** Creates a predicate for filtering tasks by whether the current user has joined them. */
+    /**
+     * Creates a predicate for filtering tasks by whether the current user has joined them. Handles
+     * both USER and TEAM type submitters with appropriate logic for each.
+     *
+     * SQL Example:
+     * ```
+     * -- For joined=true
+     * (
+     *   -- User joined directly (see createUserJoinedPredicate)
+     *   OR
+     *   -- User joined via team (see createTeamJoinedPredicate)
+     * )
+     *
+     * -- For joined=false
+     * NOT (
+     *   -- User joined directly OR User joined via team
+     * )
+     * ```
+     */
     private fun createJoinedPredicate(
         root: Root<Task>,
         query: CriteriaQuery<*>,
@@ -473,7 +502,18 @@ class TaskService(
         }
     }
 
-    /** Creates a predicate for USER type task submissions. */
+    /**
+     * Creates a predicate for USER type task submissions. Checks if the user has directly joined
+     * the task.
+     *
+     * SQL Example:
+     * ```
+     * t.submitter_type = 'USER' AND EXISTS (
+     *   SELECT 1 FROM task_membership tm
+     *   WHERE tm.task_id = t.id AND tm.member_id = ?
+     * )
+     * ```
+     */
     private fun createUserJoinedPredicate(
         root: Root<Task>,
         query: CriteriaQuery<*>,
@@ -502,7 +542,23 @@ class TaskService(
         return cb.and(isUserType, cb.exists(directMembershipSubquery))
     }
 
-    /** Creates a predicate for TEAM type task submissions. */
+    /**
+     * Creates a predicate for TEAM type task submissions. Checks if the user is a member of any
+     * team that has joined the task.
+     *
+     * SQL Example:
+     * ```
+     * t.submitter_type = 'TEAM' AND EXISTS (
+     *   SELECT 1 FROM team_user_relation tur
+     *   JOIN team te ON tur.team_id = te.id
+     *   WHERE tur.user_id = ?
+     *   AND EXISTS (
+     *     SELECT 1 FROM task_membership tm
+     *     WHERE tm.task_id = t.id AND tm.member_id = te.id
+     *   )
+     * )
+     * ```
+     */
     private fun createTeamJoinedPredicate(
         root: Root<Task>,
         query: CriteriaQuery<*>,

@@ -1,3 +1,47 @@
+/*
+ * This file contains the implementation of cursor-based pagination for Spring Data JPA repositories.
+ *
+ * Cursor-based pagination offers several advantages over traditional offset/limit pagination:
+ * - Consistent results when data changes between page requests
+ * - Better performance for large datasets (no need to skip rows)
+ * - Support for bidirectional navigation (forward and backward)
+ * - Type safety with Kotlin property references
+ *
+ * Core components:
+ * - CursorPagingRepository: Base repository interface with cursor pagination support
+ * - CursorSpecification: Interface for defining pagination and filtering criteria
+ * - CursorSpecificationBuilder: Fluent builder for creating specifications
+ * - CursorPage/CursorPageInfo: Data containers for pagination results
+ *
+ * Basic usage example:
+ *
+ * ```kotlin
+ * // 1. Create a repository that extends CursorPagingRepository
+ * interface UserRepository : CursorPagingRepository<User, Long>
+ *
+ * // 2. Build a cursor specification
+ * val spec = userRepository.cursorSpec(User::id)
+ *     .sortBy(User::createdAt, Sort.Direction.DESC)
+ *     .specification { root, query, cb ->
+ *         cb.equal(root.get<String>("status"), "ACTIVE")
+ *     }
+ *     .build()
+ *
+ * // 3. Execute pagination query
+ * val cursorPage = userRepository.findAllWithCursor(spec, startCursor, pageSize)
+ *
+ * // 4. Access results and pagination metadata
+ * val users = cursorPage.content
+ * val pageInfo = cursorPage.pageInfo
+ *
+ * // 5. Convert to PageDTO for backward compatibility (if needed)
+ * val pageDTO = pageInfo.toPageDTO()
+ * ```
+ *
+ * This implementation handles all necessary cursor management, including
+ * previous/next cursor calculation and bidirectional navigation support.
+ */
+
 package org.rucca.cheese.common.repository
 
 import jakarta.persistence.EntityManager
@@ -6,8 +50,6 @@ import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
-import java.io.Serializable
-import kotlin.reflect.KProperty1
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.PageDTO
@@ -18,6 +60,8 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.support.JpaEntityInformation
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository
 import org.springframework.data.repository.NoRepositoryBean
+import java.io.Serializable
+import kotlin.reflect.KProperty1
 
 /**
  * Container for pagination results with strongly typed cursor support.
@@ -281,10 +325,13 @@ class CursorPagingRepositoryImpl<T, ID : Serializable>(
         cq.orderBy(toJpaOrders(cursorSpec.getSort(), root, cb))
 
         // Create query
-        val query = em.createQuery(cq)
-        query.maxResults = pageSize + 1 // Fetch one extra to check if there's a next page
+        val query =
+            em.createQuery(cq).apply {
+                maxResults = pageSize + 1
+            } // Fetch one extra to check if there's a next page
 
         // Execute query
+        // Note: This is calling Java API, so we're using getResultList method
         val results = query.resultList
 
         // Check if there's a next page
@@ -349,8 +396,10 @@ class CursorPagingRepositoryImpl<T, ID : Serializable>(
         cq.orderBy(toJpaOrders(reverseSort, root, cb))
 
         // Create query
-        val query = em.createQuery(cq)
-        query.maxResults = 1 // Only need the last record of the previous page
+        val query =
+            em.createQuery(cq).apply {
+                maxResults = 1
+            } // Only need the last record of the previous page
 
         // Execute query
         val result = query.resultList
