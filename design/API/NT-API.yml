@@ -3,7 +3,7 @@ info:
   title: Cheese Community API
   version: "1.0"
 servers:
-  - url: "http://localhost:7777/api/v1"
+  - url: "http://localhost:8080"
 paths:
   /spaces/{spaceId}:
     delete:
@@ -687,7 +687,7 @@ paths:
                 rank:
                   type: integer
                 approved:
-                  $ref: '#/components/schemas/ApproveType'
+                  $ref: "#/components/schemas/ApproveType"
                 rejectReason:
                   type: string
                 topics:
@@ -698,6 +698,243 @@ paths:
       summary: Update Task
       x-stoplight:
         id: sy7yhfh83myt0
+  /tasks/{taskId}/ai-advice/conversations:
+    post:
+      summary: Create AI Advice Conversation
+      operationId: create-task-ai-advice-conversation
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskAIAdviceConversationRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/TaskAIAdviceConversationResponse"
+  /tasks/{taskId}/ai-advice/conversations/grouped:
+    get:
+      summary: 获取按会话ID分组的对话历史
+      operationId: get-task-ai-advice-conversations-grouped
+      description: 获取指定任务的所有对话，按会话ID分组
+      tags:
+        - Task AI Advice
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      conversations:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ConversationGroupSummary"
+                  message:
+                    type: string
+  /tasks/{taskId}/ai-advice/conversations/{conversationId}:
+    get:
+      summary: 获取指定会话ID的所有对话
+      operationId: get-task-ai-advice-conversation
+      description: 获取特定会话ID下的所有对话记录
+      tags:
+        - Task AI Advice
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      conversations:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TaskAIAdviceConversation"
+                  message:
+                    type: string
+    delete:
+      summary: Delete AI Advice Conversation
+      tags: []
+      operationId: delete-task-ai-advice-conversation
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+  /tasks/{taskId}/ai-advice:
+    get:
+      summary: Get AI Advice
+      tags: []
+      operationId: get-task-ai-advice
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/TaskAIAdvice"
+                  message:
+                    type: string
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                    example: "Task AI advice is not ready yet. Current status: PROCESSING"
+    post:
+      summary: Request AI Advice Generation
+      tags: []
+      operationId: request-task-ai-advice
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+                      quota:
+                        $ref: "#/components/schemas/QuotaInfo"
+                  message:
+                    type: string
+  /tasks/{taskId}/ai-advice/status:
+    get:
+      summary: Get AI Advice Generation Status
+      tags: []
+      operationId: get-task-ai-advice-status
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+                  message:
+                    type: string
+
+  /ai/quota:
+    get:
+      summary: Get Current User's AI Quota
+      tags: []
+      operationId: get-user-ai-quota
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/QuotaInfo"
+                  message:
+                    type: string
   /tasks:
     get:
       summary: Enumerate Tasks
@@ -748,10 +985,10 @@ paths:
           name: team
           description: Team ID
         - schema:
-            $ref: '#/components/schemas/ApproveType'
+            $ref: "#/components/schemas/ApproveType"
           in: query
           name: approved
-          description: Distinguish task status 
+          description: Distinguish task status
         - schema:
             type: integer
             format: int64
@@ -941,8 +1178,8 @@ paths:
                   format: int64
                   x-stoplight:
                 space:
-                    type: integer
-                    format: int64
+                  type: integer
+                  format: int64
                 rank:
                   type: integer
                 topics:
@@ -957,7 +1194,7 @@ paths:
   /tasks/{taskId}/participants:
     get:
       summary: Get Participants
-      tags: [ ]
+      tags: []
       operationId: get-task-participants
       parameters:
         - description: Task ID
@@ -979,7 +1216,7 @@ paths:
           name: queryRealNameInfo
           description: Query real name info
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
@@ -1003,7 +1240,7 @@ paths:
                       participants:
                         type: array
                         items:
-                          $ref: '#/components/schemas/TaskMembership'
+                          $ref: "#/components/schemas/TaskMembership"
                   message:
                     type: string
           description: OK
@@ -1039,7 +1276,7 @@ paths:
                       participants:
                         type: array
                         items:
-                          $ref: '#/components/schemas/TaskMembership'
+                          $ref: "#/components/schemas/TaskMembership"
                     required:
                       - participant
                     type: object
@@ -1053,7 +1290,7 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
+      tags: []
       operationId: patch-task-membership
       requestBody:
         required: true
@@ -1068,7 +1305,7 @@ paths:
                 approved:
                   $ref: "#/components/schemas/ApproveType"
                 realNameInfo:
-                  $ref: '#/components/schemas/TaskParticipantRealNameInfo'
+                  $ref: "#/components/schemas/TaskParticipantRealNameInfo"
     delete:
       parameters:
         - description: Task ID
@@ -1100,7 +1337,7 @@ paths:
                       participants:
                         type: array
                         items:
-                          $ref: '#/components/schemas/TaskMembership'
+                          $ref: "#/components/schemas/TaskMembership"
                     required:
                       - task
                     type: object
@@ -1152,7 +1389,7 @@ paths:
                       participants:
                         type: array
                         items:
-                          $ref: '#/components/schemas/TaskMembership'
+                          $ref: "#/components/schemas/TaskMembership"
                     required:
                       - task
                     type: object
@@ -1179,7 +1416,7 @@ paths:
                   type: integer
                   format: int64
                 realNameInfo:
-                  $ref: '#/components/schemas/TaskParticipantRealNameInfo'
+                  $ref: "#/components/schemas/TaskParticipantRealNameInfo"
       tags: []
       operationId: post-task-participant
       summary: Apply for Task
@@ -1430,12 +1667,12 @@ paths:
                     x-stoplight:
                       id: 6pybgx4byzj2l
                     format: int64
-  '/tasks/submissions/{submissionId}/review':
+  "/tasks/submissions/{submissionId}/review":
     post:
       summary: Review Submission
       tags: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1455,7 +1692,7 @@ paths:
                       - hasUpgradedParticipantRank
                     properties:
                       submission:
-                        $ref: '#/components/schemas/TaskSubmission'
+                        $ref: "#/components/schemas/TaskSubmission"
                       hasUpgradedParticipantRank:
                         type: boolean
                   message:
@@ -1490,7 +1727,7 @@ paths:
       summary: Re-Review Submission
       tags: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1510,7 +1747,7 @@ paths:
                       - hasUpgradedParticipantRank
                     properties:
                       submission:
-                        $ref: '#/components/schemas/TaskSubmission'
+                        $ref: "#/components/schemas/TaskSubmission"
                       hasUpgradedParticipantRank:
                         type: boolean
                   message:
@@ -1541,7 +1778,7 @@ paths:
       summary: Revert Review Submission
       tags: []
       responses:
-        '200':
+        "200":
           description: OK
       operationId: delete-task-submission-review
       parameters:
@@ -1697,7 +1934,7 @@ paths:
   /teams/my-teams:
     get:
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
@@ -1723,18 +1960,18 @@ paths:
                           id: hrqbg64zl0qbw
                         type: array
                         items:
-                          $ref: '#/components/schemas/Team'
+                          $ref: "#/components/schemas/Team"
                   message:
                     type: string
                     x-stoplight:
                       id: zp1goqu7fzjss
           description: OK
-      tags: [ ]
+      tags: []
       operationId: get-my-teams
       summary: Query My Teams
       x-stoplight:
         id: a2xj7aw8g9ryd
-    parameters: [ ]
+    parameters: []
   /teams:
     post:
       responses:
@@ -1800,9 +2037,9 @@ paths:
         id: b30d0d09hir43
     get:
       summary: Get Teams
-      tags: [ ]
+      tags: []
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
@@ -1822,9 +2059,9 @@ paths:
                       teams:
                         type: array
                         items:
-                          $ref: '#/components/schemas/Team'
+                          $ref: "#/components/schemas/Team"
                       page:
-                        $ref: '#/components/schemas/Page'
+                        $ref: "#/components/schemas/Page"
                   message:
                     type: string
           description: OK
@@ -2070,7 +2307,7 @@ paths:
   /notifications:
     get:
       summary: List Notifications
-      tags: [ ]
+      tags: []
       parameters:
         - schema:
             type: object
@@ -2131,7 +2368,7 @@ paths:
   /notifications/read:
     post:
       summary: Mark Notifications as Read
-      tags: [ ]
+      tags: []
       requestBody:
         required: true
         content:
@@ -2158,7 +2395,7 @@ paths:
   /notifications/unread/count:
     get:
       summary: Get Unread Notifications Count
-      tags: [ ]
+      tags: []
       requestBody:
         required: true
         content:
@@ -2274,7 +2511,7 @@ paths:
                     type: object
                     properties:
                       project:
-                        $ref: '#/components/schemas/Project'
+                        $ref: "#/components/schemas/Project"
     get:
       summary: List Projects
       tags: []
@@ -2338,9 +2575,9 @@ paths:
                       projects:
                         type: array
                         items:
-                          $ref: '#/components/schemas/Project'
+                          $ref: "#/components/schemas/Project"
                       page:
-                        $ref: '#/components/schemas/Page'
+                        $ref: "#/components/schemas/Page"
   /projects/{projectId}/discussions:
     post:
       summary: Create Discussion
@@ -2396,7 +2633,7 @@ paths:
                     type: object
                     properties:
                       discussion:
-                        $ref: '#/components/schemas/Discussion'
+                        $ref: "#/components/schemas/Discussion"
     get:
       summary: List Discussions
       tags: []
@@ -2469,9 +2706,9 @@ paths:
                       discussions:
                         type: array
                         items:
-                          $ref: '#/components/schemas/Discussion'
+                          $ref: "#/components/schemas/Discussion"
                       page:
-                        $ref: '#/components/schemas/Page'
+                        $ref: "#/components/schemas/Page"
   /projects/{projectId}/discussions/{discussionId}/reactions:
     post:
       summary: React to Discussion
@@ -2533,7 +2770,7 @@ paths:
                           users:
                             type: array
                             items:
-                              $ref: '#/components/schemas/User'
+                              $ref: "#/components/schemas/User"
   /knowledge:
     post:
       summary: Create Knowledge Item
@@ -2589,7 +2826,7 @@ paths:
                     type: object
                     properties:
                       knowledge:
-                        $ref: '#/components/schemas/Knowledge'
+                        $ref: "#/components/schemas/Knowledge"
     get:
       summary: List Knowledge Items
       tags: []
@@ -2655,7 +2892,7 @@ paths:
                       knowledge:
                         type: array
                         items:
-                          $ref: '#/components/schemas/Knowledge'
+                          $ref: "#/components/schemas/Knowledge"
                       page:
                         $ref: '#/components/schemas/Page'
     patch:

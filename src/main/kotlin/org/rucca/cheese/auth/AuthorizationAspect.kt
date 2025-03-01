@@ -32,8 +32,13 @@ class AuthorizationAspect(private val authorizationService: AuthorizationService
             "@within(org.springframework.stereotype.Controller)"
     )
     fun checkAuthorization(joinPoint: JoinPoint) {
+        if (joinPoint.target.javaClass.name.startsWith("org.springframework.boot")) {
+            return
+        }
+
         val method = (joinPoint.signature as MethodSignature).method
         val guardAnnotation: Guard? = method.getAnnotation<Guard>(Guard::class.java)
+
         val noAuthAnnotation: NoAuth? = method.getAnnotation<NoAuth>(NoAuth::class.java)
         if (noAuthAnnotation == null) {
             if (guardAnnotation == null)

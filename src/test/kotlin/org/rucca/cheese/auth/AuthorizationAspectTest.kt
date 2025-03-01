@@ -25,11 +25,13 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 
 @Disabled("Disabled to speed up tests")
 @SpringBootTest
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
 class AuthorizationAspectTest
 @Autowired
@@ -44,28 +46,35 @@ constructor(
         every { authorizationService.audit(String(), any(), String(), any()) }
 
         // Avoid error logging in the console
-        every { globalErrorHandler.handleException(any()) } returns
+        every { globalErrorHandler.handleException(any(), any()) } returns
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(InternalServerError())
     }
 
     @Test
     fun testNoGuardOrNoAuthAnnotationException() {
         mockMvc.perform(MockMvcRequestBuilders.get("/example/1"))
-        verify { globalErrorHandler.handleException(ofType<NoGuardOrNoAuthAnnotationException>()) }
+        verify {
+            globalErrorHandler.handleException(ofType<NoGuardOrNoAuthAnnotationException>(), any())
+        }
     }
 
     @Test
     fun testDuplicatedResourceIdAnnotationException() {
         mockMvc.perform(MockMvcRequestBuilders.get("/example/2?id1=1&id2=2"))
         verify {
-            globalErrorHandler.handleException(ofType<DuplicatedResourceIdAnnotationException>())
+            globalErrorHandler.handleException(
+                ofType<DuplicatedResourceIdAnnotationException>(),
+                any(),
+            )
         }
     }
 
     @Test
     fun testResourceIdTypeMismatchException() {
         mockMvc.perform(MockMvcRequestBuilders.get("/example/3?id=1"))
-        verify { globalErrorHandler.handleException(ofType<ResourceIdTypeMismatchException>()) }
+        verify {
+            globalErrorHandler.handleException(ofType<ResourceIdTypeMismatchException>(), any())
+        }
     }
 
     @Test
@@ -137,6 +146,8 @@ constructor(
             MockMvcRequestBuilders.get("/example/8?additional_1=abc&additional_2=123")
                 .header("Authorization", "Bearer token Xxx")
         )
-        verify { globalErrorHandler.handleException(ofType<DuplicatedAuthInfoKeyException>()) }
+        verify {
+            globalErrorHandler.handleException(ofType<DuplicatedAuthInfoKeyException>(), any())
+        }
     }
 }
