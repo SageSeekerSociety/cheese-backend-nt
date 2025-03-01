@@ -161,12 +161,7 @@ class RolePermissionService {
                     // Notification permissions
                     Permission(
                         authorizedActions =
-                            listOf(
-                                "create",
-                                "list-notifications",
-                                "get-unread-count",
-                                "mark-as-read",
-                            ),
+                            listOf("list-notifications", "get-unread-count", "mark-as-read"),
                         authorizedResource = AuthorizedResource(types = listOf("notification")),
                     ),
                     Permission(

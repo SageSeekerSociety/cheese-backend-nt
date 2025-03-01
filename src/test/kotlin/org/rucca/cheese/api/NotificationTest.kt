@@ -5,6 +5,8 @@ import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.notification.NotificationService
+import org.rucca.cheese.notification.NotificationType
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,6 +26,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 class NotificationTest
 @Autowired
 constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCreatorService) {
+    @Autowired private lateinit var notificationService: NotificationService
     private val logger = LoggerFactory.getLogger(javaClass)
     private lateinit var receiver: UserCreatorService.CreateUserResponse
     private lateinit var user: UserCreatorService.CreateUserResponse
@@ -39,40 +42,15 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         userToken = userCreatorService.login(user.username, user.password)
     }
 
-    @Test
-    @Order(1)
-    fun createNotification() {
-        val request =
-            MockMvcRequestBuilders.post("/notifications")
-                .header("Authorization", "Bearer $receiverToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                    "type": "mention",
-                    "receiverId": ${receiver.userId},
-                    "content": {
-                        "text": "Hello, you were mentioned!",
-                        "projectId": 2001,
-                        "discussionId": null,
-                        "knowledgeId": null
-                    }
-                }
-                """
-                )
-
-        val response =
-            mockMvc
-                .perform(request)
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("ok"))
-                .andExpect(jsonPath("$.data.notification.type").value("MENTION"))
-                .andReturn()
-
-        val json = org.json.JSONObject(response.response.contentAsString)
-        notificationId = json.getJSONObject("data").getJSONObject("notification").getLong("id")
-
+    @BeforeEach
+    fun setupNotification() {
+        notificationId =
+            notificationService.createNotification(
+                type = NotificationType.MENTION,
+                receiverId = receiver.userId,
+                text = "Hello, you were mentioned!",
+                projectId = 2001,
+            )
         logger.info("Notification ID: $notificationId")
     }
 
@@ -167,44 +145,12 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     @Test
     @Order(71)
     fun testNonReceiverDeleteNotification() {
-        createNotification()
 
         Assumptions.assumeTrue(notificationId > 0)
 
         val request =
             MockMvcRequestBuilders.delete("/notifications/$notificationId")
                 .header("Authorization", "Bearer $userToken")
-
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isNotFound)
-            .andExpect(jsonPath("$.code").value(404))
-            .andExpect(jsonPath("$.message").value(Matchers.containsString("NotFoundError")))
-    }
-
-    @Test
-    @Order(81)
-    fun testCreateNotificationWithNonExistentReceiver() {
-        val nonExistentReceiverId = 999999L
-
-        val request =
-            MockMvcRequestBuilders.post("/notifications")
-                .header("Authorization", "Bearer $userToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                    "type": "mention",
-                    "receiverId": $nonExistentReceiverId,
-                    "content": {
-                        "text": "Hello, you were mentioned!",
-                        "projectId": null,
-                        "discussionId": null,
-                        "knowledgeId": null
-                    }
-                }
-                """
-                )
 
         mockMvc
             .perform(request)

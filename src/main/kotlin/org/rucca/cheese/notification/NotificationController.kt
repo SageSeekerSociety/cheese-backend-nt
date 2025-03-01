@@ -7,7 +7,6 @@ import org.rucca.cheese.auth.AuthorizationService
 import org.rucca.cheese.auth.AuthorizedAction
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.ResourceId
-import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
@@ -53,35 +52,6 @@ class NotificationController(
         }
     }
 
-    @Guard("create", "notification")
-    override fun postNotification(
-        postNotificationRequestDTO: PostNotificationRequestDTO
-    ): ResponseEntity<PostNotification200ResponseDTO> {
-        if (
-            !environment.activeProfiles.contains("dev") &&
-                !environment.activeProfiles.contains("test")
-        ) {
-            throw BadRequestError("This operation is not allowed in production environment")
-        }
-        val notificationId =
-            notificationService.createNotification(
-                NotificationType.fromString(postNotificationRequestDTO.type.value),
-                postNotificationRequestDTO.receiverId,
-                postNotificationRequestDTO.content.text?.ifBlank { " " } ?: " ",
-                postNotificationRequestDTO.content.projectId,
-                postNotificationRequestDTO.content.discussionId,
-                postNotificationRequestDTO.content.knowledgeId,
-            )
-        val notificationDTO = notificationService.getNotificationDTO(notificationId)
-        return ResponseEntity.ok(
-            PostNotification200ResponseDTO(
-                200,
-                PostNotification200ResponseDataDTO(notificationDTO),
-                "ok",
-            )
-        )
-    }
-
     @Guard("delete", "notification")
     override fun deleteNotification(
         @ResourceId notificationId: kotlin.Long
@@ -99,10 +69,7 @@ class NotificationController(
     ): ResponseEntity<ListNotifications200ResponseDTO> {
         val notifications =
             notificationService.listNotifications(
-                when (type) {
-                    null -> null
-                    else -> NotificationType.fromString(type)
-                },
+                type = if (type == null) null else NotificationType.fromString(type),
                 read,
                 pageStart,
                 pageSize,
