@@ -11,16 +11,16 @@
 
 package org.rucca.cheese.task
 
-import jakarta.persistence.EntityManager
-import jakarta.persistence.criteria.Predicate
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.attachment.Attachment
 import org.rucca.cheese.attachment.AttachmentService
 import org.rucca.cheese.common.error.NotFoundError
-import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.common.repository.cursorSpec
+import org.rucca.cheese.common.repository.toJpaDirection
+import org.rucca.cheese.common.repository.toPageDTO
 import org.rucca.cheese.model.*
 import org.rucca.cheese.task.error.*
 import org.rucca.cheese.user.User
@@ -33,7 +33,6 @@ class TaskSubmissionService(
     private val taskRepository: TaskRepository,
     private val taskMembershipRepository: TaskMembershipRepository,
     private val taskSubmissionRepository: TaskSubmissionRepository,
-    private val entityManager: EntityManager,
     private val attachmentService: AttachmentService,
     private val taskSubmissionEntryRepository: TaskSubmissionEntryRepository,
     private val taskSubmissionReviewService: TaskSubmissionReviewService,
@@ -70,7 +69,6 @@ class TaskSubmissionService(
     }
 
     fun taskHasAnySubmission(taskId: IdType): Boolean {
-        val task = getTask(taskId)
         return taskSubmissionRepository.existsByTaskId(taskId)
     }
 
@@ -216,7 +214,7 @@ class TaskSubmissionService(
                 val task =
                     taskRepository.findById(membership!!.task!!.id!!).orElseThrow {
                         RuntimeException(
-                            "Membership ${this.membership.id!!} refers to task ${membership.task!!.id} which does not exist"
+                            "Membership ${this.membership.id!!} refers to task ${membership.task.id} which does not exist"
                         )
                     }
                 task.submissionSchema!!
@@ -262,67 +260,70 @@ class TaskSubmissionService(
         sortBy: TaskSubmissionSortBy,
         sortOrder: SortDirection,
     ): Pair<List<TaskSubmissionDTO>, PageDTO> {
-        val cb = entityManager.criteriaBuilder
-        val cq = cb.createQuery(TaskSubmission::class.java)
-        val root = cq.from(TaskSubmission::class.java)
-        root.join<TaskSubmission, TaskMembership>("membership")
-        val predicts: MutableList<Predicate> = mutableListOf()
-        predicts.add(
-            cb.equal(
-                root.get<TaskMembership>("membership").get<IdType>("task").get<IdType>("id"),
-                taskId,
-            )
-        )
-        if (member != null) {
-            predicts.add(
-                cb.equal(root.get<TaskMembership>("membership").get<IdType>("memberId"), member)
-            )
-        }
-        if (!allVersions) {
-            val subquery = cq.subquery(Int::class.java)
-            val subRoot = subquery.from(TaskSubmission::class.java)
-            subquery
-                .select(cb.max(subRoot.get<Int>("version")))
-                .where(
+        val sortByProperty =
+            when (sortBy) {
+                TaskSubmissionSortBy.CREATED_AT -> TaskSubmission::createdAt
+                TaskSubmissionSortBy.UPDATED_AT -> TaskSubmission::updatedAt
+            }
+
+        val direction = sortOrder.toJpaDirection()
+
+        val cursorSpec = taskSubmissionRepository.cursorSpec(TaskSubmission::id)
+            .sortBy(sortByProperty, direction)
+            .specification { root, query, cb ->
+                val predicates: MutableList<jakarta.persistence.criteria.Predicate> = mutableListOf()
+                
+                // Add base predicates
+                predicates.add(
                     cb.equal(
-                        subRoot.get<TaskMembership>("membership"),
-                        root.get<TaskMembership>("membership"),
+                        root.get<TaskMembership>("membership").get<IdType>("task").get<IdType>("id"),
+                        taskId,
                     )
                 )
-            predicts.add(cb.equal(root.get<Int>("version"), subquery))
-        }
-        if (reviewed != null) {
-            val subquery = cq.subquery(Boolean::class.java)
-            val subRoot = subquery.from(TaskSubmissionReview::class.java)
-            subquery
-                .select(cb.literal(true))
-                .where(cb.equal(subRoot.get<TaskSubmission>("submission"), root))
-            if (reviewed) predicts.add(cb.exists(subquery))
-            else predicts.add(cb.not(cb.exists(subquery)))
-        }
-        cq.where(*predicts.toTypedArray())
-        val by =
-            when (sortBy) {
-                TaskSubmissionSortBy.CREATED_AT -> root.get<LocalDateTime>("createdAt")
-                TaskSubmissionSortBy.UPDATED_AT -> root.get<LocalDateTime>("updatedAt")
+                
+                if (member != null) {
+                    predicates.add(
+                        cb.equal(root.get<TaskMembership>("membership").get<IdType>("memberId"), member)
+                    )
+                }
+                
+                // Handle version filtering
+                if (!allVersions) {
+                    val subquery = query!!.subquery(Int::class.java)
+                    val subRoot = subquery.from(TaskSubmission::class.java)
+                    subquery
+                        .select(cb.max(subRoot.get<Int>("version")))
+                        .where(
+                            cb.equal(
+                                subRoot.get<TaskMembership>("membership"),
+                                root.get<TaskMembership>("membership"),
+                            )
+                        )
+                    predicates.add(cb.equal(root.get<Int>("version"), subquery))
+                }
+                
+                // Handle review filtering
+                if (reviewed != null) {
+                    val subquery = query!!.subquery(Boolean::class.java)
+                    val subRoot = subquery.from(TaskSubmissionReview::class.java)
+                    subquery
+                        .select(cb.literal(true))
+                        .where(cb.equal(subRoot.get<TaskSubmission>("submission"), root))
+                    if (reviewed) predicates.add(cb.exists(subquery))
+                    else predicates.add(cb.not(cb.exists(subquery)))
+                }
+                
+                cb.and(*predicates.toTypedArray())
             }
-        val order =
-            when (sortOrder) {
-                SortDirection.ASCENDING -> cb.asc(by)
-                SortDirection.DESCENDING -> cb.desc(by)
-            }
-        cq.orderBy(order)
-        val query = entityManager.createQuery(cq)
-        val result = query.resultList
-        val (curr, page) =
-            PageHelper.pageFromAll(
-                result,
-                pageStart,
-                pageSize,
-                { it.id!! },
-                { id -> throw NotFoundError("task submission", id) },
-            )
-        return Pair(curr.map { it.toTaskSubmissionDTO(queryReview = queryReview) }, page)
+            .build()
+        
+        // Execute query with cursor pagination
+        val cursorPage = taskSubmissionRepository.findAllWithCursor(cursorSpec, pageStart, pageSize)
+        
+        // Convert results to DTOs and return
+        val submissions = cursorPage.content.map { it.toTaskSubmissionDTO(queryReview = queryReview) }
+        val pageInfo = cursorPage.pageInfo.toPageDTO()
+        return Pair(submissions, pageInfo)
     }
 
     private fun getTask(taskId: IdType): Task {
