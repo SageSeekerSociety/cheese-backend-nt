@@ -7,17 +7,21 @@ import org.rucca.cheese.auth.AuthorizationService
 import org.rucca.cheese.auth.AuthorizedAction
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.env.Environment
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class NotificationController(
     private val notificationService: NotificationService,
     private val authorizationService: AuthorizationService,
     private val authenticationService: AuthenticationService,
+    @Autowired private val environment: Environment,
 ) : NotificationsApi {
 
     @PostConstruct
@@ -53,6 +57,12 @@ class NotificationController(
     override fun postNotification(
         postNotificationRequestDTO: PostNotificationRequestDTO
     ): ResponseEntity<PostNotification200ResponseDTO> {
+        if (
+            !environment.activeProfiles.contains("dev") &&
+                !environment.activeProfiles.contains("test")
+        ) {
+            throw BadRequestError("This operation is not allowed in production environment")
+        }
         val notificationId =
             notificationService.createNotification(
                 NotificationType.fromString(postNotificationRequestDTO.type.value),
