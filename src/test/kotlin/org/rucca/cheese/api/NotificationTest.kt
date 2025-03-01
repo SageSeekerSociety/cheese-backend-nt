@@ -153,7 +153,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.code").value(200))
             .andExpect(jsonPath("$.message").value("success"))
             .andExpect(jsonPath("$.data.notifications").isArray)
             .andExpect(
