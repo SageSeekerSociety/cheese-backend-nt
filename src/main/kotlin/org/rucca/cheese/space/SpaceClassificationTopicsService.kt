@@ -14,6 +14,7 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.TopicDTO
 import org.rucca.cheese.topic.Topic
 import org.rucca.cheese.topic.TopicService
+import org.rucca.cheese.topic.toDTO
 import org.springframework.stereotype.Service
 
 @Service
@@ -26,8 +27,13 @@ class SpaceClassificationTopicsService(
     }
 
     fun getClassificationTopicDTOs(spaceId: IdType): List<TopicDTO> {
-        val ids = getClassificationTopicIds(spaceId)
-        return ids.map { topicService.getTopicDTO(it) }
+        // 使用一次查询获取所有主题关系及其主题数据
+        val relationsWithTopics = topicsRelationRepository.findAllBySpaceIdFetchTopic(spaceId)
+        
+        // 直接从已加载的关系中获取主题并转换为DTO
+        return relationsWithTopics.map { relation -> 
+            relation.topic!!.toDTO() 
+        }
     }
 
     fun updateClassificationTopics(spaceId: IdType, topicIds: List<IdType>) {
