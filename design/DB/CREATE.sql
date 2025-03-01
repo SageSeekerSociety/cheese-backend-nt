@@ -48,6 +48,11 @@ START WITH
     1 INCREMENT BY 1;
 
 CREATE
+    SEQUENCE knowledge_admin_relation_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE knowledge_label_entity_seq
 START WITH
     1 INCREMENT BY 50;
@@ -258,6 +263,21 @@ CREATE
                     'IMAGE'
                 )
             ),
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        knowledge_admin_relation(
+            ROLE SMALLINT NOT NULL CHECK(
+                ROLE BETWEEN 0 AND 1
+            ),
+            "user_id" INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            knowledge_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
             PRIMARY KEY(id)
         );
 
@@ -720,6 +740,14 @@ CREATE
     knowledge(name);
 
 CREATE
+    INDEX IDXhrxbnhfdcrtiy3qynqvet816t ON
+    knowledge_admin_relation(space_id);
+
+CREATE
+    INDEX IDXddjouihs6xeqs7mr8grk7hlkg ON
+    knowledge_admin_relation(user_id);
+
+CREATE
     INDEX IDXpscwbyxoud3wy81qoy7a01f80 ON
     knowledge_label_entity(knowledge_id);
 
@@ -853,6 +881,12 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS knowledge ADD CONSTRAINT FKhniy1bsjjeoxbpfnlwydlgxtk FOREIGN KEY(material_id) REFERENCES material;
+
+ALTER TABLE
+    IF EXISTS knowledge_admin_relation ADD CONSTRAINT FKc2d1v4ucahawri8r63xq5b3tu FOREIGN KEY(knowledge_id) REFERENCES knowledge;
+
+ALTER TABLE
+    IF EXISTS knowledge_admin_relation ADD CONSTRAINT FKevg3xt9glv6n7no2j2rnmcsil FOREIGN KEY("user_id") REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS knowledge_label_entity ADD CONSTRAINT FKn9rdc2m01070dfpopfiexs5n9 FOREIGN KEY(knowledge_id) REFERENCES knowledge;
