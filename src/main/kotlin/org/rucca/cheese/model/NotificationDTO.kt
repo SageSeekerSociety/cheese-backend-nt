@@ -9,7 +9,8 @@ import javax.validation.Valid
 /**
  * @param id
  * @param type
- * @param receiverId
+ * @param receiverId The ID of the user who will receive the notification. This will be mapped to a
+ *   User entity in the backend.
  * @param content
  * @param read
  * @param createdAt
@@ -21,7 +22,12 @@ data class NotificationDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("type", required = true)
     val type: NotificationDTO.Type,
-    @Schema(example = "null", required = true, description = "")
+    @Schema(
+        example = "null",
+        required = true,
+        description =
+            "The ID of the user who will receive the notification. This will be mapped to a User entity in the backend.",
+    )
     @get:JsonProperty("receiverId", required = true)
     val receiverId: kotlin.Long,
     @field:Valid
@@ -36,14 +42,14 @@ data class NotificationDTO(
     val createdAt: kotlin.Long,
 ) {
 
-    /** Values: mention,reply,reaction,project_invite,deadline_remind */
+    /** Values: MENTION,REPLY,REACTION,PROJECT_INVITE,DEADLINE_REMIND */
     enum class Type(@get:JsonValue val value: kotlin.String) {
 
-        mention("mention"),
-        reply("reply"),
-        reaction("reaction"),
-        project_invite("project_invite"),
-        deadline_remind("deadline_remind");
+        MENTION("MENTION"),
+        REPLY("REPLY"),
+        REACTION("REACTION"),
+        PROJECT_INVITE("PROJECT_INVITE"),
+        DEADLINE_REMIND("DEADLINE_REMIND");
 
         companion object {
             @JvmStatic
