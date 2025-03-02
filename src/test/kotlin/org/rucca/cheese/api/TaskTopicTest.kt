@@ -85,16 +85,14 @@ constructor(
                   "description": "$description",
                   "submissionSchema": [
                     ${
-                        submissionSchema
-                            .map {
-                                """
+                        submissionSchema.joinToString(",\n") {
+                            """
                                 {
                                   "prompt": "${it.first}",
                                   "type": "${it.second}"
                                 }
                             """
-                            }
-                            .joinToString(",\n")
+                        }
                     }
                   ],
                   "team": ${team ?: "null"},
