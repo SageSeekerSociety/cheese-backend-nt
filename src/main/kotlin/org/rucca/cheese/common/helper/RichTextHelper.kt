@@ -14,17 +14,16 @@ object RichTextHelper {
     private fun nodeToMarkdown(node: JsonNode): String {
         return when {
             node.has("type") -> {
-                when (val type = node.get("type").asText()) {
-                    "doc" ->
-                        node.get("content")?.map { nodeToMarkdown(it) }?.joinToString("\n") ?: ""
+                when (node.get("type").asText()) {
+                    "doc" -> node.get("content")?.joinToString("\n") { nodeToMarkdown(it) } ?: ""
                     "table" -> processTable(node)
                     "tableRow" ->
-                        node.get("content")?.map { nodeToMarkdown(it) }?.joinToString(" | ") ?: ""
+                        node.get("content")?.joinToString(" | ") { nodeToMarkdown(it) } ?: ""
                     "tableCell" ->
-                        node.get("content")?.map { nodeToMarkdown(it) }?.joinToString(" ") ?: ""
+                        node.get("content")?.joinToString(" ") { nodeToMarkdown(it) } ?: ""
                     "paragraph" -> {
                         val content =
-                            node.get("content")?.map { nodeToMarkdown(it) }?.joinToString("") ?: ""
+                            node.get("content")?.joinToString("") { nodeToMarkdown(it) } ?: ""
                         "$content\n"
                     }
                     "text" -> {
@@ -44,7 +43,7 @@ object RichTextHelper {
                         }
                         text
                     }
-                    else -> node.get("content")?.map { nodeToMarkdown(it) }?.joinToString(" ") ?: ""
+                    else -> node.get("content")?.joinToString(" ") { nodeToMarkdown(it) } ?: ""
                 }
             }
             else -> ""
@@ -54,7 +53,7 @@ object RichTextHelper {
     private fun processTable(node: JsonNode): String {
         val rows =
             node.get("content")?.map { row ->
-                row.get("content")?.map { cell -> nodeToMarkdown(cell).trim() }?.joinToString(" | ")
+                row.get("content")?.joinToString(" | ") { cell -> nodeToMarkdown(cell).trim() }
                     ?: ""
             } ?: return ""
 
@@ -87,8 +86,7 @@ object RichTextHelper {
             node.has("content") -> {
                 node
                     .get("content")
-                    .map { extractTextFromNode(it) }
-                    .joinToString(" ")
+                    .joinToString(" ") { extractTextFromNode(it) }
                     .replace(Regex("\\s+"), " ")
                     .trim()
             }
