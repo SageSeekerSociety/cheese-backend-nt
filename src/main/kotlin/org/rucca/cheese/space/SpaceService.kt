@@ -14,10 +14,11 @@ import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.toEpochMilli
+import org.rucca.cheese.common.pagination.model.toPageDTO
+import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
+import org.rucca.cheese.common.pagination.repository.idSeekSpec
+import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.common.repository.cursorSpec
-import org.rucca.cheese.common.repository.toJpaDirection
-import org.rucca.cheese.common.repository.toPageDTO
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.error.AlreadyBeSpaceAdminError
 import org.rucca.cheese.space.error.NotSpaceAdminYetError
@@ -333,19 +334,15 @@ class SpaceService(
     ): Pair<List<SpaceDTO>, PageDTO> {
         val direction = sortOrder.toJpaDirection()
 
-        val cursorSpec =
-            spaceRepository
-                .cursorSpec(Space::id)
-                .sortBy(
-                    when (sortBy) {
-                        SpacesSortBy.CREATED_AT -> Space::createdAt
-                        SpacesSortBy.UPDATED_AT -> Space::updatedAt
-                    },
-                    direction,
-                )
-                .build()
+        val sortProperty =
+            when (sortBy) {
+                SpacesSortBy.CREATED_AT -> Space::createdAt
+                SpacesSortBy.UPDATED_AT -> Space::updatedAt
+            }
 
-        val result = spaceRepository.findAllWithCursor(cursorSpec, pageStart, pageSize)
+        val cursorSpec = spaceRepository.idSeekSpec(Space::id, sortProperty, direction).build()
+
+        val result = spaceRepository.findAllWithIdCursor(cursorSpec, pageStart, pageSize)
 
         return Pair(result.content.map { it.toSpaceDTO(queryOptions) }, result.pageInfo.toPageDTO())
     }

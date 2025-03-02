@@ -16,10 +16,11 @@ import org.rucca.cheese.attachment.Attachment
 import org.rucca.cheese.attachment.AttachmentService
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.toEpochMilli
+import org.rucca.cheese.common.pagination.model.toPageDTO
+import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
+import org.rucca.cheese.common.pagination.repository.idSeekSpec
+import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.common.repository.cursorSpec
-import org.rucca.cheese.common.repository.toJpaDirection
-import org.rucca.cheese.common.repository.toPageDTO
 import org.rucca.cheese.model.PageDTO
 import org.rucca.cheese.model.TaskSubmissionContentEntryDTO
 import org.rucca.cheese.model.TaskSubmissionDTO
@@ -273,8 +274,7 @@ class TaskSubmissionService(
 
         val cursorSpec =
             taskSubmissionRepository
-                .cursorSpec(TaskSubmission::id)
-                .sortBy(sortByProperty, direction)
+                .idSeekSpec(TaskSubmission::id, sortByProperty, direction)
                 .specification { root, query, cb ->
                     createSubmissionSpecification(
                         root,
@@ -289,7 +289,8 @@ class TaskSubmissionService(
                 .build()
 
         // Execute query with cursor pagination
-        val cursorPage = taskSubmissionRepository.findAllWithCursor(cursorSpec, pageStart, pageSize)
+        val cursorPage =
+            taskSubmissionRepository.findAllWithIdCursor(cursorSpec, pageStart, pageSize)
 
         // Convert results to DTOs and return
         val submissions =

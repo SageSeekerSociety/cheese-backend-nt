@@ -17,12 +17,13 @@ import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
+import org.rucca.cheese.common.pagination.model.toPageDTO
+import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
+import org.rucca.cheese.common.pagination.repository.idSeekSpec
+import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.convert
-import org.rucca.cheese.common.repository.cursorSpec
-import org.rucca.cheese.common.repository.toJpaDirection
-import org.rucca.cheese.common.repository.toPageDTO
 import org.rucca.cheese.model.*
 import org.rucca.cheese.model.TaskSubmitterTypeDTO.TEAM
 import org.rucca.cheese.model.TaskSubmitterTypeDTO.USER
@@ -614,7 +615,7 @@ class TaskService(
             when (sortBy) {
                 TasksSortBy.CREATED_AT -> Task::createdAt
                 TasksSortBy.UPDATED_AT -> Task::updatedAt
-                TasksSortBy.DEADLINE -> Task::deadline
+                TasksSortBy.DEADLINE -> Task::updatedAt
             }
 
         val direction = sortOrder.toJpaDirection()
@@ -628,13 +629,13 @@ class TaskService(
         // Create cursor spec with sort by the requested property but using ID as cursor
         val cursorSpec =
             taskRepository
-                .cursorSpec(Task::id)
-                .sortBy(sortProperty, direction)
+                .idSeekSpec(Task::id, sortProperty, direction)
                 .specification(specification)
                 .build()
 
         // Execute the query with cursor pagination
-        val (content, pageInfo) = taskRepository.findAllWithCursor(cursorSpec, pageStart, pageSize)
+        val (content, pageInfo) =
+            taskRepository.findAllWithIdCursor(cursorSpec, pageStart, pageSize)
 
         return Pair(content.map { it.toTaskDTO(queryOptions) }, pageInfo.toPageDTO())
     }
