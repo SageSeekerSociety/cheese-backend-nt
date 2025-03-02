@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 
 /**
@@ -28,7 +29,7 @@ data class AttachmentDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("meta")
     val meta: AttachmentMetaDTO? = null,
-) {
+) : Serializable {
 
     /** 类型 Values: image,video,audio,file */
     enum class Type(@get:JsonValue val value: kotlin.String) {
@@ -45,5 +46,9 @@ data class AttachmentDTO(
                 return values().first { it -> it.value == value }
             }
         }
+    }
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
     }
 }

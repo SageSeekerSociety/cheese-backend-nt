@@ -24,8 +24,6 @@ import org.rucca.cheese.common.persistent.convert
 import org.rucca.cheese.model.TaskMembershipDTO
 import org.rucca.cheese.model.TaskParticipantRealNameInfoDTO
 import org.rucca.cheese.model.TaskParticipantSummaryDTO
-import org.rucca.cheese.model.TaskSubmitterTypeDTO.TEAM
-import org.rucca.cheese.model.TaskSubmitterTypeDTO.USER
 import org.rucca.cheese.model.TeamSummaryDTO
 import org.rucca.cheese.space.SpaceUserRankService
 import org.rucca.cheese.task.error.*
@@ -273,9 +271,9 @@ class TaskMembershipService(
                 task.rank != null
         if (needToCheckRank) {
             val requiredRank = task.rank!! - applicationConfig.rankJump
-            val acturalRank = spaceUserRankService.getRank(task.space!!.id!!, memberId)
-            if (acturalRank < requiredRank)
-                return YourRankIsNotHighEnoughError(acturalRank, requiredRank)
+            val actualRank = spaceUserRankService.getRank(task.space.id!!, memberId)
+            if (actualRank < requiredRank)
+                return YourRankIsNotHighEnoughError(actualRank, requiredRank)
         }
 
         // Is not full

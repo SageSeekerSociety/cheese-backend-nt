@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 
 /**
@@ -28,4 +29,9 @@ data class CreateTaskAIAdviceConversationRequestDTO(
     @Schema(example = "null", description = "可选的父消息ID（用于继续特定消息的对话）")
     @get:JsonProperty("parentId")
     val parentId: kotlin.Long? = null,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

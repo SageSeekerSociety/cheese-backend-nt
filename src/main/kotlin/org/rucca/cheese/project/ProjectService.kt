@@ -24,7 +24,8 @@ class ProjectService(
                 startDate = requestDTO.startDate.toLocalDateTime(),
                 endDate = requestDTO.endDate.toLocalDateTime(),
                 // TODO: 团队ID待修改
-                // team = requestDTO.teamId?.let { teamRepository.findById(it).orElse(null) },
+                // team = requestDTO.teamId?.let { teamRepository.findById(it).orElse(null)
+                // },
                 team = null,
                 leader =
                     requestDTO.leaderId.toInt().let { userRepository.findById(it).orElse(null) },

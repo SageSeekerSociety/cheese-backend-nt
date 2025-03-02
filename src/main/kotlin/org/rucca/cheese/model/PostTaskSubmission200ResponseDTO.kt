@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 
 /**
@@ -20,4 +21,9 @@ data class PostTaskSubmission200ResponseDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("message", required = true)
     val message: kotlin.String,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

@@ -210,6 +210,14 @@
             <artifactId>hypersistence-utils-hibernate-63</artifactId>
             <version>3.9.2</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
     </dependencies>
 
     <!-- Build Configuration -->
@@ -265,6 +273,7 @@
                                 <apiPackage>org.rucca.cheese.api</apiPackage>
                                 <useBeanValidation>true</useBeanValidation>
                                 <exceptionHandler>false</exceptionHandler>
+                                <serializableModel>true</serializableModel>
                             </configOptions>
                         </configuration>
                     </execution>
@@ -359,7 +368,12 @@
                     </java>
                     <kotlin>
                         <ktfmt>
-                            <style>KOTLINLANG</style>
+                            <style>GOOGLE</style>
+                            <maxWidth>100</maxWidth>
+                            <blockIndent>4</blockIndent>
+                            <continuationIndent>4</continuationIndent>
+                            <removeUnusedImports>true</removeUnusedImports>
+                            <manageTrailingCommas>true</manageTrailingCommas>
                         </ktfmt>
                     </kotlin>
                     <pom>

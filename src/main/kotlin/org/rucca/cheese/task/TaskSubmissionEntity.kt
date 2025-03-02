@@ -14,10 +14,10 @@ package org.rucca.cheese.task
 import jakarta.persistence.*
 import java.util.*
 import org.hibernate.annotations.SQLRestriction
+import org.rucca.cheese.common.pagination.repository.CursorPagingRepository
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.user.User
-import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
 @Entity
@@ -33,7 +33,7 @@ class TaskSubmission(
     val submitter: User? = null,
 ) : BaseEntity()
 
-interface TaskSubmissionRepository : JpaRepository<TaskSubmission, IdType> {
+interface TaskSubmissionRepository : CursorPagingRepository<TaskSubmission, IdType> {
     fun findAllByMembershipId(membershipId: IdType): List<TaskSubmission>
 
     fun findAllByMembershipIdAndVersion(membershipId: IdType, version: Int): List<TaskSubmission>

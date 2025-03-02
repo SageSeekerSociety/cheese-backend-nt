@@ -27,7 +27,7 @@ class TaskTopicsService(
 
     fun getTaskTopicDTOs(taskId: IdType): List<TopicDTO> {
         val ids = getTaskTopicIds(taskId)
-        return ids.map { topicService.getTopicDTO(it) }
+        return topicService.getTopicDTOs(ids)
     }
 
     fun updateTaskTopics(taskId: IdType, topicIds: List<IdType>) {

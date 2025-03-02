@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 
 /**
  * 分页信息
@@ -32,4 +33,9 @@ data class PageDTO(
     @Schema(example = "null", description = "下一页第一个 item 的 ID")
     @get:JsonProperty("next_start")
     val nextStart: kotlin.Long? = null,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 
 /**
  * AI对话
@@ -44,4 +45,9 @@ data class AIConversationDTO(
     @Schema(example = "null", required = true, description = "更新时间")
     @get:JsonProperty("updatedAt", required = true)
     val updatedAt: java.time.OffsetDateTime,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

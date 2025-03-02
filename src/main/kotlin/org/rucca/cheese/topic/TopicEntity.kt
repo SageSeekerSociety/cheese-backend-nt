@@ -34,6 +34,7 @@ package org.rucca.cheese.topic
 
 import jakarta.persistence.*
 import java.time.OffsetDateTime
+import java.util.Optional
 import org.hibernate.annotations.ColumnDefault
 import org.rucca.cheese.user.User
 import org.springframework.data.jpa.repository.JpaRepository
@@ -61,4 +62,9 @@ open class Topic {
     @Column(name = "deleted_at") open var deletedAt: OffsetDateTime? = null
 }
 
-interface TopicRepository : JpaRepository<Topic, Int>
+interface TopicRepository : JpaRepository<Topic, Int> {
+
+    override fun findById(id: Int): Optional<Topic>
+
+    fun findAllByIdIsIn(ids: List<Int>): List<Topic>
+}
