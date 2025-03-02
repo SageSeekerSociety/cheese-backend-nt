@@ -1,7 +1,7 @@
 package org.rucca.cheese.common.pagination.model
 
-import org.rucca.cheese.common.pagination.encoding.CursorConfig
 import kotlin.reflect.KProperty1
+import org.rucca.cheese.common.pagination.encoding.CursorConfig
 
 /**
  * Base interface for cursor-based pagination.

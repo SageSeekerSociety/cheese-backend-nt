@@ -11,6 +11,7 @@
 
 package org.rucca.cheese.task
 
+import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.attachment.Attachment
 import org.rucca.cheese.attachment.AttachmentService
@@ -29,7 +30,6 @@ import org.rucca.cheese.task.error.*
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 @Service
 class TaskSubmissionService(

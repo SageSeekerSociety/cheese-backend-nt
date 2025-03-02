@@ -1,12 +1,12 @@
 package org.rucca.cheese.common.pagination.repository
 
+import java.io.Serializable
+import kotlin.reflect.KProperty1
 import org.rucca.cheese.common.pagination.model.CursorPage
 import org.rucca.cheese.common.pagination.model.SimpleCursor
 import org.rucca.cheese.common.pagination.spec.IdSeekSpecification
 import org.rucca.cheese.common.pagination.spec.IdSeekSpecificationBuilder
 import org.springframework.data.domain.Sort
-import java.io.Serializable
-import kotlin.reflect.KProperty1
 
 /**
  * Extension function to create an ID-based seek specification builder that supports nullable ID

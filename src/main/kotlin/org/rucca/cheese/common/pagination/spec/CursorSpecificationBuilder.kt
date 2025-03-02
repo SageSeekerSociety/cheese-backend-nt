@@ -4,6 +4,8 @@ import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
+import java.io.Serializable
+import kotlin.reflect.KProperty1
 import org.rucca.cheese.common.pagination.model.Cursor
 import org.rucca.cheese.common.pagination.model.CursorValue
 import org.rucca.cheese.common.pagination.model.SimpleCursor
@@ -11,8 +13,6 @@ import org.rucca.cheese.common.pagination.model.TypedCompositeCursor
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.data.jpa.repository.JpaRepository
-import java.io.Serializable
-import kotlin.reflect.KProperty1
 
 /**
  * Builder for creating cursor-based pagination specifications.

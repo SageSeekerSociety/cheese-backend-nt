@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.Root
+import java.io.Serializable
 import org.rucca.cheese.common.pagination.model.Cursor
 import org.rucca.cheese.common.pagination.model.CursorPage
 import org.rucca.cheese.common.pagination.model.CursorPageInfo
@@ -11,7 +12,6 @@ import org.rucca.cheese.common.pagination.spec.CursorSpecification
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.repository.support.JpaEntityInformation
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository
-import java.io.Serializable
 
 /**
  * Default implementation of CursorPagingRepository.

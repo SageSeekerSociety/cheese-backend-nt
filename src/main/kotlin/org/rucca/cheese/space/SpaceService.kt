@@ -9,6 +9,7 @@
 
 package org.rucca.cheese.space
 
+import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
@@ -29,7 +30,6 @@ import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 
 @Service
 @Transactional

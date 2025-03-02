@@ -1,15 +1,15 @@
 package org.rucca.cheese.common.pagination.encoding
 
+import java.security.MessageDigest
+import java.util.*
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import org.rucca.cheese.common.pagination.model.CursorValue
 import org.rucca.cheese.common.pagination.model.toCursorValue
-import java.security.MessageDigest
-import java.util.*
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
 
 /** Base64 cursor encoder using kotlinx.serialization for JSON handling. */
 class SerializationCursorEncoder : CursorEncoder {

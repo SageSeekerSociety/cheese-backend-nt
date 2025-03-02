@@ -4,10 +4,10 @@ import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
+import kotlin.reflect.KProperty1
 import org.rucca.cheese.common.pagination.model.SimpleCursor
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
-import kotlin.reflect.KProperty1
 
 /**
  * Cursor specification that uses ID as cursor but performs seek-style pagination based on a

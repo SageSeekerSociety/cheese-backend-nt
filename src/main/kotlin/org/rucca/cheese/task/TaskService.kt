@@ -12,6 +12,7 @@
 package org.rucca.cheese.task
 
 import jakarta.persistence.criteria.*
+import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NotFoundError
@@ -42,7 +43,6 @@ import org.springframework.data.elasticsearch.core.SearchHitSupport
 import org.springframework.data.elasticsearch.core.query.Criteria
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 @Service
 class TaskService(

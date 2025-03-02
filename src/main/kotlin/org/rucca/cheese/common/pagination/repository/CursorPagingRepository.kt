@@ -1,12 +1,12 @@
 package org.rucca.cheese.common.pagination.repository
 
+import java.io.Serializable
 import org.rucca.cheese.common.pagination.model.Cursor
 import org.rucca.cheese.common.pagination.model.CursorPage
 import org.rucca.cheese.common.pagination.spec.CursorSpecification
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.repository.NoRepositoryBean
-import java.io.Serializable
 
 /**
  * Repository interface with cursor-based pagination support.

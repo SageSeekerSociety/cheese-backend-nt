@@ -8,6 +8,7 @@
 
 package org.rucca.cheese.api
 
+import kotlin.math.floor
 import org.json.JSONObject
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
@@ -23,7 +24,6 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import kotlin.math.floor
 
 @SpringBootTest
 @ActiveProfiles("test")

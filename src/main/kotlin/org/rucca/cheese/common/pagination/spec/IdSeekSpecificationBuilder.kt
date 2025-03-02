@@ -4,9 +4,9 @@ import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
+import kotlin.reflect.KProperty1
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
-import kotlin.reflect.KProperty1
 
 /**
  * Builder for creating ID-based seek specifications.

@@ -1,12 +1,12 @@
 package org.rucca.cheese.common.pagination.model
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.*
 
 /**
  * Type-safe representation of cursor values.

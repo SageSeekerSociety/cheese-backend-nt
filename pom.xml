@@ -368,7 +368,12 @@
                     </java>
                     <kotlin>
                         <ktfmt>
-                            <style>KOTLINLANG</style>
+                            <style>GOOGLE</style>
+                            <maxWidth>100</maxWidth>
+                            <blockIndent>4</blockIndent>
+                            <continuationIndent>4</continuationIndent>
+                            <removeUnusedImports>true</removeUnusedImports>
+                            <manageTrailingCommas>true</manageTrailingCommas>
                         </ktfmt>
                     </kotlin>
                     <pom>

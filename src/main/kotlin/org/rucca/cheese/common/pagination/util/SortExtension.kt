@@ -1,8 +1,8 @@
 package org.rucca.cheese.common.pagination.util
 
+import kotlin.reflect.KProperty1
 import org.hibernate.query.SortDirection
 import org.springframework.data.domain.Sort
-import kotlin.reflect.KProperty1
 
 /**
  * Create an ascending sort property pair.
