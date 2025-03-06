@@ -2341,18 +2341,10 @@ paths:
                           $ref: '#/components/schemas/Project'
                       page:
                         $ref: '#/components/schemas/Page'
-  /projects/{projectId}/discussions:
+  /discussions:
     post:
       summary: Create Discussion
-      tags: []
-      parameters:
-        - name: projectId
-          in: path
-          description: 项目ID
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ ]
       requestBody:
         required: true
         content:
@@ -2361,7 +2353,6 @@ paths:
               type: object
               required:
                 - content
-                - mentionedUserIds
               properties:
                 content:
                   type: string
@@ -2375,6 +2366,10 @@ paths:
                     type: integer
                     format: int64
                   description: 提及的用户ID (可选)
+                projectId:
+                  type: integer
+                  format: int64
+                  description: 项目ID
       responses:
         "200":
           description: OK
@@ -2397,43 +2392,17 @@ paths:
                     type: object
                     properties:
                       discussion:
-                        $ref: '#/components/schemas/Discussion'
+                        $ref: "#/components/schemas/Discussion"
     get:
       summary: List Discussions
-      tags: []
+      tags: [ ]
       parameters:
         - name: projectId
-          in: path
+          in: query
+          schema:
+            type: integer
+            format: int64
           description: 项目ID
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - name: project_filter
-          in: query
-          description: 项目过滤器
-          schema:
-            type: object
-            properties:
-              type:
-                type: string
-                enum: [projects, tree]
-              projectIds:
-                type: array
-                items:
-                  type: integer
-                  format: int64
-              rootProjectId:
-                type: integer
-                format: int64
-              includeRoot:
-                type: boolean
-        - name: before
-          in: query
-          description: 时间戳(毫秒)
-          schema:
-            type: integer
-            format: int64
         - name: page_start
           in: query
           description: 起始ID
@@ -2446,6 +2415,18 @@ paths:
           schema:
             type: integer
             default: 20
+        - schema:
+            type: string
+            default: createdAt
+          in: query
+          name: sort_by
+          description: '"createdAt" or "updatedAt"'
+        - schema:
+            type: string
+            default: desc
+          in: query
+          name: sort_order
+          description: '"asc" or "desc"'
       responses:
         "200":
           description: OK
@@ -2470,21 +2451,14 @@ paths:
                       discussions:
                         type: array
                         items:
-                          $ref: '#/components/schemas/Discussion'
+                          $ref: "#/components/schemas/Discussion"
                       page:
-                        $ref: '#/components/schemas/Page'
-  /projects/{projectId}/discussions/{discussionId}/reactions:
+                        $ref: "#/components/schemas/Page"
+  /discussions/{discussionId}/reactions:
     post:
       summary: React to Discussion
-      tags: []
+      tags: [ ]
       parameters:
-        - name: projectId
-          in: path
-          description: 项目ID
-          required: true
-          schema:
-            type: integer
-            format: int64
         - name: discussionId
           in: path
           description: 讨论ID
@@ -2534,7 +2508,7 @@ paths:
                           users:
                             type: array
                             items:
-                              $ref: '#/components/schemas/User'
+                              $ref: "#/components/schemas/User"
   /knowledge:
     post:
       summary: Create Knowledge Item
@@ -3528,10 +3502,8 @@ components:
       type: object
       required:
         - id
-        - projectId
         - content
         - senderId
-        - mentionedUserIds
       properties:
         id:
           type: integer
@@ -3546,11 +3518,11 @@ components:
           format: int64
           description: 回复的讨论ID
         sender:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
         mentionedUsers:
           type: array
           items:
-            $ref: '#/components/schemas/User'
+            $ref: "#/components/schemas/User"
         reactions:
           type: array
           items:
@@ -3563,7 +3535,7 @@ components:
               users:
                 type: array
                 items:
-                  $ref: '#/components/schemas/User'
+                  $ref: "#/components/schemas/User"
         createdAt:
           type: integer
           format: int64

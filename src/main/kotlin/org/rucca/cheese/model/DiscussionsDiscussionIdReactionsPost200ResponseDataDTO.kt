@@ -5,10 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema
 import javax.validation.Valid
 
 /** @param reaction */
-data class ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataDTO(
+data class DiscussionsDiscussionIdReactionsPost200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("reaction")
-    val reaction: ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO? =
-        null
+    val reaction: DiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO? = null
 ) {}

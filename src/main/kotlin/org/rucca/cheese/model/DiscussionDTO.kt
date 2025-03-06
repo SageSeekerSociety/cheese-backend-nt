@@ -6,8 +6,8 @@ import javax.validation.Valid
 
 /**
  * @param id
- * @param projectId
  * @param content
+ * @param projectId
  * @param parentId 回复的讨论ID
  * @param sender
  * @param mentionedUsers
@@ -19,11 +19,11 @@ data class DiscussionDTO(
     @get:JsonProperty("id", required = true)
     val id: kotlin.Long,
     @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("projectId", required = true)
-    val projectId: kotlin.Long,
-    @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
     val content: kotlin.String,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("projectId")
+    val projectId: kotlin.Long? = null,
     @Schema(example = "null", description = "回复的讨论ID")
     @get:JsonProperty("parentId")
     val parentId: kotlin.Long? = null,
@@ -39,9 +39,7 @@ data class DiscussionDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("reactions")
     val reactions:
-        kotlin.collections.List<
-            ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO
-        >? =
+        kotlin.collections.List<DiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO>? =
         null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("createdAt")

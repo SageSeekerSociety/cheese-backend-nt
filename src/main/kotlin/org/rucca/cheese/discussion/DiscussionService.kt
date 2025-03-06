@@ -1,36 +1,39 @@
-package org.rucca.cheese.project
+package org.rucca.cheese.discussion
 
+import jakarta.persistence.EntityManager
+import java.time.LocalDateTime
+import org.hibernate.query.SortDirection
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.project.Project
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
 
 @Service
-class ProjectDiscussionService(
-    private val projectRepository: ProjectRepository,
-    private val projectDiscussionRepository: ProjectDiscussionRepository,
-    private val projectDiscussionReactionRepository: ProjectDiscussionReactionRepository,
-    private val projectExternalCollaboratorRepository: ProjectExternalCollaboratorRepository,
+class DiscussionService(
+    private val discussionRepository: DiscussionRepository,
+    private val discussionReactionRepository: DiscussionReactionRepository,
     private val userService: UserService,
+    private val entityManager: EntityManager,
 ) {
     fun createDiscussion(
-        projectId: IdType,
         senderId: IdType,
         content: String,
         parentId: IdType?,
         mentionedUserIds: Set<IdType>,
+        projectId: IdType?,
     ): IdType {
         val discussion =
-            projectDiscussionRepository.save(
-                ProjectDiscussion(
+            discussionRepository.save(
+                Discussion(
                     project = Project().apply { this.id = projectId },
                     sender = User().apply { this.id = senderId.toInt() },
                     content = content,
-                    parent = ProjectDiscussion().apply { this.id = parentId },
+                    parent = Discussion().apply { this.id = parentId },
                     mentionedUserIds = mentionedUserIds,
                 )
             )
@@ -39,7 +42,7 @@ class ProjectDiscussionService(
 
     fun getDiscussion(discussionId: IdType): DiscussionDTO {
         val discussion =
-            projectDiscussionRepository.findById(discussionId).orElseThrow {
+            discussionRepository.findById(discussionId).orElseThrow {
                 NotFoundError("project discussion", discussionId)
             }
         val discussionDTO =
@@ -56,30 +59,38 @@ class ProjectDiscussionService(
         return discussionDTO
     }
 
+    enum class DiscussionSortBy {
+        CREATED_AT,
+        UPDATED_AT,
+    }
+
     fun getDiscussions(
-        projectId: IdType,
-        projectFilter: ProjectsProjectIdDiscussionsGetProjectFilterParameterDTO?,
-        before: Long?,
+        projectId: IdType?,
         pageStart: Long?,
         pageSize: Int,
+        sortBy: DiscussionSortBy,
+        sortOrder: SortDirection,
     ): Pair<List<DiscussionDTO>, PageDTO> {
-        val projectIds =
-            when (projectFilter?.type) {
-                ProjectsProjectIdDiscussionsGetProjectFilterParameterDTO.Type.projects ->
-                    projectFilter.projectIds?.toList() ?: listOf(projectId)
-                ProjectsProjectIdDiscussionsGetProjectFilterParameterDTO.Type.tree -> {
-                    val rootId = projectFilter.rootProjectId ?: projectId
-                    // TODO: 实现获取项目树中所有项目ID的逻辑
-                    listOf(rootId)
-                }
-                null -> listOf(projectId)
+        val criteriaBuilder = entityManager.criteriaBuilder
+        val cq = criteriaBuilder.createQuery(Discussion::class.java)
+        val root = cq.from(Discussion::class.java)
+        val by =
+            when (sortBy) {
+                DiscussionSortBy.CREATED_AT -> root.get<LocalDateTime>("createdAt")
+                DiscussionSortBy.UPDATED_AT -> root.get<LocalDateTime>("updatedAt")
             }
-
-        val discussions = projectDiscussionRepository.findAllByProjectIdIn(projectIds)
+        val order =
+            when (sortOrder) {
+                SortDirection.ASCENDING -> criteriaBuilder.asc(by)
+                SortDirection.DESCENDING -> criteriaBuilder.desc(by)
+            }
+        cq.orderBy(order)
+        val query = entityManager.createQuery(cq)
+        val result = query.resultList
 
         val (curr, page) =
             PageHelper.pageFromAll(
-                discussions,
+                result,
                 pageStart,
                 pageSize,
                 { it.id!! },
@@ -89,9 +100,7 @@ class ProjectDiscussionService(
         val discussionDTOs =
             curr.map { discussion ->
                 val reactions =
-                    projectDiscussionReactionRepository.findAllByProjectDiscussionId(
-                        discussion.id!!
-                    )
+                    discussionReactionRepository.findAllByProjectDiscussionId(discussion.id!!)
                 val reactionsByEmoji = reactions.groupBy { it.emoji!! }
                 DiscussionDTO(
                     id = discussion.id!!,
@@ -102,7 +111,7 @@ class ProjectDiscussionService(
                     mentionedUsers = discussion.mentionedUserIds.map { userService.getUserDto(it) },
                     reactions =
                         reactionsByEmoji.map { (emoji, reactionList) ->
-                            ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO(
+                            DiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO(
                                 emoji = emoji,
                                 count = reactionList.size,
                                 users =
@@ -118,40 +127,34 @@ class ProjectDiscussionService(
     }
 
     fun createReaction(
-        projectId: IdType,
         discussionId: IdType,
         userId: IdType,
         emoji: String,
-    ): ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO {
+    ): DiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO {
         val discussion =
-            projectDiscussionRepository.findById(discussionId).orElseThrow {
+            discussionRepository.findById(discussionId).orElseThrow {
                 NotFoundError("project discussion", discussionId)
             }
 
-        if (discussion.project?.id != projectId) {
-            throw NotFoundError("project discussion", discussionId)
-        }
-
         val reaction =
-            ProjectDiscussionReaction(
+            DiscussionReaction(
                 projectDiscussion = discussion,
                 user = User().apply { this.id = userId.toInt() },
                 emoji = emoji,
             )
-        projectDiscussionReactionRepository.save(reaction)
+        discussionReactionRepository.save(reaction)
 
-        val reactions =
-            projectDiscussionReactionRepository.findAllByProjectDiscussionId(discussionId)
+        val reactions = discussionReactionRepository.findAllByProjectDiscussionId(discussionId)
         val reactionsByEmoji = reactions.groupBy { it.emoji!! }
         val reactionDTO =
             reactionsByEmoji[emoji]?.let { reactionList ->
-                ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO(
+                DiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO(
                     emoji = emoji,
                     count = reactionList.size,
                     users = reactionList.map { userService.getUserDto(it.user!!.id!!.toLong()) },
                 )
             }
-                ?: ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO(
+                ?: DiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO(
                     emoji = emoji,
                     count = 0,
                     users = emptyList(),
