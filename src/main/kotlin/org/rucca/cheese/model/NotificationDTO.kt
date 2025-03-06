@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 
 /**
@@ -40,7 +41,7 @@ data class NotificationDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("createdAt", required = true)
     val createdAt: kotlin.Long,
-) {
+) : Serializable {
 
     /** Values: MENTION,REPLY,REACTION,PROJECT_INVITE,DEADLINE_REMIND */
     enum class Type(@get:JsonValue val value: kotlin.String) {
@@ -58,5 +59,9 @@ data class NotificationDTO(
                 return values().first { it -> it.value == value }
             }
         }
+    }
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
     }
 }

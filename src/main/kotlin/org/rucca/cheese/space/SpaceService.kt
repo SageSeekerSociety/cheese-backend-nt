@@ -9,15 +9,17 @@
 
 package org.rucca.cheese.space
 
-import jakarta.persistence.EntityManager
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.EntityPatcher
-import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
+import org.rucca.cheese.common.pagination.model.toPageDTO
+import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
+import org.rucca.cheese.common.pagination.repository.idSeekSpec
+import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.error.AlreadyBeSpaceAdminError
@@ -37,7 +39,6 @@ class SpaceService(
     private val spaceRepository: SpaceRepository,
     private val spaceAdminRelationRepository: SpaceAdminRelationRepository,
     private val userService: UserService,
-    private val entityManager: EntityManager,
     private val spaceUserRankService: SpaceUserRankService,
     private val authenticationService: AuthenticationService,
     private val topicService: TopicService,
@@ -45,29 +46,40 @@ class SpaceService(
     private val avatarRepository: AvatarRepository,
     private val entityPatcher: EntityPatcher,
 ) {
-    fun Space.toSpaceDTO(options: SpaceQueryOptions): SpaceDTO {
+    fun Space.toSpaceDTO(
+        options: SpaceQueryOptions,
+        admins: List<SpaceAdminDTO>? = null,
+        topics: List<TopicDTO>? = null,
+        rank: Int? = null,
+    ): SpaceDTO {
         val myRank =
-            if (options.queryMyRank && this.enableRank!!) {
-                val userId = authenticationService.getCurrentUserId()
-                spaceUserRankService.getRank(this.id!!, userId)
-            } else null
+            rank
+                ?: if (options.queryMyRank && this.enableRank!!) {
+                    val userId = authenticationService.getCurrentUserId()
+                    spaceUserRankService.getRank(this.id!!, userId)
+                } else null
+
         val classificationTopics =
-            spaceClassificationTopicsService.getClassificationTopicDTOs(this.id!!)
-        return SpaceDTO(
-            id = this.id!!,
-            intro = this.intro!!,
-            description = this.description!!,
-            name = this.name!!,
-            avatarId = this.avatar!!.id!!.toLong(),
-            admins =
-                spaceAdminRelationRepository.findAllBySpaceId(this.id!!).map {
+            topics ?: spaceClassificationTopicsService.getClassificationTopicDTOs(this.id!!)
+
+        val adminDTOs =
+            admins
+                ?: spaceAdminRelationRepository.findAllBySpaceId(this.id!!).map {
                     SpaceAdminDTO(
                         convertAdminRole(it.role!!),
                         userService.getUserDto(it.user!!.id!!.toLong()),
                         createdAt = it.createdAt!!.toEpochMilli(),
                         updatedAt = it.updatedAt!!.toEpochMilli(),
                     )
-                },
+                }
+
+        return SpaceDTO(
+            id = this.id!!,
+            intro = this.intro!!,
+            description = this.description!!,
+            name = this.name!!,
+            avatarId = this.avatar!!.id!!.toLong(),
+            admins = adminDTOs,
             updatedAt = this.updatedAt!!.toEpochMilli(),
             createdAt = this.createdAt!!.toEpochMilli(),
             enableRank = this.enableRank!!,
@@ -82,7 +94,48 @@ class SpaceService(
         spaceId: IdType,
         queryOptions: SpaceQueryOptions = SpaceQueryOptions.MINIMUM,
     ): SpaceDTO {
-        return getSpace(spaceId).toSpaceDTO(queryOptions)
+        val space = getSpace(spaceId)
+
+        val admins = spaceAdminRelationRepository.findAllBySpaceIdFetchUser(spaceId)
+        val classificationTopics =
+            spaceClassificationTopicsService.getClassificationTopicDTOs(spaceId)
+
+        val myRank =
+            if (queryOptions.queryMyRank && space.enableRank!!) {
+                val userId = authenticationService.getCurrentUserId()
+                spaceUserRankService.getRank(spaceId, userId)
+            } else null
+
+        // 批量获取所有管理员的用户信息
+        val adminUsers = admins.mapNotNull { it.user }
+        val userDtosMap = userService.convertUsersToDto(adminUsers)
+
+        return SpaceDTO(
+            id = space.id!!,
+            intro = space.intro!!,
+            description = space.description!!,
+            name = space.name!!,
+            avatarId = space.avatar!!.id!!.toLong(),
+            admins =
+                admins.map { admin ->
+                    val userId = admin.user!!.id!!.toLong()
+                    val userDto = userDtosMap[userId] ?: userService.getUserDto(userId)
+
+                    SpaceAdminDTO(
+                        convertAdminRole(admin.role!!),
+                        userDto,
+                        createdAt = admin.createdAt!!.toEpochMilli(),
+                        updatedAt = admin.updatedAt!!.toEpochMilli(),
+                    )
+                },
+            updatedAt = space.updatedAt!!.toEpochMilli(),
+            createdAt = space.createdAt!!.toEpochMilli(),
+            enableRank = space.enableRank!!,
+            announcements = space.announcements!!,
+            taskTemplates = space.taskTemplates!!,
+            myRank = myRank,
+            classificationTopics = classificationTopics,
+        )
     }
 
     fun getSpaceOwner(spaceId: IdType): IdType {
@@ -283,30 +336,18 @@ class SpaceService(
         pageStart: Long?,
         queryOptions: SpaceQueryOptions,
     ): Pair<List<SpaceDTO>, PageDTO> {
-        val criteriaBuilder = entityManager.criteriaBuilder
-        val cq = criteriaBuilder.createQuery(Space::class.java)
-        val root = cq.from(Space::class.java)
-        val by =
+        val direction = sortOrder.toJpaDirection()
+
+        val sortProperty =
             when (sortBy) {
-                SpacesSortBy.CREATED_AT -> root.get<LocalDateTime>("createdAt")
-                SpacesSortBy.UPDATED_AT -> root.get<LocalDateTime>("updatedAt")
+                SpacesSortBy.CREATED_AT -> Space::createdAt
+                SpacesSortBy.UPDATED_AT -> Space::updatedAt
             }
-        val order =
-            when (sortOrder) {
-                SortDirection.ASCENDING -> criteriaBuilder.asc(by)
-                SortDirection.DESCENDING -> criteriaBuilder.desc(by)
-            }
-        cq.orderBy(order)
-        val query = entityManager.createQuery(cq)
-        val result = query.resultList
-        val (curr, page) =
-            PageHelper.pageFromAll(
-                result,
-                pageStart,
-                pageSize,
-                { it.id!! },
-                { id -> throw NotFoundError("space", id) },
-            )
-        return Pair(curr.map { it.toSpaceDTO(queryOptions) }, page)
+
+        val cursorSpec = spaceRepository.idSeekSpec(Space::id, sortProperty, direction).build()
+
+        val result = spaceRepository.findAllWithIdCursor(cursorSpec, pageStart, pageSize)
+
+        return Pair(result.content.map { it.toSpaceDTO(queryOptions) }, result.pageInfo.toPageDTO())
     }
 }

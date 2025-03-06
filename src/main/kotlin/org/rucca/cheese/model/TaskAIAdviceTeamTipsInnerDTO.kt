@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 
 /**
  * @param role
@@ -22,4 +23,9 @@ data class TaskAIAdviceTeamTipsInnerDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("followup_questions", required = true)
     val followupQuestions: kotlin.collections.List<kotlin.String>,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

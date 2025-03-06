@@ -13,10 +13,10 @@ package org.rucca.cheese.space
 import jakarta.persistence.*
 import org.hibernate.annotations.DynamicUpdate
 import org.hibernate.annotations.SQLRestriction
+import org.rucca.cheese.common.pagination.repository.CursorPagingRepository
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.user.Avatar
-import org.springframework.data.jpa.repository.JpaRepository
 
 @DynamicUpdate
 @Entity
@@ -32,6 +32,6 @@ class Space(
     @Column(nullable = false, columnDefinition = "TEXT") var taskTemplates: String? = null,
 ) : BaseEntity()
 
-interface SpaceRepository : JpaRepository<Space, IdType> {
+interface SpaceRepository : CursorPagingRepository<Space, IdType> {
     fun existsByName(name: String): Boolean
 }

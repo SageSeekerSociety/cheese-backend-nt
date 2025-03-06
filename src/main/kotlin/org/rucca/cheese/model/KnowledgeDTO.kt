@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 
 /**
@@ -54,7 +55,7 @@ data class KnowledgeDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("updatedAt")
     val updatedAt: kotlin.Long? = null,
-) {
+) : Serializable {
 
     /** Values: document,link,text,image */
     enum class Type(@get:JsonValue val value: kotlin.String) {
@@ -71,5 +72,9 @@ data class KnowledgeDTO(
                 return values().first { it -> it.value == value }
             }
         }
+    }
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
     }
 }
