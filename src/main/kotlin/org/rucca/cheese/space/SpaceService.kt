@@ -14,6 +14,7 @@ import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
+import org.rucca.cheese.common.helper.EntityPatcher
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.pagination.model.toPageDTO
 import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
@@ -26,6 +27,7 @@ import org.rucca.cheese.space.error.NotSpaceAdminYetError
 import org.rucca.cheese.space.option.SpaceQueryOptions
 import org.rucca.cheese.topic.TopicService
 import org.rucca.cheese.user.Avatar
+import org.rucca.cheese.user.AvatarRepository
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
@@ -41,6 +43,8 @@ class SpaceService(
     private val authenticationService: AuthenticationService,
     private val topicService: TopicService,
     private val spaceClassificationTopicsService: SpaceClassificationTopicsService,
+    private val avatarRepository: AvatarRepository,
+    private val entityPatcher: EntityPatcher,
 ) {
     fun Space.toSpaceDTO(
         options: SpaceQueryOptions,
@@ -202,58 +206,58 @@ class SpaceService(
         return spaceRepository.findById(spaceId).orElseThrow { NotFoundError("space", spaceId) }
     }
 
-    fun updateSpaceName(spaceId: IdType, name: String) {
-        ensureSpaceNameNotExists(name)
+    /**
+     * PATCH updates a Space entity with non-null values from the request DTO.
+     *
+     * NOTE ON HIBERNATE FLUSHING BEHAVIOR: When using the patch service with JPA/Hibernate, be
+     * careful with database operations in handlers. Any database query (including validation
+     * queries) can trigger Hibernate's flush mechanism, causing partial updates to be committed
+     * before the method completes.
+     *
+     * Example problem:
+     * - If you update multiple fields but perform DB queries in handlers
+     * - Hibernate may generate multiple UPDATE statements (one per flush)
+     * - This is inefficient and can lead to transaction isolation issues
+     *
+     * Best practice:
+     * 1. Perform ALL validations and entity lookups BEFORE starting the patch operation
+     * 2. Keep handlers simple - they should only set values, not trigger DB operations
+     * 3. Save the entity ONCE after all changes are applied
+     *
+     * This pattern ensures a single UPDATE statement regardless of how many fields are changed.
+     *
+     * @param spaceId The ID of the Space to update
+     * @param patchDto The DTO containing fields to update
+     * @return The updated Space entity
+     */
+    @Transactional
+    fun patchSpace(spaceId: IdType, patchDto: PatchSpaceRequestDTO): Space {
         val space = getSpace(spaceId)
-        space.name = name
-        spaceRepository.save(space)
-    }
 
-    fun updateSpaceIntro(spaceId: IdType, intro: String) {
-        val space = getSpace(spaceId)
-        space.intro = intro
-        spaceRepository.save(space)
-    }
-
-    fun updateSpaceDescription(spaceId: IdType, description: String) {
-        val space = getSpace(spaceId)
-        space.description = description
-        spaceRepository.save(space)
-    }
-
-    fun updateSpaceAvatar(spaceId: IdType, avatarId: IdType) {
-        val space = getSpace(spaceId)
-        space.avatar = Avatar().apply { id = avatarId.toInt() }
-        spaceRepository.save(space)
-    }
-
-    fun updateSpaceEnableRank(spaceId: IdType, enableRank: Boolean) {
-        val space = getSpace(spaceId)
-        space.enableRank = enableRank
-        spaceRepository.save(space)
-    }
-
-    fun updateSpaceAnnouncements(spaceId: IdType, announcements: String) {
-        val space = getSpace(spaceId)
-        space.announcements = announcements
-        spaceRepository.save(space)
-    }
-
-    fun updateSpaceTaskTemplates(spaceId: IdType, taskTemplates: String) {
-        val space = getSpace(spaceId)
-        space.taskTemplates = taskTemplates
-        spaceRepository.save(space)
-    }
-
-    fun updateSpaceClassificationTopics(spaceId: IdType, classificationTopics: List<IdType>) {
-        for (topic in classificationTopics) topicService.ensureTopicExists(topic)
-        spaceClassificationTopicsService.updateClassificationTopics(spaceId, classificationTopics)
-    }
-
-    fun ensureSpaceExists(spaceId: IdType) {
-        if (!spaceRepository.existsById(spaceId)) {
-            throw NotFoundError("space", spaceId)
+        if (patchDto.name != null && patchDto.name != space.name) {
+            ensureSpaceNameNotExists(patchDto.name)
         }
+
+        if (patchDto.classificationTopics != null) {
+            for (topic in patchDto.classificationTopics) {
+                topicService.ensureTopicExists(topic)
+            }
+        }
+
+        val updatedSpace =
+            entityPatcher.patch(space, patchDto) {
+                handle(PatchSpaceRequestDTO::avatarId) { entity, value ->
+                    entity.avatar = avatarRepository.getReferenceById(value.toInt())
+                }
+
+                handle(PatchSpaceRequestDTO::classificationTopics) { _, value ->
+                    // Only perform association updates, no validation
+                    spaceClassificationTopicsService.updateClassificationTopics(spaceId, value)
+                }
+            }
+
+        // IMPORTANT: Save the entity ONCE after all changes are applied
+        return spaceRepository.save(updatedSpace)
     }
 
     fun deleteSpace(spaceId: IdType) {

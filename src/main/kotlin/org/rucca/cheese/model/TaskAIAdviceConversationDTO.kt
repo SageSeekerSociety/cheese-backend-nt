@@ -7,7 +7,6 @@ import javax.validation.Valid
 
 /**
  * @param id 对话ID
- * @param taskId 任务ID
  * @param question 用户问题
  * @param response 回答内容
  * @param modelType 模型类型
@@ -25,9 +24,6 @@ data class TaskAIAdviceConversationDTO(
     @Schema(example = "null", required = true, description = "对话ID")
     @get:JsonProperty("id", required = true)
     val id: kotlin.Long,
-    @Schema(example = "null", required = true, description = "任务ID")
-    @get:JsonProperty("taskId", required = true)
-    val taskId: kotlin.Long,
     @Schema(example = "null", required = true, description = "用户问题")
     @get:JsonProperty("question", required = true)
     val question: kotlin.String,

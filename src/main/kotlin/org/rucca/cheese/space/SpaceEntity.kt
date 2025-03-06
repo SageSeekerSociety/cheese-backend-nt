@@ -11,12 +11,14 @@
 package org.rucca.cheese.space
 
 import jakarta.persistence.*
+import org.hibernate.annotations.DynamicUpdate
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.pagination.repository.CursorPagingRepository
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.user.Avatar
 
+@DynamicUpdate
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @Table(indexes = [Index(columnList = "name")])
