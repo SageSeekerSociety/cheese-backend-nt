@@ -157,6 +157,18 @@ class RolePermissionService {
                             "is-task-approved || (owned || is-enumerating-owned-tasks) " +
                                 "|| is-space-admin-of-task || is-team-admin-of-task",
                     ),
+
+                    // Notification permissions
+                    Permission(
+                        authorizedActions =
+                            listOf("list-notifications", "get-unread-count", "mark-as-read"),
+                        authorizedResource = AuthorizedResource(types = listOf("notification")),
+                    ),
+                    Permission(
+                        authorizedActions = listOf("delete"),
+                        authorizedResource = AuthorizedResource(types = listOf("notification")),
+                        customLogic = "is-notification-owner",
+                    ),
                 ),
         )
     }

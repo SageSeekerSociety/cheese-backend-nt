@@ -10,7 +10,7 @@ import javax.validation.Valid
  * @param message
  * @param &#x60;data&#x60;
  */
-data class GetUnreadNotificationsCount200ResponseDTO(
+data class MarkNotificationsAsRead200ResponseDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("code", required = true)
     val code: kotlin.Int = 200,
@@ -20,7 +20,7 @@ data class GetUnreadNotificationsCount200ResponseDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("data", required = true)
-    val `data`: GetUnreadNotificationsCount200ResponseDataDTO,
+    val `data`: MarkNotificationsAsRead200ResponseDataDTO,
 ) : Serializable {
 
     companion object {
