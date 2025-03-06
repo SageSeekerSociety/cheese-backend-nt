@@ -880,8 +880,7 @@ paths:
                     type: object
                     properties:
                       status:
-                        type: string
-                        enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+                        $ref: "#/components/schemas/TaskAIAdviceGenerationStatus"
                       quota:
                         $ref: "#/components/schemas/QuotaInfo"
                   message:
@@ -912,8 +911,7 @@ paths:
                     type: object
                     properties:
                       status:
-                        type: string
-                        enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+                        $ref: "#/components/schemas/TaskAIAdviceGenerationStatus"
                   message:
                     type: string
 
@@ -3796,11 +3794,13 @@ components:
         - freshness_info
         - auth_info
         - final_ref
+    TaskAIAdviceGenerationStatus:
+      type: string
+      enum: [NONE, PENDING, PROCESSING, COMPLETED, FAILED]
     TaskAIAdviceConversation:
       type: object
       required:
         - id
-        - taskId
         - question
         - response
         - modelType
@@ -3813,10 +3813,6 @@ components:
           type: integer
           format: int64
           description: 对话ID
-        taskId:
-          type: integer
-          format: int64
-          description: 任务ID
         question:
           type: string
           description: 用户问题
