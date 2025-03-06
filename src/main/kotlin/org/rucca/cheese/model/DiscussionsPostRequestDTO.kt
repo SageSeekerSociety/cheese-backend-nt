@@ -5,17 +5,21 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 /**
  * @param content
- * @param mentionedUserIds 提及的用户ID (可选)
  * @param parentId 回复某条讨论 (可选)
+ * @param mentionedUserIds 提及的用户ID (可选)
+ * @param projectId 项目ID
  */
-data class ProjectsProjectIdDiscussionsPostRequestDTO(
+data class DiscussionsPostRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
     val content: kotlin.String,
-    @Schema(example = "null", required = true, description = "提及的用户ID (可选)")
-    @get:JsonProperty("mentionedUserIds", required = true)
-    val mentionedUserIds: kotlin.collections.List<kotlin.Long>,
     @Schema(example = "null", description = "回复某条讨论 (可选)")
     @get:JsonProperty("parentId")
     val parentId: kotlin.Long? = null,
+    @Schema(example = "null", description = "提及的用户ID (可选)")
+    @get:JsonProperty("mentionedUserIds")
+    val mentionedUserIds: kotlin.collections.List<kotlin.Long>? = null,
+    @Schema(example = "null", description = "项目ID")
+    @get:JsonProperty("projectId")
+    val projectId: kotlin.Long? = null,
 ) {}
