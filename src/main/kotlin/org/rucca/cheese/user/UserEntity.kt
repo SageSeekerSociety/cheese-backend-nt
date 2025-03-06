@@ -59,7 +59,7 @@ open class User {
     @Column(name = "username", nullable = false, length = Integer.MAX_VALUE)
     open var username: String? = null
 
-    @Column(name = "hashed_password", nullable = false, length = Integer.MAX_VALUE)
+    @Column(name = "hashed_password", nullable = true, length = Integer.MAX_VALUE)
     open var hashedPassword: String? = null
 
     @Column(name = "email", nullable = false, length = Integer.MAX_VALUE)
