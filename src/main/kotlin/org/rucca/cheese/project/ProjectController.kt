@@ -15,24 +15,7 @@ class ProjectController(private val projectService: ProjectService) : ProjectsAp
     override fun projectsPost(
         projectsPostRequestDTO: ProjectsPostRequestDTO
     ): ResponseEntity<ProjectsPost200ResponseDTO> {
-        val project = projectService.createProject(projectsPostRequestDTO)
-        val projectDTO =
-            ProjectDTO(
-                id = project.id!!,
-                name = project.name!!,
-                description = project.description!!,
-                startDate = project.startDate!!.toEpochMilli(),
-                endDate = project.endDate!!.toEpochMilli(),
-                leaderId = project.leader!!.id!!.toLong(),
-                content = project.content!!,
-                colorCode = project.colorCode,
-                parentId = project.parent?.id,
-                externalTaskId = project.externalTaskId,
-                githubRepo = project.githubRepo,
-                // path = project.path,
-                createdAt = project.createdAt!!.toEpochMilli(),
-                updatedAt = project.updatedAt!!.toEpochMilli(),
-            )
+        val projectDTO = projectService.createProject(projectsPostRequestDTO)
         val responseData = ProjectsPost200ResponseDataDTO(projectDTO)
         return ResponseEntity.ok(ProjectsPost200ResponseDTO(data = responseData))
     }
@@ -46,36 +29,7 @@ class ProjectController(private val projectService: ProjectService) : ProjectsAp
         pageStart: Long?,
         pageSize: Int,
     ): ResponseEntity<ProjectsGet200ResponseDTO> {
-        val projects =
-            projectService.getProjects(parentId, leaderId, memberId, status, pageStart, pageSize)
-        val projectDTOs =
-            projects.map { project ->
-                ProjectDTO(
-                    id = project.id!!,
-                    name = project.name!!,
-                    description = project.description!!,
-                    startDate = project.startDate!!.toEpochMilli(),
-                    endDate = project.endDate!!.toEpochMilli(),
-                    leaderId = project.leader!!.id!!.toLong(),
-                    content = project.content!!,
-                    colorCode = project.colorCode,
-                    parentId = project.parent?.id,
-                    externalTaskId = project.externalTaskId,
-                    githubRepo = project.githubRepo,
-                    // path = project.path,
-                    createdAt = project.createdAt!!.toEpochMilli(),
-                    updatedAt = project.updatedAt!!.toEpochMilli(),
-                )
-            }
-
-        val (pageData, page) =
-            PageHelper.pageFromAll(
-                projectDTOs,
-                pageStart,
-                pageSize,
-                { it.id },
-                { throw NotFoundError("project", it) },
-            )
+        val (pageData, page) = projectService.getProjects(parentId, leaderId, memberId, status, pageStart, pageSize)
         val responseData = ProjectsGet200ResponseDataDTO(pageData, page)
         return ResponseEntity.ok(ProjectsGet200ResponseDTO(data = responseData))
     }

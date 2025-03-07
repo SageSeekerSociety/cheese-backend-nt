@@ -1,6 +1,11 @@
 package org.rucca.cheese.project
 
+import org.rucca.cheese.common.error.NotFoundError
+import org.rucca.cheese.common.helper.PageHelper
+import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.helper.toLocalDateTime
+import org.rucca.cheese.model.PageDTO
+import org.rucca.cheese.model.ProjectDTO
 import org.rucca.cheese.model.ProjectsPostRequestDTO
 import org.rucca.cheese.team.TeamRepository
 import org.rucca.cheese.user.UserRepository
@@ -15,8 +20,8 @@ class ProjectService(
     private val projectDiscussionReactionRepository: ProjectDiscussionReactionRepository,
     private val projectExternalCollaboratorRepository: ProjectExternalCollaboratorRepository,
 ) {
-    fun createProject(requestDTO: ProjectsPostRequestDTO): Project {
-        val project =
+    fun createProject(requestDTO: ProjectsPostRequestDTO): ProjectDTO {
+        var project =
             Project(
                 name = requestDTO.name,
                 description = requestDTO.description,
@@ -27,13 +32,15 @@ class ProjectService(
                 // team = requestDTO.teamId?.let { teamRepository.findById(it).orElse(null)
                 // },
                 team = null,
-                leader =
-                    requestDTO.leaderId.toInt().let { userRepository.findById(it).orElse(null) },
+                leader = requestDTO.leaderId.toInt().let { userRepository.findById(it).orElse(null) },
                 parent = requestDTO.parentId?.let { projectRepository.findById(it).orElse(null) },
                 externalTaskId = requestDTO.externalTaskId,
                 githubRepo = requestDTO.githubRepo,
             )
-        return projectRepository.save(project)
+
+        project = projectRepository.save(project)
+        val projectDTO = convertProjectToDTO(project)
+        return projectDTO;
     }
 
     fun getProjects(
@@ -43,9 +50,39 @@ class ProjectService(
         status: String?,
         pageStart: Long?,
         pageSize: Int,
-    ): List<Project> {
+    ): Pair<List<ProjectDTO>, PageDTO> {
         // Implement the query logic here
         // For example, using a combination of repository methods or a custom query
-        return projectRepository.findAll()
+        val projects = projectRepository.findAll()
+        val projectDTOs =
+            projects.map { project -> convertProjectToDTO(project) }
+        val (pageData, page) =
+            PageHelper.pageFromAll(
+                projectDTOs,
+                pageStart,
+                pageSize,
+                { it.id },
+                { throw NotFoundError("project", it) },
+            )
+        return Pair(pageData, page)
+    }
+
+    private fun convertProjectToDTO(project: Project): ProjectDTO {
+        return ProjectDTO(
+            id = project.id!!,
+            name = project.name!!,
+            description = project.description!!,
+            startDate = project.startDate!!.toEpochMilli(),
+            endDate = project.endDate!!.toEpochMilli(),
+            leaderId = project.leader!!.id!!.toLong(),
+            content = project.content!!,
+            colorCode = project.colorCode,
+            parentId = project.parent?.id,
+            externalTaskId = project.externalTaskId,
+            githubRepo = project.githubRepo,
+            // path = project.path,
+            createdAt = project.createdAt!!.toEpochMilli(),
+            updatedAt = project.updatedAt!!.toEpochMilli(),
+        )
     }
 }
