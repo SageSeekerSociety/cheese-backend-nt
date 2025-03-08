@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 
 /**
@@ -21,10 +22,9 @@ data class DiscussionDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("projectId", required = true)
     val projectId: kotlin.Long,
-    @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
-    val content: ProjectContentDTO,
+    val content: kotlin.String,
     @Schema(example = "null", description = "回复的讨论ID")
     @get:JsonProperty("parentId")
     val parentId: kotlin.Long? = null,
@@ -47,4 +47,9 @@ data class DiscussionDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("createdAt")
     val createdAt: kotlin.Long? = null,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

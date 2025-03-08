@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 
 /**
  * @param propertySize 文件大小
@@ -38,4 +39,9 @@ data class AttachmentMetaDTO(
     @Schema(example = "null", description = "时长")
     @get:JsonProperty("duration")
     val duration: kotlin.Long? = null,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

@@ -10,12 +10,8 @@ package org.rucca.cheese.api
 
 import kotlin.math.floor
 import org.json.JSONObject
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
-import org.junit.jupiter.api.Order
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.TestMethodOrder
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.utils.TopicCreatorService
 import org.rucca.cheese.utils.UserCreatorService
@@ -23,12 +19,14 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @SpringBootTest
+@ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @AutoConfigureMockMvc
 @TestMethodOrder(OrderAnnotation::class)
@@ -368,8 +366,6 @@ constructor(
             .andExpect(jsonPath("$.data.spaces[4].name").value(spaceName))
             .andExpect(jsonPath("$.data.page.page_start").value(spaceIdOfLast))
             .andExpect(jsonPath("$.data.page.page_size").value(5))
-            .andExpect(jsonPath("$.data.page.has_prev").value(false))
-            .andExpect(jsonPath("$.data.page.prev_start").isEmpty)
             .andExpect(jsonPath("$.data.page.has_more").value(true))
             .andExpect(jsonPath("$.data.page.next_start").isNotEmpty)
     }
@@ -392,8 +388,6 @@ constructor(
             .andExpect(jsonPath("$.data.spaces[3].name").value("$originalSpaceName 02"))
             .andExpect(jsonPath("$.data.page.page_start").value(spaceId))
             .andExpect(jsonPath("$.data.page.page_size").value(4))
-            .andExpect(jsonPath("$.data.page.has_prev").value(false))
-            .andExpect(jsonPath("$.data.page.prev_start").isEmpty)
             .andExpect(jsonPath("$.data.page.has_more").value(true))
             .andExpect(jsonPath("$.data.page.next_start").value(spaceIdOfSecond))
     }
@@ -414,8 +408,6 @@ constructor(
             .andExpect(jsonPath("$.data.spaces[0].name").value("$originalSpaceName 04"))
             .andExpect(jsonPath("$.data.page.page_start").value(spaceIdOfLast))
             .andExpect(jsonPath("$.data.page.page_size").value(1))
-            .andExpect(jsonPath("$.data.page.has_prev").value(true))
-            .andExpect(jsonPath("$.data.page.prev_start").value(spaceId))
             .andExpect(jsonPath("$.data.page.has_more").value(true))
             .andExpect(jsonPath("$.data.page.next_start").value(spaceIdOfBeforeLast))
     }

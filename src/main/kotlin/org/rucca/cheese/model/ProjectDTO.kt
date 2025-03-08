@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 import javax.validation.constraints.Pattern
 
@@ -11,13 +12,13 @@ import javax.validation.constraints.Pattern
  * @param description
  * @param startDate 项目开始时间戳(毫秒)
  * @param endDate 项目结束时间戳(毫秒)
- * @param leaderId
+ * @param team
+ * @param leader
  * @param content
  * @param colorCode
  * @param parentId 父项目ID
  * @param externalTaskId
  * @param githubRepo
- * @param path 项目路径
  * @param createdAt
  * @param updatedAt
  */
@@ -37,13 +38,17 @@ data class ProjectDTO(
     @Schema(example = "null", required = true, description = "项目结束时间戳(毫秒)")
     @get:JsonProperty("endDate", required = true)
     val endDate: kotlin.Long,
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("leaderId", required = true)
-    val leaderId: kotlin.Long,
     @field:Valid
     @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("team", required = true)
+    val team: TeamDTO,
+    @field:Valid
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("leader", required = true)
+    val leader: UserDTO,
+    @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
-    val content: ProjectContentDTO,
+    val content: kotlin.String,
     @get:Pattern(regexp = "^#[0-9A-Fa-f]{6}$")
     @Schema(example = "null", description = "")
     @get:JsonProperty("colorCode")
@@ -57,13 +62,15 @@ data class ProjectDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("githubRepo")
     val githubRepo: kotlin.String? = null,
-    @Schema(example = "null", description = "项目路径")
-    @get:JsonProperty("path")
-    val path: kotlin.collections.List<kotlin.String>? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("createdAt")
     val createdAt: kotlin.Long? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("updatedAt")
     val updatedAt: kotlin.Long? = null,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

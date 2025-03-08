@@ -91,6 +91,10 @@ open class UserProfile {
     open var avatar: Avatar? = null
 }
 
+interface AvatarRepository : JpaRepository<Avatar, Int>
+
 interface UserProfileRepository : JpaRepository<UserProfile, Int> {
     fun findByUserId(userId: Int): Optional<UserProfile>
+
+    fun findAllByUserIdIn(userIds: List<Int>): List<UserProfile>
 }

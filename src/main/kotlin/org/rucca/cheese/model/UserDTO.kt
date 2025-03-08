@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.constraints.Min
 
 /**
@@ -28,4 +29,9 @@ data class UserDTO(
     @Schema(example = "cheese", required = true, description = "用户名")
     @get:JsonProperty("username", required = true)
     val username: kotlin.String,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

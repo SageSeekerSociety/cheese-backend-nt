@@ -4,12 +4,14 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 
 /**
  * @param id
  * @param type
- * @param receiverId
+ * @param receiverId The ID of the user who will receive the notification. This will be mapped to a
+ *   User entity in the backend.
  * @param content
  * @param read
  * @param createdAt
@@ -21,7 +23,12 @@ data class NotificationDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("type", required = true)
     val type: NotificationDTO.Type,
-    @Schema(example = "null", required = true, description = "")
+    @Schema(
+        example = "null",
+        required = true,
+        description =
+            "The ID of the user who will receive the notification. This will be mapped to a User entity in the backend.",
+    )
     @get:JsonProperty("receiverId", required = true)
     val receiverId: kotlin.Long,
     @field:Valid
@@ -34,16 +41,16 @@ data class NotificationDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("createdAt", required = true)
     val createdAt: kotlin.Long,
-) {
+) : Serializable {
 
-    /** Values: mention,reply,reaction,project_invite,deadline_remind */
+    /** Values: MENTION,REPLY,REACTION,PROJECT_INVITE,DEADLINE_REMIND */
     enum class Type(@get:JsonValue val value: kotlin.String) {
 
-        mention("mention"),
-        reply("reply"),
-        reaction("reaction"),
-        project_invite("project_invite"),
-        deadline_remind("deadline_remind");
+        MENTION("MENTION"),
+        REPLY("REPLY"),
+        REACTION("REACTION"),
+        PROJECT_INVITE("PROJECT_INVITE"),
+        DEADLINE_REMIND("DEADLINE_REMIND");
 
         companion object {
             @JvmStatic
@@ -52,5 +59,9 @@ data class NotificationDTO(
                 return values().first { it -> it.value == value }
             }
         }
+    }
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
     }
 }

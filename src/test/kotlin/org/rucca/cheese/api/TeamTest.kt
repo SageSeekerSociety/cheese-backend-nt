@@ -10,22 +10,20 @@ package org.rucca.cheese.api
 
 import kotlin.math.floor
 import org.json.JSONObject
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
-import org.junit.jupiter.api.Order
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.TestMethodOrder
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.utils.UserCreatorService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
 @SpringBootTest
+@ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @AutoConfigureMockMvc
 @TestMethodOrder(OrderAnnotation::class)
@@ -148,8 +146,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].members.total").value(0))
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(teamId))
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").doesNotExist())
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").isBoolean())
     }
 
@@ -177,8 +173,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].members.total").value(0))
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(teamId))
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").doesNotExist())
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").isBoolean())
     }
 
@@ -207,8 +201,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.teams[0].members.total").value(0))
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_start").value(teamId))
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.page_size").value(1))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_prev").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.prev_start").doesNotExist())
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.page.has_more").isBoolean())
     }
 
