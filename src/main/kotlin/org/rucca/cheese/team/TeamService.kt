@@ -234,6 +234,10 @@ class TeamService(
         return teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
     }
 
+    fun ensureTeamIdExists(teamId: IdType) {
+        if (teamRepository.findById(teamId).isEmpty) throw NotFoundError("team", teamId)
+    }
+
     fun updateTeamName(teamId: IdType, name: String) {
         ensureTeamNameNotExists(name)
         val team = getTeam(teamId)

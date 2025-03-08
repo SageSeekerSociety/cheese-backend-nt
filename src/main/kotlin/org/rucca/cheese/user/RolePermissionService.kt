@@ -169,6 +169,12 @@ class RolePermissionService {
                         authorizedResource = AuthorizedResource(types = listOf("notification")),
                         customLogic = "is-notification-owner",
                     ),
+
+                    // Project permissions
+                    Permission(
+                        authorizedActions = listOf("create", "enumerate"),
+                        authorizedResource = AuthorizedResource(types = listOf("project")),
+                    ),
                 ),
         )
     }

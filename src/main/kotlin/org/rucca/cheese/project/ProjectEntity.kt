@@ -3,11 +3,11 @@ package org.rucca.cheese.project
 import jakarta.persistence.*
 import java.time.LocalDateTime
 import org.hibernate.annotations.SQLRestriction
+import org.rucca.cheese.common.pagination.repository.CursorPagingRepository
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.user.User
-import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
@@ -34,4 +34,4 @@ class Project(
     @Column(nullable = true) var githubRepo: String? = null,
 ) : BaseEntity()
 
-interface ProjectRepository : JpaRepository<Project, IdType> {}
+interface ProjectRepository : CursorPagingRepository<Project, IdType> {}
