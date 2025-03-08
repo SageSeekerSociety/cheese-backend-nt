@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
 import org.rucca.cheese.model.CreateProject200ResponseDTO
 import org.rucca.cheese.model.CreateProjectRequestDTO
+import org.rucca.cheese.model.DeleteNotification200ResponseDTO
+import org.rucca.cheese.model.GetProject200ResponseDTO
 import org.rucca.cheese.model.GetProjects200ResponseDTO
 import org.rucca.cheese.model.ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDTO
 import org.rucca.cheese.model.ProjectsProjectIdDiscussionsDiscussionIdReactionsPostRequestDTO
@@ -19,6 +21,7 @@ import org.rucca.cheese.model.ProjectsProjectIdDiscussionsGet200ResponseDTO
 import org.rucca.cheese.model.ProjectsProjectIdDiscussionsGetProjectFilterParameterDTO
 import org.rucca.cheese.model.ProjectsProjectIdDiscussionsPost200ResponseDTO
 import org.rucca.cheese.model.ProjectsProjectIdDiscussionsPostRequestDTO
+import org.rucca.cheese.model.UpdateProjectRequestDTO
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -60,6 +63,69 @@ interface ProjectsApi {
         @RequestBody
         createProjectRequestDTO: CreateProjectRequestDTO
     ): ResponseEntity<CreateProject200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["default"],
+        summary = "Delete Project",
+        operationId = "deleteProject",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(implementation = DeleteNotification200ResponseDTO::class)
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.DELETE],
+        value = ["/projects/{projectId}"],
+        produces = ["application/json"],
+    )
+    fun deleteProject(
+        @Parameter(description = "", required = true)
+        @PathVariable("projectId")
+        projectId: kotlin.Long
+    ): ResponseEntity<DeleteNotification200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["default"],
+        summary = "Get Project",
+        operationId = "getProject",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [Content(schema = Schema(implementation = GetProject200ResponseDTO::class))],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/projects/{projectId}"],
+        produces = ["application/json"],
+    )
+    fun getProject(
+        @Parameter(description = "", required = true)
+        @PathVariable("projectId")
+        projectId: kotlin.Long
+    ): ResponseEntity<GetProject200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -250,6 +316,40 @@ interface ProjectsApi {
         @RequestBody
         projectsProjectIdDiscussionsPostRequestDTO: ProjectsProjectIdDiscussionsPostRequestDTO,
     ): ResponseEntity<ProjectsProjectIdDiscussionsPost200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["default"],
+        summary = "Update Project",
+        operationId = "updateProject",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [Content(schema = Schema(implementation = GetProject200ResponseDTO::class))],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.PATCH],
+        value = ["/projects/{projectId}"],
+        produces = ["application/json"],
+        consumes = ["application/json"],
+    )
+    fun updateProject(
+        @Parameter(description = "", required = true)
+        @PathVariable("projectId")
+        projectId: kotlin.Long,
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        updateProjectRequestDTO: UpdateProjectRequestDTO,
+    ): ResponseEntity<GetProject200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 }

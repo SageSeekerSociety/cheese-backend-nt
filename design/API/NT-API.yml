@@ -2625,6 +2625,119 @@ paths:
                           $ref: "#/components/schemas/Project"
                       page:
                         $ref: "#/components/schemas/Page"
+  /projects/{projectId}:
+    get:
+      summary: Get Project
+      tags: []
+      operationId: get-project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Project"
+    patch:
+      summary: Update Project
+      tags: []
+      operationId: update-project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                colorCode:
+                  type: string
+                  pattern: "^#[0-9A-Fa-f]{6}$"
+                startDate:
+                  type: integer
+                  format: int64
+                endDate:
+                  type: integer
+                  format: int64
+                teamId:
+                  type: integer
+                  format: int64
+                leaderId:
+                  type: integer
+                  format: int64
+                content:
+                  type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Project"
+    delete:
+      summary: Delete Project
+      tags: []
+      operationId: delete-project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
   /projects/{projectId}/discussions:
     post:
       summary: Create Discussion
