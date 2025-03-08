@@ -8,9 +8,9 @@ import javax.validation.Valid
 /** @param project */
 data class CreateProject200ResponseDataDTO(
     @field:Valid
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("project")
-    val project: ProjectDTO? = null
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("project", required = true)
+    val project: ProjectDTO
 ) : Serializable {
 
     companion object {

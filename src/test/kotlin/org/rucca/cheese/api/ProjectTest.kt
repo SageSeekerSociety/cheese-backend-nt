@@ -8,24 +8,20 @@
 
 package org.rucca.cheese.api
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.TestMethodOrder
+import org.rucca.cheese.client.ProjectClient
 import org.rucca.cheese.client.TeamClient
 import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.model.CreateProjectRequestDTO
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -38,10 +34,18 @@ constructor(
     private val mockMvc: MockMvc,
     private val userClient: UserClient,
     private val teamClient: TeamClient,
+    private val projectClient: ProjectClient,
 ) {
     lateinit var user: UserClient.CreateUserResponse
     lateinit var userToken: String
     var teamId: IdType = -1
+    var projectId: IdType = -1
+    val projectName = "Test Project"
+    val projectDescription = "Test Description"
+    val projectColorCode = "#FFFFFF"
+    val projectStartDate: Long = System.currentTimeMillis()
+    val projectEndDate: Long = System.currentTimeMillis() + 86400000
+    val projectContent = "Test Content"
 
     @BeforeAll
     fun prepare() {
@@ -51,34 +55,24 @@ constructor(
     }
 
     @Test
+    @Order(10)
     fun `test create project`() {
-        val request =
-            CreateProjectRequestDTO(
-                name = "Test Project",
-                description = "Test Description",
-                colorCode = "#FFFFFF",
-                startDate = System.currentTimeMillis(),
-                endDate = System.currentTimeMillis() + 86400000,
+        projectId =
+            projectClient.createProject(
+                userToken,
+                name = projectName,
+                description = projectDescription,
+                colorCode = projectColorCode,
+                startDate = projectStartDate,
+                endDate = projectEndDate,
+                content = projectContent,
                 teamId = teamId,
                 leaderId = user.userId,
-                content = "Test Content",
-                parentId = null,
-                externalTaskId = null,
-                githubRepo = null,
             )
-
-        mockMvc
-            .perform(
-                MockMvcRequestBuilders.post("/projects")
-                    .header("Authorization", "Bearer $userToken")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(ObjectMapper().writeValueAsString(request))
-            )
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.project.name").value("Test Project"))
     }
 
     @Test
+    @Order(20)
     fun `test get projects`() {
         mockMvc
             .perform(
@@ -87,7 +81,25 @@ constructor(
                     .param("pageSize", "10")
                     .param("pageStart", "0")
             )
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.projects").isArray)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.projects").isArray)
+    }
+
+    @Test
+    @Order(30)
+    fun `test get project by id`() {
+        mockMvc
+            .perform(
+                MockMvcRequestBuilders.get("/projects/$projectId")
+                    .header("Authorization", "Bearer $userToken")
+            )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.project.id").value(projectId))
+            .andExpect(jsonPath("$.data.project.name").value(projectName))
+            .andExpect(jsonPath("$.data.project.description").value(projectDescription))
+            .andExpect(jsonPath("$.data.project.colorCode").value(projectColorCode))
+            .andExpect(jsonPath("$.data.project.startDate").value(projectStartDate))
+            .andExpect(jsonPath("$.data.project.endDate").value(projectEndDate))
+            .andExpect(jsonPath("$.data.project.content").value(projectContent))
     }
 }

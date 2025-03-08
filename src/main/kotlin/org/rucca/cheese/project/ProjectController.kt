@@ -102,7 +102,10 @@ class ProjectController(
 
     @Guard("query", "project")
     override fun getProject(projectId: Long): ResponseEntity<GetProject200ResponseDTO> {
-        return super.getProject(projectId)
+        val projectDto = projectService.getProjectDto(projectId)
+        return ResponseEntity.ok(
+            GetProject200ResponseDTO(200, "OK", CreateProject200ResponseDataDTO(projectDto))
+        )
     }
 
     @Guard("modify", "project")

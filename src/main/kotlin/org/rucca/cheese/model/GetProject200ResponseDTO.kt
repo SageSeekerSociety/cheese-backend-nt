@@ -20,7 +20,7 @@ data class GetProject200ResponseDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("data", required = true)
-    val `data`: ProjectDTO,
+    val `data`: CreateProject200ResponseDataDTO,
 ) : Serializable {
 
     companion object {

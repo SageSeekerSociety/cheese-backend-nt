@@ -2560,6 +2560,8 @@ paths:
                     default: "success"
                   data:
                     type: object
+                    required:
+                      - project
                     properties:
                       project:
                         $ref: "#/components/schemas/Project"
@@ -2654,7 +2656,12 @@ paths:
                   message:
                     type: string
                   data:
-                    $ref: "#/components/schemas/Project"
+                    type: object
+                    required:
+                      - project
+                    properties:
+                      project:
+                        $ref: "#/components/schemas/Project"
     patch:
       summary: Update Project
       tags: []
@@ -2711,7 +2718,12 @@ paths:
                   message:
                     type: string
                   data:
-                    $ref: "#/components/schemas/Project"
+                    type: object
+                    required:
+                      - project
+                    properties:
+                      project:
+                        $ref: "#/components/schemas/Project"
     delete:
       summary: Delete Project
       tags: []
