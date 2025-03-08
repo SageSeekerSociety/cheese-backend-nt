@@ -6,6 +6,8 @@ import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -68,6 +70,12 @@ class DiscussionController(
     }
 
     @Guard("create-reaction", "project")
+    @RequestMapping(
+        method = [RequestMethod.POST],
+        value = ["/discussions/{discussionId}/reactions"],
+        produces = ["application/json"],
+        consumes = ["application/json"],
+    )
     override fun discussionsDiscussionIdReactionsPost(
         discussionId: Long,
         discussionsDiscussionIdReactionsPostRequestDTO:

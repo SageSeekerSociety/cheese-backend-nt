@@ -38,6 +38,16 @@ START WITH
     1 INCREMENT BY 1;
 
 CREATE
+    SEQUENCE discussion_reaction_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
+    SEQUENCE discussion_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE knowledge_label_entity_seq
 START WITH
     1 INCREMENT BY 50;
@@ -59,16 +69,6 @@ START WITH
 
 CREATE
     SEQUENCE notification_seq
-START WITH
-    1 INCREMENT BY 50;
-
-CREATE
-    SEQUENCE project_discussion_reaction_seq
-START WITH
-    1 INCREMENT BY 50;
-
-CREATE
-    SEQUENCE project_discussion_seq
 START WITH
     1 INCREMENT BY 50;
 
@@ -171,6 +171,40 @@ CREATE
     TABLE
         avatar(
             id INTEGER DEFAULT nextval('avatar_id_seq') NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        discussion(
+            "sender_id" INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            parent_id BIGINT,
+            project_id BIGINT,
+            updated_at TIMESTAMP(6) NOT NULL,
+            content VARCHAR(255) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        discussion_mentioned_user_ids(
+            discussion_id BIGINT NOT NULL,
+            mentioned_user_ids BIGINT
+        );
+
+CREATE
+    TABLE
+        discussion_reaction(
+            "user_id" INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            project_discussion_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            emoji VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
 
@@ -295,40 +329,6 @@ CREATE
         project_knowledge_project(
             knowledge_id BIGINT NOT NULL,
             project_ids BIGINT
-        );
-
-CREATE
-    TABLE
-        project_discussion(
-            "sender_id" INTEGER NOT NULL,
-            created_at TIMESTAMP(6) NOT NULL,
-            deleted_at TIMESTAMP(6),
-            id BIGINT NOT NULL,
-            parent_id BIGINT,
-            project_id BIGINT NOT NULL,
-            updated_at TIMESTAMP(6) NOT NULL,
-            content VARCHAR(255) NOT NULL,
-            PRIMARY KEY(id)
-        );
-
-CREATE
-    TABLE
-        project_discussion_mentioned_user_ids(
-            mentioned_user_ids BIGINT,
-            project_discussion_id BIGINT NOT NULL
-        );
-
-CREATE
-    TABLE
-        project_discussion_reaction(
-            "user_id" INTEGER NOT NULL,
-            created_at TIMESTAMP(6) NOT NULL,
-            deleted_at TIMESTAMP(6),
-            id BIGINT NOT NULL,
-            project_discussion_id BIGINT NOT NULL,
-            updated_at TIMESTAMP(6) NOT NULL,
-            emoji VARCHAR(255) NOT NULL,
-            PRIMARY KEY(id)
         );
 
 CREATE
@@ -560,6 +560,26 @@ CREATE
         );
 
 CREATE
+    INDEX IDXjmsmonh33x5o43eqo8ty351ju ON
+    discussion(project_id);
+
+CREATE
+    INDEX IDXkhxb42bgml7ds4m1mn25ulgpj ON
+    discussion(sender_id);
+
+CREATE
+    INDEX IDX7xfrb9qyj6idn1x8fv3gnlr7g ON
+    discussion(parent_id);
+
+CREATE
+    INDEX IDX8m2oj3rv2nhnewpebc0nd86gw ON
+    discussion_reaction(project_discussion_id);
+
+CREATE
+    INDEX IDX5nbqod2cht2v7tdkuwdrv6g3h ON
+    discussion_reaction(user_id);
+
+CREATE
     INDEX IDXaj3gr2rwnv7uamdf03p78372m ON
     knowledge(name);
 
@@ -586,26 +606,6 @@ CREATE
 CREATE
     INDEX IDXkycbyj306lg659w6g2ceuqpnu ON
     project(parent_id);
-
-CREATE
-    INDEX IDXqsx9ogphlxqm4g7funlasxwit ON
-    project_discussion(project_id);
-
-CREATE
-    INDEX IDX31oe4tu1rdota0bkwd2e78oju ON
-    project_discussion(sender_id);
-
-CREATE
-    INDEX IDXgbv14riv3876fsd5bir8fik52 ON
-    project_discussion(parent_id);
-
-CREATE
-    INDEX IDXafswtrwv5hq0ml0gulagy7b3b ON
-    project_discussion_reaction(project_discussion_id);
-
-CREATE
-    INDEX IDX43kw6o6kjlj006asay8wxedn3 ON
-    project_discussion_reaction(user_id);
 
 CREATE
     INDEX IDXs4ljf8ihivq2aim4m44e6c3if ON
@@ -690,6 +690,24 @@ ALTER TABLE
     IF EXISTS public.user_profile ADD CONSTRAINT FKqcd5nmg7d7ement27tt9sf3bi FOREIGN KEY(user_id) REFERENCES public."user";
 
 ALTER TABLE
+    IF EXISTS discussion ADD CONSTRAINT FKgs1dxhfnb68rh344y4f34fwqa FOREIGN KEY(parent_id) REFERENCES discussion;
+
+ALTER TABLE
+    IF EXISTS discussion ADD CONSTRAINT FK6m45sjpuse6o09iwiv2qdj3xg FOREIGN KEY(project_id) REFERENCES project;
+
+ALTER TABLE
+    IF EXISTS discussion ADD CONSTRAINT FKcdwhy51kalt1ojcov60id8dlx FOREIGN KEY("sender_id") REFERENCES public."user";
+
+ALTER TABLE
+    IF EXISTS discussion_mentioned_user_ids ADD CONSTRAINT FKhy50v0yvhjsctn5ca6hxwarr7 FOREIGN KEY(discussion_id) REFERENCES discussion;
+
+ALTER TABLE
+    IF EXISTS discussion_reaction ADD CONSTRAINT FK7s5i2g2a8qr48rx6f3x3lv6n3 FOREIGN KEY(project_discussion_id) REFERENCES discussion;
+
+ALTER TABLE
+    IF EXISTS discussion_reaction ADD CONSTRAINT FKkqj873iwqwqo4v6gkc1g5o0ji FOREIGN KEY("user_id") REFERENCES public."user";
+
+ALTER TABLE
     IF EXISTS knowledge ADD CONSTRAINT FKacal20h046lgv8bl4bkl2di1f FOREIGN KEY("created_by_id") REFERENCES public."user";
 
 ALTER TABLE
@@ -729,24 +747,6 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS project_knowledge_project ADD CONSTRAINT FK118urn3jpv1bbqou4vgt7plbf FOREIGN KEY(knowledge_id) REFERENCES knowledge;
-
-ALTER TABLE
-    IF EXISTS project_discussion ADD CONSTRAINT FKtqjqyqmvkqtgm0ehxhokyou00 FOREIGN KEY(parent_id) REFERENCES project_discussion;
-
-ALTER TABLE
-    IF EXISTS project_discussion ADD CONSTRAINT FK38osivo96n9pn7tktnookf6hc FOREIGN KEY(project_id) REFERENCES project;
-
-ALTER TABLE
-    IF EXISTS project_discussion ADD CONSTRAINT FKacbplng6k4nd13jimdq7smr7d FOREIGN KEY("sender_id") REFERENCES public."user";
-
-ALTER TABLE
-    IF EXISTS project_discussion_mentioned_user_ids ADD CONSTRAINT FKr8ld761738u9nn7c6qhet6eo8 FOREIGN KEY(project_discussion_id) REFERENCES project_discussion;
-
-ALTER TABLE
-    IF EXISTS project_discussion_reaction ADD CONSTRAINT FKgwp92ko43m29ulofqhm9l4ecx FOREIGN KEY(project_discussion_id) REFERENCES project_discussion;
-
-ALTER TABLE
-    IF EXISTS project_discussion_reaction ADD CONSTRAINT FKcmgufje6xw5v10l5xkl7c7tg9 FOREIGN KEY("user_id") REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS project_external_collaborator ADD CONSTRAINT FKg743uet6baba96l4nvt09si6b FOREIGN KEY(project_id) REFERENCES project;

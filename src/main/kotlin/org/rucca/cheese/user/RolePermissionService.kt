@@ -148,6 +148,13 @@ class RolePermissionService {
                             "is-task-approved || (owned || is-enumerating-owned-tasks) " +
                                 "|| is-space-admin-of-task || is-team-admin-of-task",
                     ),
+
+                    // Discussion permissions
+                    Permission(
+                        authorizedActions =
+                            listOf("query-discussion", "create-discussion", "create-reaction"),
+                        authorizedResource = AuthorizedResource(types = listOf("project")),
+                    ),
                 ),
         )
     }

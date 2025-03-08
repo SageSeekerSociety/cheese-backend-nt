@@ -30,10 +30,10 @@ class DiscussionService(
         val discussion =
             discussionRepository.save(
                 Discussion(
-                    project = Project().apply { this.id = projectId },
+                    project = projectId?.let { Project().apply { this.id = it } },
                     sender = User().apply { this.id = senderId.toInt() },
                     content = content,
-                    parent = Discussion().apply { this.id = parentId },
+                    parent = parentId?.let { Discussion().apply { this.id = it } },
                     mentionedUserIds = mentionedUserIds,
                 )
             )
@@ -48,9 +48,9 @@ class DiscussionService(
         val discussionDTO =
             DiscussionDTO(
                 id = discussion.id!!,
-                projectId = discussion.project!!.id!!,
+                projectId = discussion.project?.id,
                 content = discussion.content!!,
-                parentId = discussion.parent!!.id!!,
+                parentId = discussion.parent?.id,
                 sender = userService.getUserDto(discussion.sender!!.id!!.toLong()),
                 mentionedUsers = discussion.mentionedUserIds.map { userService.getUserDto(it) },
                 reactions = emptyList(),
@@ -104,7 +104,7 @@ class DiscussionService(
                 val reactionsByEmoji = reactions.groupBy { it.emoji!! }
                 DiscussionDTO(
                     id = discussion.id!!,
-                    projectId = discussion.project!!.id!!,
+                    projectId = discussion.project?.id,
                     content = discussion.content!!,
                     parentId = discussion.parent?.id,
                     sender = userService.getUserDto(discussion.sender!!.id!!.toLong()),
