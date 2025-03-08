@@ -893,11 +893,11 @@ class TaskController(
             if (createTaskAIAdviceConversationRequestDTO.conversationId != null) {
                 // 继续已有对话
                 taskAIAdviceService.continueConversation(
+                    conversationId = createTaskAIAdviceConversationRequestDTO.conversationId,
                     taskId = taskId,
                     userId = userId,
                     question = createTaskAIAdviceConversationRequestDTO.question,
                     context = context,
-                    conversationId = createTaskAIAdviceConversationRequestDTO.conversationId,
                     parentId = createTaskAIAdviceConversationRequestDTO.parentId,
                     modelType = createTaskAIAdviceConversationRequestDTO.modelType,
                     userNickname = userDTO.nickname,
@@ -928,7 +928,9 @@ class TaskController(
     override fun getTaskAiAdviceConversationsGrouped(
         @ResourceId taskId: Long
     ): ResponseEntity<GetTaskAiAdviceConversationsGrouped200ResponseDTO> {
-        val conversationSummaries = taskAIAdviceService.getConversationGroupedSummary(taskId)
+        val userId = authenticationService.getCurrentUserId()
+        val conversationSummaries =
+            taskAIAdviceService.getConversationGroupedSummary(taskId, userId)
         return ResponseEntity.ok(
             GetTaskAiAdviceConversationsGrouped200ResponseDTO(
                 200,
@@ -943,8 +945,9 @@ class TaskController(
         @ResourceId taskId: Long,
         @AuthInfo("conversationId") conversationId: String,
     ): ResponseEntity<GetTaskAiAdviceConversation200ResponseDTO> {
-        val conversations = taskAIAdviceService.getConversationById(taskId, conversationId)
-        if (conversations.isEmpty() || conversations.first().taskId != taskId) {
+        val userId = authenticationService.getCurrentUserId()
+        val conversations = taskAIAdviceService.getConversationById(conversationId, userId)
+        if (conversations.isEmpty()) {
             throw ConversationNotFoundError(conversationId)
         }
         return ResponseEntity.ok(

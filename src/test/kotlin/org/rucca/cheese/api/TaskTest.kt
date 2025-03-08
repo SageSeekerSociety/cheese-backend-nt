@@ -14,12 +14,8 @@ import java.time.LocalDateTime
 import kotlin.math.floor
 import org.hamcrest.Matchers
 import org.json.JSONObject
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
-import org.junit.jupiter.api.Order
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.TestMethodOrder
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.utils.JsonArrayUtil
@@ -807,8 +803,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .andExpect(jsonPath("$.data.tasks[1].name").value("$taskName (3)"))
             .andExpect(jsonPath("$.data.page.page_start").value(taskIds[0]))
             .andExpect(jsonPath("$.data.page.page_size").value(2))
-            .andExpect(jsonPath("$.data.page.has_prev").value(false))
-            .andExpect(jsonPath("$.data.page.prev_start").value(null))
             .andExpect(jsonPath("$.data.page.has_more").value(true))
             .andExpect(jsonPath("$.data.page.next_start").value(taskIds[1]))
     }
@@ -830,8 +824,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .andExpect(jsonPath("$.data.tasks[1].name").value("$taskName (2)"))
             .andExpect(jsonPath("$.data.page.page_start").value(taskIds[2]))
             .andExpect(jsonPath("$.data.page.page_size").value(2))
-            .andExpect(jsonPath("$.data.page.has_prev").value(true))
-            .andExpect(jsonPath("$.data.page.prev_start").value(taskIds[0]))
     }
 
     @Test

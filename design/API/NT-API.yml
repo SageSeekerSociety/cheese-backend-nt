@@ -880,8 +880,7 @@ paths:
                     type: object
                     properties:
                       status:
-                        type: string
-                        enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+                        $ref: "#/components/schemas/TaskAIAdviceGenerationStatus"
                       quota:
                         $ref: "#/components/schemas/QuotaInfo"
                   message:
@@ -912,8 +911,7 @@ paths:
                     type: object
                     properties:
                       status:
-                        type: string
-                        enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+                        $ref: "#/components/schemas/TaskAIAdviceGenerationStatus"
                   message:
                     type: string
 
@@ -2304,13 +2302,47 @@ paths:
       summary: Update Team Membership Info
       x-stoplight:
         id: 5kzla05sox4wy
+  /notifications/{notificationId}:
+    delete:
+      parameters:
+        - description: Notification ID
+          in: path
+          name: notificationId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: OK
+      tags: [ ]
+      operationId: delete-notification
+      summary: Delete Notification
   /notifications:
     get:
       summary: List Notifications
       tags: []
       parameters:
         - schema:
-            type: object
+            type: string
+            enum:
+              - mention
+              - reply
+              - reaction
+              - project_invite
+              - deadline_remind
           in: query
           name: type
           description: Notification Type
@@ -2319,7 +2351,7 @@ paths:
             type: boolean
           in: query
           name: read
-          description: Whether to filter read notifications
+          description: Whether to filter read or unread notifications
           required: false
         - schema:
             type: integer
@@ -2350,7 +2382,7 @@ paths:
                 properties:
                   code:
                     type: integer
-                    default: 0
+                    default: 200
                   message:
                     type: string
                     default: "success"
@@ -2391,23 +2423,36 @@ paths:
             application/json:
               schema:
                 type: object
-                properties: {}
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 200
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      notificationIds:
+                        type: array
+                        items:
+                          type: integer
+                          format: int64
   /notifications/unread/count:
     get:
       summary: Get Unread Notifications Count
-      tags: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - receiverId
-              properties:
-                receiverId:
-                  type: integer
-                  format: int64
+      tags: [ ]
+      parameters:
+        - name: receiverId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
       operationId: get-unread-notifications-count
       responses:
         "200":
@@ -2423,7 +2468,7 @@ paths:
                 properties:
                   code:
                     type: integer
-                    default: 0
+                    default: 200
                   message:
                     type: string
                     default: "success"
@@ -2432,9 +2477,11 @@ paths:
                     properties:
                       count:
                         type: integer
-                        default: 5
+                        nullable: false
+                        default: 0
   /projects:
     post:
+      operationId: create-project
       summary: Create Project
       tags: []
       requestBody:
@@ -2449,6 +2496,7 @@ paths:
                 - colorCode
                 - startDate
                 - endDate
+                - teamId
                 - leaderId
                 - content
               properties:
@@ -2467,6 +2515,9 @@ paths:
                   type: integer
                   format: int64
                   description: 项目结束时间戳(毫秒)
+                teamId:
+                  type: integer
+                  format: int64
                 parentId:
                   type: integer
                   format: int64
@@ -2513,6 +2564,7 @@ paths:
                       project:
                         $ref: "#/components/schemas/Project"
     get:
+      operationId: get-projects
       summary: List Projects
       tags: []
       parameters:
@@ -2534,11 +2586,6 @@ paths:
           schema:
             type: integer
             format: int64
-        - name: status
-          in: query
-          description: 状态 (可选)
-          schema:
-            type: string
         - name: page_start
           in: query
           description: 起始ID
@@ -4027,11 +4074,13 @@ components:
         - freshness_info
         - auth_info
         - final_ref
+    TaskAIAdviceGenerationStatus:
+      type: string
+      enum: [NONE, PENDING, PROCESSING, COMPLETED, FAILED]
     TaskAIAdviceConversation:
       type: object
       required:
         - id
-        - taskId
         - question
         - response
         - modelType
@@ -4044,10 +4093,6 @@ components:
           type: integer
           format: int64
           description: 对话ID
-        taskId:
-          type: integer
-          format: int64
-          description: 任务ID
         question:
           type: string
           description: 用户问题
@@ -4280,14 +4325,15 @@ components:
         type:
           type: string
           enum:
-            - mention
-            - reply
-            - reaction
-            - project_invite
-            - deadline_remind
+            - MENTION
+            - REPLY
+            - REACTION
+            - PROJECT_INVITE
+            - DEADLINE_REMIND
         receiverId:
           type: integer
           format: int64
+          description: "The ID of the user who will receive the notification. This will be mapped to a User entity in the backend."
         content:
           type: object
           properties:
@@ -4296,12 +4342,15 @@ components:
             projectId:
               type: integer
               format: int64
+              nullable: true
             discussionId:
               type: integer
               format: int64
+              nullable: true
             knowledgeId:
               type: integer
               format: int64
+              nullable: true
         read:
           type: boolean
           default: false
@@ -4330,7 +4379,8 @@ components:
         - description
         - startDate
         - endDate
-        - leaderId
+        - team
+        - leader
         - content
       properties:
         id:
@@ -4355,9 +4405,10 @@ components:
           type: integer
           format: int64
           description: 父项目ID
-        leaderId:
-          type: integer
-          format: int64
+        team:
+          $ref: "#/components/schemas/Team"
+        leader:
+          $ref: "#/components/schemas/User"
         externalTaskId:
           type: integer
           format: int64

@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 import javax.validation.constraints.Pattern
 
@@ -11,6 +12,7 @@ import javax.validation.constraints.Pattern
  * @param colorCode
  * @param startDate 项目开始时间戳(毫秒)
  * @param endDate 项目结束时间戳(毫秒)
+ * @param teamId
  * @param leaderId
  * @param content
  * @param parentId 父项目ID
@@ -18,7 +20,7 @@ import javax.validation.constraints.Pattern
  * @param githubRepo
  * @param externalCollaborators
  */
-data class ProjectsPostRequestDTO(
+data class CreateProjectRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("name", required = true)
     val name: kotlin.String,
@@ -35,6 +37,9 @@ data class ProjectsPostRequestDTO(
     @Schema(example = "null", required = true, description = "项目结束时间戳(毫秒)")
     @get:JsonProperty("endDate", required = true)
     val endDate: kotlin.Long,
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("teamId", required = true)
+    val teamId: kotlin.Long,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("leaderId", required = true)
     val leaderId: kotlin.Long,
@@ -54,6 +59,11 @@ data class ProjectsPostRequestDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("externalCollaborators")
     val externalCollaborators:
-        kotlin.collections.List<ProjectsPostRequestExternalCollaboratorsInnerDTO>? =
+        kotlin.collections.List<CreateProjectRequestExternalCollaboratorsInnerDTO>? =
         null,
-) {}
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}
