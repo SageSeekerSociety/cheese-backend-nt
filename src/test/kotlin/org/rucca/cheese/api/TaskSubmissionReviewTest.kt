@@ -9,7 +9,6 @@
 
 package org.rucca.cheese.api
 
-import org.json.JSONObject
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.Order
@@ -50,7 +49,17 @@ constructor(
     private var attachmentId: IdType = -1
     private var taskId: IdType = -1
     private var submissionId: IdType = -1
-    private val submission = """
+    private var submission = ""
+
+    @BeforeAll
+    fun prepare() {
+        creator = userClient.createUser()
+        creatorToken = userClient.login(creator.username, creator.password)
+        participant = userClient.createUser()
+        participantToken = userClient.login(participant.username, participant.password)
+        attachmentId = attachmentClient.createAttachment(creatorToken)
+        submission =
+            """
                         [
                           {
                             "contentText": "This is a test submission."
@@ -60,14 +69,6 @@ constructor(
                           }
                         ]
                     """
-
-    @BeforeAll
-    fun prepare() {
-        creator = userClient.createUser()
-        creatorToken = userClient.login(creator.username, creator.password)
-        participant = userClient.createUser()
-        participantToken = userClient.login(participant.username, participant.password)
-        attachmentId = attachmentClient.createAttachment(creatorToken)
         taskId =
             taskClient.createTask(
                 creatorToken,
@@ -76,7 +77,8 @@ constructor(
             )
         taskClient.addParticipantUser(participantToken, taskId, participant.userId)
         taskClient.approveTaskParticipant(creatorToken, taskId, participant.userId)
-        submissionId = taskClient.submitTaskUser(participantToken, taskId, participant.userId, submission)
+        submissionId =
+            taskClient.submitTaskUser(participantToken, taskId, participant.userId, submission)
     }
 
     @Test

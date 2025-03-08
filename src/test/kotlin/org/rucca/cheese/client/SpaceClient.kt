@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -71,5 +72,21 @@ class SpaceClient(private val mockMvc: MockMvc, private val userClient: UserClie
                 .getLong("id")
         logger.info("Created space: $spaceId")
         return spaceId
+    }
+
+    fun addSpaceAdmin(creatorToken: String, spaceId: IdType, adminId: IdType) {
+        val request =
+            MockMvcRequestBuilders.post("/spaces/$spaceId/managers")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                    "role": "ADMIN",
+                    "userId": ${adminId}
+                }
+            """
+                )
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 }

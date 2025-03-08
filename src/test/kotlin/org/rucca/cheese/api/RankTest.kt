@@ -9,7 +9,6 @@
 
 package org.rucca.cheese.api
 
-import org.json.JSONObject
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.Order
@@ -56,7 +55,8 @@ constructor(
     private var submissionId: IdType = -1
     private var submissionId2: IdType = -1
     private var submissionId3: IdType = -1
-    private val submission = """
+    private val submission =
+        """
                         [
                           {
                             "contentText": "This is a test submission."
@@ -84,7 +84,8 @@ constructor(
         taskClient.approveTask(taskId, creatorToken)
         taskClient.addParticipantUser(participantToken, taskId, participant.userId)
         taskClient.approveTaskParticipant(creatorToken, taskId, participant.userId)
-        submissionId = taskClient.submitTaskUser(participantToken, taskId, participant.userId,submission)
+        submissionId =
+            taskClient.submitTaskUser(participantToken, taskId, participant.userId, submission)
         taskId2 =
             taskClient.createTask(
                 creatorToken,
@@ -98,7 +99,8 @@ constructor(
         taskClient.approveTask(taskId2, creatorToken)
         taskClient.addParticipantUser(participantToken, taskId2, participant.userId)
         taskClient.approveTaskParticipant(creatorToken, taskId2, participant.userId)
-        submissionId2 = taskClient.submitTaskUser(participantToken, taskId2, participant.userId,submission)
+        submissionId2 =
+            taskClient.submitTaskUser(participantToken, taskId2, participant.userId, submission)
         taskId3 =
             taskClient.createTask(
                 creatorToken,
@@ -112,7 +114,8 @@ constructor(
         taskClient.approveTask(taskId3, creatorToken)
         taskClient.addParticipantUser(participantToken, taskId3, participant.userId)
         taskClient.approveTaskParticipant(creatorToken, taskId3, participant.userId)
-        submissionId3 = taskClient.submitTaskUser(participantToken, taskId3, participant.userId,submission)
+        submissionId3 =
+            taskClient.submitTaskUser(participantToken, taskId3, participant.userId, submission)
         taskId4 =
             taskClient.createTask(
                 creatorToken,

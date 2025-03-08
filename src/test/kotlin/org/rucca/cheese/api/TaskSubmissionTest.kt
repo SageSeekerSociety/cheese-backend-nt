@@ -69,22 +69,6 @@ constructor(
     private val taskSubmissionSchema =
         listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE"))
 
-    fun joinTeam(token: String, teamId: IdType, userId: IdType) {
-        val request =
-            MockMvcRequestBuilders.post("/teams/$teamId/members")
-                .header("Authorization", "Bearer $token")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "role": "MEMBER",
-                  "user_id": ${userId}
-                }
-            """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-    }
-
     @BeforeAll
     fun prepare() {
         creator = userClient.createUser()
@@ -103,7 +87,7 @@ constructor(
         irrelevantUserToken = userClient.login(irrelevantUser.username, irrelevantUser.password)
         spaceId = spaceClient.createSpace(spaceCreatorToken)
         teamId = teamClient.createTeam(teamCreatorToken)
-        joinTeam(teamCreatorToken, teamId, teamMember.userId)
+        teamClient.joinTeam(teamCreatorToken, teamId, teamMember.userId)
         attachmentId = attachmentClient.createAttachment(creatorToken)
     }
 

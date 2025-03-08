@@ -80,54 +80,6 @@ constructor(
     private val taskSubmissionSchema =
         listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE"))
 
-    fun addSpaceAdmin(creatorToken: String, spaceId: IdType, adminId: IdType) {
-        val request =
-            MockMvcRequestBuilders.post("/spaces/$spaceId/managers")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                    "role": "ADMIN",
-                    "userId": ${adminId}
-                }
-            """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-    }
-
-    fun joinTeam(token: String, teamId: IdType, userId: IdType) {
-        val request =
-            MockMvcRequestBuilders.post("/teams/$teamId/members")
-                .header("Authorization", "Bearer $token")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "role": "MEMBER",
-                  "user_id": ${userId}
-                }
-            """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-    }
-
-    fun addTeamAdmin(creatorToken: String, teamId: IdType, adminId: IdType) {
-        val request =
-            MockMvcRequestBuilders.post("/teams/$teamId/members")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "role": "ADMIN",
-                  "user_id": ${adminId}
-                }
-            """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-    }
-
     @BeforeAll
     fun prepare() {
         creator = userClient.createUser()
@@ -152,9 +104,9 @@ constructor(
         teamAdminToken = userClient.login(teamAdmin.username, teamAdmin.password)
         spaceId = spaceClient.createSpace(spaceCreatorToken)
         teamId = teamClient.createTeam(teamCreatorToken)
-        joinTeam(teamCreatorToken, teamId, teamMember.userId)
-        addSpaceAdmin(spaceCreatorToken, spaceId, spaceAdmin.userId)
-        addTeamAdmin(teamCreatorToken, teamId, teamAdmin.userId)
+        teamClient.joinTeam(teamCreatorToken, teamId, teamMember.userId)
+        spaceClient.addSpaceAdmin(spaceCreatorToken, spaceId, spaceAdmin.userId)
+        teamClient.addTeamAdmin(teamCreatorToken, teamId, teamAdmin.userId)
     }
 
     @Test
@@ -332,7 +284,7 @@ constructor(
     @Test
     @Order(18)
     fun testApproveTask() {
-       taskClient. approveTask(taskIds[0], spaceAdminToken)
+        taskClient.approveTask(taskIds[0], spaceAdminToken)
         taskClient.approveTask(taskIds[1], spaceAdminToken)
         taskClient.approveTask(taskIds[3], teamAdminToken)
     }

@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
 @Service
 class TeamClient(private val mockMvc: MockMvc, private val userClient: UserClient) {
@@ -44,5 +45,37 @@ class TeamClient(private val mockMvc: MockMvc, private val userClient: UserClien
                 .getLong("id")
         logger.info("Created team: $teamId")
         return teamId
+    }
+
+    fun joinTeam(token: String, teamId: IdType, userId: IdType) {
+        val request =
+            MockMvcRequestBuilders.post("/teams/$teamId/members")
+                .header("Authorization", "Bearer $token")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "role": "MEMBER",
+                  "user_id": ${userId}
+                }
+            """
+                )
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    fun addTeamAdmin(creatorToken: String, teamId: IdType, adminId: IdType) {
+        val request =
+            MockMvcRequestBuilders.post("/teams/$teamId/members")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "role": "ADMIN",
+                  "user_id": ${adminId}
+                }
+            """
+                )
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
 }
