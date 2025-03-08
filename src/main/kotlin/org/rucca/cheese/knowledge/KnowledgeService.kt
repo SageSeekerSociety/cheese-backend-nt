@@ -8,14 +8,18 @@ import org.rucca.cheese.model.KnowledgeDTO
 import org.rucca.cheese.model.KnowledgePatchRequestDTO
 import org.rucca.cheese.model.KnowledgePostRequestDTO
 import org.rucca.cheese.user.UserService
+import org.rucca.cheese.common.helper.EntityPatcher
 import org.springframework.stereotype.Service
-
+import org.rucca.cheese.user.Avatar
+import org.rucca.cheese.user.AvatarRepository
 @Service
 class KnowledgeService(
     private val knowledgeRepository: KnowledgeRepository,
     private val knowledgeLabelRepository: KnowledgeLabelRepository,
     private val userService: UserService,
     private val knowledgeAdminRelationRepository: KnowledgeAdminRelationRepository,
+    private val avatarRepository: AvatarRepository,
+    private val entityPatcher: EntityPatcher,
 ) {
     fun deleteknowledge(kid: IdType) {
         val knowledge =
@@ -72,8 +76,7 @@ class KnowledgeService(
                 content = content,
                 description = description,
                 projectIds = projectIds!!.toSet(),
-            )
-        knowledgeRepository.save(knowledge)
+            ).let { knowledgeRepository.save(it)}
 
         labels?.forEach {
             val knowledgeLabel = KnowledgeLabelEntity(knowledge = knowledge, label = it)
@@ -105,43 +108,32 @@ class KnowledgeService(
             updatedAt = this.updatedAt!!.toEpochMilli(),
         )
     }
-
     fun updateKnowledge(
-        id: Long,
-        name: String?,
-        description: String?,
-        type: KnowledgePatchRequestDTO.Type?,
-        content: String?,
-        projectIds: List<Long>?,
-        labels: List<String>?,
-    ):KnowledgeDTO {
+        id: IdType,
+        knowledgePatchRequestDTO: KnowledgePatchRequestDTO
+    ): KnowledgeDTO {
         val knowledge = getKnowledge(id)
-
-        // 更新基本信息
-        name?.let { knowledge.name = it }
-        description?.let { knowledge.description = it }
-        type?.let { knowledge.type = parseType(it) }
-        content?.let { knowledge.content = it }
-        projectIds?.let { knowledge.projectIds = it.toSet() }
-
-        knowledgeRepository.save(knowledge)
-        val knowledgeDTO=knowledge.toKnowledgeDTO();
-
-        // 更新标签
-        labels?.let {
-            // 删除旧标签
-            knowledgeLabelRepository.deleteAll(
-                knowledgeLabelRepository.findAll().filter { label -> label.knowledge?.id == id }
-            )
-            // 添加新标签
-            it.forEach { labelText ->
-                knowledgeLabelRepository.save(
-                    KnowledgeLabelEntity(knowledge = knowledge, label = labelText)
+        val updatedKnowledge = entityPatcher.patch(knowledge, knowledgePatchRequestDTO) {
+            handle(KnowledgePatchRequestDTO::name) { entity, value -> entity.name = value }
+            handle(KnowledgePatchRequestDTO::description) { entity, value -> entity.description = value }
+            handle(KnowledgePatchRequestDTO::type) { entity, value -> entity.type = parseType(value) }
+            handle(KnowledgePatchRequestDTO::content) { entity, value -> entity.content = value }
+            handle(KnowledgePatchRequestDTO::projectIds) { entity, value -> entity.projectIds = value?.toSet() ?: emptySet() }
+            handle(KnowledgePatchRequestDTO::labels) { entity, value ->
+                // 删除旧标签
+                knowledgeLabelRepository.deleteAll(
+                    knowledgeLabelRepository.findAll().filter { label -> label.knowledge?.id == id }
                 )
+                // 添加新标签
+                value?.forEach { labelText ->
+                    knowledgeLabelRepository.save(
+                        KnowledgeLabelEntity(knowledge = entity, label = labelText)
+                    )
+                }
             }
-
         }
-        // 保存知识点更新
-        return knowledgeDTO
+        return knowledgeRepository.save(updatedKnowledge).toKnowledgeDTO()
     }
+
+
 }

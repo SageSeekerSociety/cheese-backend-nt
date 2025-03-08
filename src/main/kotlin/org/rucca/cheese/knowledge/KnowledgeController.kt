@@ -13,12 +13,15 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
+import org.rucca.cheese.user.Avatar
+import org.rucca.cheese.user.AvatarRepository
 
 @RestController
 class KnowledgeController(
     private val knowledgeService: KnowledgeService,
     private val authorizationService: AuthorizationService,
     private val authenticationService: AuthenticationService,
+    private val avatarRepository: AvatarRepository,
 ) : KnowledgeApi {
     @PostConstruct
     fun initialize() {
@@ -86,13 +89,7 @@ class KnowledgeController(
     ): ResponseEntity<KnowledgePatch200ResponseDTO> {
         // 更新知识点信息
         val updatedKnowledge = knowledgeService.updateKnowledge(
-            id = id,
-            name = knowledgePatchRequestDTO.name,
-            description = knowledgePatchRequestDTO.description,
-            type = knowledgePatchRequestDTO.type,
-            content = knowledgePatchRequestDTO.content,
-            projectIds = knowledgePatchRequestDTO.projectIds,
-            labels = knowledgePatchRequestDTO.labels,
+            id,knowledgePatchRequestDTO
         )
         return ResponseEntity.ok(
             KnowledgePatch200ResponseDTO(
