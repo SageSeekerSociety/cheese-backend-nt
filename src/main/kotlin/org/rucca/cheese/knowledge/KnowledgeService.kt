@@ -64,7 +64,7 @@ class KnowledgeService(
         description: String?,
         projectIds: List<Long>? = null,
         labels: List<String>? = null,
-    ): IdType { // project panduan ! kong  set
+    ): KnowledgeDTO { // project panduan ! kong  set
         val knowledge =
             Knowledge(
                 name = name,
@@ -79,7 +79,7 @@ class KnowledgeService(
             val knowledgeLabel = KnowledgeLabelEntity(knowledge = knowledge, label = it)
             knowledgeLabelRepository.save(knowledgeLabel)
         }
-        return knowledge.id!!
+        return knowledge.toKnowledgeDTO()//?
     }
 
     fun getKnowledgeDTO(knowledgeId: IdType): KnowledgeDTO {
@@ -114,7 +114,7 @@ class KnowledgeService(
         content: String?,
         projectIds: List<Long>?,
         labels: List<String>?,
-    ) {
+    ):KnowledgeDTO {
         val knowledge = getKnowledge(id)
 
         // 更新基本信息
@@ -124,8 +124,8 @@ class KnowledgeService(
         content?.let { knowledge.content = it }
         projectIds?.let { knowledge.projectIds = it.toSet() }
 
-        // 保存知识点更新
         knowledgeRepository.save(knowledge)
+        val knowledgeDTO=knowledge.toKnowledgeDTO();
 
         // 更新标签
         labels?.let {
@@ -139,6 +139,9 @@ class KnowledgeService(
                     KnowledgeLabelEntity(knowledge = knowledge, label = labelText)
                 )
             }
+
         }
+        // 保存知识点更新
+        return knowledgeDTO
     }
 }

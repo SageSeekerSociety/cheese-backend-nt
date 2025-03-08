@@ -23,7 +23,7 @@ class KnowledgeController(
     @PostConstruct
     fun initialize() {
         authorizationService.ownerIds.register("knowledge", knowledgeService::getKnowledgeOwner)
-        authorizationService.customAuthLogics.register("is-Knowledge-admin") {
+        authorizationService.customAuthLogics.register("is-knowledge-admin") {
             userId: IdType,
             _: AuthorizedAction,
             _: String,
@@ -42,7 +42,7 @@ class KnowledgeController(
     override fun knowledgePost(
         knowledgePostRequestDTO: KnowledgePostRequestDTO
     ): ResponseEntity<KnowledgePost200ResponseDTO> {
-        val kid =
+        val knowledgeDTO =
             knowledgeService.createKnowledge(
                 name = knowledgePostRequestDTO.name,
                 type = knowledgePostRequestDTO.type,
@@ -51,7 +51,6 @@ class KnowledgeController(
                 projectIds = knowledgePostRequestDTO.projectIds,
                 labels = knowledgePostRequestDTO.labels,
             )
-        val knowledgeDTO = knowledgeService.getKnowledgeDTO(kid)
         return ResponseEntity.ok(
             KnowledgePost200ResponseDTO(200, "ok", KnowledgePost200ResponseDataDTO(knowledgeDTO))
         )
@@ -67,10 +66,10 @@ class KnowledgeController(
         pageSize: Int,
     ): ResponseEntity<KnowledgeGet200ResponseDTO> {
 
-        val keto = knowledgeService.getKnowledgeDTOByProjectId(projectIds)
+        val knowledgeDTO = knowledgeService.getKnowledgeDTOByProjectId(projectIds)
         // val queryOptions = SpaceQueryOptions(queryMyRank = queryMyRank)?
         return ResponseEntity.ok(
-            KnowledgeGet200ResponseDTO(200, "success", KnowledgeGet200ResponseDataDTO(keto))
+            KnowledgeGet200ResponseDTO(200, "success", KnowledgeGet200ResponseDataDTO(knowledgeDTO))
         )
     }
 
@@ -86,7 +85,7 @@ class KnowledgeController(
         knowledgePatchRequestDTO: KnowledgePatchRequestDTO,
     ): ResponseEntity<KnowledgePatch200ResponseDTO> {
         // 更新知识点信息
-        knowledgeService.updateKnowledge(
+        val updatedKnowledge = knowledgeService.updateKnowledge(
             id = id,
             name = knowledgePatchRequestDTO.name,
             description = knowledgePatchRequestDTO.description,
@@ -95,10 +94,6 @@ class KnowledgeController(
             projectIds = knowledgePatchRequestDTO.projectIds,
             labels = knowledgePatchRequestDTO.labels,
         )
-
-        // 获取更新后的知识点
-        val updatedKnowledge = knowledgeService.getKnowledgeDTO(id)
-
         return ResponseEntity.ok(
             KnowledgePatch200ResponseDTO(
                 code = 200,
