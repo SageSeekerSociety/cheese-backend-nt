@@ -77,7 +77,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                     )
                 )
                 .andReturn()
-        logger.info("Notification list: ${response.response.contentAsString}")
     }
 
     @Test

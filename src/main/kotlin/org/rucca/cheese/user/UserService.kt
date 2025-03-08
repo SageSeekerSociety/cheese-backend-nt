@@ -81,4 +81,8 @@ class UserService(
     fun existsUser(userId: IdType): Boolean {
         return userRepository.existsById(userId.toInt())
     }
+
+    fun ensureUserIdExists(userId: IdType) {
+        if (!existsUser(userId)) throw NotFoundError("user", userId)
+    }
 }

@@ -2481,6 +2481,7 @@ paths:
                         default: 0
   /projects:
     post:
+      operationId: create-project
       summary: Create Project
       tags: []
       requestBody:
@@ -2495,6 +2496,7 @@ paths:
                 - colorCode
                 - startDate
                 - endDate
+                - teamId
                 - leaderId
                 - content
               properties:
@@ -2513,6 +2515,9 @@ paths:
                   type: integer
                   format: int64
                   description: 项目结束时间戳(毫秒)
+                teamId:
+                  type: integer
+                  format: int64
                 parentId:
                   type: integer
                   format: int64
@@ -2559,6 +2564,7 @@ paths:
                       project:
                         $ref: "#/components/schemas/Project"
     get:
+      operationId: get-projects
       summary: List Projects
       tags: []
       parameters:
@@ -2580,11 +2586,6 @@ paths:
           schema:
             type: integer
             format: int64
-        - name: status
-          in: query
-          description: 状态 (可选)
-          schema:
-            type: string
         - name: page_start
           in: query
           description: 起始ID
@@ -4147,7 +4148,8 @@ components:
         - description
         - startDate
         - endDate
-        - leaderId
+        - team
+        - leader
         - content
       properties:
         id:
@@ -4172,9 +4174,10 @@ components:
           type: integer
           format: int64
           description: 父项目ID
-        leaderId:
-          type: integer
-          format: int64
+        team:
+          $ref: "#/components/schemas/Team"
+        leader:
+          $ref: "#/components/schemas/User"
         externalTaskId:
           type: integer
           format: int64
