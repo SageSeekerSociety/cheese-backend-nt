@@ -107,45 +107,6 @@ constructor(
         attachmentId = attachmentClient.createAttachment(creatorToken)
     }
 
-    fun approveTask(taskId: IdType, token: String) {
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/$taskId")
-                .header("Authorization", "Bearer $token")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "approved": "APPROVED"
-                }
-            """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.task.approved").value("APPROVED"))
-    }
-
-    fun approveTaskParticipant(token: String, taskId: IdType, memberId: IdType) {
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants")
-                .queryParam("member", memberId.toString())
-                .header("Authorization", "Bearer ${token}")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "approved": "APPROVED"
-                }
-            """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.participant.approved").value("APPROVED")
-            )
-    }
-
     @Test
     @Order(10)
     fun testCreateTask() {
@@ -158,7 +119,7 @@ constructor(
                 submissionSchema = taskSubmissionSchema,
             )
         )
-        approveTask(taskIds[0], spaceCreatorToken)
+        taskClient.approveTask(taskIds[0], spaceCreatorToken)
         taskIds.add(
             taskClient.createTask(
                 creatorToken,
@@ -169,9 +130,9 @@ constructor(
                 submissionSchema = taskSubmissionSchema,
             )
         )
-        approveTask(taskIds[1], spaceCreatorToken)
+        taskClient.approveTask(taskIds[1], spaceCreatorToken)
         taskIds.add(taskClient.createTask(creatorToken, name = "$taskName (3)", space = spaceId))
-        approveTask(taskIds[2], spaceCreatorToken)
+        taskClient.approveTask(taskIds[2], spaceCreatorToken)
         taskIds.add(taskClient.createTask(creatorToken, name = "$taskName (4)", team = teamId))
         taskIds.add(taskClient.createTask(creatorToken, name = "$taskName (5)"))
     }

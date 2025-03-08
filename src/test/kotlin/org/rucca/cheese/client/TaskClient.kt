@@ -105,4 +105,72 @@ class TaskClient(private val mockMvc: MockMvc, private val userClient: UserClien
         logger.info("Created task: $taskId")
         return taskId
     }
+
+    fun approveTask(taskId: IdType, token: String) {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/$taskId")
+                .header("Authorization", "Bearer $token")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": "APPROVED"
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.task.approved").value("APPROVED"))
+    }
+
+    fun addParticipantUser(token: String, taskId: IdType, userId: IdType) {
+        val request =
+            MockMvcRequestBuilders.post("/tasks/${taskId}/participants")
+                .header("Authorization", "Bearer $token")
+                .queryParam("member", userId.toString())
+                .contentType("application/json")
+                .content(
+                    """
+                {}
+            """
+                )
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    fun approveTaskParticipant(token: String, taskId: IdType, memberId: IdType) {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants")
+                .queryParam("member", memberId.toString())
+                .header("Authorization", "Bearer $token")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": "APPROVED"
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(
+                jsonPath("$.data.participants[?(@.member.id == $memberId)].approved")
+                    .value("APPROVED")
+            )
+    }
+
+    fun submitTaskUser(token: String, taskId: IdType, userId: IdType, content: String): IdType {
+        val request =
+            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+                .header("Authorization", "Bearer $token")
+                .param("member", userId.toString())
+                .contentType("application/json")
+                .content(content)
+        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val json = JSONObject(response.andReturn().response.contentAsString)
+        val submissionId = json.getJSONObject("data").getJSONObject("submission").getLong("id")
+        logger.info("Created submission: $submissionId")
+        return submissionId
+    }
 }

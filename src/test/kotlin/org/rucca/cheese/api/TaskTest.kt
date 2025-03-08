@@ -157,24 +157,6 @@ constructor(
         addTeamAdmin(teamCreatorToken, teamId, teamAdmin.userId)
     }
 
-    fun approveTask(taskId: IdType, token: String) {
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/$taskId")
-                .header("Authorization", "Bearer $token")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "approved": "APPROVED"
-                }
-            """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.task.approved").value("APPROVED"))
-    }
-
     @Test
     @Order(10)
     fun testCreateTask() {
@@ -350,9 +332,9 @@ constructor(
     @Test
     @Order(18)
     fun testApproveTask() {
-        approveTask(taskIds[0], spaceAdminToken)
-        approveTask(taskIds[1], spaceAdminToken)
-        approveTask(taskIds[3], teamAdminToken)
+       taskClient. approveTask(taskIds[0], spaceAdminToken)
+        taskClient.approveTask(taskIds[1], spaceAdminToken)
+        taskClient.approveTask(taskIds[3], teamAdminToken)
     }
 
     @Test
@@ -371,7 +353,7 @@ constructor(
             """
                 )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
-        approveTask(taskIds[2], spaceAdminToken)
+        taskClient.approveTask(taskIds[2], spaceAdminToken)
     }
 
     @Test

@@ -50,53 +50,7 @@ constructor(
     private var attachmentId: IdType = -1
     private var taskId: IdType = -1
     private var submissionId: IdType = -1
-
-    fun joinTask(taskId: IdType, participantId: IdType, participantToken: String) {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/participants")
-                .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participantId.toString())
-                .contentType("application/json")
-                .content(
-                    """
-                    {}
-                """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-    }
-
-    fun approveTaskParticipant(token: String, taskId: IdType, memberId: IdType) {
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants")
-                .queryParam("member", memberId.toString())
-                .header("Authorization", "Bearer ${token}")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "approved": "APPROVED"
-                }
-            """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath(
-                        "$.data.participants[?(@.member.id == $memberId)].approved"
-                    )
-                    .value("APPROVED")
-            )
-    }
-
-    fun submitTask(taskId: IdType, participantId: IdType, participantToken: String): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
-                .header("Authorization", "Bearer $participantToken")
-                .param("member", participantId.toString())
-                .contentType("application/json")
-                .content(
-                    """
+    private val submission = """
                         [
                           {
                             "contentText": "This is a test submission."
@@ -106,13 +60,6 @@ constructor(
                           }
                         ]
                     """
-                )
-        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-        val json = JSONObject(response.andReturn().response.contentAsString)
-        val submissionId = json.getJSONObject("data").getJSONObject("submission").getLong("id")
-        logger.info("Submitted task with submission: $submissionId")
-        return submissionId
-    }
 
     @BeforeAll
     fun prepare() {
@@ -127,9 +74,9 @@ constructor(
                 submissionSchema =
                     listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE")),
             )
-        joinTask(taskId, participant.userId, participantToken)
-        approveTaskParticipant(creatorToken, taskId, participant.userId)
-        submissionId = submitTask(taskId, participant.userId, participantToken)
+        taskClient.addParticipantUser(participantToken, taskId, participant.userId)
+        taskClient.approveTaskParticipant(creatorToken, taskId, participant.userId)
+        submissionId = taskClient.submitTaskUser(participantToken, taskId, participant.userId, submission)
     }
 
     @Test

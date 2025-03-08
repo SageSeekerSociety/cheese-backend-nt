@@ -56,82 +56,13 @@ constructor(
     private var submissionId: IdType = -1
     private var submissionId2: IdType = -1
     private var submissionId3: IdType = -1
-
-    fun approveTask(taskId: IdType, token: String) {
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/$taskId")
-                .header("Authorization", "Bearer $token")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "approved": "APPROVED"
-                }
-            """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.task.approved").value("APPROVED"))
-    }
-
-    fun addParticipantUser(token: String, taskId: IdType, userId: IdType) {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/${taskId}/participants")
-                .header("Authorization", "Bearer $token")
-                .queryParam("member", userId.toString())
-                .contentType("application/json")
-                .content(
-                    """
-                {}
-            """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-    }
-
-    fun approveTaskParticipant(token: String, taskId: IdType, memberId: IdType) {
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants")
-                .queryParam("member", memberId.toString())
-                .header("Authorization", "Bearer $token")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "approved": "APPROVED"
-                }
-            """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                jsonPath("$.data.participants[?(@.member.id == $memberId)].approved")
-                    .value("APPROVED")
-            )
-    }
-
-    fun submitTaskUser(token: String, taskId: IdType, userId: IdType): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
-                .header("Authorization", "Bearer $token")
-                .param("member", userId.toString())
-                .contentType("application/json")
-                .content(
-                    """
+    private val submission = """
                         [
                           {
                             "contentText": "This is a test submission."
                           }
                         ]
                     """
-                )
-        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-        val json = JSONObject(response.andReturn().response.contentAsString)
-        val submissionId = json.getJSONObject("data").getJSONObject("submission").getLong("id")
-        logger.info("Created submission: $submissionId")
-        return submissionId
-    }
 
     @BeforeAll
     fun prepare() {
@@ -150,10 +81,10 @@ constructor(
                 space = spaceId,
                 rank = 1,
             )
-        approveTask(taskId, creatorToken)
-        addParticipantUser(participantToken, taskId, participant.userId)
-        approveTaskParticipant(creatorToken, taskId, participant.userId)
-        submissionId = submitTaskUser(participantToken, taskId, participant.userId)
+        taskClient.approveTask(taskId, creatorToken)
+        taskClient.addParticipantUser(participantToken, taskId, participant.userId)
+        taskClient.approveTaskParticipant(creatorToken, taskId, participant.userId)
+        submissionId = taskClient.submitTaskUser(participantToken, taskId, participant.userId,submission)
         taskId2 =
             taskClient.createTask(
                 creatorToken,
@@ -164,10 +95,10 @@ constructor(
                 space = spaceId,
                 rank = 2,
             )
-        approveTask(taskId2, creatorToken)
-        addParticipantUser(participantToken, taskId2, participant.userId)
-        approveTaskParticipant(creatorToken, taskId2, participant.userId)
-        submissionId2 = submitTaskUser(participantToken, taskId2, participant.userId)
+        taskClient.approveTask(taskId2, creatorToken)
+        taskClient.addParticipantUser(participantToken, taskId2, participant.userId)
+        taskClient.approveTaskParticipant(creatorToken, taskId2, participant.userId)
+        submissionId2 = taskClient.submitTaskUser(participantToken, taskId2, participant.userId,submission)
         taskId3 =
             taskClient.createTask(
                 creatorToken,
@@ -178,10 +109,10 @@ constructor(
                 space = spaceId,
                 rank = 1,
             )
-        approveTask(taskId3, creatorToken)
-        addParticipantUser(participantToken, taskId3, participant.userId)
-        approveTaskParticipant(creatorToken, taskId3, participant.userId)
-        submissionId3 = submitTaskUser(participantToken, taskId3, participant.userId)
+        taskClient.approveTask(taskId3, creatorToken)
+        taskClient.addParticipantUser(participantToken, taskId3, participant.userId)
+        taskClient.approveTaskParticipant(creatorToken, taskId3, participant.userId)
+        submissionId3 = taskClient.submitTaskUser(participantToken, taskId3, participant.userId,submission)
         taskId4 =
             taskClient.createTask(
                 creatorToken,
@@ -192,7 +123,7 @@ constructor(
                 space = spaceId,
                 rank = 2,
             )
-        approveTask(taskId4, creatorToken)
+        taskClient.approveTask(taskId4, creatorToken)
     }
 
     @Test
