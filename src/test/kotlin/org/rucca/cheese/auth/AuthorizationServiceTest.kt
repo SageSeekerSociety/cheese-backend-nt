@@ -13,8 +13,8 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.utils.UserCreatorService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
@@ -27,16 +27,16 @@ class AuthorizationServiceTest
 @Autowired
 constructor(
     private val authorizationService: AuthorizationService,
-    private val userCreatorService: UserCreatorService,
+    private val userClient: UserClient,
 ) {
     var userId: IdType = -1
     lateinit var token: String
 
     @BeforeAll
     fun prepare() {
-        val user = userCreatorService.createUser()
+        val user = userClient.createUser()
         userId = user.userId
-        token = userCreatorService.login(user.username, user.password)
+        token = userClient.login(user.username, user.password)
     }
 
     @Test

@@ -16,10 +16,10 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
+import org.rucca.cheese.client.AttachmentClient
+import org.rucca.cheese.client.TaskClient
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.utils.AttachmentCreatorService
-import org.rucca.cheese.utils.TaskCreatorService
-import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -38,14 +38,14 @@ class TaskSubmissionReviewTest
 @Autowired
 constructor(
     private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-    private val attachmentCreatorService: AttachmentCreatorService,
-    private val taskCreatorService: TaskCreatorService,
+    private val userClient: UserClient,
+    private val attachmentClient: AttachmentClient,
+    private val taskClient: TaskClient,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
-    lateinit var creator: UserCreatorService.CreateUserResponse
+    lateinit var creator: UserClient.CreateUserResponse
     lateinit var creatorToken: String
-    lateinit var participant: UserCreatorService.CreateUserResponse
+    lateinit var participant: UserClient.CreateUserResponse
     lateinit var participantToken: String
     private var attachmentId: IdType = -1
     private var taskId: IdType = -1
@@ -116,13 +116,13 @@ constructor(
 
     @BeforeAll
     fun prepare() {
-        creator = userCreatorService.createUser()
-        creatorToken = userCreatorService.login(creator.username, creator.password)
-        participant = userCreatorService.createUser()
-        participantToken = userCreatorService.login(participant.username, participant.password)
-        attachmentId = attachmentCreatorService.createAttachment(creatorToken)
+        creator = userClient.createUser()
+        creatorToken = userClient.login(creator.username, creator.password)
+        participant = userClient.createUser()
+        participantToken = userClient.login(participant.username, participant.password)
+        attachmentId = attachmentClient.createAttachment(creatorToken)
         taskId =
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 submissionSchema =
                     listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE")),

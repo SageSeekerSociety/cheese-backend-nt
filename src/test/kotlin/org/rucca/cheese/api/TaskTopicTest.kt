@@ -15,10 +15,10 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
+import org.rucca.cheese.client.TaskClient
+import org.rucca.cheese.client.TopicClient
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.utils.TaskCreatorService
-import org.rucca.cheese.utils.TopicCreatorService
-import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -38,12 +38,12 @@ class TaskTopicTest
 @Autowired
 constructor(
     private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-    private val topicCreatorService: TopicCreatorService,
-    private val taskCreatorService: TaskCreatorService,
+    private val userClient: UserClient,
+    private val topicClient: TopicClient,
+    private val taskClient: TaskClient,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
-    lateinit var creator: UserCreatorService.CreateUserResponse
+    lateinit var creator: UserClient.CreateUserResponse
     lateinit var creatorToken: String
     private var taskId: IdType = -1
     private val taskSubmissionSchema =
@@ -53,15 +53,15 @@ constructor(
 
     @BeforeAll
     fun prepare() {
-        creator = userCreatorService.createUser()
-        creatorToken = userCreatorService.login(creator.username, creator.password)
+        creator = userClient.createUser()
+        creatorToken = userClient.login(creator.username, creator.password)
         for (i in 1..testTopicsCount) {
             val topicName = "Test Topic (${floor(Math.random() * 10000000000).toLong()}) ($i)"
-            val topicId = topicCreatorService.createTopic(creatorToken, topicName)
+            val topicId = topicClient.createTopic(creatorToken, topicName)
             testTopics.add(Pair(topicId, topicName))
         }
         taskId =
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 submissionSchema = taskSubmissionSchema,
                 topics = listOf(testTopics[0].first, testTopics[1].first),

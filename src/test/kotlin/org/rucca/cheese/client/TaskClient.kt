@@ -1,10 +1,11 @@
-package org.rucca.cheese.utils
+package org.rucca.cheese.client
 
 import java.time.LocalDateTime
 import kotlin.math.floor
 import org.json.JSONObject
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.utils.JsonArrayUtil
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.test.web.servlet.MockMvc
@@ -13,10 +14,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 
 @Service
-class TaskCreatorService(
-    private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-) {
+class TaskClient(private val mockMvc: MockMvc, private val userClient: UserClient) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     fun testTaskName(): String {

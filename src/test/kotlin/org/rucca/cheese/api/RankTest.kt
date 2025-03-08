@@ -16,10 +16,10 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
+import org.rucca.cheese.client.SpaceClient
+import org.rucca.cheese.client.TaskClient
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.utils.SpaceCreatorService
-import org.rucca.cheese.utils.TaskCreatorService
-import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -39,14 +39,14 @@ class RankTest
 @Autowired
 constructor(
     private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-    private val spaceCreatorService: SpaceCreatorService,
-    private val taskCreatorService: TaskCreatorService,
+    private val userClient: UserClient,
+    private val spaceClient: SpaceClient,
+    private val taskClient: TaskClient,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
-    lateinit var creator: UserCreatorService.CreateUserResponse
+    lateinit var creator: UserClient.CreateUserResponse
     lateinit var creatorToken: String
-    lateinit var participant: UserCreatorService.CreateUserResponse
+    lateinit var participant: UserClient.CreateUserResponse
     lateinit var participantToken: String
     private var spaceId: IdType = -1
     private var taskId: IdType = -1
@@ -135,13 +135,13 @@ constructor(
 
     @BeforeAll
     fun prepare() {
-        creator = userCreatorService.createUser()
-        creatorToken = userCreatorService.login(creator.username, creator.password)
-        participant = userCreatorService.createUser()
-        participantToken = userCreatorService.login(participant.username, participant.password)
-        spaceId = spaceCreatorService.createSpace(creatorToken)
+        creator = userClient.createUser()
+        creatorToken = userClient.login(creator.username, creator.password)
+        participant = userClient.createUser()
+        participantToken = userClient.login(participant.username, participant.password)
+        spaceId = spaceClient.createSpace(creatorToken)
         taskId =
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 submitterType = "USER",
                 resubmittable = false,
@@ -155,7 +155,7 @@ constructor(
         approveTaskParticipant(creatorToken, taskId, participant.userId)
         submissionId = submitTaskUser(participantToken, taskId, participant.userId)
         taskId2 =
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 submitterType = "USER",
                 resubmittable = false,
@@ -169,7 +169,7 @@ constructor(
         approveTaskParticipant(creatorToken, taskId2, participant.userId)
         submissionId2 = submitTaskUser(participantToken, taskId2, participant.userId)
         taskId3 =
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 submitterType = "USER",
                 resubmittable = false,
@@ -183,7 +183,7 @@ constructor(
         approveTaskParticipant(creatorToken, taskId3, participant.userId)
         submissionId3 = submitTaskUser(participantToken, taskId3, participant.userId)
         taskId4 =
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 submitterType = "USER",
                 resubmittable = false,

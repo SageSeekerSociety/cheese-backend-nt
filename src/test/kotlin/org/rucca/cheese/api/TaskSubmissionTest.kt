@@ -18,9 +18,9 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
+import org.rucca.cheese.client.*
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.utils.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -39,25 +39,25 @@ class TaskSubmissionTest
 @Autowired
 constructor(
     private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-    private val attachmentCreatorService: AttachmentCreatorService,
-    private val taskCreatorService: TaskCreatorService,
-    private val spaceCreatorService: SpaceCreatorService,
-    private val teamCreatorService: TeamCreatorService,
+    private val userClient: UserClient,
+    private val attachmentClient: AttachmentClient,
+    private val taskClient: TaskClient,
+    private val spaceClient: SpaceClient,
+    private val teamClient: TeamClient,
 ) {
-    lateinit var creator: UserCreatorService.CreateUserResponse
+    lateinit var creator: UserClient.CreateUserResponse
     lateinit var creatorToken: String
-    lateinit var teamCreator: UserCreatorService.CreateUserResponse
+    lateinit var teamCreator: UserClient.CreateUserResponse
     lateinit var teamCreatorToken: String
-    lateinit var teamMember: UserCreatorService.CreateUserResponse
+    lateinit var teamMember: UserClient.CreateUserResponse
     lateinit var teamMemberToken: String
-    lateinit var spaceCreator: UserCreatorService.CreateUserResponse
+    lateinit var spaceCreator: UserClient.CreateUserResponse
     lateinit var spaceCreatorToken: String
-    lateinit var participant: UserCreatorService.CreateUserResponse
+    lateinit var participant: UserClient.CreateUserResponse
     lateinit var participantToken: String
-    lateinit var participant2: UserCreatorService.CreateUserResponse
+    lateinit var participant2: UserClient.CreateUserResponse
     lateinit var participantToken2: String
-    lateinit var irrelevantUser: UserCreatorService.CreateUserResponse
+    lateinit var irrelevantUser: UserClient.CreateUserResponse
     lateinit var irrelevantUserToken: String
     private var teamId: IdType = -1
     private var spaceId: IdType = -1
@@ -87,25 +87,24 @@ constructor(
 
     @BeforeAll
     fun prepare() {
-        creator = userCreatorService.createUser()
-        creatorToken = userCreatorService.login(creator.username, creator.password)
-        teamCreator = userCreatorService.createUser()
-        teamCreatorToken = userCreatorService.login(teamCreator.username, teamCreator.password)
-        teamMember = userCreatorService.createUser()
-        teamMemberToken = userCreatorService.login(teamMember.username, teamMember.password)
-        spaceCreator = userCreatorService.createUser()
-        spaceCreatorToken = userCreatorService.login(spaceCreator.username, spaceCreator.password)
-        participant = userCreatorService.createUser()
-        participantToken = userCreatorService.login(participant.username, participant.password)
-        participant2 = userCreatorService.createUser()
-        participantToken2 = userCreatorService.login(participant2.username, participant2.password)
-        irrelevantUser = userCreatorService.createUser()
-        irrelevantUserToken =
-            userCreatorService.login(irrelevantUser.username, irrelevantUser.password)
-        spaceId = spaceCreatorService.createSpace(spaceCreatorToken)
-        teamId = teamCreatorService.createTeam(teamCreatorToken)
+        creator = userClient.createUser()
+        creatorToken = userClient.login(creator.username, creator.password)
+        teamCreator = userClient.createUser()
+        teamCreatorToken = userClient.login(teamCreator.username, teamCreator.password)
+        teamMember = userClient.createUser()
+        teamMemberToken = userClient.login(teamMember.username, teamMember.password)
+        spaceCreator = userClient.createUser()
+        spaceCreatorToken = userClient.login(spaceCreator.username, spaceCreator.password)
+        participant = userClient.createUser()
+        participantToken = userClient.login(participant.username, participant.password)
+        participant2 = userClient.createUser()
+        participantToken2 = userClient.login(participant2.username, participant2.password)
+        irrelevantUser = userClient.createUser()
+        irrelevantUserToken = userClient.login(irrelevantUser.username, irrelevantUser.password)
+        spaceId = spaceClient.createSpace(spaceCreatorToken)
+        teamId = teamClient.createTeam(teamCreatorToken)
         joinTeam(teamCreatorToken, teamId, teamMember.userId)
-        attachmentId = attachmentCreatorService.createAttachment(creatorToken)
+        attachmentId = attachmentClient.createAttachment(creatorToken)
     }
 
     fun approveTask(taskId: IdType, token: String) {
@@ -151,7 +150,7 @@ constructor(
     @Order(10)
     fun testCreateTask() {
         taskIds.add(
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 name = "$taskName (1)",
                 team = teamId,
@@ -161,7 +160,7 @@ constructor(
         )
         approveTask(taskIds[0], spaceCreatorToken)
         taskIds.add(
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 name = "$taskName (2)",
                 submitterType = "TEAM",
@@ -171,14 +170,10 @@ constructor(
             )
         )
         approveTask(taskIds[1], spaceCreatorToken)
-        taskIds.add(
-            taskCreatorService.createTask(creatorToken, name = "$taskName (3)", space = spaceId)
-        )
+        taskIds.add(taskClient.createTask(creatorToken, name = "$taskName (3)", space = spaceId))
         approveTask(taskIds[2], spaceCreatorToken)
-        taskIds.add(
-            taskCreatorService.createTask(creatorToken, name = "$taskName (4)", team = teamId)
-        )
-        taskIds.add(taskCreatorService.createTask(creatorToken, name = "$taskName (5)"))
+        taskIds.add(taskClient.createTask(creatorToken, name = "$taskName (4)", team = teamId))
+        taskIds.add(taskClient.createTask(creatorToken, name = "$taskName (5)"))
     }
 
     @Test

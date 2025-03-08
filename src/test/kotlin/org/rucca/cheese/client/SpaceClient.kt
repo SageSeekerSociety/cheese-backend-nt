@@ -1,4 +1,4 @@
-package org.rucca.cheese.utils
+package org.rucca.cheese.client
 
 import kotlin.math.floor
 import org.json.JSONObject
@@ -11,10 +11,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @Service
-class SpaceCreatorService(
-    private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-) {
+class SpaceClient(private val mockMvc: MockMvc, private val userClient: UserClient) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     fun testSpaceName(): String {
@@ -26,7 +23,7 @@ class SpaceCreatorService(
         spaceName: String = testSpaceName(),
         spaceIntro: String = "This is a test space.",
         spaceDescription: String = "Description of space",
-        spaceAvatarId: IdType = userCreatorService.testAvatarId(),
+        spaceAvatarId: IdType = userClient.testAvatarId(),
         spaceAnnouncements: String = "[]",
         spaceTaskTemplates: String = "[]",
         classificationTopics: List<IdType> = emptyList(),

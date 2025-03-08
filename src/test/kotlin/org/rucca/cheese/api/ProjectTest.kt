@@ -14,10 +14,10 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
+import org.rucca.cheese.client.TeamClient
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.CreateProjectRequestDTO
-import org.rucca.cheese.utils.TeamCreatorService
-import org.rucca.cheese.utils.UserCreatorService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -36,18 +36,18 @@ class ProjectTest
 @Autowired
 constructor(
     private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-    private val teamCreatorService: TeamCreatorService,
+    private val userClient: UserClient,
+    private val teamClient: TeamClient,
 ) {
-    lateinit var user: UserCreatorService.CreateUserResponse
+    lateinit var user: UserClient.CreateUserResponse
     lateinit var userToken: String
     var teamId: IdType = -1
 
     @BeforeAll
     fun prepare() {
-        user = userCreatorService.createUser()
-        userToken = userCreatorService.login(user.username, user.password)
-        teamId = teamCreatorService.createTeam(userToken)
+        user = userClient.createUser()
+        userToken = userClient.login(user.username, user.password)
+        teamId = teamClient.createTeam(userToken)
     }
 
     @Test

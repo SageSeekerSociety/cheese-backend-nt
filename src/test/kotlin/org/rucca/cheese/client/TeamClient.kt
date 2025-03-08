@@ -1,4 +1,4 @@
-package org.rucca.cheese.utils
+package org.rucca.cheese.client
 
 import kotlin.math.floor
 import org.json.JSONObject
@@ -9,10 +9,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 
 @Service
-class TeamCreatorService(
-    private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-) {
+class TeamClient(private val mockMvc: MockMvc, private val userClient: UserClient) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     fun testTeamName(): String {
@@ -24,7 +21,7 @@ class TeamCreatorService(
         teamName: String = testTeamName(),
         teamIntro: String = "This is a test team.",
         teamDescription: String = "A lengthy text. ".repeat(1000),
-        teamAvatarId: IdType = userCreatorService.testAvatarId(),
+        teamAvatarId: IdType = userClient.testAvatarId(),
     ): IdType {
         val request =
             MockMvcRequestBuilders.post("/teams")

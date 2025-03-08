@@ -16,6 +16,10 @@ import org.hamcrest.Matchers
 import org.json.JSONObject
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
+import org.rucca.cheese.client.SpaceClient
+import org.rucca.cheese.client.TaskClient
+import org.rucca.cheese.client.TeamClient
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.utils.*
@@ -38,31 +42,31 @@ class TaskTest
 @Autowired
 constructor(
     private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-    private val spaceCreatorService: SpaceCreatorService,
-    private val teamCreatorService: TeamCreatorService,
-    private val taskCreatorService: TaskCreatorService,
+    private val userClient: UserClient,
+    private val spaceClient: SpaceClient,
+    private val teamClient: TeamClient,
+    private val taskClient: TaskClient,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
-    lateinit var creator: UserCreatorService.CreateUserResponse
+    lateinit var creator: UserClient.CreateUserResponse
     lateinit var creatorToken: String
-    lateinit var teamCreator: UserCreatorService.CreateUserResponse
+    lateinit var teamCreator: UserClient.CreateUserResponse
     lateinit var teamCreatorToken: String
-    lateinit var teamMember: UserCreatorService.CreateUserResponse
+    lateinit var teamMember: UserClient.CreateUserResponse
     lateinit var teamMemberToken: String
-    lateinit var spaceCreator: UserCreatorService.CreateUserResponse
+    lateinit var spaceCreator: UserClient.CreateUserResponse
     lateinit var spaceCreatorToken: String
-    lateinit var participant: UserCreatorService.CreateUserResponse
+    lateinit var participant: UserClient.CreateUserResponse
     lateinit var participantToken: String
-    lateinit var participant2: UserCreatorService.CreateUserResponse
+    lateinit var participant2: UserClient.CreateUserResponse
     lateinit var participantToken2: String
-    lateinit var participant3: UserCreatorService.CreateUserResponse
+    lateinit var participant3: UserClient.CreateUserResponse
     lateinit var participantToken3: String
-    lateinit var participant4: UserCreatorService.CreateUserResponse
+    lateinit var participant4: UserClient.CreateUserResponse
     lateinit var participantToken4: String
-    lateinit var spaceAdmin: UserCreatorService.CreateUserResponse
+    lateinit var spaceAdmin: UserClient.CreateUserResponse
     lateinit var spaceAdminToken: String
-    lateinit var teamAdmin: UserCreatorService.CreateUserResponse
+    lateinit var teamAdmin: UserClient.CreateUserResponse
     lateinit var teamAdminToken: String
     private var teamId: IdType = -1
     private var spaceId: IdType = -1
@@ -126,28 +130,28 @@ constructor(
 
     @BeforeAll
     fun prepare() {
-        creator = userCreatorService.createUser()
-        creatorToken = userCreatorService.login(creator.username, creator.password)
-        teamCreator = userCreatorService.createUser()
-        teamCreatorToken = userCreatorService.login(teamCreator.username, teamCreator.password)
-        teamMember = userCreatorService.createUser()
-        teamMemberToken = userCreatorService.login(teamMember.username, teamMember.password)
-        spaceCreator = userCreatorService.createUser()
-        spaceCreatorToken = userCreatorService.login(spaceCreator.username, spaceCreator.password)
-        participant = userCreatorService.createUser()
-        participantToken = userCreatorService.login(participant.username, participant.password)
-        participant2 = userCreatorService.createUser()
-        participantToken2 = userCreatorService.login(participant2.username, participant2.password)
-        participant3 = userCreatorService.createUser()
-        participantToken3 = userCreatorService.login(participant3.username, participant3.password)
-        participant4 = userCreatorService.createUser()
-        participantToken4 = userCreatorService.login(participant4.username, participant4.password)
-        spaceAdmin = userCreatorService.createUser()
-        spaceAdminToken = userCreatorService.login(spaceAdmin.username, spaceAdmin.password)
-        teamAdmin = userCreatorService.createUser()
-        teamAdminToken = userCreatorService.login(teamAdmin.username, teamAdmin.password)
-        spaceId = spaceCreatorService.createSpace(spaceCreatorToken)
-        teamId = teamCreatorService.createTeam(teamCreatorToken)
+        creator = userClient.createUser()
+        creatorToken = userClient.login(creator.username, creator.password)
+        teamCreator = userClient.createUser()
+        teamCreatorToken = userClient.login(teamCreator.username, teamCreator.password)
+        teamMember = userClient.createUser()
+        teamMemberToken = userClient.login(teamMember.username, teamMember.password)
+        spaceCreator = userClient.createUser()
+        spaceCreatorToken = userClient.login(spaceCreator.username, spaceCreator.password)
+        participant = userClient.createUser()
+        participantToken = userClient.login(participant.username, participant.password)
+        participant2 = userClient.createUser()
+        participantToken2 = userClient.login(participant2.username, participant2.password)
+        participant3 = userClient.createUser()
+        participantToken3 = userClient.login(participant3.username, participant3.password)
+        participant4 = userClient.createUser()
+        participantToken4 = userClient.login(participant4.username, participant4.password)
+        spaceAdmin = userClient.createUser()
+        spaceAdminToken = userClient.login(spaceAdmin.username, spaceAdmin.password)
+        teamAdmin = userClient.createUser()
+        teamAdminToken = userClient.login(teamAdmin.username, teamAdmin.password)
+        spaceId = spaceClient.createSpace(spaceCreatorToken)
+        teamId = teamClient.createTeam(teamCreatorToken)
         joinTeam(teamCreatorToken, teamId, teamMember.userId)
         addSpaceAdmin(spaceCreatorToken, spaceId, spaceAdmin.userId)
         addTeamAdmin(teamCreatorToken, teamId, teamAdmin.userId)
@@ -175,7 +179,7 @@ constructor(
     @Order(10)
     fun testCreateTask() {
         taskIds.add(
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 name = "$taskName (1)",
                 submitterType = "USER",
@@ -191,7 +195,7 @@ constructor(
             )
         )
         taskIds.add(
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 name = "$taskName (2)",
                 submitterType = "TEAM",
@@ -207,7 +211,7 @@ constructor(
             )
         )
         taskIds.add(
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 name = "$taskName (3)",
                 submitterType = "USER",
@@ -223,7 +227,7 @@ constructor(
             )
         )
         taskIds.add(
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 name = "$taskName (4)",
                 submitterType = "USER",
@@ -239,7 +243,7 @@ constructor(
             )
         )
         taskIds.add(
-            taskCreatorService.createTask(
+            taskClient.createTask(
                 creatorToken,
                 name = "$taskName (5)",
                 submitterType = "USER",
@@ -949,8 +953,7 @@ constructor(
             .andExpect(jsonPath("$.data.participants[0].member.intro").isString)
             .andExpect(jsonPath("$.data.participants[0].member.name").isString)
             .andExpect(
-                jsonPath("$.data.participants[0].member.avatarId")
-                    .value(userCreatorService.testAvatarId())
+                jsonPath("$.data.participants[0].member.avatarId").value(userClient.testAvatarId())
             )
     }
 
@@ -1042,8 +1045,7 @@ constructor(
             .andExpect(jsonPath("$.data.participants[0].member.intro").isString)
             .andExpect(jsonPath("$.data.participants[0].member.name").isString)
             .andExpect(
-                jsonPath("$.data.participants[0].member.avatarId")
-                    .value(userCreatorService.testAvatarId())
+                jsonPath("$.data.participants[0].member.avatarId").value(userClient.testAvatarId())
             )
     }
 
@@ -1063,8 +1065,7 @@ constructor(
             .andExpect(jsonPath("$.data.participants[0].member.intro").isString)
             .andExpect(jsonPath("$.data.participants[0].member.name").isString)
             .andExpect(
-                jsonPath("$.data.participants[0].member.avatarId")
-                    .value(userCreatorService.testAvatarId())
+                jsonPath("$.data.participants[0].member.avatarId").value(userClient.testAvatarId())
             )
     }
 
@@ -1084,8 +1085,7 @@ constructor(
             .andExpect(jsonPath("$.data.participants[0].member.intro").isString)
             .andExpect(jsonPath("$.data.participants[0].member.name").isString)
             .andExpect(
-                jsonPath("$.data.participants[0].member.avatarId")
-                    .value(userCreatorService.testAvatarId())
+                jsonPath("$.data.participants[0].member.avatarId").value(userClient.testAvatarId())
             )
     }
 
