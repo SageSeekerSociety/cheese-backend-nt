@@ -12,7 +12,6 @@ package org.rucca.cheese.api
 
 import java.time.LocalDateTime
 import kotlin.math.floor
-import org.json.JSONObject
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.Order
@@ -21,10 +20,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.utils.AttachmentCreatorService
-import org.rucca.cheese.utils.JsonArrayUtil
-import org.rucca.cheese.utils.UserCreatorService
-import org.slf4j.LoggerFactory
+import org.rucca.cheese.utils.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -45,8 +41,10 @@ constructor(
     private val mockMvc: MockMvc,
     private val userCreatorService: UserCreatorService,
     private val attachmentCreatorService: AttachmentCreatorService,
+    private val taskCreatorService: TaskCreatorService,
+    private val spaceCreatorService: SpaceCreatorService,
+    private val teamCreatorService: TeamCreatorService,
 ) {
-    private val logger = LoggerFactory.getLogger(javaClass)
     lateinit var creator: UserCreatorService.CreateUserResponse
     lateinit var creatorToken: String
     lateinit var teamCreator: UserCreatorService.CreateUserResponse
@@ -66,73 +64,10 @@ constructor(
     private var attachmentId: IdType = -1
     private val taskIds = mutableListOf<IdType>()
     private val taskName = "Test Task (${floor(Math.random() * 10000000000).toLong()})"
-    private val taskIntro = "This is a test task."
     private val taskDescription = "A lengthy text. ".repeat(1000)
     private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
     private val taskSubmissionSchema =
         listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE"))
-
-    fun createSpace(
-        creatorToken: String,
-        spaceName: String,
-        spaceIntro: String,
-        spaceDescription: String,
-        spaceAvatarId: IdType,
-    ): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/spaces")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                    "name": "$spaceName",
-                    "intro": "$spaceIntro",
-                    "description": "$spaceDescription",
-                    "avatarId": $spaceAvatarId,
-                    "announcements": "[]",
-                    "taskTemplates": "[]"
-                }
-            """
-                )
-        val spaceId =
-            JSONObject(mockMvc.perform(request).andReturn().response.contentAsString)
-                .getJSONObject("data")
-                .getJSONObject("space")
-                .getLong("id")
-        logger.info("Created space: $spaceId")
-        return spaceId
-    }
-
-    fun createTeam(
-        creatorToken: String,
-        teamName: String,
-        teamIntro: String,
-        teamDescription: String,
-        teamAvatarId: IdType,
-    ): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/teams")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "name": "$teamName",
-                  "intro": "$teamIntro",
-                  "description": "$teamDescription",
-                  "avatarId": $teamAvatarId
-                }
-            """
-                )
-        teamId =
-            JSONObject(mockMvc.perform(request).andReturn().response.contentAsString)
-                .getJSONObject("data")
-                .getJSONObject("team")
-                .getLong("id")
-        logger.info("Created team: $teamId")
-        return teamId
-    }
 
     fun joinTeam(token: String, teamId: IdType, userId: IdType) {
         val request =
@@ -167,100 +102,10 @@ constructor(
         irrelevantUser = userCreatorService.createUser()
         irrelevantUserToken =
             userCreatorService.login(irrelevantUser.username, irrelevantUser.password)
-        spaceId =
-            createSpace(
-                creatorToken = spaceCreatorToken,
-                spaceName = "Test Space (${floor(Math.random() * 10000000000).toLong()})",
-                spaceIntro = "This is a test space.",
-                spaceDescription = "A lengthy text. ".repeat(1000),
-                spaceAvatarId = userCreatorService.testAvatarId(),
-            )
-        teamId =
-            createTeam(
-                creatorToken = teamCreatorToken,
-                teamName = "Test Team (${floor(Math.random() * 10000000000).toLong()})",
-                teamIntro = "This is a test team.",
-                teamDescription = "A lengthy text. ".repeat(1000),
-                teamAvatarId = userCreatorService.testAvatarId(),
-            )
+        spaceId = spaceCreatorService.createSpace(spaceCreatorToken)
+        teamId = teamCreatorService.createTeam(teamCreatorToken)
         joinTeam(teamCreatorToken, teamId, teamMember.userId)
         attachmentId = attachmentCreatorService.createAttachment(creatorToken)
-    }
-
-    fun createTask(
-        name: String,
-        submitterType: String,
-        deadline: Long,
-        resubmittable: Boolean,
-        editable: Boolean,
-        intro: String,
-        description: String,
-        submissionSchema: List<Pair<String, String>>,
-        team: IdType?,
-        space: IdType?,
-    ) {
-        val request =
-            MockMvcRequestBuilders.post("/tasks")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "name": "$name",
-                  "submitterType": "$submitterType",
-                  "deadline": "$deadline",
-                  "resubmittable": $resubmittable,
-                  "editable": $editable,
-                  "intro": "$intro",
-                  "description": "$description",
-                  "submissionSchema": [
-                    ${
-                        submissionSchema
-                            .map { """
-                                {
-                                  "prompt": "${it.first}",
-                                  "type": "${it.second}"
-                                }
-                            """ }
-                            .joinToString(",\n")
-                    }
-                  ],
-                  "team": ${team?: "null"},
-                  "space": ${space?: "null"}
-                }
-            """
-                )
-        val response =
-            mockMvc
-                .perform(request)
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.name").value(name))
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.submitterType").value(submitterType)
-                )
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.creator.id").value(creator.userId)
-                )
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.deadline").value(deadline))
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.resubmittable").value(resubmittable)
-                )
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.editable").value(editable))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.intro").value(intro))
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.description").value(description)
-                )
-        val json = JSONObject(response.andReturn().response.contentAsString)
-        for (entry in submissionSchema) {
-            val schema =
-                json.getJSONObject("data").getJSONObject("task").getJSONArray("submissionSchema")
-            val found = JsonArrayUtil.toArray(schema).find { it.getString("prompt") == entry.first }
-            assert(found != null)
-            assert(found!!.getString("type") == entry.second)
-        }
-        val taskId = json.getJSONObject("data").getJSONObject("task").getLong("id")
-        taskIds.add(taskId)
-        logger.info("Created task: $taskId")
     }
 
     fun approveTask(taskId: IdType, token: String) {
@@ -305,69 +150,35 @@ constructor(
     @Test
     @Order(10)
     fun testCreateTask() {
-        createTask(
-            name = "$taskName (1)",
-            submitterType = "USER",
-            deadline = taskDeadline,
-            resubmittable = true,
-            editable = true,
-            intro = taskIntro,
-            description = taskDescription,
-            submissionSchema = taskSubmissionSchema,
-            team = teamId,
-            space = spaceId,
+        taskIds.add(
+            taskCreatorService.createTask(
+                creatorToken,
+                name = "$taskName (1)",
+                team = teamId,
+                space = spaceId,
+                submissionSchema = taskSubmissionSchema,
+            )
         )
         approveTask(taskIds[0], spaceCreatorToken)
-        createTask(
-            name = "$taskName (2)",
-            submitterType = "TEAM",
-            deadline = taskDeadline,
-            resubmittable = true,
-            editable = true,
-            intro = taskIntro,
-            description = taskDescription,
-            submissionSchema = taskSubmissionSchema,
-            team = teamId,
-            space = spaceId,
+        taskIds.add(
+            taskCreatorService.createTask(
+                creatorToken,
+                name = "$taskName (2)",
+                submitterType = "TEAM",
+                team = teamId,
+                space = spaceId,
+                submissionSchema = taskSubmissionSchema,
+            )
         )
         approveTask(taskIds[1], spaceCreatorToken)
-        createTask(
-            name = "$taskName (3)",
-            submitterType = "USER",
-            deadline = taskDeadline,
-            resubmittable = true,
-            editable = true,
-            intro = taskIntro,
-            description = taskDescription,
-            submissionSchema = taskSubmissionSchema,
-            team = null,
-            space = spaceId,
+        taskIds.add(
+            taskCreatorService.createTask(creatorToken, name = "$taskName (3)", space = spaceId)
         )
         approveTask(taskIds[2], spaceCreatorToken)
-        createTask(
-            name = "$taskName (4)",
-            submitterType = "USER",
-            deadline = taskDeadline,
-            resubmittable = true,
-            editable = true,
-            intro = taskIntro,
-            description = taskDescription,
-            submissionSchema = taskSubmissionSchema,
-            team = teamId,
-            space = null,
+        taskIds.add(
+            taskCreatorService.createTask(creatorToken, name = "$taskName (4)", team = teamId)
         )
-        createTask(
-            name = "$taskName (5)",
-            submitterType = "USER",
-            deadline = taskDeadline,
-            resubmittable = true,
-            editable = true,
-            intro = taskIntro,
-            description = taskDescription,
-            submissionSchema = taskSubmissionSchema,
-            team = null,
-            space = null,
-        )
+        taskIds.add(taskCreatorService.createTask(creatorToken, name = "$taskName (5)"))
     }
 
     @Test

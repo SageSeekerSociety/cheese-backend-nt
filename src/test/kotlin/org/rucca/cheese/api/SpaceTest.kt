@@ -9,10 +9,10 @@
 package org.rucca.cheese.api
 
 import kotlin.math.floor
-import org.json.JSONObject
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.utils.SpaceCreatorService
 import org.rucca.cheese.utils.TopicCreatorService
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
@@ -36,6 +36,7 @@ constructor(
     private val mockMvc: MockMvc,
     private val userCreatorService: UserCreatorService,
     private val topicCreatorService: TopicCreatorService,
+    private val spaceCreatorService: SpaceCreatorService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     lateinit var creator: UserCreatorService.CreateUserResponse
@@ -93,66 +94,10 @@ constructor(
             .andExpect(jsonPath("$.error.data.id").value("-1"))
     }
 
-    fun createSpace(
-        creatorToken: String,
-        spaceName: String,
-        spaceIntro: String,
-        spaceDescription: String,
-        spaceAvatarId: IdType,
-        spaceAnnouncements: String,
-        spaceTaskTemplates: String,
-        classificationTopics: List<IdType> = emptyList(),
-    ): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/spaces")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                    "name": "$spaceName",
-                    "intro": "$spaceIntro",
-                    "description": "$spaceDescription",
-                    "avatarId": $spaceAvatarId,
-                    "announcements": "$spaceAnnouncements",
-                    "taskTemplates": "$spaceTaskTemplates",
-                    "classificationTopics": [${classificationTopics.joinToString(",")}]
-                }
-            """
-                )
-        val response =
-            mockMvc
-                .perform(request)
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.space.name").value(spaceName))
-                .andExpect(jsonPath("$.data.space.intro").value(spaceIntro))
-                .andExpect(jsonPath("$.data.space.description").value(spaceDescription))
-                .andExpect(jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-                .andExpect(jsonPath("$.data.space.admins[0].role").value("OWNER"))
-                .andExpect(jsonPath("$.data.space.admins[0].user.id").value(creator.userId))
-                .andExpect(jsonPath("$.data.space.enableRank").value(false))
-                .andExpect(jsonPath("$.data.space.announcements").value(spaceAnnouncements))
-                .andExpect(jsonPath("$.data.space.taskTemplates").value(spaceTaskTemplates))
-                .andExpect(
-                    jsonPath("$.data.space.classificationTopics.length()")
-                        .value(classificationTopics.size)
-                )
-        for (topic in classificationTopics) response.andExpect(
-            jsonPath("$.data.space.classificationTopics[?(@.id == $topic)].name").exists()
-        )
-        val spaceId =
-            JSONObject(response.andReturn().response.contentAsString)
-                .getJSONObject("data")
-                .getJSONObject("space")
-                .getLong("id")
-        logger.info("Created space: $spaceId")
-        return spaceId
-    }
-
     @Test
     @Order(20)
     fun testCreateSpace() {
-        createSpace(
+        spaceCreatorService.createSpace(
             creatorToken,
             "$spaceName previous",
             spaceIntro,
@@ -162,7 +107,7 @@ constructor(
             spaceTaskTemplates,
         )
         spaceId =
-            createSpace(
+            spaceCreatorService.createSpace(
                 creatorToken,
                 spaceName,
                 spaceIntro,
@@ -173,7 +118,7 @@ constructor(
                 classificationTopics = listOf(topics[0], topics[1]),
             )
         spaceIdOfSecond =
-            createSpace(
+            spaceCreatorService.createSpace(
                 creatorToken,
                 "$spaceName 01",
                 spaceIntro,
@@ -182,7 +127,7 @@ constructor(
                 spaceAnnouncements,
                 spaceTaskTemplates,
             )
-        createSpace(
+        spaceCreatorService.createSpace(
             creatorToken,
             "$spaceName 02",
             spaceIntro,
@@ -192,7 +137,7 @@ constructor(
             spaceTaskTemplates,
         )
         spaceIdOfBeforeLast =
-            createSpace(
+            spaceCreatorService.createSpace(
                 creatorToken,
                 "$spaceName 03",
                 spaceIntro,
@@ -202,7 +147,7 @@ constructor(
                 spaceTaskTemplates,
             )
         spaceIdOfLast =
-            createSpace(
+            spaceCreatorService.createSpace(
                 creatorToken,
                 "$spaceName 04",
                 spaceIntro,
