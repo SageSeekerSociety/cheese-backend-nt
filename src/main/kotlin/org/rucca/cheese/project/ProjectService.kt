@@ -140,4 +140,20 @@ class ProjectService(
         val result = projectRepository.findAllWithIdCursor(cursorSpec, pageStart, pageSize)
         return Pair(result.content.map { it.toProjectDTO() }, result.pageInfo.toPageDTO())
     }
+
+    private fun getProject(projectId: IdType): Project {
+        return projectRepository.findById(projectId).orElseThrow {
+            NotFoundError("project", projectId)
+        }
+    }
+
+    fun isProjectLeader(projectId: IdType, userId: IdType): Boolean {
+        val project = getProject(projectId)
+        return project.leader?.id == userId.toInt()
+    }
+
+    fun isUserInProjectTeam(projectId: IdType, userId: IdType): Boolean {
+        val project = getProject(projectId)
+        return teamService.isTeamMember(project.team!!.id!!, userId)
+    }
 }
