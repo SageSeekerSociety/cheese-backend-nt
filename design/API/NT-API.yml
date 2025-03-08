@@ -2822,7 +2822,7 @@ paths:
     post:
       summary: Create Knowledge Item
       tags: []
-      operationId: createKnowledge
+      operationId: knowledgePost
       requestBody:
         required: true
         content:
@@ -2873,11 +2873,11 @@ paths:
                     type: object
                     properties:
                       knowledge:
-                        $ref: "#/components/schemas/Knowledges"
+                        $ref: "#/components/schemas/Knowledge"
     get:
       summary: List Knowledge Items
       tags: []
-      operationId: listKnowledges
+      operationId: KnowledgeGet
       parameters:
         - name: project_ids
           in: query
@@ -2940,13 +2940,13 @@ paths:
                       knowledge:
                         type: array
                         items:
-                          $ref: "#/components/schemas/Knowledges"
+                          $ref: "#/components/schemas/Knowledge"
                       page:
                         $ref: '#/components/schemas/Page'
     patch:
       summary: Update Knowledge Item
       tags: []
-      operationId: updateKnowledge  
+      operationId: knowledgePatch
       parameters:
         - name: id
           in: query
@@ -3003,11 +3003,11 @@ paths:
                       - knowledge
                     properties:
                       knowledge:
-                        $ref: '#/components/schemas/Knowledges'
+                        $ref: '#/components/schemas/Knowledge'
     delete:
       summary: Delete Knowledge Item
       tags: []
-      operationId: deleteKnowledge
+      operationId: knowledgeDelete
       parameters:
         - name: id
           in: query
@@ -3036,7 +3036,7 @@ paths:
     post:
       summary: Upvote Knowledge Item
       tags: []
-      operationId: upvoteKnowledge
+      operationId: patchKnowledge
       parameters:
         - name: knowledgeId
           in: path
@@ -3069,7 +3069,7 @@ paths:
                       - knowledge
                     properties:
                       knowledge:
-                        $ref: '#/components/schemas/Knowledges'
+                        $ref: '#/components/schemas/Knowledge'
     delete:
       summary: Remove Upvote from Knowledge Item
       tags: []
@@ -3106,7 +3106,7 @@ paths:
                       - knowledge
                     properties:
                       knowledge:
-                        $ref: '#/components/schemas/Knowledges'
+                        $ref: '#/components/schemas/Knowledge'
   /knowledges/{knowledgeId}:
     patch:
       summary: Update Knowledge Item
@@ -3169,7 +3169,7 @@ paths:
                       - knowledge
                     properties:
                       knowledge:
-                        $ref: '#/components/schemas/Knowledges'
+                        $ref: '#/components/schemas/Knowledge'
 components:
   schemas:
     KnowledgeType:
@@ -4469,7 +4469,7 @@ components:
         createdAt:
           type: integer
           format: int64
-    Knowledges:
+    Knowledge:
       type: object
       required:
         - id

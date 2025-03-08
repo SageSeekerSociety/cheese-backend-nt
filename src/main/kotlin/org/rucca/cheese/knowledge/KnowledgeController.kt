@@ -2,7 +2,7 @@ package org.rucca.cheese.knowledge
 
 import java.util.*
 import javax.annotation.PostConstruct
-import org.rucca.cheese.api.KnowledgeApi
+import org.rucca.cheese.api.KnowledgesApi
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
 import org.rucca.cheese.auth.AuthorizedAction
@@ -11,10 +11,9 @@ import org.rucca.cheese.auth.annotation.ResourceId
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.user.AvatarRepository
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
-import org.rucca.cheese.user.Avatar
-import org.rucca.cheese.user.AvatarRepository
 
 @RestController
 class KnowledgeController(
@@ -22,7 +21,7 @@ class KnowledgeController(
     private val authorizationService: AuthorizationService,
     private val authenticationService: AuthenticationService,
     private val avatarRepository: AvatarRepository,
-) : KnowledgeApi {
+) : KnowledgesApi {
     @PostConstruct
     fun initialize() {
         authorizationService.ownerIds.register("knowledge", knowledgeService::getKnowledgeOwner)
@@ -88,9 +87,7 @@ class KnowledgeController(
         knowledgePatchRequestDTO: KnowledgePatchRequestDTO,
     ): ResponseEntity<KnowledgePatch200ResponseDTO> {
         // 更新知识点信息
-        val updatedKnowledge = knowledgeService.updateKnowledge(
-            id,knowledgePatchRequestDTO
-        )
+        val updatedKnowledge = knowledgeService.updateKnowledge(id, knowledgePatchRequestDTO)
         return ResponseEntity.ok(
             KnowledgePatch200ResponseDTO(
                 code = 200,
