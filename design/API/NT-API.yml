@@ -2792,8 +2792,7 @@ paths:
                 description:
                   type: string
                 type:
-                  type: string
-                  enum: [document, link, text, image]
+                  $ref: "#/components/schemas/KnowledgeType" 
                 content:
                   type: string
                 projectIds:
@@ -2921,8 +2920,7 @@ paths:
                 description:
                   type: string
                 type:
-                  type: string
-                  enum: [document, link, text, image]
+                  $ref: "#/components/schemas/KnowledgeType" 
                 content:
                   type: string
                 projectIds:
@@ -3127,6 +3125,9 @@ paths:
                         $ref: '#/components/schemas/Knowledges'
 components:
   schemas:
+    KnowledgeType:
+      type: string
+      enum: [document, link, text, image]
     Space:
       title: Space
       type: object

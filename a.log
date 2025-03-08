@@ -1,493 +1,0 @@
-[INFO] Scanning for projects...
-[INFO] 
-[INFO] --------------------------< org.rucca:cheese >--------------------------
-[INFO] Building backend 0.9.2
-[INFO]   from pom.xml
-[INFO] --------------------------------[ jar ]---------------------------------
-[INFO] 
-[INFO] --- jacoco:0.8.12:prepare-agent (default-prepare-agent) @ cheese ---
-[INFO] argLine set to -javaagent:C:\\Users\\31131\\.m2\\repository\\org\\jacoco\\org.jacoco.agent\\0.8.12\\org.jacoco.agent-0.8.12-runtime.jar=destfile=C:\\Users\\31131\\cheese-backend-nt\\target\\jacoco.exec
-[INFO] 
-[INFO] --- openapi-generator:7.10.0:generate (default) @ cheese ---
-[INFO] Generating with dryRun=false
-[INFO] Output directory (C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi) does not exist, or is inaccessible. No file (.openapi-generator-ignore) will be evaluated.
-[INFO] OpenAPI Generator: kotlin-spring (server)
-[INFO] Generator 'kotlin-spring' is considered stable.
-[INFO] Environment variable KOTLIN_POST_PROCESS_FILE not defined so the Kotlin code may not be properly formatted. To define it, try 'export KOTLIN_POST_PROCESS_FILE="/usr/local/bin/ktlint -F"' (Linux/Mac)
-[INFO] NOTE: To enable file post-processing, 'enablePostProcessFile' must be set to `true` (--enable-post-process-file for CLI).
-[INFO] Setup code generator for Kotlin Spring Boot
-[INFO] Inline schema created as get_space_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_space_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_space_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_space_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_space_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_space_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as delete_space_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings delete_space_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings delete_space_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as patch_space_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings patch_space_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings patch_space_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_spaces_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_spaces_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_spaces_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_spaces_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_spaces_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_spaces_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_space_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_space_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_space_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as patch_space_admin_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings patch_space_admin_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings patch_space_admin_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_space_admin_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_space_admin_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_space_admin_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_task_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_task_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_task_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_task_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_task_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_task_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as delete_task_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings delete_task_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings delete_task_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as patch_task_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings patch_task_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings patch_task_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_tasks_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_tasks_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_tasks_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_tasks_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_tasks_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_tasks_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_task_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_task_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_task_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_task_participants_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_task_participants_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_task_participants_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_task_participants_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_task_participants_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_task_participants_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_task_participant_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_task_participant_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_task_participant_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_task_participant_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_task_participant_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_task_participant_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_task_participant_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_task_participant_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_task_participant_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as patch_task_membership_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings patch_task_membership_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings patch_task_membership_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as patch_task_membership_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings patch_task_membership_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings patch_task_membership_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as patch_task_membership_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings patch_task_membership_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings patch_task_membership_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_task_submissions_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_task_submissions_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_task_submissions_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_task_submissions_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_task_submissions_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_task_submissions_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_task_submission_request_inner. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_task_submission_request_inner=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_task_submission_request_inner=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_task_submission_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_task_submission_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_task_submission_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_task_submission_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_task_submission_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_task_submission_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_task_submission_review_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_task_submission_review_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_task_submission_review_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_task_submission_review_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_task_submission_review_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_task_submission_review_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_task_submission_review_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_task_submission_review_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_task_submission_review_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as patch_task_submission_review_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings patch_task_submission_review_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings patch_task_submission_review_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_team_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_team_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_team_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_team_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_team_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_team_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as delete_team_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings delete_team_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings delete_team_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as patch_team_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings patch_team_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings patch_team_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_my_teams_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_my_teams_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_my_teams_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_my_teams_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_my_teams_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_my_teams_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_teams_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_teams_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_teams_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_teams_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_teams_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_teams_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_team_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_team_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_team_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_team_members_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_team_members_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_team_members_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_team_members_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_team_members_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_team_members_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as post_team_member_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings post_team_member_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings post_team_member_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as patch_team_member_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings patch_team_member_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings patch_team_member_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as list_notifications_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings list_notifications_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings list_notifications_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as list_notifications_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings list_notifications_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings list_notifications_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as mark_notifications_as_read_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings mark_notifications_as_read_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings mark_notifications_as_read_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_unread_notifications_count_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_unread_notifications_count_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_unread_notifications_count_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_unread_notifications_count_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_unread_notifications_count_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_unread_notifications_count_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as get_unread_notifications_count_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings get_unread_notifications_count_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings get_unread_notifications_count_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects_get_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects_get_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects_get_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects_get_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects_get_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects_get_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects_post_request_externalCollaborators_inner. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects_post_request_externalCollaborators_inner=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects_post_request_externalCollaborators_inner=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects_post_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects_post_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects_post_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects_post_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects_post_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects_post_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects_post_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects_post_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects_post_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects__projectId__discussions_get_project_filter_parameter. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects__projectId__discussions_get_project_filter_parameter=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects__projectId__discussions_get_project_filter_parameter=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects__projectId__discussions_get_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects__projectId__discussions_get_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects__projectId__discussions_get_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects__projectId__discussions_get_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects__projectId__discussions_get_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects__projectId__discussions_get_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects__projectId__discussions_post_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects__projectId__discussions_post_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects__projectId__discussions_post_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects__projectId__discussions_post_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects__projectId__discussions_post_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects__projectId__discussions_post_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects__projectId__discussions_post_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects__projectId__discussions_post_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects__projectId__discussions_post_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects__projectId__discussions__discussionId__reactions_post_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects__projectId__discussions__discussionId__reactions_post_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects__projectId__discussions__discussionId__reactions_post_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects__projectId__discussions__discussionId__reactions_post_200_response_data_reaction. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects__projectId__discussions__discussionId__reactions_post_200_response_data_reaction=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects__projectId__discussions__discussionId__reactions_post_200_response_data_reaction=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects__projectId__discussions__discussionId__reactions_post_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects__projectId__discussions__discussionId__reactions_post_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects__projectId__discussions__discussionId__reactions_post_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _projects__projectId__discussions__discussionId__reactions_post_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _projects__projectId__discussions__discussionId__reactions_post_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _projects__projectId__discussions__discussionId__reactions_post_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _knowledge_get_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _knowledge_get_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _knowledge_get_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _knowledge_get_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _knowledge_get_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _knowledge_get_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _knowledge_post_request. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _knowledge_post_request=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _knowledge_post_request=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _knowledge_post_200_response_data. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _knowledge_post_200_response_data=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _knowledge_post_200_response_data=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as _knowledge_post_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _knowledge_post_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _knowledge_post_200_response=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as Task_submitters_examples_inner. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings Task_submitters_examples_inner=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings Task_submitters_examples_inner=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as Task_submitters. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings Task_submitters=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings Task_submitters=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as TaskSubmissionReview_detail. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings TaskSubmissionReview_detail=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings TaskSubmissionReview_detail=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as Team_admins. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings Team_admins=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings Team_admins=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as Team_members. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings Team_members=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings Team_members=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as Attachment_meta. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings Attachment_meta=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings Attachment_meta=NewModel,ModelA=NewModelA in CLI).
-[INFO] Inline schema created as Notification_content. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings Notification_content=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings Notification_content=NewModel,ModelA=NewModelA in CLI).
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ApproveTypeDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\AttachmentDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\AttachmentMetaDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\AudioMetaDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\DeleteSpace200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\DeleteTask200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\DeleteTeam200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\DiscussionDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\FileMetaDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetMyTeams200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetMyTeams200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetSpace200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetSpace200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetSpaces200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetSpaces200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTask200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTask200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTaskParticipants200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTaskParticipants200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTaskSubmissions200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTaskSubmissions200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTasks200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTasks200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTeam200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTeam200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTeamMembers200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTeamMembers200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTeams200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetTeams200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetUnreadNotificationsCount200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetUnreadNotificationsCount200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\GetUnreadNotificationsCountRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ImageMetaDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\KnowledgeDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\KnowledgeGet200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\KnowledgeGet200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\KnowledgePost200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\KnowledgePost200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\KnowledgePostRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ListNotifications200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ListNotifications200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\MarkNotificationsAsReadRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\NotificationContentDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\NotificationDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PageDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PatchSpaceAdminRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PatchSpaceRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PatchTaskMembership200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PatchTaskMembership200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PatchTaskMembershipRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PatchTaskRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PatchTaskSubmissionReviewRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PatchTeamMemberRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PatchTeamRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostSpaceAdminRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostSpaceRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostTaskParticipant200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostTaskParticipant200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostTaskParticipantRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostTaskRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostTaskSubmission200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostTaskSubmission200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostTaskSubmissionRequestInnerDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostTaskSubmissionReview200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostTaskSubmissionReview200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostTaskSubmissionReviewRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostTeamMemberRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\PostTeamRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectContentDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsGet200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsGet200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsPost200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsPost200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsPostRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsPostRequestExternalCollaboratorsInnerDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsDiscussionIdReactionsPostRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsGet200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsGet200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsGetProjectFilterParameterDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsPost200ResponseDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsPost200ResponseDataDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsPostRequestDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\SpaceAdminDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\SpaceAdminRoleTypeDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\SpaceDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskMembershipDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskParticipantRealNameInfoDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskParticipantSummaryDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskSubmissionContentEntryDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskSubmissionDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskSubmissionReviewDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskSubmissionReviewDetailDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskSubmissionSchemaEntryDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskSubmissionTypeDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskSubmitterTypeDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskSubmittersDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TaskSubmittersExamplesInnerDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TeamAdminsDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TeamDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TeamMemberDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TeamMemberRoleTypeDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TeamMembersDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TeamSummaryDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\TopicDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\UserDTO.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\model\VideoMetaDTO.kt
-[WARNING] Empty operationId found for path: get /projects. Renamed to auto-generated operationId: projectsGet
-[WARNING] Empty operationId found for path: post /projects. Renamed to auto-generated operationId: projectsPost
-[WARNING] Empty operationId found for path: get /projects/{projectId}/discussions. Renamed to auto-generated operationId: projectsProjectIdDiscussionsGet
-[WARNING] Empty operationId found for path: post /projects/{projectId}/discussions. Renamed to auto-generated operationId: projectsProjectIdDiscussionsPost
-[WARNING] Empty operationId found for path: post /projects/{projectId}/discussions/{discussionId}/reactions. Renamed to auto-generated operationId: projectsProjectIdDiscussionsDiscussionIdReactionsPost
-[WARNING] Empty operationId found for path: get /knowledge. Renamed to auto-generated operationId: knowledgeGet
-[WARNING] Empty operationId found for path: post /knowledge. Renamed to auto-generated operationId: knowledgePost
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\api\KnowledgeApi.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\api\NotificationsApi.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\api\ProjectsApi.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\api\SpacesApi.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\api\TasksApi.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\api\TeamsApi.kt
-[INFO] Skipping generation of Webhooks.
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\README.md
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\rucca\cheese\api\ApiUtil.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\pom.xml
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\build.gradle.kts
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\settings.gradle
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\src\main\kotlin\org\openapitools\SpringDocConfiguration.kt
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\.openapi-generator-ignore
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\.openapi-generator\VERSION
-[INFO] writing file C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi\.openapi-generator\FILES
-################################################################################
-# Thanks for using OpenAPI Generator.                                          #
-# Please consider donation to help us maintain this project ?                 #
-# https://opencollective.com/openapi_generator/donate                          #
-################################################################################
-[INFO] 
-[INFO] --- antrun:3.1.0:run (copy-generated-api) @ cheese ---
-[INFO] Executing tasks
-[INFO]    [delete] Deleting directory C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\api
-[INFO]    [delete] Deleting directory C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model
-[INFO]      [copy] Copying 7 files to C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\api
-[INFO]      [copy] Copying 111 files to C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model
-[INFO]      [copy] Copying 1 file to C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\api
-[INFO]    [delete] Deleting directory C:\Users\31131\cheese-backend-nt\target\generated-sources\openapi
-[INFO] Executed tasks
-[INFO] 
-[INFO] --- spotless:2.44.2:apply (Format generated sources) @ cheese ---
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\api\ApiUtil.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\api\KnowledgeApi.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\api\NotificationsApi.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\api\ProjectsApi.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\api\SpacesApi.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\api\TasksApi.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\api\TeamsApi.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ApproveTypeDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\AttachmentDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\AttachmentMetaDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\AudioMetaDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\DeleteSpace200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\DeleteTask200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\DeleteTeam200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\DiscussionDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\FileMetaDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetMyTeams200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetMyTeams200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetSpace200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetSpace200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetSpaces200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetSpaces200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTask200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTask200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTaskParticipants200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTaskParticipants200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTasks200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTasks200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTaskSubmissions200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTaskSubmissions200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTeam200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTeam200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTeamMembers200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTeamMembers200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTeams200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetTeams200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetUnreadNotificationsCount200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetUnreadNotificationsCount200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\GetUnreadNotificationsCountRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ImageMetaDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\KnowledgeDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\KnowledgeGet200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\KnowledgeGet200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\KnowledgePost200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\KnowledgePost200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\KnowledgePostRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ListNotifications200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ListNotifications200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\MarkNotificationsAsReadRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\NotificationContentDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\NotificationDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PageDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PatchSpaceAdminRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PatchSpaceRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PatchTaskMembership200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PatchTaskMembership200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PatchTaskMembershipRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PatchTaskRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PatchTaskSubmissionReviewRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PatchTeamMemberRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PatchTeamRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostSpaceAdminRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostSpaceRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostTaskParticipant200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostTaskParticipant200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostTaskParticipantRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostTaskRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostTaskSubmission200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostTaskSubmission200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostTaskSubmissionRequestInnerDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostTaskSubmissionReview200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostTaskSubmissionReview200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostTaskSubmissionReviewRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostTeamMemberRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\PostTeamRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectContentDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsGet200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsGet200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsPost200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsPost200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsPostRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsPostRequestExternalCollaboratorsInnerDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsDiscussionIdReactionsPostRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsGet200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsGet200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsGetProjectFilterParameterDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsPost200ResponseDataDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsPost200ResponseDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\ProjectsProjectIdDiscussionsPostRequestDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\SpaceAdminDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\SpaceAdminRoleTypeDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\SpaceDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskMembershipDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskParticipantRealNameInfoDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskParticipantSummaryDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskSubmissionContentEntryDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskSubmissionDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskSubmissionReviewDetailDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskSubmissionReviewDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskSubmissionSchemaEntryDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskSubmissionTypeDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskSubmittersDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskSubmittersExamplesInnerDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TaskSubmitterTypeDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TeamAdminsDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TeamDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TeamMemberDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TeamMemberRoleTypeDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TeamMembersDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TeamSummaryDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\TopicDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\UserDTO.kt
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\VideoMetaDTO.kt
-[INFO] Spotless.Kotlin is keeping 239 files clean - 118 were changed to be clean, 0 were already clean, 121 were skipped because caching determined they were already clean
-[INFO] Spotless.Pom is keeping 1 files clean - 0 were changed to be clean, 0 were already clean, 1 were skipped because caching determined they were already clean
-[INFO] Spotless.Sql is keeping 1 files clean - 0 were changed to be clean, 0 were already clean, 1 were skipped because caching determined they were already clean
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\api\000_IMPORTANT_NOTICE.md
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\src\main\kotlin\org\rucca\cheese\model\000_IMPORTANT_NOTICE.md
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\target\classes\org\rucca\cheese\api\000_IMPORTANT_NOTICE.md
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\target\classes\org\rucca\cheese\model\000_IMPORTANT_NOTICE.md
-[INFO] Spotless.Markdown is keeping 8 files clean - 4 were changed to be clean, 0 were already clean, 4 were skipped because caching determined they were already clean
-[INFO] 
-[INFO] --- resources:3.3.1:resources (default-resources) @ cheese ---
-[INFO] Copying 1 resource from src\main\resources to target\classes
-[INFO] Copying 0 resource from src\main\resources to target\classes
-[INFO] 
-[INFO] --- compiler:3.13.0:compile (default-compile) @ cheese ---
-[INFO] Nothing to compile - all classes are up to date.
-[INFO] 
-[INFO] --- kotlin:2.1.10:compile (compile) @ cheese ---
-[INFO] Applied plugin: 'spring'
-[INFO] Applied plugin: 'jpa'
-[INFO] 
-[INFO] --- resources:3.3.1:testResources (default-testResources) @ cheese ---
-[INFO] skip non existing resourceDirectory C:\Users\31131\cheese-backend-nt\src\test\resources
-[INFO] 
-[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ cheese ---
-[INFO] Recompiling the module because of changed dependency.
-[INFO] 
-[INFO] --- kotlin:2.1.10:test-compile (test-compile) @ cheese ---
-[INFO] Applied plugin: 'spring'
-[INFO] Applied plugin: 'jpa'
-[INFO] 
-[INFO] --- surefire:3.5.2:test (default-test) @ cheese ---
-[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
-[INFO] 
-[INFO] -------------------------------------------------------
-[INFO]  T E S T S
-[INFO] -------------------------------------------------------
-[INFO] Running org.rucca.cheese.api.RankTest
-11:24:34.996 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [org.rucca.cheese.api.RankTest]: RankTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-11:24:36.483 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration org.rucca.cheese.BackendApplication for test class org.rucca.cheese.api.RankTest
-
-  .   ____          _            __ _ _
- /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
-( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
- \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
-  '  |____| .__|_| |_|_| |_\__, | / / / /
- =========|_|==============|___/=/_/_/_/
-
- :: Spring Boot ::                (v3.4.2)
-
-Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
-Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
-[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 32.34 s -- in org.rucca.cheese.api.RankTest
-[INFO] Running org.rucca.cheese.api.SpaceTest
-[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.106 s -- in org.rucca.cheese.api.SpaceTest
-[INFO] Running org.rucca.cheese.api.TaskSubmissionReviewTest
-[INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.342 s -- in org.rucca.cheese.api.TaskSubmissionReviewTest
-[INFO] Running org.rucca.cheese.api.TaskSubmissionTest
-[INFO] Tests run: 32, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 11.80 s -- in org.rucca.cheese.api.TaskSubmissionTest
-[INFO] Running org.rucca.cheese.api.TaskTest
-[INFO] Tests run: 63, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 16.79 s -- in org.rucca.cheese.api.TaskTest
-[INFO] Running org.rucca.cheese.api.TaskTopicTest
-[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.512 s -- in org.rucca.cheese.api.TaskTopicTest
-[INFO] Running org.rucca.cheese.api.TeamTest
-[INFO] Tests run: 28, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.270 s -- in org.rucca.cheese.api.TeamTest
-[INFO] Running org.rucca.cheese.auth.AuthorizationAspectTest
-[WARNING] Tests run: 11, Failures: 0, Errors: 0, Skipped: 11, Time elapsed: 0 s -- in org.rucca.cheese.auth.AuthorizationAspectTest
-[INFO] Running org.rucca.cheese.auth.AuthorizationServiceTest
-[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0 s -- in org.rucca.cheese.auth.AuthorizationServiceTest
-[INFO] Running org.rucca.cheese.auth.UserCreatorServiceTest
-[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0 s -- in org.rucca.cheese.auth.UserCreatorServiceTest
-[INFO] 
-[INFO] Results:
-[INFO] 
-[WARNING] Tests run: 195, Failures: 0, Errors: 0, Skipped: 13
-[INFO] 
-[INFO] 
-[INFO] --- jar:3.4.2:jar (default-jar) @ cheese ---
-[INFO] Building jar: C:\Users\31131\cheese-backend-nt\target\cheese-0.9.2.jar
-[INFO] 
-[INFO] --- spring-boot:3.4.2:repackage (repackage) @ cheese ---
-Downloading from central: https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-buildpack-platform/3.4.2/spring-boot-buildpack-platform-3.4.2.pom
-Progress (1): 1.4/3.2 kBProgress (1): 2.8/3.2 kBProgress (1): 3.2 kB                        Downloaded from central: https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-buildpack-platform/3.4.2/spring-boot-buildpack-platform-3.4.2.pom (3.2 kB at 1.7 kB/s)
-Downloading from central: https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-loader-tools/3.4.2/spring-boot-loader-tools-3.4.2.pom
-Progress (1): 1.4/2.2 kBProgress (1): 2.2 kB                        Downloaded from central: https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-loader-tools/3.4.2/spring-boot-loader-tools-3.4.2.pom (2.2 kB at 8.1 kB/s)
-Downloading from central: https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-buildpack-platform/3.4.2/spring-boot-buildpack-platform-3.4.2.jar
-Progress (1): 1.4/297 kBProgress (1): 2.8/297 kBProgress (1): 4.1/297 kBProgress (1): 5.5/297 kBProgress (1): 6.9/297 kBProgress (1): 8.3/297 kBProgress (1): 9.7/297 kBProgress (1): 11/297 kB Progress (1): 12/297 kBProgress (1): 14/297 kBProgress (1): 15/297 kBProgress (1): 31/297 kBProgress (1): 48/297 kBProgress (1): 64/297 kBProgress (1): 81/297 kBProgress (1): 97/297 kBProgress (1): 113/297 kBProgress (1): 128/297 kBProgress (1): 144/297 kBProgress (1): 161/297 kBProgress (1): 177/297 kBProgress (1): 193/297 kBProgress (1): 210/297 kBProgress (1): 226/297 kBProgress (1): 243/297 kBProgress (1): 259/297 kBProgress (1): 275/297 kBProgress (1): 292/297 kBProgress (1): 297 kB                        Downloaded from central: https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-buildpack-platform/3.4.2/spring-boot-buildpack-platform-3.4.2.jar (297 kB at 325 kB/s)
-Downloading from central: https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-loader-tools/3.4.2/spring-boot-loader-tools-3.4.2.jar
-Progress (1): 16/465 kBProgress (1): 33/465 kBProgress (1): 49/465 kBProgress (1): 62/465 kBProgress (1): 79/465 kBProgress (1): 95/465 kBProgress (1): 111/465 kBProgress (1): 128/465 kBProgress (1): 144/465 kBProgress (1): 161/465 kBProgress (1): 177/465 kBProgress (1): 193/465 kBProgress (1): 210/465 kBProgress (1): 226/465 kBProgress (1): 242/465 kBProgress (1): 259/465 kBProgress (1): 275/465 kBProgress (1): 292/465 kBProgress (1): 308/465 kBProgress (1): 324/465 kBProgress (1): 341/465 kBProgress (1): 357/465 kBProgress (1): 374/465 kBProgress (1): 390/465 kBProgress (1): 406/465 kBProgress (1): 423/465 kBProgress (1): 439/465 kBProgress (1): 455/465 kBProgress (1): 465 kB                        Downloaded from central: https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-loader-tools/3.4.2/spring-boot-loader-tools-3.4.2.jar (465 kB at 1.1 MB/s)
-[INFO] Replacing main artifact C:\Users\31131\cheese-backend-nt\target\cheese-0.9.2.jar with repackaged archive, adding nested dependencies in BOOT-INF/.
-[INFO] The original artifact has been renamed to C:\Users\31131\cheese-backend-nt\target\cheese-0.9.2.jar.original
-[INFO] 
-[INFO] --- antrun:3.1.0:run (delete-create-sql) @ cheese ---
-[INFO] Executing tasks
-[INFO]    [delete] Deleting: C:\Users\31131\cheese-backend-nt\design\DB\CREATE.sql
-[INFO]      [java] 
-[INFO]      [java]   .   ____          _            __ _ _
-[INFO]      [java]  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
-[INFO]      [java] ( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
-[INFO]      [java]  \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
-[INFO]      [java]   '  |____| .__|_| |_|_| |_\__, | / / / /
-[INFO]      [java]  =========|_|==============|___/=/_/_/_/
-[INFO]      [java] 
-[INFO]      [java]  :: Spring Boot ::                (v3.4.2)
-[INFO]      [java] 
-[INFO] Executed tasks
-[INFO] 
-[INFO] --- spotless:2.44.2:apply (Format design/DB/CREATE.sql) @ cheese ---
-[INFO] Spotless.Kotlin is keeping 239 files clean - 0 were changed to be clean, 0 were already clean, 239 were skipped because caching determined they were already clean
-[INFO] Spotless.Pom is keeping 1 files clean - 0 were changed to be clean, 0 were already clean, 1 were skipped because caching determined they were already clean
-[INFO] clean file: C:\Users\31131\cheese-backend-nt\design\DB\CREATE.sql
-[INFO] Spotless.Sql is keeping 1 files clean - 1 were changed to be clean, 0 were already clean, 0 were skipped because caching determined they were already clean
-[INFO] Spotless.Markdown is keeping 8 files clean - 0 were changed to be clean, 2 were already clean, 6 were skipped because caching determined they were already clean
-[INFO] 
-[INFO] --- jacoco:0.8.12:report (default-report) @ cheese ---
-[INFO] Loading execution data file C:\Users\31131\cheese-backend-nt\target\jacoco.exec
-[INFO] Analyzed bundle 'backend' with 283 classes
-[INFO] 
-[INFO] --- install:3.1.3:install (default-install) @ cheese ---
-[INFO] Installing C:\Users\31131\cheese-backend-nt\pom.xml to C:\Users\31131\.m2\repository\org\rucca\cheese\0.9.2\cheese-0.9.2.pom
-[INFO] Installing C:\Users\31131\cheese-backend-nt\target\cheese-0.9.2.jar to C:\Users\31131\.m2\repository\org\rucca\cheese\0.9.2\cheese-0.9.2.jar
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time:  02:42 min
-[INFO] Finished at: 2025-02-14T11:26:23+08:00
-[INFO] ------------------------------------------------------------------------
