@@ -30,6 +30,15 @@ class RolePermissionService {
             userId = userId,
             permissions =
                 listOf(
+                    // AI permissions
+                    Permission(
+                        authorizedActions = listOf("query"),
+                        authorizedResource = AuthorizedResource(types = listOf("ai:quota")),
+                    ),
+                    Permission(
+                        authorizedActions = listOf("query", "create", "delete"),
+                        authorizedResource = AuthorizedResource(types = listOf("task/ai-advice")),
+                    ),
                     // Space permissions
                     Permission(
                         authorizedActions =
@@ -147,6 +156,24 @@ class RolePermissionService {
                         customLogic =
                             "is-task-approved || (owned || is-enumerating-owned-tasks) " +
                                 "|| is-space-admin-of-task || is-team-admin-of-task",
+                    ),
+
+                    // Notification permissions
+                    Permission(
+                        authorizedActions =
+                            listOf("list-notifications", "get-unread-count", "mark-as-read"),
+                        authorizedResource = AuthorizedResource(types = listOf("notification")),
+                    ),
+                    Permission(
+                        authorizedActions = listOf("delete"),
+                        authorizedResource = AuthorizedResource(types = listOf("notification")),
+                        customLogic = "is-notification-owner",
+                    ),
+
+                    // Project permissions
+                    Permission(
+                        authorizedActions = listOf("create", "enumerate"),
+                        authorizedResource = AuthorizedResource(types = listOf("project")),
                     ),
 
                     // Discussion permissions

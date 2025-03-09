@@ -10,9 +10,9 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
-import org.rucca.cheese.model.ProjectsGet200ResponseDTO
-import org.rucca.cheese.model.ProjectsPost200ResponseDTO
-import org.rucca.cheese.model.ProjectsPostRequestDTO
+import org.rucca.cheese.model.CreateProject200ResponseDTO
+import org.rucca.cheese.model.CreateProjectRequestDTO
+import org.rucca.cheese.model.GetProjects200ResponseDTO
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -24,62 +24,8 @@ interface ProjectsApi {
 
     @Operation(
         tags = ["default"],
-        summary = "List Projects",
-        operationId = "projectsGet",
-        description = """""",
-        responses =
-            [
-                ApiResponse(
-                    responseCode = "200",
-                    description = "OK",
-                    content =
-                        [
-                            Content(
-                                schema = Schema(implementation = ProjectsGet200ResponseDTO::class)
-                            )
-                        ],
-                )
-            ],
-        security = [SecurityRequirement(name = "bearerAuth")],
-    )
-    @RequestMapping(
-        method = [RequestMethod.GET],
-        value = ["/projects"],
-        produces = ["application/json"],
-    )
-    fun projectsGet(
-        @Parameter(description = "父项目ID (可选)")
-        @Valid
-        @RequestParam(value = "parent_id", required = false)
-        parentId: kotlin.Long?,
-        @Parameter(description = "负责人ID (可选)")
-        @Valid
-        @RequestParam(value = "leader_id", required = false)
-        leaderId: kotlin.Long?,
-        @Parameter(description = "成员ID (可选)")
-        @Valid
-        @RequestParam(value = "member_id", required = false)
-        memberId: kotlin.Long?,
-        @Parameter(description = "状态 (可选)")
-        @Valid
-        @RequestParam(value = "status", required = false)
-        status: kotlin.String?,
-        @Parameter(description = "起始ID")
-        @Valid
-        @RequestParam(value = "page_start", required = false)
-        pageStart: kotlin.Long?,
-        @Parameter(description = "每页数量 (默认20)", schema = Schema(defaultValue = "20"))
-        @Valid
-        @RequestParam(value = "page_size", required = false, defaultValue = "20")
-        pageSize: kotlin.Int,
-    ): ResponseEntity<ProjectsGet200ResponseDTO> {
-        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
-    }
-
-    @Operation(
-        tags = ["default"],
         summary = "Create Project",
-        operationId = "projectsPost",
+        operationId = "createProject",
         description = """""",
         responses =
             [
@@ -89,7 +35,7 @@ interface ProjectsApi {
                     content =
                         [
                             Content(
-                                schema = Schema(implementation = ProjectsPost200ResponseDTO::class)
+                                schema = Schema(implementation = CreateProject200ResponseDTO::class)
                             )
                         ],
                 )
@@ -102,12 +48,62 @@ interface ProjectsApi {
         produces = ["application/json"],
         consumes = ["application/json"],
     )
-    fun projectsPost(
+    fun createProject(
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
-        projectsPostRequestDTO: ProjectsPostRequestDTO
-    ): ResponseEntity<ProjectsPost200ResponseDTO> {
+        createProjectRequestDTO: CreateProjectRequestDTO
+    ): ResponseEntity<CreateProject200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["default"],
+        summary = "List Projects",
+        operationId = "getProjects",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = GetProjects200ResponseDTO::class)
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/projects"],
+        produces = ["application/json"],
+    )
+    fun getProjects(
+        @Parameter(description = "父项目ID (可选)")
+        @Valid
+        @RequestParam(value = "parent_id", required = false)
+        parentId: kotlin.Long?,
+        @Parameter(description = "负责人ID (可选)")
+        @Valid
+        @RequestParam(value = "leader_id", required = false)
+        leaderId: kotlin.Long?,
+        @Parameter(description = "成员ID (可选)")
+        @Valid
+        @RequestParam(value = "member_id", required = false)
+        memberId: kotlin.Long?,
+        @Parameter(description = "起始ID")
+        @Valid
+        @RequestParam(value = "page_start", required = false)
+        pageStart: kotlin.Long?,
+        @Parameter(description = "每页数量 (默认20)", schema = Schema(defaultValue = "20"))
+        @Valid
+        @RequestParam(value = "page_size", required = false, defaultValue = "20")
+        pageSize: kotlin.Int,
+    ): ResponseEntity<GetProjects200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 }

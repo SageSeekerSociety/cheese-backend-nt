@@ -17,11 +17,9 @@ import java.time.LocalDateTime
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.BaseEntity
-import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.space.Space
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.user.User
-import org.springframework.data.jpa.repository.JpaRepository
 
 enum class TaskSubmitterType {
     USER,
@@ -61,5 +59,3 @@ class Task(
     @Column(nullable = false) var approved: ApproveType? = null,
     @Column(nullable = false) var rejectReason: String? = null,
 ) : BaseEntity()
-
-interface TaskRepository : JpaRepository<Task, IdType>

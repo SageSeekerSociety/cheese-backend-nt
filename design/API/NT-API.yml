@@ -3,7 +3,7 @@ info:
   title: Cheese Community API
   version: "1.0"
 servers:
-  - url: "http://localhost:7777/api/v1"
+  - url: "http://localhost:8080"
 paths:
   /spaces/{spaceId}:
     delete:
@@ -687,7 +687,7 @@ paths:
                 rank:
                   type: integer
                 approved:
-                  $ref: '#/components/schemas/ApproveType'
+                  $ref: "#/components/schemas/ApproveType"
                 rejectReason:
                   type: string
                 topics:
@@ -698,6 +698,241 @@ paths:
       summary: Update Task
       x-stoplight:
         id: sy7yhfh83myt0
+  /tasks/{taskId}/ai-advice/conversations:
+    post:
+      summary: Create AI Advice Conversation
+      operationId: create-task-ai-advice-conversation
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskAIAdviceConversationRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/TaskAIAdviceConversationResponse"
+  /tasks/{taskId}/ai-advice/conversations/grouped:
+    get:
+      summary: 获取按会话ID分组的对话历史
+      operationId: get-task-ai-advice-conversations-grouped
+      description: 获取指定任务的所有对话，按会话ID分组
+      tags:
+        - Task AI Advice
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      conversations:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ConversationGroupSummary"
+                  message:
+                    type: string
+  /tasks/{taskId}/ai-advice/conversations/{conversationId}:
+    get:
+      summary: 获取指定会话ID的所有对话
+      operationId: get-task-ai-advice-conversation
+      description: 获取特定会话ID下的所有对话记录
+      tags:
+        - Task AI Advice
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      conversations:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TaskAIAdviceConversation"
+                  message:
+                    type: string
+    delete:
+      summary: Delete AI Advice Conversation
+      tags: []
+      operationId: delete-task-ai-advice-conversation
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+  /tasks/{taskId}/ai-advice:
+    get:
+      summary: Get AI Advice
+      tags: []
+      operationId: get-task-ai-advice
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/TaskAIAdvice"
+                  message:
+                    type: string
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                    example: "Task AI advice is not ready yet. Current status: PROCESSING"
+    post:
+      summary: Request AI Advice Generation
+      tags: []
+      operationId: request-task-ai-advice
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        $ref: "#/components/schemas/TaskAIAdviceGenerationStatus"
+                      quota:
+                        $ref: "#/components/schemas/QuotaInfo"
+                  message:
+                    type: string
+  /tasks/{taskId}/ai-advice/status:
+    get:
+      summary: Get AI Advice Generation Status
+      tags: []
+      operationId: get-task-ai-advice-status
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        $ref: "#/components/schemas/TaskAIAdviceGenerationStatus"
+                  message:
+                    type: string
+
+  /ai/quota:
+    get:
+      summary: Get Current User's AI Quota
+      tags: []
+      operationId: get-user-ai-quota
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/QuotaInfo"
+                  message:
+                    type: string
   /tasks:
     get:
       summary: Enumerate Tasks
@@ -748,10 +983,10 @@ paths:
           name: team
           description: Team ID
         - schema:
-            $ref: '#/components/schemas/ApproveType'
+            $ref: "#/components/schemas/ApproveType"
           in: query
           name: approved
-          description: Distinguish task status 
+          description: Distinguish task status
         - schema:
             type: integer
             format: int64
@@ -941,8 +1176,8 @@ paths:
                   format: int64
                   x-stoplight:
                 space:
-                    type: integer
-                    format: int64
+                  type: integer
+                  format: int64
                 rank:
                   type: integer
                 topics:
@@ -957,7 +1192,7 @@ paths:
   /tasks/{taskId}/participants:
     get:
       summary: Get Participants
-      tags: [ ]
+      tags: []
       operationId: get-task-participants
       parameters:
         - description: Task ID
@@ -979,7 +1214,7 @@ paths:
           name: queryRealNameInfo
           description: Query real name info
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
@@ -1003,7 +1238,7 @@ paths:
                       participants:
                         type: array
                         items:
-                          $ref: '#/components/schemas/TaskMembership'
+                          $ref: "#/components/schemas/TaskMembership"
                   message:
                     type: string
           description: OK
@@ -1039,7 +1274,7 @@ paths:
                       participants:
                         type: array
                         items:
-                          $ref: '#/components/schemas/TaskMembership'
+                          $ref: "#/components/schemas/TaskMembership"
                     required:
                       - participant
                     type: object
@@ -1053,7 +1288,7 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
+      tags: []
       operationId: patch-task-membership
       requestBody:
         required: true
@@ -1068,7 +1303,7 @@ paths:
                 approved:
                   $ref: "#/components/schemas/ApproveType"
                 realNameInfo:
-                  $ref: '#/components/schemas/TaskParticipantRealNameInfo'
+                  $ref: "#/components/schemas/TaskParticipantRealNameInfo"
     delete:
       parameters:
         - description: Task ID
@@ -1100,7 +1335,7 @@ paths:
                       participants:
                         type: array
                         items:
-                          $ref: '#/components/schemas/TaskMembership'
+                          $ref: "#/components/schemas/TaskMembership"
                     required:
                       - task
                     type: object
@@ -1152,7 +1387,7 @@ paths:
                       participants:
                         type: array
                         items:
-                          $ref: '#/components/schemas/TaskMembership'
+                          $ref: "#/components/schemas/TaskMembership"
                     required:
                       - task
                     type: object
@@ -1179,7 +1414,7 @@ paths:
                   type: integer
                   format: int64
                 realNameInfo:
-                  $ref: '#/components/schemas/TaskParticipantRealNameInfo'
+                  $ref: "#/components/schemas/TaskParticipantRealNameInfo"
       tags: []
       operationId: post-task-participant
       summary: Apply for Task
@@ -1430,12 +1665,12 @@ paths:
                     x-stoplight:
                       id: 6pybgx4byzj2l
                     format: int64
-  '/tasks/submissions/{submissionId}/review':
+  "/tasks/submissions/{submissionId}/review":
     post:
       summary: Review Submission
       tags: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1455,7 +1690,7 @@ paths:
                       - hasUpgradedParticipantRank
                     properties:
                       submission:
-                        $ref: '#/components/schemas/TaskSubmission'
+                        $ref: "#/components/schemas/TaskSubmission"
                       hasUpgradedParticipantRank:
                         type: boolean
                   message:
@@ -1490,7 +1725,7 @@ paths:
       summary: Re-Review Submission
       tags: []
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -1510,7 +1745,7 @@ paths:
                       - hasUpgradedParticipantRank
                     properties:
                       submission:
-                        $ref: '#/components/schemas/TaskSubmission'
+                        $ref: "#/components/schemas/TaskSubmission"
                       hasUpgradedParticipantRank:
                         type: boolean
                   message:
@@ -1541,7 +1776,7 @@ paths:
       summary: Revert Review Submission
       tags: []
       responses:
-        '200':
+        "200":
           description: OK
       operationId: delete-task-submission-review
       parameters:
@@ -1697,7 +1932,7 @@ paths:
   /teams/my-teams:
     get:
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
@@ -1723,18 +1958,18 @@ paths:
                           id: hrqbg64zl0qbw
                         type: array
                         items:
-                          $ref: '#/components/schemas/Team'
+                          $ref: "#/components/schemas/Team"
                   message:
                     type: string
                     x-stoplight:
                       id: zp1goqu7fzjss
           description: OK
-      tags: [ ]
+      tags: []
       operationId: get-my-teams
       summary: Query My Teams
       x-stoplight:
         id: a2xj7aw8g9ryd
-    parameters: [ ]
+    parameters: []
   /teams:
     post:
       responses:
@@ -1800,9 +2035,9 @@ paths:
         id: b30d0d09hir43
     get:
       summary: Get Teams
-      tags: [ ]
+      tags: []
       responses:
-        '200':
+        "200":
           content:
             application/json:
               schema:
@@ -1822,9 +2057,9 @@ paths:
                       teams:
                         type: array
                         items:
-                          $ref: '#/components/schemas/Team'
+                          $ref: "#/components/schemas/Team"
                       page:
-                        $ref: '#/components/schemas/Page'
+                        $ref: "#/components/schemas/Page"
                   message:
                     type: string
           description: OK
@@ -2067,13 +2302,47 @@ paths:
       summary: Update Team Membership Info
       x-stoplight:
         id: 5kzla05sox4wy
+  /notifications/{notificationId}:
+    delete:
+      parameters:
+        - description: Notification ID
+          in: path
+          name: notificationId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                required:
+                  - code
+                  - message
+                type: object
+          description: OK
+      tags: [ ]
+      operationId: delete-notification
+      summary: Delete Notification
   /notifications:
     get:
       summary: List Notifications
-      tags: [ ]
+      tags: []
       parameters:
         - schema:
-            type: object
+            type: string
+            enum:
+              - mention
+              - reply
+              - reaction
+              - project_invite
+              - deadline_remind
           in: query
           name: type
           description: Notification Type
@@ -2082,7 +2351,7 @@ paths:
             type: boolean
           in: query
           name: read
-          description: Whether to filter read notifications
+          description: Whether to filter read or unread notifications
           required: false
         - schema:
             type: integer
@@ -2113,7 +2382,7 @@ paths:
                 properties:
                   code:
                     type: integer
-                    default: 0
+                    default: 200
                   message:
                     type: string
                     default: "success"
@@ -2131,7 +2400,7 @@ paths:
   /notifications/read:
     post:
       summary: Mark Notifications as Read
-      tags: [ ]
+      tags: []
       requestBody:
         required: true
         content:
@@ -2154,23 +2423,36 @@ paths:
             application/json:
               schema:
                 type: object
-                properties: {}
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 200
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      notificationIds:
+                        type: array
+                        items:
+                          type: integer
+                          format: int64
   /notifications/unread/count:
     get:
       summary: Get Unread Notifications Count
       tags: [ ]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - receiverId
-              properties:
-                receiverId:
-                  type: integer
-                  format: int64
+      parameters:
+        - name: receiverId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
       operationId: get-unread-notifications-count
       responses:
         "200":
@@ -2186,7 +2468,7 @@ paths:
                 properties:
                   code:
                     type: integer
-                    default: 0
+                    default: 200
                   message:
                     type: string
                     default: "success"
@@ -2195,9 +2477,11 @@ paths:
                     properties:
                       count:
                         type: integer
-                        default: 5
+                        nullable: false
+                        default: 0
   /projects:
     post:
+      operationId: create-project
       summary: Create Project
       tags: []
       requestBody:
@@ -2212,6 +2496,7 @@ paths:
                 - colorCode
                 - startDate
                 - endDate
+                - teamId
                 - leaderId
                 - content
               properties:
@@ -2230,6 +2515,9 @@ paths:
                   type: integer
                   format: int64
                   description: 项目结束时间戳(毫秒)
+                teamId:
+                  type: integer
+                  format: int64
                 parentId:
                   type: integer
                   format: int64
@@ -2274,8 +2562,9 @@ paths:
                     type: object
                     properties:
                       project:
-                        $ref: '#/components/schemas/Project'
+                        $ref: "#/components/schemas/Project"
     get:
+      operationId: get-projects
       summary: List Projects
       tags: []
       parameters:
@@ -2297,11 +2586,6 @@ paths:
           schema:
             type: integer
             format: int64
-        - name: status
-          in: query
-          description: 状态 (可选)
-          schema:
-            type: string
         - name: page_start
           in: query
           description: 起始ID
@@ -2338,9 +2622,9 @@ paths:
                       projects:
                         type: array
                         items:
-                          $ref: '#/components/schemas/Project'
+                          $ref: "#/components/schemas/Project"
                       page:
-                        $ref: '#/components/schemas/Page'
+                        $ref: "#/components/schemas/Page"
   /discussions:
     post:
       summary: Create Discussion
@@ -2564,7 +2848,7 @@ paths:
                     type: object
                     properties:
                       knowledge:
-                        $ref: '#/components/schemas/Knowledge'
+                        $ref: "#/components/schemas/Knowledge"
     get:
       summary: List Knowledge Items
       tags: []
@@ -2630,9 +2914,9 @@ paths:
                       knowledge:
                         type: array
                         items:
-                          $ref: '#/components/schemas/Knowledge'
+                          $ref: "#/components/schemas/Knowledge"
                       page:
-                        $ref: '#/components/schemas/Page'
+                        $ref: "#/components/schemas/Page"
 components:
   schemas:
     Space:
@@ -2698,11 +2982,11 @@ components:
           type: string
         myRank:
           type: integer
-          description: 'Only has value when: ''queryJoinablity'' == true && ''enableRank'' == true'
+          description: "Only has value when: 'queryJoinablity' == true && 'enableRank' == true"
         classificationTopics:
           type: array
           items:
-            $ref: '#/components/schemas/Topic'
+            $ref: "#/components/schemas/Topic"
     SpaceAdmin:
       title: SpaceAdmin
       x-stoplight:
@@ -2765,12 +3049,12 @@ components:
           x-stoplight:
             id: rbj58vdb6mhrx
         submitterType:
-          $ref: '#/components/schemas/TaskSubmitterType'
+          $ref: "#/components/schemas/TaskSubmitterType"
         defaultDeadline:
           type: integer
           format: int64
         creator:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
         deadline:
           type: integer
           format: int64
@@ -2791,15 +3075,15 @@ components:
           x-stoplight:
             id: szwjs5c0ougvr
         space:
-          $ref: '#/components/schemas/Space'
+          $ref: "#/components/schemas/Space"
         team:
-          $ref: '#/components/schemas/Team'
+          $ref: "#/components/schemas/Team"
         submissionSchema:
           type: array
           x-stoplight:
             id: 4wisk71l5hfjp
           items:
-            $ref: '#/components/schemas/TaskSubmissionSchemaEntry'
+            $ref: "#/components/schemas/TaskSubmissionSchemaEntry"
         submitters:
           type: object
           x-stoplight:
@@ -2838,22 +3122,22 @@ components:
           format: int64
         joinable:
           type: boolean
-          description: 'Only has value when: ''queryJoinablity'' == true'
+          description: "Only has value when: 'queryJoinablity' == true"
         joinableAsTeam:
           type: array
           items:
-            $ref: '#/components/schemas/TeamSummary'
+            $ref: "#/components/schemas/TeamSummary"
         submittable:
           type: boolean
-          description: 'Only has value when: ''querySubmitability'' == true'
+          description: "Only has value when: 'querySubmitability' == true"
         submittableAsTeam:
           type: array
           items:
-            $ref: '#/components/schemas/TeamSummary'
+            $ref: "#/components/schemas/TeamSummary"
         rank:
           type: integer
         approved:
-          $ref: '#/components/schemas/ApproveType'
+          $ref: "#/components/schemas/ApproveType"
         rejectReason:
           type: string
         joined:
@@ -2861,29 +3145,29 @@ components:
         joinedAsTeam:
           type: array
           items:
-            $ref: '#/components/schemas/TeamSummary'
+            $ref: "#/components/schemas/TeamSummary"
         joinedApproved:
           type: boolean
         joinedApprovedAsTeam:
           type: array
           items:
-            $ref: '#/components/schemas/TeamSummary'
+            $ref: "#/components/schemas/TeamSummary"
         joinedDisapproved:
           type: boolean
         joinedDisapprovedAsTeam:
           type: array
           items:
-            $ref: '#/components/schemas/TeamSummary'
+            $ref: "#/components/schemas/TeamSummary"
         joinedNotApprovedOrDisapproved:
           type: boolean
         joinedNotApprovedOrDisapprovedAsTeam:
           type: array
           items:
-            $ref: '#/components/schemas/TeamSummary'
+            $ref: "#/components/schemas/TeamSummary"
         topics:
           type: array
           items:
-            $ref: '#/components/schemas/Topic'
+            $ref: "#/components/schemas/Topic"
     TaskSubmitterType:
       title: TaskSubmitterType
       x-stoplight:
@@ -2905,7 +3189,7 @@ components:
           x-stoplight:
             id: ijaf5jbzth1jv
         type:
-          $ref: '#/components/schemas/TaskSubmissionType'
+          $ref: "#/components/schemas/TaskSubmissionType"
     TaskSubmissionType:
       title: TaskSubmissionType
       x-stoplight:
@@ -2953,9 +3237,9 @@ components:
           type: integer
           format: int64
         member:
-          $ref: '#/components/schemas/TaskParticipantSummary'
+          $ref: "#/components/schemas/TaskParticipantSummary"
         submitter:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
         version:
           type: integer
         createdAt:
@@ -2967,9 +3251,9 @@ components:
         content:
           type: array
           items:
-              $ref: '#/components/schemas/TaskSubmissionContentEntry'
+            $ref: "#/components/schemas/TaskSubmissionContentEntry"
         review:
-          $ref: '#/components/schemas/TaskSubmissionReview'
+          $ref: "#/components/schemas/TaskSubmissionReview"
     TaskSubmissionContentEntry:
       title: TaskSubmissionContentEntry
       type: object
@@ -2980,13 +3264,13 @@ components:
         title:
           type: string
         type:
-          $ref: '#/components/schemas/TaskSubmissionType'
+          $ref: "#/components/schemas/TaskSubmissionType"
         contentText:
           type: string
           x-stoplight:
             id: 3jylp7lpjh288
         contentAttachment:
-          $ref: '#/components/schemas/Attachment'
+          $ref: "#/components/schemas/Attachment"
     Team:
       title: Team
       type: object
@@ -3027,7 +3311,7 @@ components:
             id: u7o0iiyxuow4g
           format: int64
         owner:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
         admins:
           type: object
           x-stoplight:
@@ -3046,7 +3330,7 @@ components:
               x-stoplight:
                 id: lk6mqsfxsq91p
               items:
-                $ref: '#/components/schemas/User'
+                $ref: "#/components/schemas/User"
         updatedAt:
           type: integer
           x-stoplight:
@@ -3074,11 +3358,11 @@ components:
               x-stoplight:
                 id: 9ijkfpj25gbr7
               items:
-                $ref: '#/components/schemas/User'
+                $ref: "#/components/schemas/User"
         joined:
           type: boolean
         role:
-            $ref: '#/components/schemas/TeamMemberRoleType'
+          $ref: "#/components/schemas/TeamMemberRoleType"
     TeamSummary:
       title: TeamSummary
       type: object
@@ -3118,7 +3402,7 @@ components:
           type: integer
           format: int64
         member:
-          $ref: '#/components/schemas/TaskParticipantSummary'
+          $ref: "#/components/schemas/TaskParticipantSummary"
         createdAt:
           type: integer
           format: int64
@@ -3129,9 +3413,9 @@ components:
           type: integer
           format: int64
         approved:
-          $ref: '#/components/schemas/ApproveType'
+          $ref: "#/components/schemas/ApproveType"
         realNameInfo:
-          $ref: '#/components/schemas/TaskParticipantRealNameInfo'
+          $ref: "#/components/schemas/TaskParticipantRealNameInfo"
     TaskParticipantRealNameInfo:
       title: TaskParticipantRealNameInfo
       type: object
@@ -3189,9 +3473,9 @@ components:
     TeamMember:
       properties:
         role:
-          $ref: '#/components/schemas/TeamMemberRoleType'
+          $ref: "#/components/schemas/TeamMemberRoleType"
         user:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
         updatedAt:
           type: integer
           x-stoplight:
@@ -3217,6 +3501,389 @@ components:
         - APPROVED
         - DISAPPROVED
         - NONE
+    AIConversation:
+      type: object
+      description: AI对话
+      properties:
+        id:
+          type: integer
+          format: int64
+        conversationId:
+          type: string
+          description: 对话ID
+        title:
+          type: string
+          description: 对话标题
+        moduleType:
+          type: string
+          description: 模块类型
+        contextId:
+          type: integer
+          format: int64
+          description: 上下文ID
+        ownerId:
+          type: integer
+          format: int64
+          description: 所有者ID
+        messageCount:
+          type: integer
+          description: 消息数量
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新时间
+      required:
+        - id
+        - conversationId
+        - title
+        - moduleType
+        - contextId
+        - ownerId
+        - messageCount
+        - createdAt
+        - updatedAt
+    AIMessage:
+      type: object
+      description: AI消息
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 消息ID
+        conversationId:
+          type: string
+          description: 对话ID
+        role:
+          type: string
+          description: 角色
+        modelType:
+          type: string
+          description: 模型类型
+        content:
+          type: string
+          description: 消息内容
+        parentId:
+          type: integer
+          format: int64
+          description: 父消息ID
+        reasoningContent:
+          type: string
+          description: 推理内容
+        reasoningTimeMs:
+          type: integer
+          format: int64
+          description: 推理时间（毫秒）
+        metadata:
+          $ref: "#/components/schemas/AIMessageMetadata"
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+        tokensUsed:
+          type: integer
+          description: 消耗的token数量
+          example: 100
+        seuConsumed:
+          type: number
+          format: double
+          description: 消耗的SEU数量
+          example: 0.10
+      required:
+        - id
+        - conversationId
+        - role
+        - modelType
+        - content
+        - createdAt
+        - tokensUsed
+        - seuConsumed
+    AIMessageMetadata:
+      type: object
+      description: AI消息元数据
+      properties:
+        followupQuestions:
+          type: array
+          items:
+            type: string
+        references:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationReference"
+    TaskAIAdvice:
+      type: object
+      properties:
+        topic_summary:
+          type: object
+          properties:
+            title:
+              type: string
+            key_points:
+              type: array
+              items:
+                type: string
+        knowledge_fields:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              followup_questions:
+                type: array
+                items:
+                  type: string
+            required:
+              - name
+              - description
+              - followup_questions
+        learning_paths:
+          type: array
+          items:
+            type: object
+            properties:
+              stage:
+                type: string
+              description:
+                type: string
+              resources:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    type:
+                      type: string
+                    url:
+                      type: string
+                  required:
+                    - name
+                    - type
+              followup_questions:
+                type: array
+                items:
+                  type: string
+            required:
+              - name
+              - description
+              - followup_questions
+        methodology:
+          type: array
+          items:
+            type: object
+            properties:
+              step:
+                type: string
+              description:
+                type: string
+              estimated_time:
+                type: string
+              followup_questions:
+                type: array
+                items:
+                  type: string
+            required:
+              - step
+              - description
+              - followup_questions
+        team_tips:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+              description:
+                type: string
+              collaboration_tips:
+                type: string
+              followup_questions:
+                type: array
+                items:
+                  type: string
+            required:
+              - role
+              - description
+              - collaboration_tips
+              - followup_questions
+    TaskAIAdviceConversationContext:
+      type: object
+      properties:
+        section:
+          type: string
+          enum: [knowledge_fields, learning_paths, methodology, team_tips]
+        index:
+          type: integer
+          description: "章节中的具体条目索引(从0开始)"
+    CreateTaskAIAdviceConversationRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          description: 用户问题
+        context:
+          $ref: "#/components/schemas/TaskAIAdviceConversationContext"
+        modelType:
+          type: string
+          description: 可选的模型类型（例如：standard、reasoning）
+          default: standard
+        conversationId:
+          type: string
+          description: 可选的会话ID（用于继续对话）
+        parentId:
+          type: integer
+          format: int64
+          description: 可选的父消息ID（用于继续特定消息的对话）
+      required:
+        - question
+    TaskAIAdviceConversationResponse:
+      type: object
+      properties:
+        conversation:
+          $ref: "#/components/schemas/TaskAIAdviceConversation"
+        quota:
+          $ref: "#/components/schemas/QuotaInfo"
+      required:
+        - conversation
+        - quota
+    ConversationGroupSummary:
+      type: object
+      properties:
+        conversationId:
+          type: string
+          description: 会话组ID
+        title:
+          type: string
+          description: 会话组标题
+          example: 机器学习模型选择
+        createdAt:
+          type: string
+          format: date-time
+          description: 会话创建时间
+        updatedAt:
+          type: string
+          format: date-time
+          description: 会话最后更新时间
+        messageCount:
+          type: integer
+          description: 会话中的消息数量
+        latestMessage:
+          $ref: "#/components/schemas/TaskAIAdviceConversation"
+      required:
+        - conversationId
+        - createdAt
+        - updatedAt
+        - messageCount
+    ConversationReference:
+      type: object
+      properties:
+        url:
+          type: string
+        logo_url:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        publish_time:
+          type: string
+        extra:
+          $ref: "#/components/schemas/ConversationReferenceExtra"
+      required:
+        - url
+        - logo_url
+        - title
+        - summary
+        - publish_time
+        - extra
+    ConversationReferenceExtra:
+      type: object
+      properties:
+        rel_info:
+          type: string
+        freshness_info:
+          type: string
+        auth_info:
+          type: string
+        final_ref:
+          type: string
+      required:
+        - rel_info
+        - freshness_info
+        - auth_info
+        - final_ref
+    TaskAIAdviceGenerationStatus:
+      type: string
+      enum: [NONE, PENDING, PROCESSING, COMPLETED, FAILED]
+    TaskAIAdviceConversation:
+      type: object
+      required:
+        - id
+        - question
+        - response
+        - modelType
+        - followupQuestions
+        - createdAt
+        - tokensUsed
+        - seuConsumed
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 对话ID
+        question:
+          type: string
+          description: 用户问题
+        response:
+          type: string
+          description: 回答内容
+        modelType:
+          type: string
+          description: 模型类型
+        reasoningContent:
+          type: string
+          description: 推理内容
+        reasoningTimeMs:
+          type: integer
+          format: int64
+          description: 推理所用时间（毫秒）
+          example: 1000
+        followupQuestions:
+          type: array
+          description: 后续问题
+          items:
+            type: string
+        references:
+          type: array
+          description: 参考文献
+          items:
+            $ref: "#/components/schemas/ConversationReference"
+        conversationId:
+          type: string
+          description: 会话ID
+        parentId:
+          type: integer
+          format: int64
+          description: 父消息ID
+        createdAt:
+          type: string
+          format: date-time
+          description: 会话创建时间
+        tokensUsed:
+          type: integer
+          description: 消耗的token数量
+          example: 100
+        seuConsumed:
+          type: number
+          format: double
+          description: 消耗的SEU数量
+          example: 0.10
     TeamMemberRoleType:
       description: 小组角色
       enum:
@@ -3311,13 +3978,13 @@ components:
           description: 访问 URL
         meta:
           oneOf:
-            - $ref: '#/components/schemas/ImageMeta'
-            - $ref: '#/components/schemas/VideoMeta'
-            - $ref: '#/components/schemas/AudioMeta'
-            - $ref: '#/components/schemas/FileMeta'
+            - $ref: "#/components/schemas/ImageMeta"
+            - $ref: "#/components/schemas/VideoMeta"
+            - $ref: "#/components/schemas/AudioMeta"
+            - $ref: "#/components/schemas/FileMeta"
     ImageMeta:
       allOf:
-        - $ref: '#/components/schemas/FileMeta'
+        - $ref: "#/components/schemas/FileMeta"
         - type: object
           description: 图片元数据
           properties:
@@ -3332,7 +3999,7 @@ components:
               description: 缩略图 URL
     VideoMeta:
       allOf:
-        - $ref: '#/components/schemas/FileMeta'
+        - $ref: "#/components/schemas/FileMeta"
         - type: object
           description: 视频元数据
           properties:
@@ -3350,7 +4017,7 @@ components:
               description: 缩略图 URL
     AudioMeta:
       allOf:
-        - $ref: '#/components/schemas/FileMeta'
+        - $ref: "#/components/schemas/FileMeta"
         - type: object
           description: 音频元数据
           properties:
@@ -3402,14 +4069,15 @@ components:
         type:
           type: string
           enum:
-            - mention
-            - reply
-            - reaction
-            - project_invite
-            - deadline_remind
+            - MENTION
+            - REPLY
+            - REACTION
+            - PROJECT_INVITE
+            - DEADLINE_REMIND
         receiverId:
           type: integer
           format: int64
+          description: "The ID of the user who will receive the notification. This will be mapped to a User entity in the backend."
         content:
           type: object
           properties:
@@ -3418,32 +4086,35 @@ components:
             projectId:
               type: integer
               format: int64
+              nullable: true
             discussionId:
               type: integer
               format: int64
+              nullable: true
             knowledgeId:
               type: integer
               format: int64
+              nullable: true
         read:
           type: boolean
           default: false
         createdAt:
           type: integer
           format: int64
-    ProjectContent:
-      type: object
-      description: 项目富文本内容
-      properties:
-        raw:
-          type: string
-          description: 原始markdown内容
-        html:
-          type: string
-          description: 渲染后的HTML
-        attachments:
-          type: array
-          items:
-            $ref: '#/components/schemas/Attachment'
+    #    ProjectContent:
+    #      type: object
+    #      description: 项目富文本内容
+    #      properties:
+    #        raw:
+    #          type: string
+    #          description: 原始markdown内容
+    #        html:
+    #          type: string
+    #          description: 渲染后的HTML
+    #        attachments:
+    #          type: array
+    #          items:
+    #            $ref: '#/components/schemas/Attachment'
     Project:
       type: object
       required:
@@ -3452,7 +4123,8 @@ components:
         - description
         - startDate
         - endDate
-        - leaderId
+        - team
+        - leader
         - content
       properties:
         id:
@@ -3477,9 +4149,10 @@ components:
           type: integer
           format: int64
           description: 父项目ID
-        leaderId:
-          type: integer
-          format: int64
+        team:
+          $ref: "#/components/schemas/Team"
+        leader:
+          $ref: "#/components/schemas/User"
         externalTaskId:
           type: integer
           format: int64
@@ -3487,11 +4160,11 @@ components:
           type: string
         content:
           type: string
-        path:
-          type: array
-          items:
-            type: string
-          description: 项目路径
+        #        path:
+        #          type: array
+        #          items:
+        #            type: string
+        #          description: 项目路径
         createdAt:
           type: integer
           format: int64
@@ -3577,13 +4250,40 @@ components:
           items:
             type: string
         creator:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
         createdAt:
           type: integer
           format: int64
         updatedAt:
           type: integer
           format: int64
+    QuotaInfo:
+      type: object
+      description: "用户AI配额信息"
+      required:
+        - remaining
+        - total
+        - reset_time
+      properties:
+        remaining:
+          type: number
+          format: double
+          description: "剩余可用SEU"
+        total:
+          type: number
+          format: double
+          description: "总可用SEU"
+        reset_time:
+          type: string
+          format: date-time
+          description: "配额重置时间"
+    CommonResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
   securitySchemes:
     bearerAuth:
       description: The access token is used in this way.
