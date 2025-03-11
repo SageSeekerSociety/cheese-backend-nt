@@ -6,7 +6,7 @@
  *
  */
 
-package org.rucca.cheese.utils
+package org.rucca.cheese.client
 
 import jakarta.ws.rs.client.ClientBuilder
 import jakarta.ws.rs.client.Entity
@@ -20,7 +20,7 @@ import org.rucca.cheese.common.persistent.IdType
 import org.springframework.stereotype.Service
 
 @Service
-class AttachmentCreatorService(private val applicationConfig: ApplicationConfig) {
+class AttachmentClient(private val applicationConfig: ApplicationConfig) {
     fun createAttachment(token: String): IdType {
         val file = File.createTempFile("attachment", ".txt")
         file.writeText("This is a test attachment")

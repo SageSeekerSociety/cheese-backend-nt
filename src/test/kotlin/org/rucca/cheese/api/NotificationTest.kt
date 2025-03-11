@@ -4,10 +4,10 @@ import org.hamcrest.Matchers
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.TestInstance.Lifecycle
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.notification.NotificationService
 import org.rucca.cheese.notification.NotificationType
-import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -25,21 +25,21 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 @TestMethodOrder(OrderAnnotation::class)
 class NotificationTest
 @Autowired
-constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCreatorService) {
+constructor(private val mockMvc: MockMvc, private val userClient: UserClient) {
     @Autowired private lateinit var notificationService: NotificationService
     private val logger = LoggerFactory.getLogger(javaClass)
-    private lateinit var receiver: UserCreatorService.CreateUserResponse
-    private lateinit var user: UserCreatorService.CreateUserResponse
+    private lateinit var receiver: UserClient.CreateUserResponse
+    private lateinit var user: UserClient.CreateUserResponse
     private lateinit var receiverToken: String
     private lateinit var userToken: String
     private var notificationId: IdType = -1
 
     @BeforeAll
     fun prepare() {
-        receiver = userCreatorService.createUser()
-        receiverToken = userCreatorService.login(receiver.username, receiver.password)
-        user = userCreatorService.createUser()
-        userToken = userCreatorService.login(user.username, user.password)
+        receiver = userClient.createUser()
+        receiverToken = userClient.login(receiver.username, receiver.password)
+        user = userClient.createUser()
+        userToken = userClient.login(user.username, user.password)
     }
 
     @BeforeEach

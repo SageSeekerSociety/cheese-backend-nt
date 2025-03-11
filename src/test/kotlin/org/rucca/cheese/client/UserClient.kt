@@ -6,7 +6,7 @@
  *
  */
 
-package org.rucca.cheese.utils
+package org.rucca.cheese.client
 
 import at.favre.lib.crypto.bcrypt.BCrypt
 import jakarta.ws.rs.client.ClientBuilder
@@ -20,7 +20,7 @@ import org.rucca.cheese.user.*
 import org.springframework.stereotype.Service
 
 @Service
-class UserCreatorService(
+class UserClient(
     private val applicationConfig: ApplicationConfig,
     private val userRepository: UserRepository,
     private val avatarRepository: AvatarRepository,

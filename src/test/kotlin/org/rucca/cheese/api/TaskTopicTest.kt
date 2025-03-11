@@ -8,19 +8,17 @@
 
 package org.rucca.cheese.api
 
-import java.time.LocalDateTime
 import kotlin.math.floor
-import org.json.JSONObject
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
-import org.rucca.cheese.common.helper.toEpochMilli
+import org.rucca.cheese.client.TaskClient
+import org.rucca.cheese.client.TopicClient
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.utils.TopicCreatorService
-import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -40,100 +38,33 @@ class TaskTopicTest
 @Autowired
 constructor(
     private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-    private val topicCreatorService: TopicCreatorService,
+    private val userClient: UserClient,
+    private val topicClient: TopicClient,
+    private val taskClient: TaskClient,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
-    lateinit var creator: UserCreatorService.CreateUserResponse
+    lateinit var creator: UserClient.CreateUserResponse
     lateinit var creatorToken: String
     private var taskId: IdType = -1
-    private val taskName = "Test Task (${floor(Math.random() * 10000000000).toLong()})"
-    private val taskIntro = "This is a test task."
-    private val taskDescription = "This is a test task."
-    private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
     private val taskSubmissionSchema =
         listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE"))
     private val testTopicsCount = 4
     private val testTopics = mutableListOf<Pair<IdType, String>>()
 
-    fun createTask(
-        name: String,
-        submitterType: String,
-        deadline: Long,
-        resubmittable: Boolean,
-        editable: Boolean,
-        intro: String,
-        description: String,
-        submissionSchema: List<Pair<String, String>>,
-        team: IdType?,
-        space: IdType?,
-        topics: List<IdType>,
-    ): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/tasks")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "name": "$name",
-                  "submitterType": "$submitterType",
-                  "deadline": "$deadline",
-                  "resubmittable": $resubmittable,
-                  "editable": $editable,
-                  "intro": "$intro",
-                  "description": "$description",
-                  "submissionSchema": [
-                    ${
-                        submissionSchema.joinToString(",\n") {
-                            """
-                                {
-                                  "prompt": "${it.first}",
-                                  "type": "${it.second}"
-                                }
-                            """
-                        }
-                    }
-                  ],
-                  "team": ${team ?: "null"},
-                  "space": ${space ?: "null"},
-                  "topics": [${topics.joinToString(",")}]
-                }
-            """
-                )
-        val response = mockMvc.perform(request).andExpect(status().isOk)
-        response.andExpect(jsonPath("$.data.task.topics.length()").value(topics.size))
-        for (topicId in topics) response.andExpect(
-            jsonPath("$.data.task.topics[?(@.id == $topicId)].name").exists()
-        )
-        val json = JSONObject(response.andReturn().response.contentAsString)
-        val taskId = json.getJSONObject("data").getJSONObject("task").getLong("id")
-        logger.info("Created task: $taskId")
-        return taskId
-    }
-
     @BeforeAll
     fun prepare() {
-        creator = userCreatorService.createUser()
-        creatorToken = userCreatorService.login(creator.username, creator.password)
+        creator = userClient.createUser()
+        creatorToken = userClient.login(creator.username, creator.password)
         for (i in 1..testTopicsCount) {
             val topicName = "Test Topic (${floor(Math.random() * 10000000000).toLong()}) ($i)"
-            val topicId = topicCreatorService.createTopic(creatorToken, topicName)
+            val topicId = topicClient.createTopic(creatorToken, topicName)
             testTopics.add(Pair(topicId, topicName))
         }
         taskId =
-            createTask(
-                name = "$taskName (1)",
-                submitterType = "USER",
-                deadline = taskDeadline,
-                resubmittable = true,
-                editable = true,
-                intro = taskIntro,
-                description = taskDescription,
+            taskClient.createTask(
+                creatorToken,
                 submissionSchema = taskSubmissionSchema,
-                team = null,
-                space = null,
-                listOf(testTopics[0].first, testTopics[1].first),
+                topics = listOf(testTopics[0].first, testTopics[1].first),
             )
     }
 

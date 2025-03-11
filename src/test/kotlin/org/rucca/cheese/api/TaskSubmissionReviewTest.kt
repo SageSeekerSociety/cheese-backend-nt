@@ -9,19 +9,16 @@
 
 package org.rucca.cheese.api
 
-import java.time.LocalDateTime
-import kotlin.math.floor
-import org.json.JSONObject
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
-import org.rucca.cheese.common.helper.toEpochMilli
+import org.rucca.cheese.client.AttachmentClient
+import org.rucca.cheese.client.TaskClient
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.utils.AttachmentCreatorService
-import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -40,120 +37,29 @@ class TaskSubmissionReviewTest
 @Autowired
 constructor(
     private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-    private val attachmentCreatorService: AttachmentCreatorService,
+    private val userClient: UserClient,
+    private val attachmentClient: AttachmentClient,
+    private val taskClient: TaskClient,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
-    lateinit var creator: UserCreatorService.CreateUserResponse
+    lateinit var creator: UserClient.CreateUserResponse
     lateinit var creatorToken: String
-    lateinit var participant: UserCreatorService.CreateUserResponse
+    lateinit var participant: UserClient.CreateUserResponse
     lateinit var participantToken: String
     private var attachmentId: IdType = -1
     private var taskId: IdType = -1
     private var submissionId: IdType = -1
-    private val taskName = "Test Task (${floor(Math.random() * 10000000000).toLong()})"
-    private val taskIntro = "This is a test task."
-    private val taskDescription = "A lengthy text. ".repeat(1000)
-    private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
-    private val taskSubmissionSchema =
-        listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE"))
+    private var submission = ""
 
-    fun createTask(
-        name: String,
-        submitterType: String,
-        deadline: Long,
-        resubmittable: Boolean,
-        editable: Boolean,
-        intro: String,
-        description: String,
-        submissionSchema: List<Pair<String, String>>,
-        team: IdType?,
-        space: IdType?,
-    ): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/tasks")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "name": "$name",
-                  "submitterType": "$submitterType",
-                  "deadline": "$deadline",
-                  "resubmittable": $resubmittable,
-                  "editable": $editable,
-                  "intro": "$intro",
-                  "description": "$description",
-                  "submissionSchema": [
-                    ${
-                        submissionSchema
-                            .map { """
-                                {
-                                  "prompt": "${it.first}",
-                                  "type": "${it.second}"
-                                }
-                            """ }
-                            .joinToString(",\n")
-                    }
-                  ],
-                  "team": ${team?: "null"},
-                  "space": ${space?: "null"}
-                }
+    @BeforeAll
+    fun prepare() {
+        creator = userClient.createUser()
+        creatorToken = userClient.login(creator.username, creator.password)
+        participant = userClient.createUser()
+        participantToken = userClient.login(participant.username, participant.password)
+        attachmentId = attachmentClient.createAttachment(creatorToken)
+        submission =
             """
-                )
-        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-        val json = JSONObject(response.andReturn().response.contentAsString)
-        val taskId = json.getJSONObject("data").getJSONObject("task").getLong("id")
-        logger.info("Created task: $taskId")
-        return taskId
-    }
-
-    fun joinTask(taskId: IdType, participantId: IdType, participantToken: String) {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/participants")
-                .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participantId.toString())
-                .contentType("application/json")
-                .content(
-                    """
-                    {}
-                """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-    }
-
-    fun approveTaskParticipant(token: String, taskId: IdType, memberId: IdType) {
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants")
-                .queryParam("member", memberId.toString())
-                .header("Authorization", "Bearer ${token}")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "approved": "APPROVED"
-                }
-            """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath(
-                        "$.data.participants[?(@.member.id == $memberId)].approved"
-                    )
-                    .value("APPROVED")
-            )
-    }
-
-    fun submitTask(taskId: IdType, participantId: IdType, participantToken: String): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
-                .header("Authorization", "Bearer $participantToken")
-                .param("member", participantId.toString())
-                .contentType("application/json")
-                .content(
-                    """
                         [
                           {
                             "contentText": "This is a test submission."
@@ -163,37 +69,16 @@ constructor(
                           }
                         ]
                     """
-                )
-        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-        val json = JSONObject(response.andReturn().response.contentAsString)
-        val submissionId = json.getJSONObject("data").getJSONObject("submission").getLong("id")
-        logger.info("Submitted task with submission: $submissionId")
-        return submissionId
-    }
-
-    @BeforeAll
-    fun prepare() {
-        creator = userCreatorService.createUser()
-        creatorToken = userCreatorService.login(creator.username, creator.password)
-        participant = userCreatorService.createUser()
-        participantToken = userCreatorService.login(participant.username, participant.password)
-        attachmentId = attachmentCreatorService.createAttachment(creatorToken)
         taskId =
-            createTask(
-                taskName,
-                "USER",
-                taskDeadline,
-                false,
-                false,
-                taskIntro,
-                taskDescription,
-                taskSubmissionSchema,
-                null,
-                null,
+            taskClient.createTask(
+                creatorToken,
+                submissionSchema =
+                    listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE")),
             )
-        joinTask(taskId, participant.userId, participantToken)
-        approveTaskParticipant(creatorToken, taskId, participant.userId)
-        submissionId = submitTask(taskId, participant.userId, participantToken)
+        taskClient.addParticipantUser(participantToken, taskId, participant.userId)
+        taskClient.approveTaskParticipant(creatorToken, taskId, participant.userId)
+        submissionId =
+            taskClient.submitTaskUser(participantToken, taskId, participant.userId, submission)
     }
 
     @Test

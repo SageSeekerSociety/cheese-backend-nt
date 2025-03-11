@@ -12,8 +12,8 @@ import kotlin.math.floor
 import org.json.JSONObject
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.utils.UserCreatorService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -29,35 +29,35 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 @TestMethodOrder(OrderAnnotation::class)
 class TeamTest
 @Autowired
-constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCreatorService) {
-    lateinit var creator: UserCreatorService.CreateUserResponse
+constructor(private val mockMvc: MockMvc, private val userClient: UserClient) {
+    lateinit var creator: UserClient.CreateUserResponse
     lateinit var creatorToken: String
-    lateinit var newOwner: UserCreatorService.CreateUserResponse
+    lateinit var newOwner: UserClient.CreateUserResponse
     lateinit var newOwnerToken: String
-    lateinit var admin: UserCreatorService.CreateUserResponse
+    lateinit var admin: UserClient.CreateUserResponse
     lateinit var adminToken: String
-    lateinit var member: UserCreatorService.CreateUserResponse
+    lateinit var member: UserClient.CreateUserResponse
     lateinit var memberToken: String
-    lateinit var anotherUser: UserCreatorService.CreateUserResponse
+    lateinit var anotherUser: UserClient.CreateUserResponse
     lateinit var anotherUserToken: String
     private var teamName = "Test Team (${floor(Math.random() * 10000000000).toLong()})"
     private var teamIntro = "This is a test team"
     private var teamDescription = "A lengthy text. ".repeat(1000)
-    private var teamAvatarId = userCreatorService.testAvatarId()
+    private var teamAvatarId = userClient.testAvatarId()
     private var teamId: IdType = -1
 
     @BeforeAll
     fun prepare() {
-        creator = userCreatorService.createUser()
-        creatorToken = userCreatorService.login(creator.username, creator.password)
-        newOwner = userCreatorService.createUser()
-        newOwnerToken = userCreatorService.login(newOwner.username, newOwner.password)
-        admin = userCreatorService.createUser()
-        adminToken = userCreatorService.login(admin.username, admin.password)
-        member = userCreatorService.createUser()
-        memberToken = userCreatorService.login(member.username, member.password)
-        anotherUser = userCreatorService.createUser()
-        anotherUserToken = userCreatorService.login(anotherUser.username, anotherUser.password)
+        creator = userClient.createUser()
+        creatorToken = userClient.login(creator.username, creator.password)
+        newOwner = userClient.createUser()
+        newOwnerToken = userClient.login(newOwner.username, newOwner.password)
+        admin = userClient.createUser()
+        adminToken = userClient.login(admin.username, admin.password)
+        member = userClient.createUser()
+        memberToken = userClient.login(member.username, member.password)
+        anotherUser = userClient.createUser()
+        anotherUserToken = userClient.login(anotherUser.username, anotherUser.password)
     }
 
     @Test

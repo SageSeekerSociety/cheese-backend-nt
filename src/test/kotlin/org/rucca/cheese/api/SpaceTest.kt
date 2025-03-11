@@ -9,12 +9,12 @@
 package org.rucca.cheese.api
 
 import kotlin.math.floor
-import org.json.JSONObject
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
+import org.rucca.cheese.client.SpaceClient
+import org.rucca.cheese.client.TopicClient
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.utils.TopicCreatorService
-import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -34,17 +34,18 @@ class SpaceTest
 @Autowired
 constructor(
     private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
-    private val topicCreatorService: TopicCreatorService,
+    private val userClient: UserClient,
+    private val topicClient: TopicClient,
+    private val spaceClient: SpaceClient,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
-    lateinit var creator: UserCreatorService.CreateUserResponse
+    lateinit var creator: UserClient.CreateUserResponse
     lateinit var creatorToken: String
-    lateinit var admin: UserCreatorService.CreateUserResponse
+    lateinit var admin: UserClient.CreateUserResponse
     lateinit var adminToken: String
-    lateinit var newOwner: UserCreatorService.CreateUserResponse
+    lateinit var newOwner: UserClient.CreateUserResponse
     lateinit var newOwnerToken: String
-    lateinit var anonymous: UserCreatorService.CreateUserResponse
+    lateinit var anonymous: UserClient.CreateUserResponse
     lateinit var anonymousToken: String
     private var spaceName = "Test Space (${floor(Math.random() * 10000000000).toLong()})"
     private var originalSpaceName = spaceName
@@ -52,7 +53,7 @@ constructor(
     private var spaceDescription = "A lengthy text. ".repeat(1000)
     private var spaceAnnouncements = "[]"
     private var spaceTaskTemplates = "[]"
-    private var spaceAvatarId = userCreatorService.testAvatarId()
+    private var spaceAvatarId = userClient.testAvatarId()
     private var spaceId: IdType = -1
     private var spaceIdOfSecond: IdType = -1
     private var spaceIdOfBeforeLast: IdType = -1
@@ -62,17 +63,17 @@ constructor(
 
     @BeforeAll
     fun prepare() {
-        creator = userCreatorService.createUser()
-        creatorToken = userCreatorService.login(creator.username, creator.password)
-        admin = userCreatorService.createUser()
-        adminToken = userCreatorService.login(admin.username, admin.password)
-        newOwner = userCreatorService.createUser()
-        newOwnerToken = userCreatorService.login(newOwner.username, newOwner.password)
-        anonymous = userCreatorService.createUser()
-        anonymousToken = userCreatorService.login(anonymous.username, anonymous.password)
+        creator = userClient.createUser()
+        creatorToken = userClient.login(creator.username, creator.password)
+        admin = userClient.createUser()
+        adminToken = userClient.login(admin.username, admin.password)
+        newOwner = userClient.createUser()
+        newOwnerToken = userClient.login(newOwner.username, newOwner.password)
+        anonymous = userClient.createUser()
+        anonymousToken = userClient.login(anonymous.username, anonymous.password)
         for (i in 1..topicsCount) {
             topics.add(
-                topicCreatorService.createTopic(
+                topicClient.createTopic(
                     creatorToken,
                     "Topic (${floor(Math.random() * 10000000000).toLong()}) ($i)",
                 )
@@ -93,66 +94,10 @@ constructor(
             .andExpect(jsonPath("$.error.data.id").value("-1"))
     }
 
-    fun createSpace(
-        creatorToken: String,
-        spaceName: String,
-        spaceIntro: String,
-        spaceDescription: String,
-        spaceAvatarId: IdType,
-        spaceAnnouncements: String,
-        spaceTaskTemplates: String,
-        classificationTopics: List<IdType> = emptyList(),
-    ): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/spaces")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                    "name": "$spaceName",
-                    "intro": "$spaceIntro",
-                    "description": "$spaceDescription",
-                    "avatarId": $spaceAvatarId,
-                    "announcements": "$spaceAnnouncements",
-                    "taskTemplates": "$spaceTaskTemplates",
-                    "classificationTopics": [${classificationTopics.joinToString(",")}]
-                }
-            """
-                )
-        val response =
-            mockMvc
-                .perform(request)
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.space.name").value(spaceName))
-                .andExpect(jsonPath("$.data.space.intro").value(spaceIntro))
-                .andExpect(jsonPath("$.data.space.description").value(spaceDescription))
-                .andExpect(jsonPath("$.data.space.avatarId").value(spaceAvatarId))
-                .andExpect(jsonPath("$.data.space.admins[0].role").value("OWNER"))
-                .andExpect(jsonPath("$.data.space.admins[0].user.id").value(creator.userId))
-                .andExpect(jsonPath("$.data.space.enableRank").value(false))
-                .andExpect(jsonPath("$.data.space.announcements").value(spaceAnnouncements))
-                .andExpect(jsonPath("$.data.space.taskTemplates").value(spaceTaskTemplates))
-                .andExpect(
-                    jsonPath("$.data.space.classificationTopics.length()")
-                        .value(classificationTopics.size)
-                )
-        for (topic in classificationTopics) response.andExpect(
-            jsonPath("$.data.space.classificationTopics[?(@.id == $topic)].name").exists()
-        )
-        val spaceId =
-            JSONObject(response.andReturn().response.contentAsString)
-                .getJSONObject("data")
-                .getJSONObject("space")
-                .getLong("id")
-        logger.info("Created space: $spaceId")
-        return spaceId
-    }
-
     @Test
     @Order(20)
     fun testCreateSpace() {
-        createSpace(
+        spaceClient.createSpace(
             creatorToken,
             "$spaceName previous",
             spaceIntro,
@@ -162,7 +107,7 @@ constructor(
             spaceTaskTemplates,
         )
         spaceId =
-            createSpace(
+            spaceClient.createSpace(
                 creatorToken,
                 spaceName,
                 spaceIntro,
@@ -173,7 +118,7 @@ constructor(
                 classificationTopics = listOf(topics[0], topics[1]),
             )
         spaceIdOfSecond =
-            createSpace(
+            spaceClient.createSpace(
                 creatorToken,
                 "$spaceName 01",
                 spaceIntro,
@@ -182,7 +127,7 @@ constructor(
                 spaceAnnouncements,
                 spaceTaskTemplates,
             )
-        createSpace(
+        spaceClient.createSpace(
             creatorToken,
             "$spaceName 02",
             spaceIntro,
@@ -192,7 +137,7 @@ constructor(
             spaceTaskTemplates,
         )
         spaceIdOfBeforeLast =
-            createSpace(
+            spaceClient.createSpace(
                 creatorToken,
                 "$spaceName 03",
                 spaceIntro,
@@ -202,7 +147,7 @@ constructor(
                 spaceTaskTemplates,
             )
         spaceIdOfLast =
-            createSpace(
+            spaceClient.createSpace(
                 creatorToken,
                 "$spaceName 04",
                 spaceIntro,
