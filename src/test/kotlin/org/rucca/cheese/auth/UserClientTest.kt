@@ -19,8 +19,8 @@ import org.springframework.test.context.ActiveProfiles
 @Disabled("Disabled to speed up tests")
 @SpringBootTest
 @ActiveProfiles("test")
-class UserCreatorServiceTest @Autowired constructor(private val userClient: UserClient) {
-    private val logger = LoggerFactory.getLogger(UserCreatorServiceTest::class.java)
+class UserClientTest @Autowired constructor(private val userClient: UserClient) {
+    private val logger = LoggerFactory.getLogger(UserClientTest::class.java)
 
     @Test
     fun createUserAndLogin() {
