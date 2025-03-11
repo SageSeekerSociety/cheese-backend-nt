@@ -1,23 +1,15 @@
 package org.rucca.cheese.discussion
 
-import jakarta.persistence.*
-import org.hibernate.annotations.SQLRestriction
-import org.rucca.cheese.common.persistent.BaseEntity
+import org.rucca.cheese.common.pagination.repository.CursorPagingRepository
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.user.User
-import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.stereotype.Repository
 
-@Entity
-@SQLRestriction("deleted_at IS NULL")
-@Table(indexes = [Index(columnList = "project_discussion_id"), Index(columnList = "user_id")])
-class DiscussionReaction(
-    @JoinColumn(nullable = false)
-    @ManyToOne(fetch = FetchType.LAZY)
-    var projectDiscussion: Discussion? = null,
-    @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) var user: User? = null,
-    @Column(nullable = false) var emoji: String? = null,
-) : BaseEntity()
-
-interface DiscussionReactionRepository : JpaRepository<DiscussionReaction, IdType> {
-    fun findAllByProjectDiscussionId(discussionId: IdType): List<DiscussionReaction>
+@Repository
+interface DiscussionReactionRepository : CursorPagingRepository<DiscussionReaction, IdType> {
+    /** 查找与特定讨论相关的所有反应 */
+    @Query(
+        "SELECT r FROM DiscussionReaction r WHERE r.projectDiscussion.id = :discussionId AND r.deletedAt IS NULL"
+    )
+    fun findAllByDiscussionId(discussionId: IdType): List<DiscussionReaction>
 }

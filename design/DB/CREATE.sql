@@ -241,35 +241,40 @@ CREATE
 CREATE
     TABLE
         discussion(
-            "sender_id" INTEGER NOT NULL,
+            sender_id INTEGER NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             parent_id BIGINT,
             project_id BIGINT,
             updated_at TIMESTAMP(6) NOT NULL,
-            content VARCHAR(255) NOT NULL,
+            content TEXT NOT NULL,
             PRIMARY KEY(id)
         );
 
 CREATE
     TABLE
-        discussion_mentioned_user_ids(
+        discussion_mentioned_users(
             discussion_id BIGINT NOT NULL,
-            mentioned_user_ids BIGINT
+            user_id BIGINT
         );
 
 CREATE
     TABLE
         discussion_reaction(
-            "user_id" INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             project_discussion_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
             emoji VARCHAR(255) NOT NULL,
-            PRIMARY KEY(id)
+            PRIMARY KEY(id),
+            CONSTRAINT uk_discussion_reaction_user_emoji UNIQUE(
+                project_discussion_id,
+                user_id,
+                emoji
+            )
         );
 
 CREATE
@@ -734,10 +739,6 @@ CREATE
     discussion(sender_id);
 
 CREATE
-    INDEX IDX7xfrb9qyj6idn1x8fv3gnlr7g ON
-    discussion(parent_id);
-
-CREATE
     INDEX IDX8m2oj3rv2nhnewpebc0nd86gw ON
     discussion_reaction(project_discussion_id);
 
@@ -865,16 +866,16 @@ ALTER TABLE
     IF EXISTS discussion ADD CONSTRAINT FK6m45sjpuse6o09iwiv2qdj3xg FOREIGN KEY(project_id) REFERENCES project;
 
 ALTER TABLE
-    IF EXISTS discussion ADD CONSTRAINT FKcdwhy51kalt1ojcov60id8dlx FOREIGN KEY("sender_id") REFERENCES public."user";
+    IF EXISTS discussion ADD CONSTRAINT FK7wmfmeiq6a9y5ygdi1obp01r FOREIGN KEY(sender_id) REFERENCES public."user";
 
 ALTER TABLE
-    IF EXISTS discussion_mentioned_user_ids ADD CONSTRAINT FKhy50v0yvhjsctn5ca6hxwarr7 FOREIGN KEY(discussion_id) REFERENCES discussion;
+    IF EXISTS discussion_mentioned_users ADD CONSTRAINT FKg7pxkxyxyxq2g2qttjeyph6ra FOREIGN KEY(discussion_id) REFERENCES discussion;
 
 ALTER TABLE
     IF EXISTS discussion_reaction ADD CONSTRAINT FK7s5i2g2a8qr48rx6f3x3lv6n3 FOREIGN KEY(project_discussion_id) REFERENCES discussion;
 
 ALTER TABLE
-    IF EXISTS discussion_reaction ADD CONSTRAINT FKkqj873iwqwqo4v6gkc1g5o0ji FOREIGN KEY("user_id") REFERENCES public."user";
+    IF EXISTS discussion_reaction ADD CONSTRAINT FKjh9fs8xa2fuupaw2josqcjbfv FOREIGN KEY(user_id) REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS knowledge ADD CONSTRAINT FKacal20h046lgv8bl4bkl2di1f FOREIGN KEY("created_by_id") REFERENCES public."user";

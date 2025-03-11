@@ -1,31 +1,62 @@
+/*
+ *  Description: This file defines the Discussion entity and its repository.
+ *               It stores the information of discussions.
+ */
+
 package org.rucca.cheese.discussion
 
 import jakarta.persistence.*
+import org.hibernate.annotations.DynamicUpdate
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.project.Project
 import org.rucca.cheese.user.User
-import org.springframework.data.jpa.repository.JpaRepository
 
+@DynamicUpdate
+@Entity
+@SQLRestriction("deleted_at IS NULL")
+@Table(indexes = [Index(columnList = "project_id"), Index(columnList = "sender_id")])
+class Discussion(
+    @JoinColumn(name = "project_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    var project: Project? = null,
+    @JoinColumn(name = "sender_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    var sender: User? = null,
+    @Column(nullable = false, columnDefinition = "TEXT") var content: String? = null,
+    @JoinColumn(name = "parent_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    var parent: Discussion? = null,
+    @ElementCollection
+    @CollectionTable(
+        name = "discussion_mentioned_users",
+        joinColumns = [JoinColumn(name = "discussion_id")],
+    )
+    @Column(name = "user_id")
+    var mentionedUserIds: Set<IdType> = emptySet(),
+) : BaseEntity()
+
+@DynamicUpdate
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @Table(
-    indexes =
+    name = "discussion_reaction",
+    indexes = [Index(columnList = "project_discussion_id"), Index(columnList = "user_id")],
+    uniqueConstraints =
         [
-            Index(columnList = "project_id"),
-            Index(columnList = "sender_id"),
-            Index(columnList = "parent_id"),
-        ]
+            UniqueConstraint(
+                name = "uk_discussion_reaction_user_emoji",
+                columnNames = ["project_discussion_id", "user_id", "emoji"],
+            )
+        ],
 )
-class Discussion(
-    @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) var sender: User? = null,
-    @JoinColumn(nullable = true) @ManyToOne(fetch = FetchType.LAZY) var parent: Discussion? = null,
-    @Column(nullable = false) var content: String? = null,
-    @ElementCollection var mentionedUserIds: Set<IdType> = HashSet(),
-    @JoinColumn(nullable = true) @ManyToOne(fetch = FetchType.LAZY) var project: Project? = null,
+class DiscussionReaction(
+    @JoinColumn(name = "project_discussion_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    var projectDiscussion: Discussion? = null,
+    @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    var user: User? = null,
+    @Column(nullable = false) var emoji: String? = null,
 ) : BaseEntity()
-
-interface DiscussionRepository : JpaRepository<Discussion, IdType> {
-    fun findAllByProjectId(projectIds: IdType): List<Discussion>
-}
