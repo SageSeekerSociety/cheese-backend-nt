@@ -85,4 +85,16 @@ class UserService(
     fun ensureUserIdExists(userId: IdType) {
         if (!existsUser(userId)) throw NotFoundError("user", userId)
     }
+
+    fun ensureUsersExist(userIds: List<IdType>) {
+        val expectedCount = userIds.distinct().size
+        val count = userRepository.countByIdIn(userIds.distinct().map { it.toInt() })
+        if (count != expectedCount) throw NotFoundError("Some users not found")
+    }
+
+    fun getUserRole(userId: IdType): UserRole {
+        val user =
+            userRepository.findRoleById(userId.toInt()) ?: throw NotFoundError("user", userId)
+        return user.role
+    }
 }

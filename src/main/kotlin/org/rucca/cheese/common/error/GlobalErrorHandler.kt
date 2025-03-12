@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import org.springframework.web.servlet.resource.NoResourceFoundException
 
 @ControllerAdvice
 class GlobalErrorHandler {
@@ -84,6 +85,32 @@ class GlobalErrorHandler {
                 request,
                 e.message ?: "Invalid request caused http message conversion error",
                 BadRequestError(e.message ?: "Invalid request caused http message conversion error"),
+            )
+
+    @ExceptionHandler(org.rucca.cheese.auth.spring.AccessDeniedException::class)
+    @ResponseBody
+    fun handleAccessDeniedException(
+        e: AccessDeniedException,
+        request: HttpServletRequest,
+    ): ResponseEntity<*> =
+        ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .handleSseOrJson(
+                request,
+                e.message ?: "Access Denied",
+                ForbiddenError(e.message ?: "Access Denied"),
+            )
+
+    @ExceptionHandler(NoResourceFoundException::class)
+    @ResponseBody
+    fun handleNoResourceFoundException(
+        e: NoResourceFoundException,
+        request: HttpServletRequest,
+    ): ResponseEntity<*> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .handleSseOrJson(
+                request,
+                e.message ?: "Resource not found",
+                NotFoundError(e.message ?: "Resource not found"),
             )
 
     @ExceptionHandler(Exception::class)

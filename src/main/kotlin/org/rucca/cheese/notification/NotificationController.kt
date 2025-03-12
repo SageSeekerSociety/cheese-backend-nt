@@ -2,11 +2,12 @@ package org.rucca.cheese.notification
 
 import javax.annotation.PostConstruct
 import org.rucca.cheese.api.NotificationsApi
-import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
 import org.rucca.cheese.auth.AuthorizedAction
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
@@ -16,10 +17,11 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@UseOldAuth
 class NotificationController(
     private val notificationService: NotificationService,
     private val authorizationService: AuthorizationService,
-    private val authenticationService: AuthenticationService,
+    private val jwtService: JwtService,
     @Autowired private val environment: Environment,
 ) : NotificationsApi {
 

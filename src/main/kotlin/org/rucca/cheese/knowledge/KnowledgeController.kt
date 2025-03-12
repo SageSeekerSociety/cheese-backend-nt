@@ -3,6 +3,7 @@ package org.rucca.cheese.knowledge
 import org.rucca.cheese.api.KnowledgeApi
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.model.KnowledgeGet200ResponseDTO
 import org.rucca.cheese.model.KnowledgePost200ResponseDTO
 import org.rucca.cheese.model.KnowledgePostRequestDTO
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@UseOldAuth
 class KnowledgeController(private val knowledgeService: KnowledgeService) : KnowledgeApi {
     @Guard("create", "knowledge")
     override fun knowledgePost(
