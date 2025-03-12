@@ -20,6 +20,7 @@ fun Role.toDomainRoleId() = domain?.let { "${it.name}:$roleId" } ?: roleId
 
 /** Standard system roles that should be available in all applications. */
 enum class SystemRole(override val roleId: String) : Role {
+    SUPER_ADMIN("super_admin"),
     ADMIN("admin"),
     MODERATOR("moderator"),
     USER("user"),

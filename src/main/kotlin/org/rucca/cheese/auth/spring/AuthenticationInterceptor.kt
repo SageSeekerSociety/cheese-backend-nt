@@ -36,7 +36,7 @@ class AuthenticationInterceptor(
             val userId = authorization.userId
 
             request.setAttribute("userId", userId)
-            request.setAttribute("userRole", userSecurityService.getUserRole(userId))
+            request.setAttribute("userRole", userSecurityService.getUserRoles(userId))
             return true
         } catch (e: Exception) {
             logger.warn("Invalid JWT token", e)
@@ -48,6 +48,6 @@ class AuthenticationInterceptor(
 
     private fun handleGuestAccess(request: HttpServletRequest) {
         request.setAttribute("userId", GUEST_USER_ID)
-        request.setAttribute("userRole", userSecurityService.getUserRole(GUEST_USER_ID))
+        request.setAttribute("userRole", userSecurityService.getUserRoles(GUEST_USER_ID))
     }
 }

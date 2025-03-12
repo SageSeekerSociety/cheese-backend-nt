@@ -40,6 +40,6 @@ class AuthUserArgumentResolver(private val userSecurityService: UserSecurityServ
             request.getAttribute("userId") as? IdType
                 ?: throw IllegalStateException("User ID not found in request")
 
-        return AuthUserInfo(userId, userSecurityService.getUserRole(userId))
+        return AuthUserInfo(userId, userSecurityService.getUserRoles(userId))
     }
 }

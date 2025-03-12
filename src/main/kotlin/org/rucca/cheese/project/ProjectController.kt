@@ -3,8 +3,8 @@ package org.rucca.cheese.project
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.ProjectsApi
 import org.rucca.cheese.auth.annotation.Guard
-import org.rucca.cheese.common.helper.toLocalDateTime
 import org.rucca.cheese.auth.spring.UseOldAuth
+import org.rucca.cheese.common.helper.toLocalDateTime
 import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController

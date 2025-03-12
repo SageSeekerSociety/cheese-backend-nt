@@ -54,5 +54,5 @@ interface UserSecurityService {
      * @param userId The user ID
      * @return The user's role
      */
-    fun getUserRole(userId: IdType): Set<Role>
+    fun getUserRoles(userId: IdType): Set<Role>
 }

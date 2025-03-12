@@ -12,6 +12,8 @@ class RoleHierarchyConfig(private val roleHierarchy: GraphRoleHierarchy) {
     @PostConstruct
     fun configureRoleHierarchy() {
         val hierarchyConfig = defineRoleHierarchy {
+            role(SystemRole.SUPER_ADMIN) { inheritsFrom(SystemRole.ADMIN) }
+
             role(SystemRole.ADMIN) { inheritsFrom(SystemRole.USER) }
 
             role(SystemRole.MODERATOR) { inheritsFrom(SystemRole.USER) }

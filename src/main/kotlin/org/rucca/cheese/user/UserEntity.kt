@@ -38,12 +38,6 @@ import org.hibernate.annotations.ColumnDefault
 import org.hibernate.annotations.SQLRestriction
 import org.springframework.data.jpa.repository.JpaRepository
 
-enum class UserRole {
-    USER,
-    ADMIN,
-    MODERATOR,
-}
-
 @Entity
 @Table(
     name = "\"user\"",
@@ -68,10 +62,6 @@ open class User {
     @Column(name = "hashed_password", nullable = true, length = Integer.MAX_VALUE)
     open var hashedPassword: String? = null
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false)
-    open val role: UserRole = UserRole.USER
-
     @Column(name = "email", nullable = false, length = Integer.MAX_VALUE)
     open var email: String? = null
 
@@ -88,10 +78,4 @@ open class User {
 
 interface UserRepository : JpaRepository<User, Int> {
     fun countByIdIn(ids: List<Int>): Int
-
-    interface RoleOnly {
-        val role: UserRole
-    }
-
-    fun findRoleById(id: Int): RoleOnly?
 }
