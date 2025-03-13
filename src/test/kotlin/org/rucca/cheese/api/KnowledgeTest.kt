@@ -2,6 +2,8 @@ package org.rucca.cheese.api
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlin.math.floor
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.TestInstance.Lifecycle
@@ -46,7 +48,8 @@ constructor(
             mapOf(
                 "name" to "Test Knowledge ${floor(Math.random() * 1000000).toInt()}",
                 "type" to "DOCUMENT",
-                "content" to "This is a test knowledge content.",
+                "content" to
+                    Json.encodeToString(mapOf("text" to "This is a test knowledge content.")),
                 "description" to "A test knowledge description.",
                 "projectIds" to projectIds,
                 "labels" to labels,
@@ -102,11 +105,12 @@ constructor(
             )
         }
 
+        val updatedContent = Json.encodeToString(mapOf("text" to "Updated content"))
         val updateRequest =
             mapOf(
                 "name" to "Updated Knowledge",
                 "description" to "Updated description",
-                "content" to "Updated content",
+                "content" to updatedContent,
                 "projectIds" to listOf(3L, 4L),
                 "labels" to listOf("updated", "test2"),
             )
@@ -123,7 +127,7 @@ constructor(
                 .andExpect(jsonPath("$.data.knowledge.id").value(knowledgeId))
                 .andExpect(jsonPath("$.data.knowledge.name").value("Updated Knowledge"))
                 .andExpect(jsonPath("$.data.knowledge.description").value("Updated description"))
-                .andExpect(jsonPath("$.data.knowledge.content").value("Updated content"))
+                .andExpect(jsonPath("$.data.knowledge.content").value(updatedContent))
                 .andReturn()
 
         // println("After update - knowledgeId: $knowledgeId")
