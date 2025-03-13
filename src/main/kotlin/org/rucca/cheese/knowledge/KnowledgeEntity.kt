@@ -1,7 +1,9 @@
 package org.rucca.cheese.knowledge
 
+import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.*
 import org.hibernate.annotations.SQLRestriction
+import org.hibernate.annotations.Type
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.material.Material
@@ -23,7 +25,9 @@ class Knowledge(
     @Column(nullable = false) var name: String? = null,
     @Column(nullable = false, columnDefinition = "text") var description: String? = null,
     @Column(nullable = false) @Enumerated(EnumType.STRING) var type: KnowledgeType? = null,
-    @Column(/*columnDefinition = "jsonb", */ nullable = false) var content: String? = null,
+    @Type(JsonType::class)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    var content: String? = null,
     @JoinColumn(nullable = true) @ManyToOne(fetch = FetchType.LAZY) var material: Material? = null,
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) var createdBy: User? = null,
     @ElementCollection

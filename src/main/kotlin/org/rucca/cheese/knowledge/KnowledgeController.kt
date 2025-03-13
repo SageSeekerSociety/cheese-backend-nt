@@ -1,14 +1,10 @@
 package org.rucca.cheese.knowledge
 
 import java.util.*
-import javax.annotation.PostConstruct
 import org.rucca.cheese.api.KnowledgesApi
 import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
-import org.rucca.cheese.auth.AuthorizedAction
 import org.rucca.cheese.auth.annotation.Guard
-import org.rucca.cheese.common.persistent.IdGetter
-import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.user.AvatarRepository
 import org.springframework.http.ResponseEntity
@@ -21,23 +17,6 @@ class KnowledgeController(
     private val authenticationService: AuthenticationService,
     private val avatarRepository: AvatarRepository,
 ) : KnowledgesApi {
-    @PostConstruct
-    fun initialize() {
-        authorizationService.ownerIds.register("knowledge", knowledgeService::getKnowledgeOwner)
-        authorizationService.customAuthLogics.register("is-knowledge-admin") {
-            userId: IdType,
-            _: AuthorizedAction,
-            _: String,
-            resourceId: IdType?,
-            _: Map<String, Any?>?,
-            _: IdGetter?,
-            _: Any? ->
-            knowledgeService.isKnowledgeAdmin(
-                resourceId ?: throw IllegalArgumentException("resourceId is null"),
-                userId,
-            )
-        }
-    }
 
     @Guard("create", "knowledge")
     override fun knowledgePost(

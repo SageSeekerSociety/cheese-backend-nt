@@ -65,8 +65,8 @@ constructor(
 
         val responseJson = objectMapper.readTree(result.response.contentAsString)
         knowledgeId = responseJson.path("data").path("knowledge").path("id").asLong()
-       // println("Created knowledge with ID: $knowledgeId")
-        //println("Response JSON: ${result.response.contentAsString}")
+        // println("Created knowledge with ID: $knowledgeId")
+        // println("Response JSON: ${result.response.contentAsString}")
     }
 
     @Test
@@ -81,7 +81,7 @@ constructor(
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.id").value(knowledgeId))
                 .andReturn()
-     //   println("Get response: ${result.response.contentAsString}")
+        //   println("Get response: ${result.response.contentAsString}")
     }
 
     @Test
@@ -126,8 +126,8 @@ constructor(
                 .andExpect(jsonPath("$.data.knowledge.content").value("Updated content"))
                 .andReturn()
 
-        //println("After update - knowledgeId: $knowledgeId")
-        //println("Update response: ${result.response.contentAsString}")
+        // println("After update - knowledgeId: $knowledgeId")
+        // println("Update response: ${result.response.contentAsString}")
     }
 
     @Test

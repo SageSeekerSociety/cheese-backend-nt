@@ -18,7 +18,6 @@ class KnowledgeService(
     private val knowledgeRepository: KnowledgeRepository,
     private val knowledgeLabelRepository: KnowledgeLabelRepository,
     private val userService: UserService,
-    private val knowledgeAdminRelationRepository: KnowledgeAdminRelationRepository,
     private val avatarRepository: AvatarRepository,
     private val entityPatcher: EntityPatcher,
     private val userRepository: UserRepository,
@@ -28,18 +27,6 @@ class KnowledgeService(
             knowledgeRepository.findById(kid).orElseThrow { NotFoundError("knowledge", kid) }
         knowledge.deletedAt = LocalDateTime.now()
         knowledgeRepository.save(knowledge)
-    }
-
-    fun isKnowledgeAdmin(knowledgeId: IdType, userId: IdType): Boolean {
-        return knowledgeAdminRelationRepository.existsByKnowledgeIdAndUserId(knowledgeId, userId)
-    }
-
-    fun getKnowledgeOwner(knowledgeId: IdType): IdType {
-        val knowledgeAdminRelation =
-            knowledgeAdminRelationRepository
-                .findByKnowledgeIdAndRole(knowledgeId, KnowledgeAdminRole.OWNER)
-                .orElseThrow { NotFoundError("knowledge", knowledgeId) }
-        return knowledgeAdminRelation.user!!.id!!.toLong()
     }
 
     private fun getKnowledge(kid: IdType): Knowledge =
