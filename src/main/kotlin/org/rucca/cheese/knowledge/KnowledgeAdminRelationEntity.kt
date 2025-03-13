@@ -15,7 +15,7 @@ enum class KnowledgeAdminRole {
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(indexes = [Index(columnList = "space_id"), Index(columnList = "user_id")])
+@Table(indexes = [Index(columnList = "knowledge_id"), Index(columnList = "user_id")])
 class KnowledgeAdminRelation(
     @JoinColumn(nullable = false)
     @ManyToOne(fetch = FetchType.LAZY)

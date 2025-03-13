@@ -9,6 +9,7 @@ import org.rucca.cheese.model.KnowledgeDTO
 import org.rucca.cheese.model.KnowledgePatchRequestDTO
 import org.rucca.cheese.model.KnowledgeTypeDTO
 import org.rucca.cheese.user.AvatarRepository
+import org.rucca.cheese.user.UserRepository
 import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
 
@@ -20,8 +21,9 @@ class KnowledgeService(
     private val knowledgeAdminRelationRepository: KnowledgeAdminRelationRepository,
     private val avatarRepository: AvatarRepository,
     private val entityPatcher: EntityPatcher,
+    private val userRepository: UserRepository,
 ) {
-    fun deleteknowledge(kid: IdType) {
+    fun deleteKnowledge(kid: IdType) {
         val knowledge =
             knowledgeRepository.findById(kid).orElseThrow { NotFoundError("knowledge", kid) }
         knowledge.deletedAt = LocalDateTime.now()
@@ -40,8 +42,14 @@ class KnowledgeService(
         return knowledgeAdminRelation.user!!.id!!.toLong()
     }
 
-    fun getKnowledge(kid: IdType): Knowledge =
+    private fun getKnowledge(kid: IdType): Knowledge =
         knowledgeRepository.findById(kid).orElseThrow { NotFoundError("knowledge", kid) }
+
+    fun getKnowledgeDTO(kid: IdType): KnowledgeDTO =
+        knowledgeRepository
+            .findById(kid)
+            .orElseThrow { NotFoundError("knowledge", kid) }
+            .toKnowledgeDTO()
 
     //    fun parseType1(type: KnowledgePostRequestDTO.Type) =
     //        when (type.value) {
@@ -61,17 +69,13 @@ class KnowledgeService(
     //            else -> throw NotImplementedError()
     //        }
     fun KnowledgeTypeDTO.toKnowledgeType(): KnowledgeType {
-        return when (this) {
-            KnowledgeTypeDTO.document -> KnowledgeType.DOCUMENT
-            KnowledgeTypeDTO.link -> KnowledgeType.LINK
-            KnowledgeTypeDTO.text -> KnowledgeType.TEXT
-            KnowledgeTypeDTO.image -> KnowledgeType.IMAGE
-        }
+        return KnowledgeType.valueOf(this.value)
     }
 
     fun createKnowledge(
         name: String,
         type: KnowledgeTypeDTO,
+        createdByUserId: IdType,
         content: String,
         description: String?,
         projectIds: List<Long>? = null,
@@ -84,6 +88,7 @@ class KnowledgeService(
                     content = content,
                     description = description,
                     projectIds = projectIds!!.toSet(),
+                    createdBy = userRepository.getReferenceById(createdByUserId.toInt()),
                 )
                 .let { knowledgeRepository.save(it) }
 
@@ -92,10 +97,6 @@ class KnowledgeService(
             knowledgeLabelRepository.save(knowledgeLabel)
         }
         return knowledge.toKnowledgeDTO() // ?
-    }
-
-    fun getKnowledgeDTO(knowledgeId: IdType): KnowledgeDTO {
-        return getKnowledge(knowledgeId).toKnowledgeDTO()
     }
 
     fun getKnowledgeDTOByProjectId(projectId: List<Long>?): List<KnowledgeDTO> {
@@ -115,6 +116,7 @@ class KnowledgeService(
             creator = userService.getUserDto(creatorId),
             createdAt = this.createdAt!!.toEpochMilli(),
             updatedAt = this.updatedAt!!.toEpochMilli(),
+            labels = this.knowledgeLabels.mapNotNull { it.label },
         )
     }
 
@@ -136,21 +138,17 @@ class KnowledgeService(
                     entity.content = value
                 }
                 handle(KnowledgePatchRequestDTO::projectIds) { entity, value ->
-                    entity.projectIds = value?.toSet() ?: emptySet()
+                    entity.projectIds = value.toSet()
                 }
                 handle(KnowledgePatchRequestDTO::labels) { entity, value ->
-                    // 删除旧标签
-                    knowledgeLabelRepository.deleteAll(
-                        knowledgeLabelRepository.findAll().filter { label ->
-                            label.knowledge?.id == id
-                        }
-                    )
-                    // 添加新标签
-                    value?.forEach { labelText ->
-                        knowledgeLabelRepository.save(
-                            KnowledgeLabelEntity(knowledge = entity, label = labelText)
-                        )
+                    entity.knowledgeLabels.removeIf { labelEntity ->
+                        value.none { labelEntity.label == it }
                     }
+                    entity.knowledgeLabels.addAll(
+                        value
+                            .filter { label -> entity.knowledgeLabels.none { it.label == label } }
+                            .map { KnowledgeLabelEntity(entity, it) }
+                    )
                 }
             }
         return knowledgeRepository.save(updatedKnowledge).toKnowledgeDTO()

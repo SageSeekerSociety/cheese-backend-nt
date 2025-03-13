@@ -23,8 +23,8 @@ class Knowledge(
     @Column(nullable = false) var name: String? = null,
     @Column(nullable = false, columnDefinition = "text") var description: String? = null,
     @Column(nullable = false) @Enumerated(EnumType.STRING) var type: KnowledgeType? = null,
-    @Column(columnDefinition = "jsonb", nullable = false) var content: String? = null,
-    @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) var material: Material? = null,
+    @Column(/*columnDefinition = "jsonb", */ nullable = false) var content: String? = null,
+    @JoinColumn(nullable = true) @ManyToOne(fetch = FetchType.LAZY) var material: Material? = null,
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) var createdBy: User? = null,
     @ElementCollection
     @CollectionTable(
@@ -32,6 +32,12 @@ class Knowledge(
         joinColumns = [JoinColumn(name = "knowledge_id")],
     )
     var projectIds: Set<Long> = HashSet(),
+    @OneToMany(
+        targetEntity = KnowledgeLabelEntity::class,
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true,
+    )
+    var knowledgeLabels: MutableList<KnowledgeLabelEntity> = mutableListOf(),
 ) : BaseEntity()
 
 interface KnowledgeRepository : JpaRepository<Knowledge, IdType> {

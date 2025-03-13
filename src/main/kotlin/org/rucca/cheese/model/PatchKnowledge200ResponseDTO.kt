@@ -10,7 +10,7 @@ import javax.validation.Valid
  * @param message
  * @param &#x60;data&#x60;
  */
-data class KnowledgePatch200ResponseDTO(
+data class PatchKnowledge200ResponseDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("code", required = true)
     val code: kotlin.Int = 0,
@@ -20,7 +20,7 @@ data class KnowledgePatch200ResponseDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("data", required = true)
-    val `data`: KnowledgePatch200ResponseDataDTO,
+    val `data`: PatchKnowledge200ResponseDataDTO,
 ) : Serializable {
 
     companion object {

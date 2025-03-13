@@ -57,13 +57,13 @@ data class KnowledgeDTO(
     val updatedAt: kotlin.Long? = null,
 ) : Serializable {
 
-    /** Values: document,link,text,image */
+    /** Values: DOCUMENT,LINK,TEXT,IMAGE */
     enum class Type(@get:JsonValue val value: kotlin.String) {
 
-        document("document"),
-        link("link"),
-        text("text"),
-        image("image");
+        DOCUMENT("DOCUMENT"),
+        LINK("LINK"),
+        TEXT("TEXT"),
+        IMAGE("IMAGE");
 
         companion object {
             @JvmStatic

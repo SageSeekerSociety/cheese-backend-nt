@@ -2943,95 +2943,7 @@ paths:
                           $ref: "#/components/schemas/Knowledge"
                       page:
                         $ref: '#/components/schemas/Page'
-    patch:
-      summary: Update Knowledge Item
-      tags: []
-      operationId: knowledgePatch
-      parameters:
-        - name: id
-          in: query
-          description: Knowledge Item ID
-          required: true
-          schema:
-            type: integer
-            format: int64
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                description:
-                  type: string
-                type:
-                  $ref: "#/components/schemas/KnowledgeType" 
-                content:
-                  type: string
-                projectIds:
-                  type: array
-                  items:
-                    type: integer
-                    format: int64
-                labels:
-                  type: array
-                  items:
-                    type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - code
-                  - message
-                  - data
-                properties:
-                  code:
-                    type: integer
-                    default: 0
-                  message:
-                    type: string
-                    default: "success"
-                  data:
-                    type: object
-                    required:
-                      - knowledge
-                    properties:
-                      knowledge:
-                        $ref: '#/components/schemas/Knowledge'
-    delete:
-      summary: Delete Knowledge Item
-      tags: []
-      operationId: knowledgeDelete
-      parameters:
-        - name: id
-          in: query
-          description: Knowledge Item ID
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - code
-                  - message
-                properties:
-                  code:
-                    type: integer
-                    default: 0
-                  message:
-                    type: string
+
   /knowledges/{knowledgeId}/upvote:
     post:
       summary: Upvote Knowledge Item
@@ -3111,7 +3023,7 @@ paths:
     patch:
       summary: Update Knowledge Item
       tags: []
-      operationId: updateKnowledgeById
+      operationId: knowledgePatch
       parameters:
         - name: knowledgeId
           in: path
@@ -3132,8 +3044,7 @@ paths:
                 description:
                   type: string
                 type:
-                  type: string
-                  enum: [document, link, text, image]
+                  $ref: "#/components/schemas/KnowledgeType"
                 content:
                   type: string
                 projectIds:
@@ -3170,11 +3081,84 @@ paths:
                     properties:
                       knowledge:
                         $ref: '#/components/schemas/Knowledge'
+    delete:
+      summary: Delete Knowledge Item
+      tags: [ ]
+      operationId: knowledgeDelete
+      parameters:
+        - name: knowledgeId
+          in: path
+          description: Knowledge Item ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+    get:
+      summary: Get Single Knowledge Item
+      tags: [ ]
+      operationId: KnowledgeGetById
+      parameters:
+        - name: knowledgeId
+          in: path
+          description: Knowledge item ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Successful retrieval of a knowledge item
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    $ref: "#/components/schemas/Knowledge"
+        "404":
+          description: Knowledge item not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 404
+                  message:
+                    type: string
+                    example: "Knowledge item not found"
 components:
   schemas:
     KnowledgeType:
       type: string
-      enum: [document, link, text, image]
+      enum: [DOCUMENT, LINK, TEXT, IMAGE]
     Space:
       title: Space
       type: object
@@ -4488,10 +4472,10 @@ components:
         type:
           type: string
           enum:
-            - document
-            - link
-            - text
-            - image
+            - DOCUMENT
+            - LINK
+            - TEXT
+            - IMAGE
         content:
           type: string
         materialId:

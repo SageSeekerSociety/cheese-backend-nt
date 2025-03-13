@@ -10,15 +10,15 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
-import javax.validation.constraints.NotNull
 import kotlin.collections.List
 import org.rucca.cheese.model.KnowledgeDelete200ResponseDTO
 import org.rucca.cheese.model.KnowledgeGet200ResponseDTO
-import org.rucca.cheese.model.KnowledgePatch200ResponseDTO
+import org.rucca.cheese.model.KnowledgeGetById200ResponseDTO
+import org.rucca.cheese.model.KnowledgeGetById404ResponseDTO
 import org.rucca.cheese.model.KnowledgePatchRequestDTO
 import org.rucca.cheese.model.KnowledgePost200ResponseDTO
 import org.rucca.cheese.model.KnowledgePostRequestDTO
-import org.rucca.cheese.model.UpdateKnowledgeByIdRequestDTO
+import org.rucca.cheese.model.PatchKnowledge200ResponseDTO
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -51,15 +51,13 @@ interface KnowledgesApi {
     )
     @RequestMapping(
         method = [RequestMethod.DELETE],
-        value = ["/knowledges"],
+        value = ["/knowledges/{knowledgeId}"],
         produces = ["application/json"],
     )
     fun knowledgeDelete(
-        @NotNull
         @Parameter(description = "Knowledge Item ID", required = true)
-        @Valid
-        @RequestParam(value = "id", required = true)
-        id: kotlin.Long
+        @PathVariable("knowledgeId")
+        knowledgeId: kotlin.Long
     ): ResponseEntity<KnowledgeDelete200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -120,6 +118,51 @@ interface KnowledgesApi {
 
     @Operation(
         tags = ["default"],
+        summary = "Get Single Knowledge Item",
+        operationId = "knowledgeGetById",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "Successful retrieval of a knowledge item",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(implementation = KnowledgeGetById200ResponseDTO::class)
+                            )
+                        ],
+                ),
+                ApiResponse(
+                    responseCode = "404",
+                    description = "Knowledge item not found",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(implementation = KnowledgeGetById404ResponseDTO::class)
+                            )
+                        ],
+                ),
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/knowledges/{knowledgeId}"],
+        produces = ["application/json"],
+    )
+    fun knowledgeGetById(
+        @Parameter(description = "Knowledge item ID", required = true)
+        @PathVariable("knowledgeId")
+        knowledgeId: kotlin.Long
+    ): ResponseEntity<KnowledgeGetById200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["default"],
         summary = "Update Knowledge Item",
         operationId = "knowledgePatch",
         description = """""",
@@ -132,7 +175,7 @@ interface KnowledgesApi {
                         [
                             Content(
                                 schema =
-                                    Schema(implementation = KnowledgePatch200ResponseDTO::class)
+                                    Schema(implementation = PatchKnowledge200ResponseDTO::class)
                             )
                         ],
                 )
@@ -141,21 +184,19 @@ interface KnowledgesApi {
     )
     @RequestMapping(
         method = [RequestMethod.PATCH],
-        value = ["/knowledges"],
+        value = ["/knowledges/{knowledgeId}"],
         produces = ["application/json"],
         consumes = ["application/json"],
     )
     fun knowledgePatch(
-        @NotNull
         @Parameter(description = "Knowledge Item ID", required = true)
-        @Valid
-        @RequestParam(value = "id", required = true)
-        id: kotlin.Long,
+        @PathVariable("knowledgeId")
+        knowledgeId: kotlin.Long,
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
         knowledgePatchRequestDTO: KnowledgePatchRequestDTO,
-    ): ResponseEntity<KnowledgePatch200ResponseDTO> {
+    ): ResponseEntity<PatchKnowledge200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -208,7 +249,7 @@ interface KnowledgesApi {
                         [
                             Content(
                                 schema =
-                                    Schema(implementation = KnowledgePatch200ResponseDTO::class)
+                                    Schema(implementation = PatchKnowledge200ResponseDTO::class)
                             )
                         ],
                 )
@@ -224,7 +265,7 @@ interface KnowledgesApi {
         @Parameter(description = "Knowledge Item ID", required = true)
         @PathVariable("knowledgeId")
         knowledgeId: kotlin.Long
-    ): ResponseEntity<KnowledgePatch200ResponseDTO> {
+    ): ResponseEntity<PatchKnowledge200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -242,7 +283,7 @@ interface KnowledgesApi {
                         [
                             Content(
                                 schema =
-                                    Schema(implementation = KnowledgePatch200ResponseDTO::class)
+                                    Schema(implementation = PatchKnowledge200ResponseDTO::class)
                             )
                         ],
                 )
@@ -258,46 +299,7 @@ interface KnowledgesApi {
         @Parameter(description = "Knowledge Item ID", required = true)
         @PathVariable("knowledgeId")
         knowledgeId: kotlin.Long
-    ): ResponseEntity<KnowledgePatch200ResponseDTO> {
-        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
-    }
-
-    @Operation(
-        tags = ["default"],
-        summary = "Update Knowledge Item",
-        operationId = "updateKnowledgeById",
-        description = """""",
-        responses =
-            [
-                ApiResponse(
-                    responseCode = "200",
-                    description = "OK",
-                    content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(implementation = KnowledgePatch200ResponseDTO::class)
-                            )
-                        ],
-                )
-            ],
-        security = [SecurityRequirement(name = "bearerAuth")],
-    )
-    @RequestMapping(
-        method = [RequestMethod.PATCH],
-        value = ["/knowledges/{knowledgeId}"],
-        produces = ["application/json"],
-        consumes = ["application/json"],
-    )
-    fun updateKnowledgeById(
-        @Parameter(description = "Knowledge Item ID", required = true)
-        @PathVariable("knowledgeId")
-        knowledgeId: kotlin.Long,
-        @Parameter(description = "", required = true)
-        @Valid
-        @RequestBody
-        updateKnowledgeByIdRequestDTO: UpdateKnowledgeByIdRequestDTO,
-    ): ResponseEntity<KnowledgePatch200ResponseDTO> {
+    ): ResponseEntity<PatchKnowledge200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 }

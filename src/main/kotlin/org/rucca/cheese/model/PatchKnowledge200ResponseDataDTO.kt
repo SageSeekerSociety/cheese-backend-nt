@@ -6,7 +6,7 @@ import java.io.Serializable
 import javax.validation.Valid
 
 /** @param knowledge */
-data class KnowledgePatch200ResponseDataDTO(
+data class PatchKnowledge200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("knowledge", required = true)

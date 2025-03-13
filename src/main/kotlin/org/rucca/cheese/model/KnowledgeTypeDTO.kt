@@ -3,13 +3,13 @@ package org.rucca.cheese.model
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
 
-/** Values: document,link,text,image */
+/** Values: DOCUMENT,LINK,TEXT,IMAGE */
 enum class KnowledgeTypeDTO(@get:JsonValue val value: kotlin.String) {
 
-    document("document"),
-    link("link"),
-    text("text"),
-    image("image");
+    DOCUMENT("DOCUMENT"),
+    LINK("LINK"),
+    TEXT("TEXT"),
+    IMAGE("IMAGE");
 
     companion object {
         @JvmStatic
