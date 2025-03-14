@@ -3,7 +3,6 @@ package org.rucca.cheese.auth.spring
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.rucca.cheese.auth.JwtService
-import org.rucca.cheese.auth.error.TokenExpiredError
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerInterceptor
@@ -31,19 +30,12 @@ class AuthenticationInterceptor(
             return true
         }
 
-        try {
-            val authorization = jwtService.verify(token)
-            val userId = authorization.userId
+        val authorization = jwtService.verify(token)
+        val userId = authorization.userId
 
-            request.setAttribute("userId", userId)
-            request.setAttribute("userRole", userSecurityService.getUserRoles(userId))
-            return true
-        } catch (e: Exception) {
-            logger.warn("Invalid JWT token", e)
-            if (e is TokenExpiredError) throw e
-            handleGuestAccess(request)
-            return true
-        }
+        request.setAttribute("userId", userId)
+        request.setAttribute("userRole", userSecurityService.getUserRoles(userId))
+        return true
     }
 
     private fun handleGuestAccess(request: HttpServletRequest) {
