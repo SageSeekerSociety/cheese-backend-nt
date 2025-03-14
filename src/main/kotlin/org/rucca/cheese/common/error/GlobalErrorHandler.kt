@@ -90,7 +90,7 @@ class GlobalErrorHandler {
     @ExceptionHandler(org.rucca.cheese.auth.spring.AccessDeniedException::class)
     @ResponseBody
     fun handleAccessDeniedException(
-        e: AccessDeniedException,
+        e: org.rucca.cheese.auth.spring.AccessDeniedException,
         request: HttpServletRequest,
     ): ResponseEntity<*> =
         ResponseEntity.status(HttpStatus.FORBIDDEN)
