@@ -70,12 +70,6 @@ class DiscussionController(
     }
 
     @Guard("create-reaction", "project")
-    @RequestMapping(
-        method = [RequestMethod.POST],
-        value = ["/discussions/{discussionId}/reactions"],
-        produces = ["application/json"],
-        consumes = ["application/json"],
-    )
     override fun discussionsDiscussionIdReactionsPost(
         discussionId: Long,
         discussionsDiscussionIdReactionsPostRequestDTO:
