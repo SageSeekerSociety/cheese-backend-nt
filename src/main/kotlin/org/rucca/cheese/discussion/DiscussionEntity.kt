@@ -8,10 +8,13 @@ package org.rucca.cheese.discussion
 import jakarta.persistence.*
 import org.hibernate.annotations.DynamicUpdate
 import org.hibernate.annotations.SQLRestriction
+import org.rucca.cheese.common.pagination.repository.CursorPagingRepository
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.project.Project
 import org.rucca.cheese.user.User
+import org.springframework.data.jpa.repository.Query
+import org.springframework.stereotype.Repository
 
 @DynamicUpdate
 @Entity
@@ -37,26 +40,13 @@ class Discussion(
     var mentionedUserIds: Set<IdType> = emptySet(),
 ) : BaseEntity()
 
-@DynamicUpdate
-@Entity
-@SQLRestriction("deleted_at IS NULL")
-@Table(
-    name = "discussion_reaction",
-    indexes = [Index(columnList = "project_discussion_id"), Index(columnList = "user_id")],
-    uniqueConstraints =
-        [
-            UniqueConstraint(
-                name = "uk_discussion_reaction_user_emoji",
-                columnNames = ["project_discussion_id", "user_id", "emoji"],
-            )
-        ],
-)
-class DiscussionReaction(
-    @JoinColumn(name = "project_discussion_id", nullable = false)
-    @ManyToOne(fetch = FetchType.LAZY)
-    var projectDiscussion: Discussion? = null,
-    @JoinColumn(name = "user_id", nullable = false)
-    @ManyToOne(fetch = FetchType.LAZY)
-    var user: User? = null,
-    @Column(nullable = false) var emoji: String? = null,
-) : BaseEntity()
+@Repository
+interface DiscussionRepository : CursorPagingRepository<Discussion, IdType> {
+    /** 查找与指定父讨论ID关联的所有讨论 */
+    @Query("SELECT d FROM Discussion d WHERE d.parent.id = :parentId AND d.deletedAt IS NULL")
+    fun findAllByParentId(parentId: IdType): List<Discussion>
+
+    /** 按项目ID查找讨论 */
+    @Query("SELECT d FROM Discussion d WHERE d.project.id = :projectId AND d.deletedAt IS NULL")
+    fun findByProjectId(projectId: IdType): List<Discussion>
+}
