@@ -94,10 +94,14 @@ interface DiscussionsApi {
         produces = ["application/json"],
     )
     fun discussionsGet(
-        @Parameter(description = "项目ID")
+        @Parameter(description = "模型类型", schema = Schema(allowableValues = ["PROJECT"]))
         @Valid
-        @RequestParam(value = "projectId", required = false)
-        projectId: kotlin.Long?,
+        @RequestParam(value = "modelType", required = false)
+        modelType: kotlin.String?,
+        @Parameter(description = "模型ID")
+        @Valid
+        @RequestParam(value = "modelId", required = false)
+        modelId: kotlin.Long?,
         @Parameter(description = "起始ID")
         @Valid
         @RequestParam(value = "page_start", required = false)

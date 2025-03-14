@@ -12,8 +12,8 @@ import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
 import javax.validation.constraints.NotNull
 import org.rucca.cheese.model.DeleteNotification200ResponseDTO
+import org.rucca.cheese.model.GetTeams200ResponseDTO
 import org.rucca.cheese.model.GetUnreadNotificationsCount200ResponseDTO
-import org.rucca.cheese.model.ListNotifications200ResponseDTO
 import org.rucca.cheese.model.MarkNotificationsAsRead200ResponseDTO
 import org.rucca.cheese.model.MarkNotificationsAsReadRequestDTO
 import org.springframework.http.HttpStatus
@@ -109,12 +109,7 @@ interface NotificationsApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(implementation = ListNotifications200ResponseDTO::class)
-                            )
-                        ],
+                        [Content(schema = Schema(implementation = GetTeams200ResponseDTO::class))],
                 )
             ],
         security = [SecurityRequirement(name = "bearerAuth")],
@@ -150,7 +145,7 @@ interface NotificationsApi {
         @Valid
         @RequestParam(value = "read", required = false)
         read: kotlin.Boolean?,
-    ): ResponseEntity<ListNotifications200ResponseDTO> {
+    ): ResponseEntity<GetTeams200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 

@@ -7,20 +7,20 @@ import javax.validation.Valid
 
 /**
  * @param code
- * @param &#x60;data&#x60;
  * @param message
+ * @param &#x60;data&#x60;
  */
 data class GetTeams200ResponseDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("code", required = true)
-    val code: kotlin.Int,
+    val code: kotlin.Int = 200,
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("message", required = true)
+    val message: kotlin.String = "success",
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("data", required = true)
     val `data`: GetTeams200ResponseDataDTO,
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("message", required = true)
-    val message: kotlin.String,
 ) : Serializable {
 
     companion object {

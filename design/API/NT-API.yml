@@ -2036,33 +2036,6 @@ paths:
     get:
       summary: Get Teams
       tags: []
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - code
-                  - data
-                  - message
-                properties:
-                  code:
-                    type: integer
-                  data:
-                    type: object
-                    required:
-                      - teams
-                    properties:
-                      teams:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/Team"
-                      page:
-                        $ref: "#/components/schemas/Page"
-                  message:
-                    type: string
-          description: OK
       operationId: get-teams
       x-stoplight:
         id: o741q5kyy29oq
@@ -2079,11 +2052,42 @@ paths:
             format: int64
           in: query
           name: page_start
+          description: 起始ID
         - schema:
             type: integer
             default: 20
           in: query
           name: page_size
+          description: 每页数量 (默认20)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 200
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    required:
+                      - notifications
+                      - page
+                    properties:
+                      notifications:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Notification"
+                      page:
+                        $ref: "#/components/schemas/Page"
   /teams/{teamId}/members:
     get:
       summary: Enumerate Team Members
@@ -2650,10 +2654,14 @@ paths:
                     type: integer
                     format: int64
                   description: 提及的用户ID (可选)
-                projectId:
+                modelType:
+                  type: string
+                  enum: [PROJECT]
+                  description: 模型类型
+                modelId:
                   type: integer
                   format: int64
-                  description: 项目ID
+                  description: 模型ID
       responses:
         "200":
           description: OK
@@ -2681,12 +2689,18 @@ paths:
       summary: List Discussions
       tags: [ ]
       parameters:
-        - name: projectId
+        - name: modelType
+          in: query
+          schema:
+            type: string
+            enum: [PROJECT]
+          description: 模型类型
+        - name: modelId
           in: query
           schema:
             type: integer
             format: int64
-          description: 项目ID
+          description: 模型ID
         - name: page_start
           in: query
           description: 起始ID
@@ -2699,18 +2713,18 @@ paths:
           schema:
             type: integer
             default: 20
-        - schema:
+        - name: sort_by
+          in: query
+          description: '"createdAt" or "updatedAt"'
+          schema:
             type: string
             default: createdAt
+        - name: sort_order
           in: query
-          name: sort_by
-          description: '"createdAt" or "updatedAt"'
-        - schema:
+          description: '"asc" or "desc"'
+          schema:
             type: string
             default: desc
-          in: query
-          name: sort_order
-          description: '"asc" or "desc"'
       responses:
         "200":
           description: OK
@@ -4181,9 +4195,14 @@ components:
         id:
           type: integer
           format: int64
-        projectId:
+        modelType:
+          type: string
+          enum: [PROJECT]
+          description: 模型类型
+        modelId:
           type: integer
           format: int64
+          description: 模型ID
         content:
           type: string
         parentId:
