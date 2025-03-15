@@ -26,7 +26,7 @@ import org.springframework.test.context.ActiveProfiles
 class AuthorizationServiceTest
 @Autowired
 constructor(
-    private val authorizationService: AuthorizationService,
+    private val jwtService: JwtService,
     private val userCreatorService: UserCreatorService,
 ) {
     var userId: IdType = -1
@@ -41,7 +41,7 @@ constructor(
 
     @Test
     fun testVerify() {
-        val authorization = authorizationService.verify(token)
+        val authorization = jwtService.verify(token)
         assertEquals(userId, authorization.userId)
     }
 }

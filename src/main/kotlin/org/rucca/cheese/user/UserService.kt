@@ -13,13 +13,23 @@ package org.rucca.cheese.user
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.UserDTO
+import org.springframework.cache.annotation.CacheEvict
 import org.springframework.stereotype.Service
 
 @Service
 class UserService(
     private val userRepository: UserRepository,
     private val userProfileRepository: UserProfileRepository,
+    private val userRoleRepository: UserRoleRepository,
 ) {
+    @CacheEvict(cacheNames = ["userRoles"], key = "#userId")
+    fun addRole(userId: IdType, role: UserRole) {
+        ensureUserIdExists(userId)
+        val roles = userRoleRepository.findAllByUserId(userId)
+        if (roles.any { it.role == role }) return
+        userRoleRepository.save(UserRoleEntity(userId, role))
+    }
+
     fun getUserDto(userId: IdType): UserDTO {
         val user =
             userRepository.findById(userId.toInt()).orElseThrow { NotFoundError("user", userId) }
@@ -84,5 +94,15 @@ class UserService(
 
     fun ensureUserIdExists(userId: IdType) {
         if (!existsUser(userId)) throw NotFoundError("user", userId)
+    }
+
+    fun ensureUsersExist(userIds: List<IdType>) {
+        val expectedCount = userIds.distinct().size
+        val count = userRepository.countByIdIn(userIds.distinct().map { it.toInt() })
+        if (count != expectedCount) throw NotFoundError("Some users not found")
+    }
+
+    fun getUserRoles(userId: IdType): Set<UserRole> {
+        return userRoleRepository.findAllByUserId(userId).map { it.role }.toSet()
     }
 }
