@@ -15,7 +15,9 @@ class DiscussionController(
 ) : DiscussionsApi {
     @Guard("query-discussion", "project")
     override fun discussionsGet(
-        projectId: Long?,
+        modelType: DiscussableModelTypeDTO?,
+        modelId: Long?,
+        parentId: Long?,
         pageStart: Long?,
         pageSize: Int,
         sortBy: String,
@@ -33,8 +35,17 @@ class DiscussionController(
                 "desc" -> SortDirection.DESCENDING
                 else -> throw IllegalArgumentException("Invalid sortOrder: $sortOrder")
             }
+        val modelTypeEnum = modelType?.let { DiscussableModelType.valueOf(modelType.name) }
         val (discussions, page) =
-            discussionService.getDiscussions(projectId, pageStart, pageSize, by, order)
+            discussionService.getDiscussions(
+                modelTypeEnum,
+                modelId,
+                parentId,
+                pageStart,
+                pageSize,
+                by,
+                order,
+            )
         return ResponseEntity.ok(
             DiscussionsGet200ResponseDTO(
                 code = 200,
@@ -49,13 +60,15 @@ class DiscussionController(
         discussionsPostRequestDTO: DiscussionsPostRequestDTO
     ): ResponseEntity<DiscussionsPost200ResponseDTO> {
         val userId = authenticationService.getCurrentUserId()
+        val modelTypeEnum = DiscussableModelType.valueOf(discussionsPostRequestDTO.modelType.name)
         val discussionId =
             discussionService.createDiscussion(
                 userId,
                 discussionsPostRequestDTO.content,
                 discussionsPostRequestDTO.parentId,
                 discussionsPostRequestDTO.mentionedUserIds?.toSet() ?: setOf(),
-                discussionsPostRequestDTO.projectId,
+                modelTypeEnum,
+                discussionsPostRequestDTO.modelId,
             )
         val discussionDTO = discussionService.getDiscussion(discussionId)
         return ResponseEntity.ok(

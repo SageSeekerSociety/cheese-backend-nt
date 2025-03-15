@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
+import org.rucca.cheese.model.DiscussableModelTypeDTO
 import org.rucca.cheese.model.DiscussionsDiscussionIdReactionsPost200ResponseDTO
 import org.rucca.cheese.model.DiscussionsDiscussionIdReactionsPostRequestDTO
 import org.rucca.cheese.model.DiscussionsGet200ResponseDTO
@@ -97,11 +98,15 @@ interface DiscussionsApi {
         @Parameter(description = "模型类型", schema = Schema(allowableValues = ["PROJECT"]))
         @Valid
         @RequestParam(value = "modelType", required = false)
-        modelType: kotlin.String?,
+        modelType: DiscussableModelTypeDTO?,
         @Parameter(description = "模型ID")
         @Valid
         @RequestParam(value = "modelId", required = false)
         modelId: kotlin.Long?,
+        @Parameter(description = "父讨论ID (可选)")
+        @Valid
+        @RequestParam(value = "parent_id", required = false)
+        parentId: kotlin.Long?,
         @Parameter(description = "起始ID")
         @Valid
         @RequestParam(value = "page_start", required = false)

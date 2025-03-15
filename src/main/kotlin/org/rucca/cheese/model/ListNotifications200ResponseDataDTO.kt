@@ -6,21 +6,18 @@ import java.io.Serializable
 import javax.validation.Valid
 
 /**
- * @param code
- * @param &#x60;data&#x60;
- * @param message
+ * @param notifications
+ * @param page
  */
-data class GetTeams200ResponseDTO(
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("code", required = true)
-    val code: kotlin.Int,
+data class ListNotifications200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("data", required = true)
-    val `data`: GetTeams200ResponseDataDTO,
+    @get:JsonProperty("notifications", required = true)
+    val notifications: kotlin.collections.List<NotificationDTO>,
+    @field:Valid
     @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("message", required = true)
-    val message: kotlin.String,
+    @get:JsonProperty("page", required = true)
+    val page: PageDTO,
 ) : Serializable {
 
     companion object {

@@ -15,19 +15,19 @@ import org.springframework.stereotype.Repository
 @SQLRestriction("deleted_at IS NULL")
 @Table(
     name = "discussion_reaction",
-    indexes = [Index(columnList = "project_discussion_id"), Index(columnList = "user_id")],
+    indexes = [Index(columnList = "discussion_id"), Index(columnList = "user_id")],
     uniqueConstraints =
         [
             UniqueConstraint(
                 name = "uk_discussion_reaction_user_emoji",
-                columnNames = ["project_discussion_id", "user_id", "emoji"],
+                columnNames = ["discussion_id", "user_id", "emoji"],
             )
         ],
 )
 class DiscussionReaction(
-    @JoinColumn(name = "project_discussion_id", nullable = false)
+    @JoinColumn(name = "discussion_id", nullable = false)
     @ManyToOne(fetch = FetchType.LAZY)
-    var projectDiscussion: Discussion? = null,
+    var discussion: Discussion? = null,
     @JoinColumn(name = "user_id", nullable = false)
     @ManyToOne(fetch = FetchType.LAZY)
     var user: User? = null,
@@ -38,7 +38,7 @@ class DiscussionReaction(
 interface DiscussionReactionRepository : CursorPagingRepository<DiscussionReaction, IdType> {
     /** 查找与特定讨论相关的所有反应 */
     @Query(
-        "SELECT r FROM DiscussionReaction r WHERE r.projectDiscussion.id = :discussionId AND r.deletedAt IS NULL"
+        "SELECT r FROM DiscussionReaction r WHERE r.discussion.id = :discussionId AND r.deletedAt IS NULL"
     )
     fun findAllByDiscussionId(discussionId: IdType): List<DiscussionReaction>
 }

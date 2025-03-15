@@ -203,11 +203,11 @@ interface TeamsApi {
         @Valid
         @RequestParam(value = "query", required = false, defaultValue = "")
         query: kotlin.String,
-        @Parameter(description = "起始ID")
+        @Parameter(description = "")
         @Valid
         @RequestParam(value = "page_start", required = false)
         pageStart: kotlin.Long?,
-        @Parameter(description = "每页数量 (默认20)", schema = Schema(defaultValue = "20"))
+        @Parameter(description = "", schema = Schema(defaultValue = "20"))
         @Valid
         @RequestParam(value = "page_size", required = false, defaultValue = "20")
         pageSize: kotlin.Int,

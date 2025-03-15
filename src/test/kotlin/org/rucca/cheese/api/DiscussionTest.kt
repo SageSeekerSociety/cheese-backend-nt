@@ -44,7 +44,8 @@ constructor(
         val request =
             MockMvcRequestBuilders.get("/discussions")
                 .header("Authorization", "Bearer $creatorToken")
-                .param("projectId", "1")
+                .param("modelType", "PROJECT")
+                .param("modelId", "1")
                 .param("pageStart", "0")
                 .param("pageSize", "10")
                 .param("sortBy", "createdAt")
@@ -66,7 +67,8 @@ constructor(
                     "content": "测试讨论内容",
                     "parentId": null,
                     "mentionedUserIds": [],
-                    "projectId": null
+                    "modelType": "PROJECT",
+                    "modelId": 1
                 }
             """
                 )
