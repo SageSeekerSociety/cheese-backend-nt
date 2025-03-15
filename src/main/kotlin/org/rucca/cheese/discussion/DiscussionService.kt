@@ -37,7 +37,7 @@ class DiscussionService(
                     modelId = modelId,
                     sender = User().apply { this.id = senderId.toInt() },
                     content = content,
-                    parent = parentId?.let { Discussion().apply { this.id = it } },
+                    parent = parentId?.let { discussionRepository.getReferenceById(it) },
                     mentionedUserIds = mentionedUserIds,
                 )
             )
@@ -52,14 +52,14 @@ class DiscussionService(
         val discussionDTO =
             DiscussionDTO(
                 id = discussion.id!!,
-                modelType = DiscussableModelTypeDTO.valueOf(discussion.modelType!!.name),
-                modelId = discussion.modelId!!,
-                content = discussion.content!!,
+                modelType = DiscussableModelTypeDTO.valueOf(discussion.modelType.name),
+                modelId = discussion.modelId,
+                content = discussion.content,
                 parentId = discussion.parent?.id,
-                sender = userService.getUserDto(discussion.sender!!.id!!.toLong()),
+                sender = userService.getUserDto(discussion.sender.id!!.toLong()),
                 mentionedUsers = discussion.mentionedUserIds.map { userService.getUserDto(it) },
                 reactions = emptyList(),
-                createdAt = discussion.createdAt!!.toEpochMilli(),
+                createdAt = discussion.createdAt.toEpochMilli(),
             )
         return discussionDTO
     }
@@ -126,11 +126,11 @@ class DiscussionService(
 
                 DiscussionDTO(
                     id = discussion.id!!,
-                    modelType = DiscussableModelTypeDTO.valueOf(discussion.modelType!!.name),
-                    modelId = discussion.modelId!!,
-                    content = discussion.content!!,
+                    modelType = DiscussableModelTypeDTO.valueOf(discussion.modelType.name),
+                    modelId = discussion.modelId,
+                    content = discussion.content,
                     parentId = discussion.parent?.id,
-                    sender = userService.getUserDto(discussion.sender!!.id!!.toLong()),
+                    sender = userService.getUserDto(discussion.sender.id!!.toLong()),
                     mentionedUsers = discussion.mentionedUserIds.map { userService.getUserDto(it) },
                     reactions =
                         reactionsByEmoji.map { (emoji, reactionList) ->
@@ -143,7 +143,7 @@ class DiscussionService(
                                     },
                             )
                         },
-                    createdAt = discussion.createdAt!!.toEpochMilli(),
+                    createdAt = discussion.createdAt.toEpochMilli(),
                 )
             }
 
