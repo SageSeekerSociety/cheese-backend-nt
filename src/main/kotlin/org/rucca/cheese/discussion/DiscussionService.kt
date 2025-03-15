@@ -134,7 +134,7 @@ class DiscussionService(
                     mentionedUsers = discussion.mentionedUserIds.map { userService.getUserDto(it) },
                     reactions =
                         reactionsByEmoji.map { (emoji, reactionList) ->
-                            DiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO(
+                            DiscussionReactionDTO(
                                 emoji = emoji,
                                 count = reactionList.size,
                                 users =
@@ -150,11 +150,7 @@ class DiscussionService(
         return Pair(discussionDTOs, result.pageInfo.toPageDTO())
     }
 
-    fun createReaction(
-        discussionId: IdType,
-        userId: IdType,
-        emoji: String,
-    ): DiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO {
+    fun createReaction(discussionId: IdType, userId: IdType, emoji: String): DiscussionReactionDTO {
         val discussion =
             discussionRepository.findById(discussionId).orElseThrow {
                 NotFoundError("discussion", discussionId)
@@ -172,17 +168,12 @@ class DiscussionService(
         val reactionsByEmoji = reactions.groupBy { it.emoji!! }
         val reactionDTO =
             reactionsByEmoji[emoji]?.let { reactionList ->
-                DiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO(
+                DiscussionReactionDTO(
                     emoji = emoji,
                     count = reactionList.size,
                     users = reactionList.map { userService.getUserDto(it.user!!.id!!.toLong()) },
                 )
-            }
-                ?: DiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO(
-                    emoji = emoji,
-                    count = 0,
-                    users = emptyList(),
-                )
+            } ?: DiscussionReactionDTO(emoji = emoji, count = 0, users = emptyList())
 
         return reactionDTO
     }

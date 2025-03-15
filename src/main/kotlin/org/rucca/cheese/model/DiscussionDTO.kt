@@ -44,9 +44,7 @@ data class DiscussionDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("reactions")
-    val reactions:
-        kotlin.collections.List<DiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO>? =
-        null,
+    val reactions: kotlin.collections.List<DiscussionReactionDTO>? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("createdAt")
     val createdAt: kotlin.Long? = null,

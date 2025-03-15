@@ -10,7 +10,7 @@ import javax.validation.Valid
  * @param message
  * @param &#x60;data&#x60;
  */
-data class DiscussionsDiscussionIdReactionsPost200ResponseDTO(
+data class ListDiscussions200ResponseDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("code", required = true)
     val code: kotlin.Int = 0,
@@ -20,7 +20,7 @@ data class DiscussionsDiscussionIdReactionsPost200ResponseDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("data", required = true)
-    val `data`: DiscussionsDiscussionIdReactionsPost200ResponseDataDTO,
+    val `data`: ListDiscussions200ResponseDataDTO,
 ) : Serializable {
 
     companion object {

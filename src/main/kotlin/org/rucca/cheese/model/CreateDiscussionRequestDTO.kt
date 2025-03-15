@@ -12,7 +12,7 @@ import javax.validation.Valid
  * @param parentId 回复某条讨论 (可选)
  * @param mentionedUserIds 提及的用户ID (可选)
  */
-data class DiscussionsPostRequestDTO(
+data class CreateDiscussionRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("content", required = true)
     val content: kotlin.String,

@@ -10,12 +10,12 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
+import org.rucca.cheese.model.CreateDiscussion200ResponseDTO
+import org.rucca.cheese.model.CreateDiscussionRequestDTO
 import org.rucca.cheese.model.DiscussableModelTypeDTO
-import org.rucca.cheese.model.DiscussionsDiscussionIdReactionsPost200ResponseDTO
-import org.rucca.cheese.model.DiscussionsDiscussionIdReactionsPostRequestDTO
-import org.rucca.cheese.model.DiscussionsGet200ResponseDTO
-import org.rucca.cheese.model.DiscussionsPost200ResponseDTO
-import org.rucca.cheese.model.DiscussionsPostRequestDTO
+import org.rucca.cheese.model.ListDiscussions200ResponseDTO
+import org.rucca.cheese.model.ReactToDiscussion200ResponseDTO
+import org.rucca.cheese.model.ReactToDiscussionRequestDTO
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -27,8 +27,8 @@ interface DiscussionsApi {
 
     @Operation(
         tags = ["default"],
-        summary = "React to Discussion",
-        operationId = "discussionsDiscussionIdReactionsPost",
+        summary = "Create Discussion",
+        operationId = "createDiscussion",
         description = """""",
         responses =
             [
@@ -39,10 +39,7 @@ interface DiscussionsApi {
                         [
                             Content(
                                 schema =
-                                    Schema(
-                                        implementation =
-                                            DiscussionsDiscussionIdReactionsPost200ResponseDTO::class
-                                    )
+                                    Schema(implementation = CreateDiscussion200ResponseDTO::class)
                             )
                         ],
                 )
@@ -51,27 +48,23 @@ interface DiscussionsApi {
     )
     @RequestMapping(
         method = [RequestMethod.POST],
-        value = ["/discussions/{discussionId}/reactions"],
+        value = ["/discussions"],
         produces = ["application/json"],
         consumes = ["application/json"],
     )
-    fun discussionsDiscussionIdReactionsPost(
-        @Parameter(description = "讨论ID", required = true)
-        @PathVariable("discussionId")
-        discussionId: kotlin.Long,
+    fun createDiscussion(
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
-        discussionsDiscussionIdReactionsPostRequestDTO:
-            DiscussionsDiscussionIdReactionsPostRequestDTO,
-    ): ResponseEntity<DiscussionsDiscussionIdReactionsPost200ResponseDTO> {
+        createDiscussionRequestDTO: CreateDiscussionRequestDTO
+    ): ResponseEntity<CreateDiscussion200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
         tags = ["default"],
         summary = "List Discussions",
-        operationId = "discussionsGet",
+        operationId = "listDiscussions",
         description = """""",
         responses =
             [
@@ -82,7 +75,7 @@ interface DiscussionsApi {
                         [
                             Content(
                                 schema =
-                                    Schema(implementation = DiscussionsGet200ResponseDTO::class)
+                                    Schema(implementation = ListDiscussions200ResponseDTO::class)
                             )
                         ],
                 )
@@ -94,7 +87,7 @@ interface DiscussionsApi {
         value = ["/discussions"],
         produces = ["application/json"],
     )
-    fun discussionsGet(
+    fun listDiscussions(
         @Parameter(description = "模型类型", schema = Schema(allowableValues = ["PROJECT"]))
         @Valid
         @RequestParam(value = "modelType", required = false)
@@ -126,14 +119,14 @@ interface DiscussionsApi {
         @Valid
         @RequestParam(value = "sort_order", required = false, defaultValue = "desc")
         sortOrder: kotlin.String,
-    ): ResponseEntity<DiscussionsGet200ResponseDTO> {
+    ): ResponseEntity<ListDiscussions200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
         tags = ["default"],
-        summary = "Create Discussion",
-        operationId = "discussionsPost",
+        summary = "React to Discussion",
+        operationId = "reactToDiscussion",
         description = """""",
         responses =
             [
@@ -144,7 +137,7 @@ interface DiscussionsApi {
                         [
                             Content(
                                 schema =
-                                    Schema(implementation = DiscussionsPost200ResponseDTO::class)
+                                    Schema(implementation = ReactToDiscussion200ResponseDTO::class)
                             )
                         ],
                 )
@@ -153,16 +146,19 @@ interface DiscussionsApi {
     )
     @RequestMapping(
         method = [RequestMethod.POST],
-        value = ["/discussions"],
+        value = ["/discussions/{discussionId}/reactions"],
         produces = ["application/json"],
         consumes = ["application/json"],
     )
-    fun discussionsPost(
+    fun reactToDiscussion(
+        @Parameter(description = "讨论ID", required = true)
+        @PathVariable("discussionId")
+        discussionId: kotlin.Long,
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
-        discussionsPostRequestDTO: DiscussionsPostRequestDTO
-    ): ResponseEntity<DiscussionsPost200ResponseDTO> {
+        reactToDiscussionRequestDTO: ReactToDiscussionRequestDTO,
+    ): ResponseEntity<ReactToDiscussion200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 }

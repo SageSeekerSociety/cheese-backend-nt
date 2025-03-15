@@ -14,7 +14,7 @@ class DiscussionController(
     private val discussionService: DiscussionService,
 ) : DiscussionsApi {
     @Guard("query-discussion", "project")
-    override fun discussionsGet(
+    override fun listDiscussions(
         modelType: DiscussableModelTypeDTO?,
         modelId: Long?,
         parentId: Long?,
@@ -22,7 +22,7 @@ class DiscussionController(
         pageSize: Int,
         sortBy: String,
         sortOrder: String,
-    ): ResponseEntity<DiscussionsGet200ResponseDTO> {
+    ): ResponseEntity<ListDiscussions200ResponseDTO> {
         val by =
             when (sortBy) {
                 "updatedAt" -> DiscussionService.DiscussionSortBy.UPDATED_AT
@@ -47,58 +47,56 @@ class DiscussionController(
                 order,
             )
         return ResponseEntity.ok(
-            DiscussionsGet200ResponseDTO(
+            ListDiscussions200ResponseDTO(
                 code = 200,
                 message = "OK",
-                data = DiscussionsGet200ResponseDataDTO(discussions = discussions, page = page),
+                data = ListDiscussions200ResponseDataDTO(discussions = discussions, page = page),
             )
         )
     }
 
     @Guard("create-discussion", "project")
-    override fun discussionsPost(
-        discussionsPostRequestDTO: DiscussionsPostRequestDTO
-    ): ResponseEntity<DiscussionsPost200ResponseDTO> {
+    override fun createDiscussion(
+        createDiscussionRequestDTO: CreateDiscussionRequestDTO
+    ): ResponseEntity<CreateDiscussion200ResponseDTO> {
         val userId = authenticationService.getCurrentUserId()
-        val modelTypeEnum = DiscussableModelType.valueOf(discussionsPostRequestDTO.modelType.name)
+        val modelTypeEnum = DiscussableModelType.valueOf(createDiscussionRequestDTO.modelType.name)
         val discussionId =
             discussionService.createDiscussion(
                 userId,
-                discussionsPostRequestDTO.content,
-                discussionsPostRequestDTO.parentId,
-                discussionsPostRequestDTO.mentionedUserIds?.toSet() ?: setOf(),
+                createDiscussionRequestDTO.content,
+                createDiscussionRequestDTO.parentId,
+                createDiscussionRequestDTO.mentionedUserIds?.toSet() ?: setOf(),
                 modelTypeEnum,
-                discussionsPostRequestDTO.modelId,
+                createDiscussionRequestDTO.modelId,
             )
         val discussionDTO = discussionService.getDiscussion(discussionId)
         return ResponseEntity.ok(
-            DiscussionsPost200ResponseDTO(
+            CreateDiscussion200ResponseDTO(
                 code = 200,
                 message = "OK",
-                data = DiscussionsPost200ResponseDataDTO(discussionDTO),
+                data = CreateDiscussion200ResponseDataDTO(discussionDTO),
             )
         )
     }
 
     @Guard("create-reaction", "project")
-    override fun discussionsDiscussionIdReactionsPost(
+    override fun reactToDiscussion(
         discussionId: Long,
-        discussionsDiscussionIdReactionsPostRequestDTO:
-            DiscussionsDiscussionIdReactionsPostRequestDTO,
-    ): ResponseEntity<DiscussionsDiscussionIdReactionsPost200ResponseDTO> {
+        reactToDiscussionRequestDTO: ReactToDiscussionRequestDTO,
+    ): ResponseEntity<ReactToDiscussion200ResponseDTO> {
         val userId = authenticationService.getCurrentUserId()
         val reactionDTO =
             discussionService.createReaction(
                 discussionId,
                 userId,
-                discussionsDiscussionIdReactionsPostRequestDTO.emoji,
+                reactToDiscussionRequestDTO.emoji,
             )
         return ResponseEntity.ok(
-            DiscussionsDiscussionIdReactionsPost200ResponseDTO(
+            ReactToDiscussion200ResponseDTO(
                 code = 200,
                 message = "OK",
-                data =
-                    DiscussionsDiscussionIdReactionsPost200ResponseDataDTO(reaction = reactionDTO),
+                data = ReactToDiscussion200ResponseDataDTO(reaction = reactionDTO),
             )
         )
     }

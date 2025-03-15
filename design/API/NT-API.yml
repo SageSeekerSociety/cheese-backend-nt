@@ -2627,6 +2627,7 @@ paths:
                         $ref: "#/components/schemas/Page"
   /discussions:
     post:
+      operationId: create-discussion
       summary: Create Discussion
       tags: [ ]
       requestBody:
@@ -2683,6 +2684,7 @@ paths:
                       discussion:
                         $ref: "#/components/schemas/Discussion"
     get:
+      operationId: list-discussions
       summary: List Discussions
       tags: [ ]
       parameters:
@@ -2756,6 +2758,7 @@ paths:
                         $ref: "#/components/schemas/Page"
   /discussions/{discussionId}/reactions:
     post:
+      operationId: react-to-discussion
       summary: React to Discussion
       tags: [ ]
       parameters:
@@ -2799,16 +2802,7 @@ paths:
                     type: object
                     properties:
                       reaction:
-                        type: object
-                        properties:
-                          emoji:
-                            type: string
-                          count:
-                            type: integer
-                          users:
-                            type: array
-                            items:
-                              $ref: "#/components/schemas/User"
+                        $ref: "#/components/schemas/DiscussionReaction"
   /knowledge:
     post:
       summary: Create Knowledge Item
@@ -4225,16 +4219,7 @@ components:
         reactions:
           type: array
           items:
-            type: object
-            properties:
-              emoji:
-                type: string
-              count:
-                type: integer
-              users:
-                type: array
-                items:
-                  $ref: "#/components/schemas/User"
+            $ref: "#/components/schemas/DiscussionReaction"
         createdAt:
           type: integer
           format: int64
@@ -4310,6 +4295,18 @@ components:
           type: integer
         message:
           type: string
+    DiscussionReaction:
+      title: DiscussionReaction
+      type: object
+      properties:
+        emoji:
+          type: string
+        count:
+          type: integer
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
   securitySchemes:
     bearerAuth:
       description: The access token is used in this way.

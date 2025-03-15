@@ -9,7 +9,7 @@ import javax.validation.Valid
  * @param discussions
  * @param page
  */
-data class DiscussionsGet200ResponseDataDTO(
+data class ListDiscussions200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("discussions")
