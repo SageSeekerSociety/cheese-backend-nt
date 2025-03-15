@@ -17,11 +17,13 @@ import org.rucca.cheese.llm.processor.ResponseProcessorRegistry
 import org.rucca.cheese.llm.service.LLMService
 import org.rucca.cheese.llm.service.UserQuotaService
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class AIConversationService(
+    private val applicationContext: ApplicationContext,
     private val conversationRepository: AIConversationRepository,
     private val messageRepository: AIMessageRepository,
     private val llmService: LLMService,
@@ -29,6 +31,18 @@ class AIConversationService(
     private val objectMapper: ObjectMapper,
     private val responseProcessorRegistry: ResponseProcessorRegistry,
 ) {
+    @Service
+    class TransactionalService(private val conversationRepository: AIConversationRepository) {
+        @Transactional
+        fun updateTitleByIdAndOwnerId(
+            conversationEntityId: IdType,
+            ownerId: IdType,
+            title: String,
+        ) {
+            conversationRepository.updateTitleByIdAndOwnerId(conversationEntityId, ownerId, title)
+        }
+    }
+
     private val logger = LoggerFactory.getLogger(AIConversationService::class.java)
 
     fun findByConversationId(conversationId: String): AIConversationEntity? {
@@ -179,7 +193,7 @@ class AIConversationService(
                                         reasoningEndTime = System.currentTimeMillis()
                                         if (reasoningStartTime != null) {
                                             totalReasoningTimeMs =
-                                                reasoningEndTime - reasoningStartTime
+                                                reasoningEndTime!! - reasoningStartTime!!
                                             emit("[REASONING_TIME]$totalReasoningTimeMs")
                                         }
                                         emit("[REASONING_END]$currentReasoningContent")
@@ -365,6 +379,7 @@ class AIConversationService(
         return messages
     }
 
+    @Transactional
     suspend fun generateAndUpdateConversationTitle(
         conversationId: IdType,
         userQuestion: String,
@@ -372,6 +387,8 @@ class AIConversationService(
         userId: IdType,
     ): String {
         try {
+            val transactionalService = applicationContext.getBean(TransactionalService::class.java)
+
             val prompt =
                 """
                 请根据以下用户问题和AI回答的内容，生成一个简短的标题（10-15字以内）。标题应该准确反映对话的主题。
@@ -393,7 +410,7 @@ class AIConversationService(
 
             val title = titleResponse.trim().take(30)
             withContext(Dispatchers.IO) {
-                conversationRepository.updateTitleByIdAndOwnerId(conversationId, userId, title)
+                transactionalService.updateTitleByIdAndOwnerId(conversationId, userId, title)
             }
 
             logger.debug("Generated title for conversation $conversationId: $title")
