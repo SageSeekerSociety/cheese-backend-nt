@@ -135,15 +135,17 @@ class CursorSpecificationBuilder<T> {
             override fun toPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                cb: CriteriaBuilder,
+                criteriaBuilder: CriteriaBuilder,
             ): Predicate {
-                return baseSpec.toPredicate(root, query, cb) ?: cb.conjunction()
+                return baseSpec.toPredicate(root, query, criteriaBuilder)
+                    ?: criteriaBuilder.conjunction()
             }
 
+            @Suppress("UNCHECKED_CAST")
             override fun toCursorPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                cb: CriteriaBuilder,
+                criteriaBuilder: CriteriaBuilder,
                 cursor: Cursor<T>?,
             ): Predicate? {
                 if (cursor == null) return null
@@ -166,14 +168,13 @@ class CursorSpecificationBuilder<T> {
                     } ?: return null
 
                 // Create predicate
-                @Suppress("UNCHECKED_CAST")
                 val path = root.get<Comparable<Any>>(cursorProperty.name)
 
                 return when (direction) {
                     Sort.Direction.ASC ->
-                        cb.greaterThanOrEqualTo(path, cursorValue as Comparable<Any>)
+                        criteriaBuilder.greaterThanOrEqualTo(path, cursorValue as Comparable<Any>)
                     Sort.Direction.DESC ->
-                        cb.lessThanOrEqualTo(path, cursorValue as Comparable<Any>)
+                        criteriaBuilder.lessThanOrEqualTo(path, cursorValue as Comparable<Any>)
                 }
             }
 
@@ -205,15 +206,17 @@ class CursorSpecificationBuilder<T> {
             override fun toPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                cb: CriteriaBuilder,
+                criteriaBuilder: CriteriaBuilder,
             ): Predicate {
-                return baseSpec.toPredicate(root, query, cb) ?: cb.conjunction()
+                return baseSpec.toPredicate(root, query, criteriaBuilder)
+                    ?: criteriaBuilder.conjunction()
             }
 
+            @Suppress("UNCHECKED_CAST")
             override fun toCursorPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                cb: CriteriaBuilder,
+                criteriaBuilder: CriteriaBuilder,
                 cursor: Cursor<T>?,
             ): Predicate? {
                 if (cursor == null) return null
@@ -259,16 +262,17 @@ class CursorSpecificationBuilder<T> {
                             val prevPropName = prevProp.name
                             val prevValue = cursorValues[prevPropName] ?: return@mapNotNull null
 
-                            cb.equal(root.get<Any>(prevPropName), prevValue)
+                            criteriaBuilder.equal(root.get<Any>(prevPropName), prevValue)
                         }
 
                     // Comparison condition for current property
-                    @Suppress("UNCHECKED_CAST") val path = root.get<Comparable<Any>>(propName)
+                    val path = root.get<Comparable<Any>>(propName)
                     val compPredicate =
                         when (direction) {
                             Sort.Direction.ASC ->
-                                cb.greaterThan(path, cursorValue as Comparable<Any>)
-                            Sort.Direction.DESC -> cb.lessThan(path, cursorValue as Comparable<Any>)
+                                criteriaBuilder.greaterThan(path, cursorValue as Comparable<Any>)
+                            Sort.Direction.DESC ->
+                                criteriaBuilder.lessThan(path, cursorValue as Comparable<Any>)
                         }
 
                     // Combine conditions
@@ -276,7 +280,10 @@ class CursorSpecificationBuilder<T> {
                         if (equalPredicates.isEmpty()) {
                             compPredicate
                         } else {
-                            cb.and(cb.and(*equalPredicates.toTypedArray()), compPredicate)
+                            criteriaBuilder.and(
+                                criteriaBuilder.and(*equalPredicates.toTypedArray()),
+                                compPredicate,
+                            )
                         }
 
                     predicates.add(combined)
@@ -288,14 +295,15 @@ class CursorSpecificationBuilder<T> {
                         val propName = prop.name
                         val value = cursorValues[propName] ?: return@mapNotNull null
 
-                        cb.equal(root.get<Any>(propName), value)
+                        criteriaBuilder.equal(root.get<Any>(propName), value)
                     }
 
                 if (allEqualPredicates.isNotEmpty()) {
-                    predicates.add(cb.and(*allEqualPredicates.toTypedArray()))
+                    predicates.add(criteriaBuilder.and(*allEqualPredicates.toTypedArray()))
                 }
 
-                return if (predicates.isEmpty()) null else cb.or(*predicates.toTypedArray())
+                return if (predicates.isEmpty()) null
+                else criteriaBuilder.or(*predicates.toTypedArray())
             }
 
             override fun getSort(): Sort {

@@ -172,7 +172,7 @@ class RolePermissionService {
 
                     // Project permissions
                     Permission(
-                        authorizedActions = listOf("create", "enumerate"),
+                        authorizedActions = listOf("create", "enumerate", "update", "delete"),
                         authorizedResource = AuthorizedResource(types = listOf("project")),
                     ),
 

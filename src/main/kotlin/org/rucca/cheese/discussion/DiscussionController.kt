@@ -2,15 +2,17 @@ package org.rucca.cheese.discussion
 
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.DiscussionsApi
-import org.rucca.cheese.auth.AuthenticationService
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.Guard
+import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@UseOldAuth
 class DiscussionController(
-    private val authenticationService: AuthenticationService,
+    private val jwtService: JwtService,
     private val discussionService: DiscussionService,
 ) : DiscussionsApi {
     @Guard("query-discussion", "project")
@@ -59,7 +61,7 @@ class DiscussionController(
     override fun createDiscussion(
         createDiscussionRequestDTO: CreateDiscussionRequestDTO
     ): ResponseEntity<CreateDiscussion200ResponseDTO> {
-        val userId = authenticationService.getCurrentUserId()
+        val userId = jwtService.getCurrentUserId()
         val modelTypeEnum = DiscussableModelType.valueOf(createDiscussionRequestDTO.modelType.name)
         val discussionId =
             discussionService.createDiscussion(
@@ -85,7 +87,7 @@ class DiscussionController(
         discussionId: Long,
         reactToDiscussionRequestDTO: ReactToDiscussionRequestDTO,
     ): ResponseEntity<ReactToDiscussion200ResponseDTO> {
-        val userId = authenticationService.getCurrentUserId()
+        val userId = jwtService.getCurrentUserId()
         val reactionDTO =
             discussionService.createReaction(
                 discussionId,

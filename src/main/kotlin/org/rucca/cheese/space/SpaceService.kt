@@ -11,7 +11,7 @@ package org.rucca.cheese.space
 
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
-import org.rucca.cheese.auth.AuthenticationService
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.EntityPatcher
@@ -40,7 +40,7 @@ class SpaceService(
     private val spaceAdminRelationRepository: SpaceAdminRelationRepository,
     private val userService: UserService,
     private val spaceUserRankService: SpaceUserRankService,
-    private val authenticationService: AuthenticationService,
+    private val jwtService: JwtService,
     private val topicService: TopicService,
     private val spaceClassificationTopicsService: SpaceClassificationTopicsService,
     private val avatarRepository: AvatarRepository,
@@ -55,7 +55,7 @@ class SpaceService(
         val myRank =
             rank
                 ?: if (options.queryMyRank && this.enableRank!!) {
-                    val userId = authenticationService.getCurrentUserId()
+                    val userId = jwtService.getCurrentUserId()
                     spaceUserRankService.getRank(this.id!!, userId)
                 } else null
 
@@ -102,7 +102,7 @@ class SpaceService(
 
         val myRank =
             if (queryOptions.queryMyRank && space.enableRank!!) {
-                val userId = authenticationService.getCurrentUserId()
+                val userId = jwtService.getCurrentUserId()
                 spaceUserRankService.getRank(spaceId, userId)
             } else null
 
