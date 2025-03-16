@@ -10,7 +10,7 @@ import javax.validation.Valid
  * @param count
  * @param users
  */
-data class ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO(
+data class DiscussionReactionDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("emoji")
     val emoji: kotlin.String? = null,

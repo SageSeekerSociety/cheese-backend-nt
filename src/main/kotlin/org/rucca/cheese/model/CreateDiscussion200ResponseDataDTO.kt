@@ -5,13 +5,12 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.io.Serializable
 import javax.validation.Valid
 
-/** @param reaction */
-data class ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataDTO(
+/** @param discussion */
+data class CreateDiscussion200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", description = "")
-    @get:JsonProperty("reaction")
-    val reaction: ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDataReactionDTO? =
-        null
+    @get:JsonProperty("discussion")
+    val discussion: DiscussionDTO? = null
 ) : Serializable {
 
     companion object {

@@ -3,12 +3,14 @@ package org.rucca.cheese.model
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
 import java.io.Serializable
+import javax.validation.Valid
 
-/** @param emoji */
-data class ProjectsProjectIdDiscussionsDiscussionIdReactionsPostRequestDTO(
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("emoji", required = true)
-    val emoji: kotlin.String
+/** @param reaction */
+data class ReactToDiscussion200ResponseDataDTO(
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("reaction")
+    val reaction: DiscussionReactionDTO? = null
 ) : Serializable {
 
     companion object {

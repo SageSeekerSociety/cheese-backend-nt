@@ -62,36 +62,4 @@ class ProjectController(private val projectService: ProjectService) : ProjectsAp
             GetProjects200ResponseDTO(data = GetProjects200ResponseDataDTO(projects, page))
         )
     }
-
-    @Guard("create-discussion", "project")
-    override fun projectsProjectIdDiscussionsPost(
-        projectId: Long,
-        projectsProjectIdDiscussionsPostRequestDTO: ProjectsProjectIdDiscussionsPostRequestDTO,
-    ): ResponseEntity<ProjectsProjectIdDiscussionsPost200ResponseDTO> {
-        // TODO: Implement
-        TODO()
-    }
-
-    @Guard("query-discussion", "project")
-    override fun projectsProjectIdDiscussionsGet(
-        projectId: Long,
-        projectFilter: ProjectsProjectIdDiscussionsGetProjectFilterParameterDTO?,
-        before: Long?,
-        pageStart: Long?,
-        pageSize: Int,
-    ): ResponseEntity<ProjectsProjectIdDiscussionsGet200ResponseDTO> {
-        // TODO: Implement
-        TODO()
-    }
-
-    @Guard("create-reaction", "project")
-    override fun projectsProjectIdDiscussionsDiscussionIdReactionsPost(
-        projectId: Long,
-        discussionId: Long,
-        projectsProjectIdDiscussionsDiscussionIdReactionsPostRequestDTO:
-            ProjectsProjectIdDiscussionsDiscussionIdReactionsPostRequestDTO,
-    ): ResponseEntity<ProjectsProjectIdDiscussionsDiscussionIdReactionsPost200ResponseDTO> {
-        // TODO: Implement
-        TODO()
-    }
 }
