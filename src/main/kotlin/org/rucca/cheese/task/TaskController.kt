@@ -16,12 +16,13 @@ import javax.annotation.PostConstruct
 import kotlinx.coroutines.flow.Flow
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.TasksApi
-import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
 import org.rucca.cheese.auth.AuthorizedAction
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.AuthInfo
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.common.helper.toLocalDateTime
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdGetter
@@ -49,12 +50,13 @@ fun List<PostTaskSubmissionRequestInnerDTO>.toEntryList() = map {
 }
 
 @RestController
+@UseOldAuth
 class TaskController(
     private val taskService: TaskService,
     private val taskSubmissionService: TaskSubmissionService,
     private val taskSubmissionReviewService: TaskSubmissionReviewService,
     private val authorizationService: AuthorizationService,
-    private val authenticationService: AuthenticationService,
+    private val jwtService: JwtService,
     private val spaceService: SpaceService,
     private val teamService: TeamService,
     private val taskTopicsService: TaskTopicsService,
@@ -614,7 +616,7 @@ class TaskController(
             taskSubmissionService.modifySubmission(
                 taskId,
                 member,
-                authenticationService.getCurrentUserId(),
+                jwtService.getCurrentUserId(),
                 version,
                 contents,
             )
@@ -651,7 +653,7 @@ class TaskController(
                             taskSubmissionService.convertTaskSubmissionEntryType(it.value.type),
                         )
                     },
-                creatorId = authenticationService.getCurrentUserId(),
+                creatorId = jwtService.getCurrentUserId(),
                 teamId = postTaskRequestDTO.team,
                 spaceId = postTaskRequestDTO.space,
                 rank = postTaskRequestDTO.rank,
@@ -700,7 +702,7 @@ class TaskController(
             taskSubmissionService.submitTask(
                 taskId,
                 member,
-                authenticationService.getCurrentUserId(),
+                jwtService.getCurrentUserId(),
                 contents,
             )
         return ResponseEntity.ok(
@@ -796,7 +798,7 @@ class TaskController(
     override fun getTaskAiAdviceStatus(
         @ResourceId taskId: IdType
     ): ResponseEntity<GetTaskAiAdviceStatus200ResponseDTO> {
-        val userId = authenticationService.getCurrentUserId()
+        val userId = jwtService.getCurrentUserId()
         val data = taskAIAdviceService.getTaskAIAdviceStatus(taskId)
         return ResponseEntity.ok(GetTaskAiAdviceStatus200ResponseDTO(200, data, "OK"))
     }
@@ -805,7 +807,7 @@ class TaskController(
     override fun requestTaskAiAdvice(
         @ResourceId taskId: IdType
     ): ResponseEntity<RequestTaskAiAdvice200ResponseDTO> {
-        val userId = authenticationService.getCurrentUserId()
+        val userId = jwtService.getCurrentUserId()
         val data = taskAIAdviceService.requestTaskAIAdvice(taskId, userId)
         return ResponseEntity.ok(RequestTaskAiAdvice200ResponseDTO(200, data, "OK"))
     }
@@ -841,7 +843,7 @@ class TaskController(
         response.setHeader("X-Accel-Buffering", "no")
         response.setHeader("Cache-Control", "no-cache")
 
-        val userId = authenticationService.getCurrentUserId()
+        val userId = jwtService.getCurrentUserId()
         val userDTO = userService.getUserDto(userId)
         val context =
             if (section != null) {
@@ -878,7 +880,7 @@ class TaskController(
         @RequestBody
         createTaskAIAdviceConversationRequestDTO: CreateTaskAIAdviceConversationRequestDTO,
     ): ResponseEntity<CreateTaskAiAdviceConversation200ResponseDTO> {
-        val userId = authenticationService.getCurrentUserId()
+        val userId = jwtService.getCurrentUserId()
         val userDTO = userService.getUserDto(userId)
         val context =
             createTaskAIAdviceConversationRequestDTO.context?.let {
@@ -928,7 +930,7 @@ class TaskController(
     override fun getTaskAiAdviceConversationsGrouped(
         @ResourceId taskId: Long
     ): ResponseEntity<GetTaskAiAdviceConversationsGrouped200ResponseDTO> {
-        val userId = authenticationService.getCurrentUserId()
+        val userId = jwtService.getCurrentUserId()
         val conversationSummaries =
             taskAIAdviceService.getConversationGroupedSummary(taskId, userId)
         return ResponseEntity.ok(
@@ -945,7 +947,7 @@ class TaskController(
         @ResourceId taskId: Long,
         @AuthInfo("conversationId") conversationId: String,
     ): ResponseEntity<GetTaskAiAdviceConversation200ResponseDTO> {
-        val userId = authenticationService.getCurrentUserId()
+        val userId = jwtService.getCurrentUserId()
         val conversations = taskAIAdviceService.getConversationById(conversationId, userId)
         if (conversations.isEmpty()) {
             throw ConversationNotFoundError(conversationId)

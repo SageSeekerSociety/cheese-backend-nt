@@ -14,7 +14,7 @@ package org.rucca.cheese.task
 import jakarta.persistence.criteria.*
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
-import org.rucca.cheese.auth.AuthenticationService
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
@@ -48,7 +48,7 @@ import org.springframework.stereotype.Service
 class TaskService(
     private val userService: UserService,
     private val teamService: TeamService,
-    private val authenticationService: AuthenticationService,
+    private val jwtService: JwtService,
     private val taskRepository: TaskRepository,
     private val taskMembershipRepository: TaskMembershipRepository,
     private val taskSubmissionRepository: TaskSubmissionRepository,
@@ -122,7 +122,7 @@ class TaskService(
     }
 
     fun Task.toTaskDTO(options: TaskQueryOptions): TaskDTO {
-        val userId = authenticationService.getCurrentUserId()
+        val userId = jwtService.getCurrentUserId()
         val space =
             if (options.querySpace && this.space?.id != null)
                 spaceService.getSpaceDto(this.space.id!!)
@@ -621,7 +621,7 @@ class TaskService(
         val direction = sortOrder.toJpaDirection()
 
         // Get current user ID for joined filter
-        val currentUserId = authenticationService.getCurrentUserId()
+        val currentUserId = jwtService.getCurrentUserId()
 
         // Create a specification for filtering tasks
         val specification = createTaskSpecification(options, currentUserId)
@@ -665,9 +665,8 @@ class TaskService(
         if (options.joined != null)
             entities =
                 entities.filter {
-                    taskMembershipService
-                        .getJoined(it, authenticationService.getCurrentUserId())
-                        .first == options.joined
+                    taskMembershipService.getJoined(it, jwtService.getCurrentUserId()).first ==
+                        options.joined
                 }
         if (options.topics != null)
             entities =

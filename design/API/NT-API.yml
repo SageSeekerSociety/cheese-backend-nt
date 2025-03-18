@@ -2625,18 +2625,11 @@ paths:
                           $ref: "#/components/schemas/Project"
                       page:
                         $ref: "#/components/schemas/Page"
-  /projects/{projectId}/discussions:
+  /discussions:
     post:
+      operationId: create-discussion
       summary: Create Discussion
-      tags: []
-      parameters:
-        - name: projectId
-          in: path
-          description: 项目ID
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ ]
       requestBody:
         required: true
         content:
@@ -2645,6 +2638,8 @@ paths:
               type: object
               required:
                 - content
+                - modelType
+                - modelId
               properties:
                 content:
                   type: string
@@ -2658,6 +2653,13 @@ paths:
                     type: integer
                     format: int64
                   description: 提及的用户ID (可选)
+                modelType:
+                  $ref: "#/components/schemas/DiscussableModelType"
+                  description: 模型类型
+                modelId:
+                  type: integer
+                  format: int64
+                  description: 模型ID
       responses:
         "200":
           description: OK
@@ -2682,38 +2684,24 @@ paths:
                       discussion:
                         $ref: "#/components/schemas/Discussion"
     get:
+      operationId: list-discussions
       summary: List Discussions
-      tags: []
+      tags: [ ]
       parameters:
-        - name: projectId
-          in: path
-          description: 项目ID
-          required: true
+        - name: modelType
+          in: query
+          schema:
+            $ref: "#/components/schemas/DiscussableModelType"
+          description: 模型类型
+        - name: modelId
+          in: query
           schema:
             type: integer
             format: int64
-        - name: project_filter
+          description: 模型ID
+        - name: parent_id
           in: query
-          description: 项目过滤器
-          schema:
-            type: object
-            properties:
-              type:
-                type: string
-                enum: [projects, tree]
-              projectIds:
-                type: array
-                items:
-                  type: integer
-                  format: int64
-              rootProjectId:
-                type: integer
-                format: int64
-              includeRoot:
-                type: boolean
-        - name: before
-          in: query
-          description: 时间戳(毫秒)
+          description: 父讨论ID (可选)
           schema:
             type: integer
             format: int64
@@ -2729,6 +2717,18 @@ paths:
           schema:
             type: integer
             default: 20
+        - name: sort_by
+          in: query
+          description: '"createdAt" or "updatedAt"'
+          schema:
+            type: string
+            default: createdAt
+        - name: sort_order
+          in: query
+          description: '"asc" or "desc"'
+          schema:
+            type: string
+            default: desc
       responses:
         "200":
           description: OK
@@ -2756,18 +2756,12 @@ paths:
                           $ref: "#/components/schemas/Discussion"
                       page:
                         $ref: "#/components/schemas/Page"
-  /projects/{projectId}/discussions/{discussionId}/reactions:
+  /discussions/{discussionId}/reactions:
     post:
+      operationId: react-to-discussion
       summary: React to Discussion
-      tags: []
+      tags: [ ]
       parameters:
-        - name: projectId
-          in: path
-          description: 项目ID
-          required: true
-          schema:
-            type: integer
-            format: int64
         - name: discussionId
           in: path
           description: 讨论ID
@@ -2808,16 +2802,7 @@ paths:
                     type: object
                     properties:
                       reaction:
-                        type: object
-                        properties:
-                          emoji:
-                            type: string
-                          count:
-                            type: integer
-                          users:
-                            type: array
-                            items:
-                              $ref: "#/components/schemas/User"
+                        $ref: "#/components/schemas/DiscussionReaction"
   /knowledges:
     post:
       summary: Create Knowledge Item
@@ -4411,20 +4396,29 @@ components:
         updatedAt:
           type: integer
           format: int64
+    DiscussableModelType:
+      type: string
+      description: 可被讨论的模型类型
+      enum: [PROJECT]
     Discussion:
       type: object
       required:
         - id
-        - projectId
         - content
         - senderId
+        - modelType
+        - modelId
       properties:
         id:
           type: integer
           format: int64
-        projectId:
+        modelType:
+          $ref: "#/components/schemas/DiscussableModelType"
+          description: 模型类型
+        modelId:
           type: integer
           format: int64
+          description: 模型ID
         content:
           type: string
         parentId:
@@ -4440,16 +4434,7 @@ components:
         reactions:
           type: array
           items:
-            type: object
-            properties:
-              emoji:
-                type: string
-              count:
-                type: integer
-              users:
-                type: array
-                items:
-                  $ref: "#/components/schemas/User"
+            $ref: "#/components/schemas/DiscussionReaction"
         createdAt:
           type: integer
           format: int64
@@ -4525,6 +4510,18 @@ components:
           type: integer
         message:
           type: string
+    DiscussionReaction:
+      title: DiscussionReaction
+      type: object
+      properties:
+        emoji:
+          type: string
+        count:
+          type: integer
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
   securitySchemes:
     bearerAuth:
       description: The access token is used in this way.

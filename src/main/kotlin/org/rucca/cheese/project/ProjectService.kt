@@ -9,6 +9,8 @@ import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
 import org.rucca.cheese.common.pagination.repository.idSeekSpec
 import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.discussion.DiscussionReactionRepository
+import org.rucca.cheese.discussion.DiscussionRepository
 import org.rucca.cheese.model.PageDTO
 import org.rucca.cheese.model.ProjectDTO
 import org.rucca.cheese.team.Team
@@ -24,6 +26,9 @@ class ProjectService(
     private val projectRepository: ProjectRepository,
     private val teamService: TeamService,
     private val userService: UserService,
+    private val projectDiscussionRepository: DiscussionRepository,
+    private val projectDiscussionReactionRepository: DiscussionReactionRepository,
+    private val projectExternalCollaboratorRepository: ProjectExternalCollaboratorRepository,
 ) {
 
     @Transactional

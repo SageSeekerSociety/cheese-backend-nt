@@ -9,14 +9,15 @@
 
 package org.rucca.cheese.team
 
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 import org.rucca.cheese.api.TeamsApi
-import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
 import org.rucca.cheese.auth.AuthorizedAction
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.NoAuth
 import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
@@ -24,10 +25,11 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
+@UseOldAuth
 class TeamController(
     private val teamService: TeamService,
     private val authorizationService: AuthorizationService,
-    private val authenticationService: AuthenticationService,
+    private val jwtService: JwtService,
 ) : TeamsApi {
     @PostConstruct
     fun initialize() {
@@ -114,7 +116,7 @@ class TeamController(
 
     @Guard("enumerate-my-teams", "team")
     override fun getMyTeams(): ResponseEntity<GetMyTeams200ResponseDTO> {
-        val teamDTOs = teamService.getTeamsOfUser(authenticationService.getCurrentUserId())
+        val teamDTOs = teamService.getTeamsOfUser(jwtService.getCurrentUserId())
         return ResponseEntity.ok(
             GetMyTeams200ResponseDTO(200, GetMyTeams200ResponseDataDTO(teamDTOs), "OK")
         )
@@ -199,7 +201,7 @@ class TeamController(
                 intro = postTeamRequestDTO.intro,
                 description = postTeamRequestDTO.description,
                 avatarId = postTeamRequestDTO.avatarId,
-                ownerId = authenticationService.getCurrentUserId(),
+                ownerId = jwtService.getCurrentUserId(),
             )
         val teamDTO = teamService.getTeamDto(teamId)
         return ResponseEntity.ok(

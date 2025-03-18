@@ -1,28 +1,24 @@
 package org.rucca.cheese.knowledge
 
-import java.util.*
 import org.rucca.cheese.api.KnowledgesApi
-import org.rucca.cheese.auth.AuthenticationService
-import org.rucca.cheese.auth.AuthorizationService
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.Guard
+import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.model.*
-import org.rucca.cheese.user.AvatarRepository
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@UseOldAuth
 class KnowledgeController(
     private val knowledgeService: KnowledgeService,
-    private val authorizationService: AuthorizationService,
-    private val authenticationService: AuthenticationService,
-    private val avatarRepository: AvatarRepository,
+    private val jwtService: JwtService,
 ) : KnowledgesApi {
-
     @Guard("create", "knowledge")
     override fun knowledgePost(
         knowledgePostRequestDTO: KnowledgePostRequestDTO
     ): ResponseEntity<KnowledgePost200ResponseDTO> {
-        val userId = authenticationService.getCurrentUserId()
+        val userId = jwtService.getCurrentUserId()
         val knowledgeDTO =
             knowledgeService.createKnowledge(
                 name = knowledgePostRequestDTO.name,

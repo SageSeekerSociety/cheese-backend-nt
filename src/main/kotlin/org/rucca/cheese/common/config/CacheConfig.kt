@@ -26,13 +26,15 @@ class CacheConfig {
                 .disableCachingNullValues()
                 .prefixCacheNameWith("cheese:caches:") // 设置缓存前缀
 
-        // 为不同缓存配置不同的设置
-        val cacheConfigurations = HashMap<String, RedisCacheConfiguration>()
-        cacheConfigurations["topics"] = defaultCacheConfig.entryTtl(Duration.ofHours(1))
+        val configMap =
+            mapOf(
+                "topics" to defaultCacheConfig.entryTtl(Duration.ofHours(1)),
+                "userRoles" to defaultCacheConfig.entryTtl(Duration.ofMinutes(15)),
+            )
 
         return RedisCacheManager.builder(redisConnectionFactory)
             .cacheDefaults(defaultCacheConfig)
-            .withInitialCacheConfigurations(cacheConfigurations)
+            .withInitialCacheConfigurations(configMap)
             .build()
     }
 }

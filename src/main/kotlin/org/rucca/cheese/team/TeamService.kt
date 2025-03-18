@@ -10,7 +10,7 @@
 package org.rucca.cheese.team
 
 import java.time.LocalDateTime
-import org.rucca.cheese.auth.AuthenticationService
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
@@ -46,7 +46,7 @@ class TeamService(
     private val teamUserRelationRepository: TeamUserRelationRepository,
     private val userService: UserService,
     private val elasticsearchTemplate: ElasticsearchTemplate,
-    private val authenticateService: AuthenticationService,
+    private val authenticateService: JwtService,
 ) {
     fun convertApproveType(type: ApproveType): ApproveTypeDTO {
         return when (type) {
@@ -235,7 +235,7 @@ class TeamService(
     }
 
     fun ensureTeamIdExists(teamId: IdType) {
-        if (teamRepository.findById(teamId).isEmpty) throw NotFoundError("team", teamId)
+        if (!teamRepository.existsById(teamId)) throw NotFoundError("team", teamId)
     }
 
     fun updateTeamName(teamId: IdType, name: String) {
