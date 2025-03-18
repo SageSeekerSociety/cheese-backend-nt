@@ -7,26 +7,26 @@ import javax.validation.Valid
 
 /**
  * @param name
+ * @param description
  * @param type
  * @param content
- * @param description
  * @param projectIds
  * @param labels
  */
-data class KnowledgePostRequestDTO(
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("name", required = true)
-    val name: kotlin.String,
-    @field:Valid
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("type", required = true)
-    val type: KnowledgeTypeDTO,
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("content", required = true)
-    val content: kotlin.String,
+data class KnowledgePatchRequestDTO(
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("name")
+    val name: kotlin.String? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("description")
     val description: kotlin.String? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("type")
+    val type: KnowledgeTypeDTO? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("content")
+    val content: kotlin.String? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("projectIds")
     val projectIds: kotlin.collections.List<kotlin.Long>? = null,

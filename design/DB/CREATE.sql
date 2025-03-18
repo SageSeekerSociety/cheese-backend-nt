@@ -58,7 +58,7 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
-    SEQUENCE knowledge_label_entity_seq
+    SEQUENCE knowledge_label_seq
 START WITH
     1 INCREMENT BY 50;
 
@@ -284,12 +284,11 @@ CREATE
     TABLE
         knowledge(
             "created_by_id" INTEGER NOT NULL,
-            material_id INTEGER NOT NULL,
+            material_id INTEGER,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            content jsonb NOT NULL,
             description text NOT NULL,
             name VARCHAR(255) NOT NULL,
             TYPE VARCHAR(255) NOT NULL CHECK(
@@ -300,12 +299,20 @@ CREATE
                     'IMAGE'
                 )
             ),
+            content jsonb NOT NULL,
             PRIMARY KEY(id)
         );
 
 CREATE
     TABLE
-        knowledge_label_entity(
+        knowledge_knowledge_labels(
+            knowledge_id BIGINT NOT NULL,
+            knowledge_labels_id BIGINT NOT NULL UNIQUE
+        );
+
+CREATE
+    TABLE
+        knowledge_label(
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
@@ -777,12 +784,12 @@ CREATE
     knowledge(name);
 
 CREATE
-    INDEX IDXpscwbyxoud3wy81qoy7a01f80 ON
-    knowledge_label_entity(knowledge_id);
+    INDEX IDXiyfipycyf7afycfn9f8gkhcvf ON
+    knowledge_label(knowledge_id);
 
 CREATE
-    INDEX IDXdwigtt9w7i3sbwkq9s1t5ihh0 ON
-    knowledge_label_entity(label);
+    INDEX IDX2lm01yrx3fukjj9a89v0hpr2 ON
+    knowledge_label(label);
 
 CREATE
     INDEX IDX3k75vvu7mevyvvb5may5lj8k7 ON
@@ -911,7 +918,13 @@ ALTER TABLE
     IF EXISTS knowledge ADD CONSTRAINT FKhniy1bsjjeoxbpfnlwydlgxtk FOREIGN KEY(material_id) REFERENCES material;
 
 ALTER TABLE
-    IF EXISTS knowledge_label_entity ADD CONSTRAINT FKn9rdc2m01070dfpopfiexs5n9 FOREIGN KEY(knowledge_id) REFERENCES knowledge;
+    IF EXISTS knowledge_knowledge_labels ADD CONSTRAINT FKd9dp2f3c65b8d2gdc9oeql6ja FOREIGN KEY(knowledge_labels_id) REFERENCES knowledge_label;
+
+ALTER TABLE
+    IF EXISTS knowledge_knowledge_labels ADD CONSTRAINT FKbdxbbpetfqn7y3cuq50tgcuoq FOREIGN KEY(knowledge_id) REFERENCES knowledge;
+
+ALTER TABLE
+    IF EXISTS knowledge_label ADD CONSTRAINT FK43k38w4y2j691mb6nhyijhq96 FOREIGN KEY(knowledge_id) REFERENCES knowledge;
 
 ALTER TABLE
     IF EXISTS material ADD CONSTRAINT FK21nqwvdonsvsnp7r3d9uo17bo FOREIGN KEY(uploader_id) REFERENCES public."user" ON

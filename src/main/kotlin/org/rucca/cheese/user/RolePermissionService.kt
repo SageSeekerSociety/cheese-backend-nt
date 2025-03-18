@@ -55,7 +55,19 @@ class RolePermissionService {
                         authorizedActions = listOf("query", "create", "enumerate"),
                         authorizedResource = AuthorizedResource(types = listOf("space")),
                     ),
-
+                    // Knowledge permissions
+                    //                    Permission(
+                    //                        authorizedActions =
+                    //                            listOf("ship-ownership", "add-admin",
+                    // "modify-admin", "remove-admin"),
+                    //                        authorizedResource = AuthorizedResource(types =
+                    // listOf("space")),
+                    //                        customLogic = "owned",
+                    //                    ),
+                    Permission(
+                        authorizedActions = listOf("create", "query", "query2", "delete", "update"),
+                        authorizedResource = AuthorizedResource(types = listOf("knowledge")),
+                    ),
                     // Team permissions
                     Permission(
                         authorizedActions =
