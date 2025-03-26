@@ -98,33 +98,24 @@ class KnowledgeRoleProvider(private val knowledgeService: KnowledgeService) : Do
             KnowledgeResource.KNOWLEDGE -> {
                 // 如果是在查询特定知识条目
                 if (knowledgeId != null) {
-                    try {
-                        val knowledge = knowledgeService.getKnowledge(knowledgeId)
+                    // 如果知识条目不存在，直接抛出 NotFoundError
+                    val knowledge = knowledgeService.getKnowledge(knowledgeId)
 
-                        // 检查团队成员关系
-                        val teamId = knowledge.team?.id?.toLong()
-                        val isTeamMember = KnowledgeContextKeys.IS_TEAM_MEMBER_PROVIDER.get(context)
+                    // 检查团队成员关系
+                    val teamId = knowledge.team?.id?.toLong()
+                    val isTeamMember = KnowledgeContextKeys.IS_TEAM_MEMBER_PROVIDER.get(context)
 
-                        if (
-                            teamId != null && isTeamMember != null && isTeamMember(teamId, userId)
-                        ) {
-                            roles.add(KnowledgeRole.READER)
+                    if (teamId != null && isTeamMember != null && isTeamMember(teamId, userId)) {
+                        roles.add(KnowledgeRole.READER)
 
-                            // 分配贡献者角色给团队成员
-                            // 这里可以根据实际业务需求修改，例如只有特定角色的团队成员才能成为贡献者
-                            roles.add(KnowledgeRole.CONTRIBUTOR)
-                        }
+                        // 分配贡献者角色给团队成员
+                        // 这里可以根据实际业务需求修改，例如只有特定角色的团队成员才能成为贡献者
+                        roles.add(KnowledgeRole.CONTRIBUTOR)
+                    }
 
-                        // 检查是否是创建者
-                        if (knowledge.createdBy?.id?.toLong() == userId) {
-                            roles.add(KnowledgeRole.CREATOR)
-                        }
-                    } catch (e: Exception) {
-                        logger.debug(
-                            "Failed to get knowledge with id {}: {}",
-                            knowledgeId,
-                            e.message,
-                        )
+                    // 检查是否是创建者
+                    if (knowledge.createdBy?.id?.toLong() == userId) {
+                        roles.add(KnowledgeRole.CREATOR)
                     }
                 }
                 // 如果是在查询知识列表

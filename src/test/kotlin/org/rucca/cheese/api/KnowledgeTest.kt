@@ -13,6 +13,7 @@ import org.rucca.cheese.team.TeamMemberRole
 import org.rucca.cheese.team.TeamRepository
 import org.rucca.cheese.team.TeamUserRelation
 import org.rucca.cheese.team.TeamUserRelationRepository
+import org.rucca.cheese.user.AvatarRepository
 import org.rucca.cheese.user.UserRepository
 import org.rucca.cheese.utils.UserCreatorService
 import org.springframework.beans.factory.annotation.Autowired
@@ -36,7 +37,11 @@ constructor(
     private val teamRepository: TeamRepository,
     private val teamUserRelationRepository: TeamUserRelationRepository,
     private val objectMapper: ObjectMapper,
+    private val avatarRepository: AvatarRepository,
 ) {
+    companion object {
+        const val DEFAULT_AVATAR = 1
+    }
 
     @Autowired private lateinit var userRepository: UserRepository
     private lateinit var creatorToken: String
@@ -60,7 +65,7 @@ constructor(
                 name = "Test Team ${floor(Math.random() * 10000).toInt()}",
                 intro = "Test team intro",
                 description = "Test team description",
-                avatar = null,
+                avatar = avatarRepository.getReferenceById(DEFAULT_AVATAR),
             )
         val savedTeam = teamRepository.save(team)
         teamId = savedTeam.id!!.toLong()
@@ -81,10 +86,10 @@ constructor(
         val requestBody =
             mapOf(
                 "name" to "Test Knowledge ${floor(Math.random() * 1000000).toInt()}",
-                "type" to "DOCUMENT",
+                "description" to "A test knowledge description.",
+                "type" to "TEXT",
                 "content" to
                     Json.encodeToString(mapOf("text" to "This is a test knowledge content.")),
-                "description" to "A test knowledge description.",
                 "teamId" to teamId,
                 "projectId" to projectId,
                 "discussionId" to discussionId,
