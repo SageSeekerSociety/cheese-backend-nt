@@ -159,7 +159,7 @@ services:
     image: ghcr.io/sageseekersociety/cheese-backend-dev:dev
     container_name: cheese_legacy_test
     ports:
-      - "7778:7777"
+      - "7779:7777"
     environment:
       - TZ=Asia/Shanghai
       - APP_NAME=Cheese
