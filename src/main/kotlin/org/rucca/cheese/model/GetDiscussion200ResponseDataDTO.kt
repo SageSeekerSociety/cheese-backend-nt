@@ -6,21 +6,18 @@ import java.io.Serializable
 import javax.validation.Valid
 
 /**
- * @param code
- * @param message
- * @param &#x60;data&#x60;
+ * @param discussion
+ * @param subDiscussions
  */
-data class CreateProject200ResponseDTO(
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("code", required = true)
-    val code: kotlin.Int = 0,
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("message", required = true)
-    val message: kotlin.String = "success",
+data class GetDiscussion200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("data", required = true)
-    val `data`: CreateProject200ResponseDataDTO,
+    @get:JsonProperty("discussion", required = true)
+    val discussion: DiscussionDTO,
+    @field:Valid
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("subDiscussions", required = true)
+    val subDiscussions: GetDiscussion200ResponseDataSubDiscussionsDTO,
 ) : Serializable {
 
     companion object {

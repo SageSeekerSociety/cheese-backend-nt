@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
 import java.io.Serializable
 
-/** @param emoji */
-data class ReactToDiscussionRequestDTO(
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("emoji", required = true)
-    val emoji: kotlin.String
+/** @param content */
+data class PatchDiscussionRequestDTO(
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("content")
+    val content: kotlin.String? = null
 ) : Serializable {
 
     companion object {

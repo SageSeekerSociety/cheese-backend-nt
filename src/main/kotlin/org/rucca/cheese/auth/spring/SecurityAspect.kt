@@ -168,7 +168,11 @@ class SecurityAspect(
         val context = mutableMapOf<String, Any>()
 
         for (i in parameterAnnotations.indices) {
-            val authContextAnnotations = parameterAnnotations[i].filterIsInstance<AuthContext>()
+            val authContextAnnotations =
+                parameterAnnotations[i].filterIsInstance<AuthContext>() +
+                    parameterAnnotations[i].filterIsInstance<AuthContexts>().flatMap {
+                        it.value.toList()
+                    }
 
             if (authContextAnnotations.isEmpty()) continue
             val paramValue = parameterValues[i] ?: continue
@@ -184,6 +188,7 @@ class SecurityAspect(
                     if (fieldValue != null) {
                         context[key] = fieldValue
                     }
+                    logger.debug("Extracted context {} in field {}: {}", key, fieldPath, fieldValue)
                 }
             }
         }

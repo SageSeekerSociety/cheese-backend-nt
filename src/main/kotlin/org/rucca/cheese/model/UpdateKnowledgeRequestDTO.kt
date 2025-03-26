@@ -10,10 +10,11 @@ import javax.validation.Valid
  * @param description
  * @param type
  * @param content
- * @param projectIds
+ * @param teamId 知识条目所属的团队ID
+ * @param projectId 相关的项目ID
  * @param labels
  */
-data class KnowledgePatchRequestDTO(
+data class UpdateKnowledgeRequestDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("name")
     val name: kotlin.String? = null,
@@ -27,9 +28,12 @@ data class KnowledgePatchRequestDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("content")
     val content: kotlin.String? = null,
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("projectIds")
-    val projectIds: kotlin.collections.List<kotlin.Long>? = null,
+    @Schema(example = "null", description = "知识条目所属的团队ID")
+    @get:JsonProperty("teamId")
+    val teamId: kotlin.Long? = null,
+    @Schema(example = "null", description = "相关的项目ID")
+    @get:JsonProperty("projectId")
+    val projectId: kotlin.Long? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("labels")
     val labels: kotlin.collections.List<kotlin.String>? = null,

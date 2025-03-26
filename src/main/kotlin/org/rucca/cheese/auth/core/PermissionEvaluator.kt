@@ -57,7 +57,12 @@ class DefaultPermissionEvaluator(
 
         userRoles.sorted().forEach { role ->
             if (checkRoleWithHierarchy(role, userInfo, permission, resourceId, context)) {
-                logger.debug("Permission granted via system role: ${role.toDomainRoleId()}")
+                logger.debug(
+                    "Permission {} granted for user {} via system role {}",
+                    permission,
+                    userId,
+                    role,
+                )
                 return true
             }
         }
@@ -71,13 +76,18 @@ class DefaultPermissionEvaluator(
             // Check each domain role and its parent roles
             for (role in domainRoles) {
                 if (checkRoleWithHierarchy(role, userInfo, permission, resourceId, context)) {
-                    logger.debug("Permission granted via domain role: {}", role.toDomainRoleId())
+                    logger.debug(
+                        "Permission {} granted for user {} via domain role {}",
+                        permission,
+                        userId,
+                        role.toDomainRoleId(),
+                    )
                     return true
                 }
             }
         }
 
-        logger.debug("Permission denied for user {}: {}", userId, permission)
+        logger.debug("Permission {} denied for user {}", permission, userId)
         return false
     }
 

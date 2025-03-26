@@ -3,7 +3,6 @@ package org.rucca.cheese.model
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
 import java.io.Serializable
-import javax.validation.Valid
 import javax.validation.constraints.Pattern
 
 /**
@@ -14,11 +13,12 @@ import javax.validation.constraints.Pattern
  * @param endDate 项目结束时间戳(毫秒)
  * @param teamId
  * @param leaderId
- * @param content
  * @param parentId 父项目ID
  * @param externalTaskId
  * @param githubRepo
- * @param externalCollaborators
+ * @param content
+ * @param memberIds
+ * @param externalCollaboratorIds
  */
 data class CreateProjectRequestDTO(
     @Schema(example = "null", required = true, description = "")
@@ -43,9 +43,6 @@ data class CreateProjectRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("leaderId", required = true)
     val leaderId: kotlin.Long,
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("content", required = true)
-    val content: kotlin.String,
     @Schema(example = "null", description = "父项目ID")
     @get:JsonProperty("parentId")
     val parentId: kotlin.Long? = null,
@@ -55,12 +52,15 @@ data class CreateProjectRequestDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("githubRepo")
     val githubRepo: kotlin.String? = null,
-    @field:Valid
     @Schema(example = "null", description = "")
-    @get:JsonProperty("externalCollaborators")
-    val externalCollaborators:
-        kotlin.collections.List<CreateProjectRequestExternalCollaboratorsInnerDTO>? =
-        null,
+    @get:JsonProperty("content")
+    val content: kotlin.String? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("memberIds")
+    val memberIds: kotlin.collections.List<kotlin.Long>? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("externalCollaboratorIds")
+    val externalCollaboratorIds: kotlin.collections.List<kotlin.Long>? = null,
 ) : Serializable {
 
     companion object {

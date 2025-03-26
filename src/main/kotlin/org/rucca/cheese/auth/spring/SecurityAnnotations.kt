@@ -59,11 +59,17 @@ annotation class ResourceId
  *
  * @param key The key to use in the context map
  */
-@Repeatable
+@JvmRepeatable(AuthContexts::class)
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
 @MustBeDocumented
 annotation class AuthContext(val key: String, val field: String = "")
+
+/** Container annotation for multiple @AuthContext annotations. */
+@Target(AnnotationTarget.VALUE_PARAMETER)
+@Retention(AnnotationRetention.RUNTIME)
+@MustBeDocumented
+annotation class AuthContexts(vararg val value: AuthContext)
 
 /**
  * Annotation to inject the current authenticated user into controller methods. Can be used on

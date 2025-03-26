@@ -10,7 +10,7 @@ data class ReactToDiscussion200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("reaction")
-    val reaction: DiscussionReactionDTO? = null
+    val reaction: DiscussionReactionSummaryDTO? = null
 ) : Serializable {
 
     companion object {

@@ -15,88 +15,63 @@ import org.springframework.data.jpa.domain.Specification
 import org.springframework.data.jpa.repository.JpaRepository
 
 /**
- * Builder for creating cursor-based pagination specifications.
- *
- * This builder supports both simple and composite cursors with a fluent API.
+ * Builder for creating cursor-based pagination specifications with explicit cursor types.
  *
  * @param T The entity type
+ * @param C The concrete cursor type
  */
-class CursorSpecificationBuilder<T> {
+class CursorSpecificationBuilder<T, C : Cursor<T>>
+private constructor(private val cursorType: Class<C>, vararg cursorBy: KProperty1<T, *>) {
     private val sortProperties = mutableListOf<Pair<KProperty1<T, *>, Sort.Direction>>()
     private var cursorProperties = mutableListOf<KProperty1<T, *>>()
     private var specification: Specification<T>? = null
 
-    /**
-     * Add a sort property with direction.
-     *
-     * @param property The property to sort by
-     * @param direction The sort direction
-     * @return This builder for chaining
-     */
+    init {
+        cursorProperties.addAll(cursorBy)
+    }
+
+    /** Add a sort property with direction. */
     fun sortBy(
         property: KProperty1<T, *>,
         direction: Sort.Direction = Sort.Direction.ASC,
-    ): CursorSpecificationBuilder<T> {
+    ): CursorSpecificationBuilder<T, C> {
         sortProperties.add(property to direction)
         return this
     }
 
-    /**
-     * Set multiple sort properties at once.
-     *
-     * @param properties Property-direction pairs for sorting
-     * @return This builder for chaining
-     */
+    /** Set multiple sort properties at once. */
     fun sortBy(
         vararg properties: Pair<KProperty1<T, *>, Sort.Direction>
-    ): CursorSpecificationBuilder<T> {
+    ): CursorSpecificationBuilder<T, C> {
         sortProperties.clear()
         sortProperties.addAll(properties)
         return this
     }
 
-    /**
-     * Set properties to use for cursor extraction.
-     *
-     * @param properties Properties to extract for cursor values
-     * @return This builder for chaining
-     */
-    fun cursorBy(vararg properties: KProperty1<T, *>): CursorSpecificationBuilder<T> {
+    /** Set properties to use for cursor extraction. */
+    fun cursorBy(vararg properties: KProperty1<T, *>): CursorSpecificationBuilder<T, C> {
         cursorProperties.clear()
         cursorProperties.addAll(properties)
         return this
     }
 
-    /**
-     * Set filter specification.
-     *
-     * @param spec JPA specification for filtering
-     * @return This builder for chaining
-     */
-    fun specification(spec: Specification<T>): CursorSpecificationBuilder<T> {
+    /** Set filter specification. */
+    fun specification(spec: Specification<T>): CursorSpecificationBuilder<T, C> {
         this.specification = spec
         return this
     }
 
-    /**
-     * Set filter specification using lambda.
-     *
-     * @param specFn Function that creates a predicate
-     * @return This builder for chaining
-     */
+    /** Set filter specification using lambda. */
     fun specification(
         specFn: (Root<T>, CriteriaQuery<*>, CriteriaBuilder) -> Predicate?
-    ): CursorSpecificationBuilder<T> {
+    ): CursorSpecificationBuilder<T, C> {
         this.specification = Specification { root, query, cb -> specFn(root, query!!, cb) }
         return this
     }
 
-    /**
-     * Build cursor specification, automatically choosing simple or composite implementation.
-     *
-     * @return Cursor specification
-     */
-    fun build(): CursorSpecification<T, Cursor<T>> {
+    /** Build cursor specification with the specified cursor type. */
+    @Suppress("UNCHECKED_CAST")
+    fun build(): CursorSpecification<T, C> {
         require(sortProperties.isNotEmpty()) { "At least one sort property must be set" }
 
         // If no cursor properties specified, use sort properties
@@ -107,20 +82,33 @@ class CursorSpecificationBuilder<T> {
         // Create base specification
         val baseSpec = specification ?: Specification { _, _, _ -> null }
 
-        // Choose appropriate implementation based on properties count
-        return if (cursorProperties.size == 1 && sortProperties.size == 1) {
-            createSimpleCursorSpecification(
-                cursorProperty = cursorProperties.first(),
-                sortProperty = sortProperties.first().first,
-                direction = sortProperties.first().second,
-                baseSpec = baseSpec,
-            )
-        } else {
-            createCompositeCursorSpecification(
-                sortProperties = sortProperties,
-                cursorProperties = cursorProperties,
-                baseSpec = baseSpec,
-            )
+        // Choose appropriate implementation based on cursor type and properties
+        return when {
+            SimpleCursor::class.java.isAssignableFrom(cursorType) && cursorProperties.size == 1 -> {
+                createSimpleCursorSpecification(
+                    cursorProperty = cursorProperties.first(),
+                    sortProperty = sortProperties.first().first,
+                    direction = sortProperties.first().second,
+                    baseSpec = baseSpec,
+                )
+                    as CursorSpecification<T, C>
+            }
+
+            TypedCompositeCursor::class.java.isAssignableFrom(cursorType) -> {
+                createCompositeCursorSpecification(
+                    sortProperties = sortProperties,
+                    cursorProperties = cursorProperties,
+                    baseSpec = baseSpec,
+                )
+                    as CursorSpecification<T, C>
+            }
+
+            else -> {
+                throw IllegalArgumentException(
+                    "Cannot create cursor specification for cursor type: ${cursorType.simpleName} " +
+                        "with ${cursorProperties.size} properties"
+                )
+            }
         }
     }
 
@@ -130,8 +118,9 @@ class CursorSpecificationBuilder<T> {
         sortProperty: KProperty1<T, *>,
         direction: Sort.Direction,
         baseSpec: Specification<T>,
-    ): CursorSpecification<T, Cursor<T>> {
-        return object : CursorSpecification<T, Cursor<T>> {
+    ): CursorSpecification<T, SimpleCursor<T, *>> {
+        // Implementation remains the same, just typed specifically to SimpleCursor
+        return object : CursorSpecification<T, SimpleCursor<T, *>> {
             override fun toPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
@@ -146,35 +135,17 @@ class CursorSpecificationBuilder<T> {
                 root: Root<T>,
                 query: CriteriaQuery<*>,
                 criteriaBuilder: CriteriaBuilder,
-                cursor: Cursor<T>?,
+                cursor: SimpleCursor<T, *>?,
             ): Predicate? {
                 if (cursor == null) return null
 
-                // Extract value from cursor
-                val cursorValue =
-                    when (cursor) {
-                        is SimpleCursor<*, *> -> cursor.value
-                        is TypedCompositeCursor<*> ->
-                            cursor.values[cursorProperty.name]?.let {
-                                when (it) {
-                                    is CursorValue.StringValue -> it.value
-                                    is CursorValue.LongValue -> it.value
-                                    is CursorValue.DoubleValue -> it.value
-                                    is CursorValue.BooleanValue -> it.value
-                                    is CursorValue.TimestampValue -> it.value
-                                    CursorValue.NullValue -> null
-                                }
-                            }
-                    } ?: return null
-
                 // Create predicate
                 val path = root.get<Comparable<Any>>(cursorProperty.name)
+                val cursorValue = cursor.value as Comparable<Any>
 
                 return when (direction) {
-                    Sort.Direction.ASC ->
-                        criteriaBuilder.greaterThanOrEqualTo(path, cursorValue as Comparable<Any>)
-                    Sort.Direction.DESC ->
-                        criteriaBuilder.lessThanOrEqualTo(path, cursorValue as Comparable<Any>)
+                    Sort.Direction.ASC -> criteriaBuilder.greaterThanOrEqualTo(path, cursorValue)
+                    Sort.Direction.DESC -> criteriaBuilder.lessThanOrEqualTo(path, cursorValue)
                 }
             }
 
@@ -182,16 +153,10 @@ class CursorSpecificationBuilder<T> {
                 return Sort.by(direction, sortProperty.name)
             }
 
-            override fun extractCursor(entity: T): Cursor<T>? {
+            @Suppress("UNCHECKED_CAST")
+            override fun extractCursor(entity: T): SimpleCursor<T, *>? {
                 val value = cursorProperty.get(entity) ?: return null
-
-                return when (value) {
-                    is String,
-                    is Number,
-                    is Boolean -> SimpleCursor<T, Any>(value)
-                    else ->
-                        TypedCompositeCursor<T>(mapOf(cursorProperty.name to CursorValue.of(value)))
-                }
+                return SimpleCursor<T, Any>(value)
             }
         }
     }
@@ -201,8 +166,12 @@ class CursorSpecificationBuilder<T> {
         sortProperties: List<Pair<KProperty1<T, *>, Sort.Direction>>,
         cursorProperties: List<KProperty1<T, *>>,
         baseSpec: Specification<T>,
-    ): CursorSpecification<T, Cursor<T>> {
-        return object : CursorSpecification<T, Cursor<T>> {
+    ): CursorSpecification<T, TypedCompositeCursor<T>> {
+        // Implementation remains similar, just typed specifically to TypedCompositeCursor
+        return object : CursorSpecification<T, TypedCompositeCursor<T>> {
+            // Implementation details remain the same but with specific TypedCompositeCursor type
+            // ... implementation details ...
+
             override fun toPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
@@ -212,36 +181,26 @@ class CursorSpecificationBuilder<T> {
                     ?: criteriaBuilder.conjunction()
             }
 
-            @Suppress("UNCHECKED_CAST")
             override fun toCursorPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
                 criteriaBuilder: CriteriaBuilder,
-                cursor: Cursor<T>?,
+                cursor: TypedCompositeCursor<T>?,
             ): Predicate? {
+                // Existing implementation...
                 if (cursor == null) return null
 
                 // Extract values from cursor
                 val cursorValues =
-                    when (cursor) {
-                        is SimpleCursor<*, *> -> {
-                            // Handle single value cursor - assume it's for first property
-                            mapOf(cursorProperties.first().name to cursor.value)
+                    cursor.values.mapValues { (_, value) ->
+                        when (value) {
+                            is CursorValue.StringValue -> value.value
+                            is CursorValue.LongValue -> value.value
+                            is CursorValue.DoubleValue -> value.value
+                            is CursorValue.BooleanValue -> value.value
+                            is CursorValue.TimestampValue -> value.value
+                            CursorValue.NullValue -> null
                         }
-                        is TypedCompositeCursor<*> -> {
-                            // Convert CursorValue to raw values
-                            cursor.values.mapValues { (_, value) ->
-                                when (value) {
-                                    is CursorValue.StringValue -> value.value
-                                    is CursorValue.LongValue -> value.value
-                                    is CursorValue.DoubleValue -> value.value
-                                    is CursorValue.BooleanValue -> value.value
-                                    is CursorValue.TimestampValue -> value.value
-                                    CursorValue.NullValue -> null
-                                }
-                            }
-                        }
-                        else -> return null
                     }
 
                 if (cursorValues.isEmpty()) return null
@@ -321,29 +280,42 @@ class CursorSpecificationBuilder<T> {
             }
         }
     }
+
+    companion object {
+        /** Create a builder for simple cursor specifications */
+        fun <T, V : Comparable<V>> simple(
+            cursorProperty: KProperty1<T, V?>
+        ): CursorSpecificationBuilder<T, SimpleCursor<T, V>> {
+            @Suppress("UNCHECKED_CAST")
+            return CursorSpecificationBuilder<T, SimpleCursor<T, V>>(
+                SimpleCursor::class.java as Class<SimpleCursor<T, V>>,
+                cursorProperty,
+            )
+        }
+
+        /** Create a builder for composite cursor specifications */
+        fun <T> composite(
+            vararg cursorBy: KProperty1<T, *>
+        ): CursorSpecificationBuilder<T, TypedCompositeCursor<T>> {
+            @Suppress("UNCHECKED_CAST")
+            return CursorSpecificationBuilder(
+                TypedCompositeCursor::class.java as Class<TypedCompositeCursor<T>>,
+                *cursorBy,
+            )
+        }
+    }
 }
 
-/**
- * Extension function to create cursor specification builder.
- *
- * @return New builder instance
- */
-fun <T, ID : Serializable> JpaRepository<T, ID>.cursorSpec(): CursorSpecificationBuilder<T> {
-    return CursorSpecificationBuilder<T>()
-}
-
-/**
- * Extension function for backward compatibility with single property cursors.
- *
- * @param property The cursor property
- * @return Configured builder instance
- */
-@Deprecated(
-    "Use cursorSpec() instead for more flexibility",
-    ReplaceWith("cursorSpec().sortBy(property).cursorBy(property)"),
-)
-fun <T, ID : Serializable, V : Comparable<V>> JpaRepository<T, ID>.cursorSpec(
+/** Extension function to create simple cursor specification builder. */
+fun <T, ID : Serializable, V : Comparable<V>> JpaRepository<T, ID>.simpleCursorSpec(
     property: KProperty1<T, V?>
-): CursorSpecificationBuilder<T> {
-    return CursorSpecificationBuilder<T>().sortBy(property).cursorBy(property)
+): CursorSpecificationBuilder<T, SimpleCursor<T, V>> {
+    return CursorSpecificationBuilder.simple(property).sortBy(property)
+}
+
+/** Extension function to create composite cursor specification builder. */
+fun <T, ID : Serializable> JpaRepository<T, ID>.compositeCursorSpec(
+    vararg properties: KProperty1<T, *>
+): CursorSpecificationBuilder<T, TypedCompositeCursor<T>> {
+    return CursorSpecificationBuilder.composite(*properties)
 }

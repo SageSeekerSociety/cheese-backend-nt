@@ -11,7 +11,7 @@ import java.io.Serializable
 data class KnowledgeDelete200ResponseDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("code", required = true)
-    val code: kotlin.Int = 0,
+    val code: kotlin.Int = 200,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("message", required = true)
     val message: kotlin.String,

@@ -10,17 +10,17 @@ import javax.validation.Valid
  * @param message
  * @param &#x60;data&#x60;
  */
-data class PatchKnowledge200ResponseDTO(
+data class GetProjectMembers200ResponseDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("code", required = true)
-    val code: kotlin.Int = 0,
+    val code: kotlin.Int = 200,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("message", required = true)
     val message: kotlin.String = "success",
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("data", required = true)
-    val `data`: PatchKnowledge200ResponseDataDTO,
+    val `data`: GetProjectMembers200ResponseDataDTO,
 ) : Serializable {
 
     companion object {
