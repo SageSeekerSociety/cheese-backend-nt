@@ -29,7 +29,9 @@ class CacheConfig {
         val configMap =
             mapOf(
                 "topics" to defaultCacheConfig.entryTtl(Duration.ofHours(1)),
+                "discussableModelTypeAndId" to defaultCacheConfig.entryTtl(Duration.ofDays(1)),
                 "userRoles" to defaultCacheConfig.entryTtl(Duration.ofMinutes(15)),
+                "projectMemberRole" to defaultCacheConfig.entryTtl(Duration.ofMinutes(15)),
             )
 
         return RedisCacheManager.builder(redisConnectionFactory)

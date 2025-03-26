@@ -5,12 +5,12 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.io.Serializable
 import javax.validation.Valid
 
-/** @param knowledge */
-data class PatchKnowledge200ResponseDataDTO(
+/** @param member */
+data class PostProjectMember201ResponseDataDTO(
     @field:Valid
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("knowledge", required = true)
-    val knowledge: KnowledgeDTO
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("member")
+    val member: ProjectMembershipDTO? = null
 ) : Serializable {
 
     companion object {

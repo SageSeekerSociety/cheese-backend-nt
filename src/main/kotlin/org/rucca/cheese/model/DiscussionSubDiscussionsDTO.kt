@@ -6,21 +6,17 @@ import java.io.Serializable
 import javax.validation.Valid
 
 /**
- * @param emoji
  * @param count
- * @param users
+ * @param examples
  */
-data class DiscussionReactionDTO(
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("emoji")
-    val emoji: kotlin.String? = null,
+data class DiscussionSubDiscussionsDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("count")
-    val count: kotlin.Int? = null,
+    val count: kotlin.Long? = null,
     @field:Valid
     @Schema(example = "null", description = "")
-    @get:JsonProperty("users")
-    val users: kotlin.collections.List<UserDTO>? = null,
+    @get:JsonProperty("examples")
+    val examples: kotlin.collections.List<DiscussionDTO>? = null,
 ) : Serializable {
 
     companion object {

@@ -14,6 +14,7 @@ import javax.validation.Valid
  * @param sender
  * @param mentionedUsers
  * @param reactions
+ * @param subDiscussions
  * @param createdAt
  */
 data class DiscussionDTO(
@@ -44,7 +45,11 @@ data class DiscussionDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("reactions")
-    val reactions: kotlin.collections.List<DiscussionReactionDTO>? = null,
+    val reactions: kotlin.collections.List<DiscussionReactionSummaryDTO>? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("subDiscussions")
+    val subDiscussions: DiscussionSubDiscussionsDTO? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("createdAt")
     val createdAt: kotlin.Long? = null,

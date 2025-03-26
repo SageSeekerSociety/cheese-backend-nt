@@ -60,7 +60,7 @@ sealed class CursorValue {
 
     /** Null cursor value. */
     @Serializable
-    object NullValue : CursorValue() {
+    data object NullValue : CursorValue() {
         override fun toJsonElement(): JsonElement = JsonNull
     }
 

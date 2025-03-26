@@ -5,12 +5,17 @@
 
 package org.rucca.cheese.discussion
 
+import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.*
 import org.hibernate.annotations.DynamicUpdate
+import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.SQLRestriction
+import org.hibernate.annotations.Type
+import org.hibernate.type.SqlTypes
 import org.rucca.cheese.common.pagination.repository.CursorPagingRepository
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.model.DiscussableModelTypeDTO
 import org.rucca.cheese.user.User
 import org.springframework.stereotype.Repository
 
@@ -18,6 +23,11 @@ import org.springframework.stereotype.Repository
 enum class DiscussableModelType {
     PROJECT
 }
+
+fun DiscussableModelType.toDTO(): DiscussableModelTypeDTO =
+    DiscussableModelTypeDTO.valueOf(this.name)
+
+fun DiscussableModelTypeDTO.toEnum(): DiscussableModelType = DiscussableModelType.valueOf(this.name)
 
 @DynamicUpdate
 @Entity
@@ -31,7 +41,10 @@ class Discussion(
     @JoinColumn(name = "sender_id", nullable = false)
     @ManyToOne(fetch = FetchType.LAZY)
     var sender: User,
-    @Column(nullable = false, columnDefinition = "TEXT") var content: String,
+    @Type(JsonType::class)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(nullable = false, columnDefinition = "JSONB")
+    var content: String,
     @JoinColumn(name = "parent_id")
     @ManyToOne(fetch = FetchType.LAZY)
     var parent: Discussion? = null,
@@ -44,4 +57,14 @@ class Discussion(
     var mentionedUserIds: Set<IdType>,
 ) : BaseEntity()
 
-@Repository interface DiscussionRepository : CursorPagingRepository<Discussion, IdType> {}
+@Repository
+interface DiscussionRepository : CursorPagingRepository<Discussion, IdType> {
+    interface ModelTypeAndId {
+        val modelType: DiscussableModelType
+        val modelId: IdType
+    }
+
+    fun findModelTypeAndIdById(id: IdType): ModelTypeAndId?
+
+    fun countByParentId(parentId: IdType): Long
+}

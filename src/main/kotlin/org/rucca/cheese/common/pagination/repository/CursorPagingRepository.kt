@@ -30,29 +30,32 @@ ID : Comparable<ID> {
      *
      * Example usage:
      * ```
-     * // Simple example - sort by creation date
-     * val spec = repository.cursorSpec()
-     *     .sortBy(User::createdAt, Sort.Direction.DESC)
+     * // Simple cursor - paginate by id
+     * val simpleSpec = repository.simpleCursorSpec(Entity::id)
+     *     .sortBy(Entity::createdAt, Sort.Direction.DESC)
+     *     .specification { root, _, cb -> cb.equal(root.get("active"), true) }
      *     .build()
      *
-     * // Complex example - multiple sort properties with filtering
-     * val spec = repository.cursorSpec()
+     * // Get first page
+     * val firstPage = repository.findAllWithCursor(simpleSpec, null, 20)
+     *
+     * // Get next page using cursor
+     * val nextCursor = firstPage.pageInfo.nextCursor
+     * val secondPage = repository.findAllWithCursor(simpleSpec, nextCursor, 20)
+     *
+     * // Composite cursor - multiple properties
+     * val compositeSpec = repository.compositeCursorSpec(Entity::status, Entity::priority, Entity::id)
      *     .sortBy(
-     *         User::status asc(),
-     *         User::priority desc(),
-     *         User::id asc()
+     *         Entity::status to Sort.Direction.ASC,
+     *         Entity::priority to Sort.Direction.DESC,
+     *         Entity::id to Sort.Direction.ASC
      *     )
-     *     .specification { root, _, cb ->
-     *         cb.equal(root.get("active"), true)
-     *     }
      *     .build()
-     *
-     * // Execute the query
-     * val page = repository.findAllWithCursor(spec, startCursor, 20)
      *
      * // Access results
      * val items = page.content
-     * val nextCursor = page.pageInfo.nextCursor?.encode()
+     * val hasNext = page.pageInfo.hasNext
+     * val encodedCursor = page.pageInfo.nextCursor?.encode() // For client transmission
      * ```
      */
     fun <C : Cursor<T>> findAllWithCursor(
