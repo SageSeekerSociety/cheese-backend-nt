@@ -60,9 +60,9 @@ class TeamController(
     }
 
     @Guard("delete", "team")
-    override fun deleteTeam(@ResourceId teamId: Long): ResponseEntity<DeleteTeam200ResponseDTO> {
+    override fun deleteTeam(@ResourceId teamId: Long): ResponseEntity<CommonResponseDTO> {
         teamService.deleteTeam(teamId)
-        return ResponseEntity.ok(DeleteTeam200ResponseDTO(200, "OK"))
+        return ResponseEntity.ok(CommonResponseDTO(200, "OK"))
     }
 
     @NoAuth
