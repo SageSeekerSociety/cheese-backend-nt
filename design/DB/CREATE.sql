@@ -83,12 +83,17 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
-    SEQUENCE project_external_collaborator_seq
+    SEQUENCE project_membership_seq
 START WITH
     1 INCREMENT BY 50;
 
 CREATE
     SEQUENCE project_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
+    SEQUENCE reaction_type_seq
 START WITH
     1 INCREMENT BY 50;
 
@@ -248,10 +253,10 @@ CREATE
             model_id BIGINT NOT NULL,
             parent_id BIGINT,
             updated_at TIMESTAMP(6) NOT NULL,
-            content TEXT NOT NULL,
             model_type VARCHAR(255) NOT NULL CHECK(
                 model_type IN('PROJECT')
             ),
+            content JSONB NOT NULL,
             PRIMARY KEY(id)
         );
 
@@ -270,13 +275,13 @@ CREATE
             deleted_at TIMESTAMP(6),
             discussion_id BIGINT NOT NULL,
             id BIGINT NOT NULL,
+            reaction_type_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            emoji VARCHAR(255) NOT NULL,
             PRIMARY KEY(id),
-            CONSTRAINT uk_discussion_reaction_user_emoji UNIQUE(
+            CONSTRAINT uk_discussion_reaction_user_type UNIQUE(
                 discussion_id,
                 user_id,
-                emoji
+                reaction_type_id
             )
         );
 
@@ -287,16 +292,25 @@ CREATE
             material_id INTEGER,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
+            discussion_id BIGINT,
             id BIGINT NOT NULL,
+            project_id BIGINT,
+            team_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
             description text NOT NULL,
             name VARCHAR(255) NOT NULL,
+            source_type VARCHAR(255) NOT NULL CHECK(
+                source_type IN(
+                    'MANUAL',
+                    'FROM_DISCUSSION'
+                )
+            ),
             TYPE VARCHAR(255) NOT NULL CHECK(
                 TYPE IN(
-                    'DOCUMENT',
+                    'MATERIAL',
                     'LINK',
                     'TEXT',
-                    'IMAGE'
+                    'CODE'
                 )
             ),
             content jsonb NOT NULL,
@@ -389,18 +403,18 @@ CREATE
 CREATE
     TABLE
         project(
-            "leader_id" INTEGER NOT NULL,
+            archived BOOLEAN DEFAULT FALSE NOT NULL,
             color_code VARCHAR(7) NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
-            end_date TIMESTAMP(6) NOT NULL,
+            end_date TIMESTAMP(6) WITH TIME ZONE NOT NULL,
             external_task_id BIGINT,
             id BIGINT NOT NULL,
+            leader_id BIGINT NOT NULL,
             parent_id BIGINT,
-            start_date TIMESTAMP(6) NOT NULL,
+            start_date TIMESTAMP(6) WITH TIME ZONE NOT NULL,
             team_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            content text NOT NULL,
             description text NOT NULL,
             github_repo VARCHAR(255),
             name VARCHAR(255) NOT NULL,
@@ -409,21 +423,42 @@ CREATE
 
 CREATE
     TABLE
-        project_knowledge_project(
-            knowledge_id BIGINT NOT NULL,
-            project_ids BIGINT
-        );
-
-CREATE
-    TABLE
-        project_external_collaborator(
-            "user_id" INTEGER NOT NULL,
+        project_membership(
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             project_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            PRIMARY KEY(id)
+            user_id BIGINT NOT NULL,
+            notes text,
+            ROLE VARCHAR(255) NOT NULL CHECK(
+                ROLE IN(
+                    'LEADER',
+                    'MEMBER',
+                    'EXTERNAL'
+                )
+            ),
+            PRIMARY KEY(id),
+            UNIQUE(
+                project_id,
+                user_id
+            )
+        );
+
+CREATE
+    TABLE
+        reaction_type(
+            display_order INTEGER NOT NULL,
+            is_active BOOLEAN NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            code VARCHAR(32) NOT NULL,
+            name VARCHAR(64) NOT NULL,
+            description VARCHAR(255),
+            PRIMARY KEY(id),
+            CONSTRAINT idx_reaction_type_code UNIQUE(code)
         );
 
 CREATE
@@ -772,16 +807,38 @@ CREATE
     discussion(sender_id);
 
 CREATE
-    INDEX IDXij8hdu814wqh518vyht8h90il ON
-    discussion_reaction(discussion_id);
+    INDEX idx_reaction_discussion_type ON
+    discussion_reaction(
+        discussion_id,
+        reaction_type_id
+    );
 
 CREATE
-    INDEX IDX5nbqod2cht2v7tdkuwdrv6g3h ON
-    discussion_reaction(user_id);
+    INDEX idx_reaction_discussion_user ON
+    discussion_reaction(
+        discussion_id,
+        user_id
+    );
 
 CREATE
     INDEX IDXaj3gr2rwnv7uamdf03p78372m ON
     knowledge(name);
+
+CREATE
+    INDEX IDXlk5f1tf6v3vslj8o1rfqwgcwi ON
+    knowledge(team_id);
+
+CREATE
+    INDEX IDXjabwimmbvt40wl20fp0kaevp4 ON
+    knowledge(source_type);
+
+CREATE
+    INDEX IDXk01yi4pk1orlwhihsorqhnwr8 ON
+    knowledge(project_id);
+
+CREATE
+    INDEX IDXp6qd6pe6q2uaa78bypcy99k2k ON
+    knowledge(discussion_id);
 
 CREATE
     INDEX IDXiyfipycyf7afycfn9f8gkhcvf ON
@@ -808,12 +865,16 @@ CREATE
     project(parent_id);
 
 CREATE
-    INDEX IDXs4ljf8ihivq2aim4m44e6c3if ON
-    project_external_collaborator(project_id);
+    INDEX IDX95fxueh91d9uobhmly6smcdtw ON
+    project_membership(project_id);
 
 CREATE
-    INDEX IDXl0ohd41bxpy9ln4urlj2v3kcj ON
-    project_external_collaborator(user_id);
+    INDEX IDXc0ggmiab5m1chu88hitikohha ON
+    project_membership(user_id);
+
+CREATE
+    INDEX IDXobr8vksep0or878byk2kohpty ON
+    project_membership(ROLE);
 
 CREATE
     INDEX IDXmllyu96n9vj606vm9w0gp3obx ON
@@ -909,6 +970,9 @@ ALTER TABLE
     IF EXISTS discussion_reaction ADD CONSTRAINT FKawpinudxl9749buwtradij9p6 FOREIGN KEY(discussion_id) REFERENCES discussion;
 
 ALTER TABLE
+    IF EXISTS discussion_reaction ADD CONSTRAINT FK9r8w78vm7sdf6iqkcl0pc9jqp FOREIGN KEY(reaction_type_id) REFERENCES reaction_type;
+
+ALTER TABLE
     IF EXISTS discussion_reaction ADD CONSTRAINT FKjh9fs8xa2fuupaw2josqcjbfv FOREIGN KEY(user_id) REFERENCES public."user";
 
 ALTER TABLE
@@ -916,6 +980,12 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS knowledge ADD CONSTRAINT FKhniy1bsjjeoxbpfnlwydlgxtk FOREIGN KEY(material_id) REFERENCES material;
+
+ALTER TABLE
+    IF EXISTS knowledge ADD CONSTRAINT FK1df46ccdrd9w7i5bf1urij4j2 FOREIGN KEY(discussion_id) REFERENCES discussion;
+
+ALTER TABLE
+    IF EXISTS knowledge ADD CONSTRAINT FKs854y5ajesie1jja4thskulsc FOREIGN KEY(team_id) REFERENCES team;
 
 ALTER TABLE
     IF EXISTS knowledge_knowledge_labels ADD CONSTRAINT FKd9dp2f3c65b8d2gdc9oeql6ja FOREIGN KEY(knowledge_labels_id) REFERENCES knowledge_label;
@@ -950,22 +1020,10 @@ ALTER TABLE
     IF EXISTS notification ADD CONSTRAINT FKs951ba5cqr6ibbu6w295b3ljg FOREIGN KEY(receiver_id) REFERENCES public."user";
 
 ALTER TABLE
-    IF EXISTS project ADD CONSTRAINT FKo1hhpy5548w2mkqptfoejhn9l FOREIGN KEY("leader_id") REFERENCES public."user";
-
-ALTER TABLE
     IF EXISTS project ADD CONSTRAINT FKt0just6g3205u402vn88i0fhy FOREIGN KEY(parent_id) REFERENCES project;
 
 ALTER TABLE
-    IF EXISTS project ADD CONSTRAINT FK99hcloicqmg95ty11qht49n8x FOREIGN KEY(team_id) REFERENCES team;
-
-ALTER TABLE
-    IF EXISTS project_knowledge_project ADD CONSTRAINT FK118urn3jpv1bbqou4vgt7plbf FOREIGN KEY(knowledge_id) REFERENCES knowledge;
-
-ALTER TABLE
-    IF EXISTS project_external_collaborator ADD CONSTRAINT FKg743uet6baba96l4nvt09si6b FOREIGN KEY(project_id) REFERENCES project;
-
-ALTER TABLE
-    IF EXISTS project_external_collaborator ADD CONSTRAINT FKont3tarqujw2xphhpsnddpbo7 FOREIGN KEY("user_id") REFERENCES public."user";
+    IF EXISTS project_membership ADD CONSTRAINT FK6nerxrll628ug1mvgpt2spgpk FOREIGN KEY(project_id) REFERENCES project;
 
 ALTER TABLE
     IF EXISTS SPACE ADD CONSTRAINT FK77tn26hq1ml6ri82fp970we8n FOREIGN KEY(avatar_id) REFERENCES avatar;
