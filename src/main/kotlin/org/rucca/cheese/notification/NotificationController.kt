@@ -57,9 +57,9 @@ class NotificationController(
     @Guard("delete", "notification")
     override fun deleteNotification(
         @ResourceId notificationId: kotlin.Long
-    ): ResponseEntity<DeleteNotification200ResponseDTO> {
+    ): ResponseEntity<CommonResponseDTO> {
         notificationService.deleteNotification(notificationId)
-        return ResponseEntity.ok(DeleteNotification200ResponseDTO(200, "ok"))
+        return ResponseEntity.ok(CommonResponseDTO(200, "ok"))
     }
 
     @Guard("list-notifications", "notification")

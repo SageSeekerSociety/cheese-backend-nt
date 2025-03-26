@@ -13,9 +13,9 @@ import javax.validation.Valid
 import javax.validation.constraints.NotNull
 import kotlin.collections.List
 import org.rucca.cheese.model.ApproveTypeDTO
+import org.rucca.cheese.model.CommonResponseDTO
 import org.rucca.cheese.model.CreateTaskAIAdviceConversationRequestDTO
 import org.rucca.cheese.model.CreateTaskAiAdviceConversation200ResponseDTO
-import org.rucca.cheese.model.DeleteTask200ResponseDTO
 import org.rucca.cheese.model.GetTask200ResponseDTO
 import org.rucca.cheese.model.GetTaskAiAdvice200ResponseDTO
 import org.rucca.cheese.model.GetTaskAiAdvice400ResponseDTO
@@ -96,8 +96,7 @@ interface TasksApi {
                 ApiResponse(
                     responseCode = "200",
                     description = "OK",
-                    content =
-                        [Content(schema = Schema(implementation = DeleteTask200ResponseDTO::class))],
+                    content = [Content(schema = Schema(implementation = CommonResponseDTO::class))],
                 )
             ],
         security = [SecurityRequirement(name = "bearerAuth")],
@@ -111,7 +110,7 @@ interface TasksApi {
         @Parameter(description = "Task ID", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long
-    ): ResponseEntity<DeleteTask200ResponseDTO> {
+    ): ResponseEntity<CommonResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 

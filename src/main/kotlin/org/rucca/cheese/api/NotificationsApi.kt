@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
 import javax.validation.constraints.NotNull
-import org.rucca.cheese.model.DeleteNotification200ResponseDTO
+import org.rucca.cheese.model.CommonResponseDTO
 import org.rucca.cheese.model.GetUnreadNotificationsCount200ResponseDTO
 import org.rucca.cheese.model.ListNotifications200ResponseDTO
 import org.rucca.cheese.model.MarkNotificationsAsRead200ResponseDTO
@@ -35,13 +35,7 @@ interface NotificationsApi {
                 ApiResponse(
                     responseCode = "200",
                     description = "OK",
-                    content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(implementation = DeleteNotification200ResponseDTO::class)
-                            )
-                        ],
+                    content = [Content(schema = Schema(implementation = CommonResponseDTO::class))],
                 )
             ],
         security = [SecurityRequirement(name = "bearerAuth")],
@@ -55,7 +49,7 @@ interface NotificationsApi {
         @Parameter(description = "Notification ID", required = true)
         @PathVariable("notificationId")
         notificationId: kotlin.Long
-    ): ResponseEntity<DeleteNotification200ResponseDTO> {
+    ): ResponseEntity<CommonResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 

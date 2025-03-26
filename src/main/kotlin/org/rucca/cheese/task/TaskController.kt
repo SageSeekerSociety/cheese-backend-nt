@@ -306,9 +306,9 @@ class TaskController(
     }
 
     @Guard("delete", "task")
-    override fun deleteTask(@ResourceId taskId: Long): ResponseEntity<DeleteTask200ResponseDTO> {
+    override fun deleteTask(@ResourceId taskId: Long): ResponseEntity<CommonResponseDTO> {
         taskService.deleteTask(taskId)
-        return ResponseEntity.ok(DeleteTask200ResponseDTO(200, "OK"))
+        return ResponseEntity.ok(CommonResponseDTO(200, "OK"))
     }
 
     @Guard("remove-participant", "task")

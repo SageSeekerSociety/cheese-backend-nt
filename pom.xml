@@ -32,6 +32,7 @@
     <properties>
         <java.version>21</java.version>
         <kotlin.version>2.1.10</kotlin.version>
+        <serialization.version>1.8.0</serialization.version>
     </properties>
 
     <!-- Project Dependencies -->
@@ -206,6 +207,11 @@
             <version>1.10.1</version>
         </dependency>
         <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-serialization-json</artifactId>
+            <version>${serialization.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.hypersistence</groupId>
             <artifactId>hypersistence-utils-hibernate-63</artifactId>
             <version>3.9.3</version>
@@ -237,6 +243,7 @@
                     <compilerPlugins>
                         <plugin>spring</plugin>
                         <plugin>jpa</plugin>
+                        <plugin>kotlinx-serialization</plugin>
                     </compilerPlugins>
                 </configuration>
                 <dependencies>
@@ -248,6 +255,11 @@
                     <dependency>
                         <groupId>org.jetbrains.kotlin</groupId>
                         <artifactId>kotlin-maven-allopen</artifactId>
+                        <version>${kotlin.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-maven-serialization</artifactId>
                         <version>${kotlin.version}</version>
                     </dependency>
                 </dependencies>
@@ -266,6 +278,7 @@
                             <generatorName>kotlin-spring</generatorName>
                             <skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>
                             <modelNameSuffix>DTO</modelNameSuffix>
+                            <templateDirectory>./specs/template</templateDirectory>
                             <configOptions>
                                 <java8>true</java8>
                                 <interfaceOnly>true</interfaceOnly>
@@ -275,6 +288,9 @@
                                 <exceptionHandler>false</exceptionHandler>
                                 <serializableModel>true</serializableModel>
                             </configOptions>
+                            <importMappings>
+                                <importMapping>AuthUserInfo=org.rucca.cheese.auth.model.AuthUserInfo</importMapping>
+                            </importMappings>
                         </configuration>
                     </execution>
                 </executions>
