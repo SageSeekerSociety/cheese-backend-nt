@@ -8,7 +8,12 @@ import javax.validation.Valid
 /**
  * @param deadline
  * @param approved
- * @param realNameInfo
+ * @param rejectReason
+ * @param email
+ * @param phone
+ * @param applyReason
+ * @param personalAdvantage
+ * @param remark
  */
 data class PatchTaskMembershipRequestDTO(
     @Schema(example = "null", description = "")
@@ -18,10 +23,24 @@ data class PatchTaskMembershipRequestDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("approved")
     val approved: ApproveTypeDTO? = null,
-    @field:Valid
     @Schema(example = "null", description = "")
-    @get:JsonProperty("realNameInfo")
-    val realNameInfo: TaskParticipantRealNameInfoDTO? = null,
+    @get:JsonProperty("rejectReason")
+    val rejectReason: kotlin.String? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("email")
+    val email: kotlin.String? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("phone")
+    val phone: kotlin.String? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("applyReason")
+    val applyReason: kotlin.String? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("personalAdvantage")
+    val personalAdvantage: kotlin.String? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("remark")
+    val remark: kotlin.String? = null,
 ) : Serializable {
 
     companion object {

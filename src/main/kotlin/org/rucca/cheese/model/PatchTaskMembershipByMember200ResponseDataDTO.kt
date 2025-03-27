@@ -6,7 +6,7 @@ import java.io.Serializable
 import javax.validation.Valid
 
 /** @param participants */
-data class PatchTaskMembership200ResponseDataDTO(
+data class PatchTaskMembershipByMember200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("participants")

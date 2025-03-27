@@ -5,12 +5,18 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.io.Serializable
 import javax.validation.Valid
 
-/** @param members */
+/**
+ * @param members
+ * @param allMembersVerified
+ */
 data class GetTeamMembers200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("members", required = true)
-    val members: kotlin.collections.List<TeamMemberDTO>
+    val members: kotlin.collections.List<TeamMemberDTO>,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("allMembersVerified")
+    val allMembersVerified: kotlin.Boolean? = null,
 ) : Serializable {
 
     companion object {

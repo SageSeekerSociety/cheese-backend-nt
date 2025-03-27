@@ -12,7 +12,6 @@ package org.rucca.cheese.api
 
 import java.time.LocalDateTime
 import kotlin.math.floor
-import org.hamcrest.Matchers
 import org.json.JSONObject
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
@@ -70,6 +69,11 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     private val taskMembershipDeadline = LocalDateTime.now().plusMonths(1).toEpochMilli()
     private val taskSubmissionSchema =
         listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE"))
+    private var participantTaskMembershipId: IdType = -1
+    private var participant2TaskMembershipId: IdType = -1
+    private var participant3TaskMembershipId: IdType = -1
+    private var participant4TaskMembershipId: IdType = -1
+    private var teamTaskMembershipId: IdType = -1
 
     fun createSpace(
         creatorToken: String,
@@ -234,7 +238,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         intro: String,
         description: String,
         submissionSchema: List<Pair<String, String>>,
-        team: IdType?,
         space: IdType?,
     ) {
         val request =
@@ -264,7 +267,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                         }.joinToString(",\n")
                     }
                   ],
-                  "team": ${team ?: "null"},
                   "space": ${space ?: "null"}
                 }
             """
@@ -313,6 +315,62 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .andExpect(jsonPath("$.data.task.approved").value("APPROVED"))
     }
 
+    fun addParticipantUser(token: String, taskId: IdType, userId: IdType): IdType {
+        val request =
+            MockMvcRequestBuilders.post("/tasks/${taskId}/participants")
+                .header("Authorization", "Bearer $token")
+                .queryParam("member", userId.toString())
+                .contentType("application/json")
+                .content(
+                    """
+                    {
+                        "email": "test@example.com"
+                    }
+                """
+                )
+        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val json = JSONObject(response.andReturn().response.contentAsString)
+        val participantId = json.getJSONObject("data").getJSONObject("participant").getLong("id")
+        return participantId
+    }
+
+    fun addParticipantTeam(token: String, taskId: IdType, teamId: IdType): IdType {
+        val request =
+            MockMvcRequestBuilders.post("/tasks/${taskId}/participants")
+                .header("Authorization", "Bearer $token")
+                .queryParam("member", teamId.toString())
+                .contentType("application/json")
+                .content(
+                    """
+                    {
+                        "email": "test@example.com"
+                    }
+                """
+                )
+        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val json = JSONObject(response.andReturn().response.contentAsString)
+        val participantId = json.getJSONObject("data").getJSONObject("participant").getLong("id")
+        return participantId
+    }
+
+    fun approveTaskParticipant(token: String, taskId: IdType, participantId: IdType) {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants/${participantId}")
+                .header("Authorization", "Bearer $token")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                  "approved": "APPROVED"
+                }
+            """
+                )
+        mockMvc
+            .perform(request)
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("$.data.taskMembership.approved").value("APPROVED"))
+    }
+
     @Test
     @Order(10)
     fun testCreateTask() {
@@ -326,7 +384,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
-            team = teamId,
             space = spaceId,
         )
         createTask(
@@ -339,7 +396,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
-            team = teamId,
             space = spaceId,
         )
         createTask(
@@ -352,7 +408,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
-            team = null,
             space = spaceId,
         )
         createTask(
@@ -365,21 +420,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
-            team = teamId,
-            space = null,
-        )
-        createTask(
-            name = "$taskName (5)",
-            submitterType = "USER",
-            deadline = null,
-            defaultDeadline = taskDefaultDeadline,
-            resubmittable = true,
-            editable = true,
-            intro = taskIntro,
-            description = taskDescription,
-            submissionSchema = taskSubmissionSchema,
-            team = null,
-            space = null,
+            space = spaceId,
         )
     }
 
@@ -393,7 +434,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.tasks.length()").value(5))
+            .andExpect(jsonPath("$.data.tasks.length()").value(4))
     }
 
     @Test
@@ -407,7 +448,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.tasks.length()").value(3))
+            .andExpect(jsonPath("$.data.tasks.length()").value(4))
     }
 
     @Test
@@ -429,7 +470,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             MockMvcRequestBuilders.get("/tasks/$taskId")
                 .queryParam("queryJoinability", "true")
                 .queryParam("querySubmittability", "true")
-                .header("Authorization", "Bearer $teamAdminToken")
+                .header("Authorization", "Bearer $spaceAdminToken")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -438,7 +479,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
 
     @Test
     @Order(17)
-    fun testGetUnapprovedTaskPermissionDeniedError() {
+    fun testGetUnapprovedTaskAccessDeniedError() {
         val taskId = taskIds[3]
         val request =
             MockMvcRequestBuilders.get("/tasks/$taskId")
@@ -448,12 +489,12 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(jsonPath("$.error.name").value("PermissionDeniedError"))
+            .andExpect(jsonPath("$.error.name").value("AccessDeniedError"))
     }
 
     @Test
     @Order(17)
-    fun testJoinUnapprovedTaskPermissionDeniedError() {
+    fun testJoinUnapprovedTaskForbiddenError() {
         val request =
             MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
                 .header("Authorization", "Bearer $participantToken")
@@ -461,13 +502,15 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .contentType("application/json")
                 .content(
                     """
-                    {}
+                    {
+                      "email": "test@example.com"
+                    }
                 """
                 )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(jsonPath("$.error.name").value("PermissionDeniedError"))
+            .andExpect(jsonPath("$.error.name").value("ForbiddenError"))
     }
 
     @Test
@@ -475,7 +518,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     fun testApproveTask() {
         approveTask(taskIds[0], spaceAdminToken)
         approveTask(taskIds[1], spaceAdminToken)
-        approveTask(taskIds[3], teamAdminToken)
     }
 
     @Test
@@ -566,22 +608,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
 
     @Test
     @Order(25)
-    fun testGetTeamTaskWithSpaceAndTeamUseTeamCreator() {
-        val taskId = taskIds[4]
-        val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId")
-                .queryParam("querySpace", "true")
-                .queryParam("queryTeam", "true")
-                .header("Authorization", "Bearer $teamCreatorToken")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.task.space").isEmpty)
-            .andExpect(jsonPath("$.data.task.team").isEmpty)
-    }
-
-    @Test
-    @Order(25)
     fun testGetTeamTaskWithOptionalQueriesUseTeamCreator() {
         val taskId = taskIds[1]
         val request =
@@ -591,27 +617,19 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .queryParam("queryJoinability", "true")
                 .queryParam("querySubmittability", "true")
                 .queryParam("queryJoined", "true")
-                .queryParam("queryJoinedApproved", "true")
-                .queryParam("queryJoinedDisapproved", "true")
-                .queryParam("queryJoinedNotApprovedOrDisapproved", "true")
+                .queryParam("queryUserDeadline", "true")
                 .header("Authorization", "Bearer $teamCreatorToken")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("$.data.task.space.id").value(spaceId))
-            .andExpect(jsonPath("$.data.task.team.id").value(teamId))
             .andExpect(jsonPath("$.data.task.joinable").value(true))
             .andExpect(jsonPath("$.data.task.joinableAsTeam[0].id").value(teamId))
             .andExpect(jsonPath("$.data.task.submittable").value(false))
             .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty)
             .andExpect(jsonPath("$.data.task.joined").value(false))
-            .andExpect(jsonPath("$.data.task.joinedAsTeam").isEmpty)
-            .andExpect(jsonPath("$.data.task.joinedApproved").value(false))
-            .andExpect(jsonPath("$.data.task.joinedApprovedAsTeam").isEmpty)
-            .andExpect(jsonPath("$.data.task.joinedDisapproved").value(false))
-            .andExpect(jsonPath("$.data.task.joinedDisapprovedAsTeam").isEmpty)
-            .andExpect(jsonPath("$.data.task.joinedNotApprovedOrDisapproved").value(false))
-            .andExpect(jsonPath("$.data.task.joinedNotApprovedOrDisapprovedAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinedTeams").isEmpty)
+            .andExpect(jsonPath("$.data.task.userDeadline").isEmpty)
     }
 
     @Test
@@ -632,7 +650,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .andExpect(jsonPath("$.data.task.submittable").value(false))
             .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty)
             .andExpect(jsonPath("$.data.task.joined").value(false))
-            .andExpect(jsonPath("$.data.task.joinedAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinedTeams").isEmpty)
     }
 
     @Test
@@ -653,7 +671,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .andExpect(jsonPath("$.data.task.submittable").value(false))
             .andExpect(jsonPath("$.data.task.submittableAsTeam").doesNotExist())
             .andExpect(jsonPath("$.data.task.joined").value(false))
-            .andExpect(jsonPath("$.data.task.joinedAsTeam").doesNotExist())
+            .andExpect(jsonPath("$.data.task.joinedTeams").isEmpty)
     }
 
     @Test
@@ -744,13 +762,10 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.tasks[*].id").value(Matchers.not(taskIds[4])))
             .andExpect(jsonPath("$.data.tasks[0].id").value(taskIds[0]))
             .andExpect(jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
             .andExpect(jsonPath("$.data.tasks[0].intro").value("This is an updated test task."))
-            .andExpect(
-                jsonPath("$.data.tasks[0].description").value("${taskDescription} (updated)")
-            )
+            .andExpect(jsonPath("$.data.tasks[0].description").value("$taskDescription (updated)"))
             .andExpect(jsonPath("$.data.tasks[0].deadline").isEmpty)
             .andExpect(jsonPath("$.data.tasks[0].submitters.total").value(0))
             .andExpect(jsonPath("$.data.tasks[0].submitters.examples").isArray)
@@ -769,21 +784,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("$.data.tasks").isEmpty)
-    }
-
-    @Test
-    @Order(55)
-    fun testEnumerateTasksByTeam() {
-        val request =
-            MockMvcRequestBuilders.get("/tasks")
-                .header("Authorization", "Bearer $creatorToken")
-                .param("team", teamId.toString())
-                .param("approved", "APPROVED")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.tasks[0].name").value("$taskName (1) (updated)"))
-            .andExpect(jsonPath("$.data.tasks[1].name").value("$taskName (4)"))
     }
 
     @Test
@@ -875,17 +875,8 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     @Test
     @Order(85)
     fun testAddTestParticipantUser() {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
-                .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participant.userId.toString())
-                .contentType("application/json")
-                .content(
-                    """
-                    {}
-                """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        participantTaskMembershipId =
+            addParticipantUser(participantToken, taskIds[0], participant.userId)
     }
 
     @Test
@@ -928,16 +919,20 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .content(
                     """
                     {
-                    "deadline": "$taskMembershipDeadline"
+                        "deadline": "$taskMembershipDeadline",
+                        "email": "test@example.com"
                     }
                 """
                 )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val json = JSONObject(response.andReturn().response.contentAsString)
+        participant3TaskMembershipId =
+            json.getJSONObject("data").getJSONObject("participant").getLong("id")
     }
 
     @Test
     @Order(87)
-    fun testAddTestParticipantUserWithDeadlinePermissionDeniedError() {
+    fun testAddTestParticipantUserWithDeadlineAccessDeniedError() {
         val request =
             MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
                 .header("Authorization", "Bearer $participantToken2")
@@ -946,7 +941,8 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .content(
                     """
                     {
-                    "deadline": "$taskMembershipDeadline"
+                        "deadline": "$taskMembershipDeadline",
+                        "email": "test@example.com"
                     }
                 """
                 )
@@ -955,7 +951,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
 
     @Test
     @Order(87)
-    fun testAddTestParticipantUserByOwnerWithoutDeadlinePermissionDeniedError() {
+    fun testAddTestParticipantUserByOwnerWithoutDeadlineAccessDeniedError() {
         val request =
             MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
                 .header("Authorization", "Bearer $creatorToken")
@@ -963,7 +959,9 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .contentType("application/json")
                 .content(
                     """
-                    {}
+                    {
+                        "email": "test@example.com"
+                    }
                 """
                 )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
@@ -979,7 +977,9 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .contentType("application/json")
                 .content(
                     """
-                    {}
+                    {
+                      "email": "test@example.com"
+                    }
                 """
                 )
         mockMvc
@@ -990,7 +990,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
 
     @Test
     @Order(94)
-    fun testAddTestParticipantTeamAndGetPermissionDeniedError() {
+    fun testAddTestParticipantTeamAndGetAccessDeniedError() {
         val request =
             MockMvcRequestBuilders.post("/tasks/${taskIds[1]}/participants")
                 .header("Authorization", "Bearer $teamMemberToken")
@@ -999,30 +999,21 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .content(
                     """
                     {
-                    "deadline": "$taskMembershipDeadline"
+                        "deadline": "$taskMembershipDeadline",
+                        "email": "test@example.com"
                     }
                 """
                 )
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(jsonPath("$.error.name").value("PermissionDeniedError"))
+            .andExpect(jsonPath("$.error.name").value("AccessDeniedError"))
     }
 
     @Test
     @Order(95)
     fun testAddTestParticipantTeam() {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/${taskIds[1]}/participants")
-                .header("Authorization", "Bearer $teamCreatorToken")
-                .queryParam("member", teamId.toString())
-                .contentType("application/json")
-                .content(
-                    """
-                    {}
-                """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        teamTaskMembershipId = addParticipantTeam(teamCreatorToken, taskIds[1], teamId)
     }
 
     @Test
@@ -1036,7 +1027,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .content(
                     """
                     {
-                    "deadline": "$taskMembershipDeadline"
+                        "email": "test@example.com"
                     }
                 """
                 )
@@ -1052,7 +1043,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         val taskId = taskIds[0]
         val request =
             MockMvcRequestBuilders.get("/tasks/$taskId/participants")
-                .header("Authorization", "Bearer $participantToken")
+                .header("Authorization", "Bearer $creatorToken")
         // .param("approved","APPROVED")
         mockMvc
             .perform(request)
@@ -1068,7 +1059,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         val taskId = taskIds[1]
         val request =
             MockMvcRequestBuilders.get("/tasks/$taskId/participants")
-                .header("Authorization", "Bearer $teamCreatorToken")
+                .header("Authorization", "Bearer $creatorToken")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -1090,9 +1081,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .queryParam("queryJoinability", "true")
                 .queryParam("querySubmittability", "true")
                 .queryParam("queryJoined", "true")
-                .queryParam("queryJoinedApproved", "true")
-                .queryParam("queryJoinedDisapproved", "true")
-                .queryParam("queryJoinedNotApprovedOrDisapproved", "true")
+                .queryParam("queryUserDeadline", "true")
                 .header("Authorization", "Bearer $teamCreatorToken")
         mockMvc
             .perform(request)
@@ -1102,39 +1091,24 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .andExpect(jsonPath("$.data.task.submittable").value(false))
             .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty())
             .andExpect(jsonPath("$.data.task.joined").value(true))
-            .andExpect(jsonPath("$.data.task.joinedAsTeam[0].id").value(teamId))
-            .andExpect(jsonPath("$.data.task.joinedApproved").value(false))
-            .andExpect(jsonPath("$.data.task.joinedApprovedAsTeam").isEmpty)
-            .andExpect(jsonPath("$.data.task.joinedDisapproved").value(false))
-            .andExpect(jsonPath("$.data.task.joinedDisapprovedAsTeam").isEmpty)
-            .andExpect(jsonPath("$.data.task.joinedNotApprovedOrDisapproved").value(true))
-            .andExpect(
-                jsonPath("$.data.task.joinedNotApprovedOrDisapprovedAsTeam[0].id").value(teamId)
-            )
+            .andExpect(jsonPath("$.data.task.joinedTeams[0].id").value(teamId))
+            .andExpect(jsonPath("$.data.task.userDeadline").isEmpty)
     }
 
     @Test
     @Order(104)
     fun testAddTestParticipantUser4() {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
-                .header("Authorization", "Bearer $participantToken4")
-                .queryParam("member", participant4.userId.toString())
-                .contentType("application/json")
-                .content(
-                    """
-                    {}
-                """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        participant4TaskMembershipId =
+            addParticipantUser(participantToken4, taskIds[0], participant4.userId)
     }
 
     @Test
     @Order(105)
     fun testDisApproveTestParticipantUser4() {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
-                .queryParam("member", participant4.userId.toString())
+            MockMvcRequestBuilders.patch(
+                    "/tasks/${taskIds[0]}/participants/$participant4TaskMembershipId"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -1147,10 +1121,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                jsonPath("$.data.participants[?(@.member.id == ${participant4.userId})].approved")
-                    .value("DISAPPROVED")
-            )
+            .andExpect(jsonPath("$.data.taskMembership.approved").value("DISAPPROVED"))
     }
 
     @Test
@@ -1218,7 +1189,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
 
     @Test
     @Order(107)
-    fun testApproveTaskParticipantUserPermissionDeniedError() {
+    fun testApproveTaskParticipantUserAccessDeniedError() {
         val request =
             MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
                 .queryParam("member", participant.userId.toString())
@@ -1238,8 +1209,9 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     @Order(107)
     fun testTaskParticipantNotApprovedError() {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
-                .queryParam("member", participant.userId.toString())
+            MockMvcRequestBuilders.patch(
+                    "/tasks/${taskIds[0]}/participants/$participantTaskMembershipId"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -1311,7 +1283,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             MockMvcRequestBuilders.delete("/tasks/${taskIds[0]}/participants")
                 .queryParam("member", participant.userId.toString())
                 .header("Authorization", "Bearer $participantToken")
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     @Test
@@ -1321,7 +1293,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             MockMvcRequestBuilders.delete("/tasks/${taskIds[0]}/participants")
                 .queryParam("member", participant3.userId.toString())
                 .header("Authorization", "Bearer $participantToken3")
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     @Test
@@ -1331,7 +1303,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             MockMvcRequestBuilders.delete("/tasks/${taskIds[0]}/participants")
                 .queryParam("member", participant4.userId.toString())
                 .header("Authorization", "Bearer $participantToken4")
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     @Test
@@ -1341,7 +1313,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             MockMvcRequestBuilders.delete("/tasks/${taskIds[1]}/participants")
                 .queryParam("member", teamId.toString())
                 .header("Authorization", "Bearer $teamCreatorToken")
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isNoContent)
     }
 
     @Test
@@ -1362,7 +1334,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .andExpect(jsonPath("$.data.task.submittable").value(false))
             .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty)
             .andExpect(jsonPath("$.data.task.joined").value(false))
-            .andExpect(jsonPath("$.data.task.joinedAsTeam").isEmpty())
+            .andExpect(jsonPath("$.data.task.joinedTeams").isEmpty())
     }
 
     @Test
@@ -1394,33 +1366,15 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     @Test
     @Order(126)
     fun testAddTestParticipantUser2() {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
-                .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participant.userId.toString())
-                .contentType("application/json")
-                .content(
-                    """
-                    {}
-                """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        participantTaskMembershipId =
+            addParticipantUser(participantToken, taskIds[0], participant.userId)
     }
 
     @Test
     @Order(127)
     fun testAddTestParticipantUser3() {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/${taskIds[0]}/participants")
-                .header("Authorization", "Bearer $participantToken2")
-                .queryParam("member", participant2.userId.toString())
-                .contentType("application/json")
-                .content(
-                    """
-                    {}
-                """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        participant2TaskMembershipId =
+            addParticipantUser(participantToken2, taskIds[0], participant2.userId)
     }
 
     @Test
@@ -1433,7 +1387,9 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .contentType("application/json")
                 .content(
                     """
-                    {}
+                    {
+                        "email": "test@example.com"
+                    }
                 """
                 )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
@@ -1441,7 +1397,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
 
     @Test
     @Order(230)
-    fun testDeleteTaskAndGetPermissionDeniedError() {
+    fun testDeleteTaskAndGetAccessDeniedError() {
         val taskId = taskIds[1]
         val request =
             MockMvcRequestBuilders.delete("/tasks/$taskId")
@@ -1463,16 +1419,6 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     @Order(250)
     fun testDeleteTask2() {
         val taskId = taskIds[3]
-        val request =
-            MockMvcRequestBuilders.delete("/tasks/$taskId")
-                .header("Authorization", "Bearer $creatorToken")
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-    }
-
-    @Test
-    @Order(260)
-    fun testDeleteTask3() {
-        val taskId = taskIds[4]
         val request =
             MockMvcRequestBuilders.delete("/tasks/$taskId")
                 .header("Authorization", "Bearer $creatorToken")

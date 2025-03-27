@@ -58,4 +58,6 @@ class Task(
     @Column(nullable = true) var rank: Int? = null,
     @Column(nullable = false) var approved: ApproveType? = null,
     @Column(nullable = false) var rejectReason: String? = null,
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT false")
+    var requireRealName: Boolean = false,
 ) : BaseEntity()

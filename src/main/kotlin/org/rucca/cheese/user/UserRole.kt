@@ -14,11 +14,11 @@ enum class UserRole {
 @Entity
 @Table(
     name = "user_role",
-    indexes = [Index(columnList = "userId")],
-    uniqueConstraints = [UniqueConstraint(columnNames = ["userId", "role"])],
+    indexes = [Index(columnList = "user_id")],
+    uniqueConstraints = [UniqueConstraint(columnNames = ["user_id", "role"])],
 )
 class UserRoleEntity(
-    @Column(name = "userId", nullable = false) val userId: IdType,
+    @Column(name = "user_id", nullable = false) val userId: IdType,
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     val role: UserRole = UserRole.USER,

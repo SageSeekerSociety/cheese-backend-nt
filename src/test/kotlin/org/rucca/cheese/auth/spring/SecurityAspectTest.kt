@@ -194,7 +194,7 @@ class SecurityAspectTest {
 
             // Execute and verify exception
             val exception =
-                assertThrows(AccessDeniedException::class.java) {
+                assertThrows(AccessDeniedError::class.java) {
                     securityAspect.checkSecurityWithSecure(joinPoint)
                 }
 

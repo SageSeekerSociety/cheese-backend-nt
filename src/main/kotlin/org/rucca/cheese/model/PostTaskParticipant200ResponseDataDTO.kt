@@ -5,12 +5,12 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.io.Serializable
 import javax.validation.Valid
 
-/** @param participants */
+/** @param participant */
 data class PostTaskParticipant200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", description = "")
-    @get:JsonProperty("participants")
-    val participants: kotlin.collections.List<TaskMembershipDTO>? = null
+    @get:JsonProperty("participant")
+    val participant: TaskMembershipDTO? = null
 ) : Serializable {
 
     companion object {

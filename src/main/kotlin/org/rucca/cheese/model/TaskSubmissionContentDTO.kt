@@ -5,16 +5,16 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.io.Serializable
 
 /**
- * @param contentText
- * @param contentAttachmentId
+ * @param text
+ * @param attachmentId
  */
-data class PostTaskSubmissionRequestInnerDTO(
+data class TaskSubmissionContentDTO(
     @Schema(example = "null", description = "")
-    @get:JsonProperty("contentText")
-    val contentText: kotlin.String? = null,
+    @get:JsonProperty("text")
+    val text: kotlin.String? = null,
     @Schema(example = "null", description = "")
-    @get:JsonProperty("contentAttachmentId")
-    val contentAttachmentId: kotlin.Long? = null,
+    @get:JsonProperty("attachmentId")
+    val attachmentId: kotlin.Long? = null,
 ) : Serializable {
 
     companion object {

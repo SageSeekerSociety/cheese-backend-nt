@@ -183,6 +183,16 @@ START WITH
     1 INCREMENT BY 1;
 
 CREATE
+    SEQUENCE user_real_name_access_logs_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
+    SEQUENCE user_real_name_identities_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE user_seu_consumption_seq
 START WITH
     1 INCREMENT BY 50;
@@ -283,6 +293,19 @@ CREATE
                 user_id,
                 reaction_type_id
             )
+        );
+
+CREATE
+    TABLE
+        encryption_keys(
+            purpose SMALLINT NOT NULL CHECK(
+                purpose BETWEEN 0 AND 1
+            ),
+            created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+            related_entity_id BIGINT,
+            id VARCHAR(255) NOT NULL,
+            key_value VARCHAR(255) NOT NULL,
+            PRIMARY KEY(id)
         );
 
 CREATE
@@ -528,6 +551,7 @@ CREATE
             editable BOOLEAN NOT NULL,
             participant_limit INTEGER,
             RANK INTEGER,
+            require_real_name BOOLEAN DEFAULT FALSE NOT NULL,
             resubmittable BOOLEAN NOT NULL,
             submitter_type SMALLINT NOT NULL CHECK(
                 submitter_type BETWEEN 0 AND 1
@@ -596,6 +620,19 @@ CREATE
 
 CREATE
     TABLE
+        task_membership_team_members(
+            encrypted BOOLEAN DEFAULT FALSE,
+            member_id BIGINT NOT NULL,
+            task_membership_id BIGINT NOT NULL,
+            class_name VARCHAR(255),
+            grade VARCHAR(255),
+            major VARCHAR(255),
+            real_name VARCHAR(255),
+            student_id VARCHAR(255)
+        );
+
+CREATE
+    TABLE
         task_submission_schema(
             INDEX INTEGER NOT NULL,
             TYPE SMALLINT NOT NULL CHECK(
@@ -611,6 +648,8 @@ CREATE
             approved SMALLINT NOT NULL CHECK(
                 approved BETWEEN 0 AND 2
             ),
+            encrypted BOOLEAN DEFAULT FALSE,
+            is_team BOOLEAN NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deadline TIMESTAMP(6),
             deleted_at TIMESTAMP(6),
@@ -619,15 +658,16 @@ CREATE
             task_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
             apply_reason VARCHAR(255) NOT NULL,
-            class_name VARCHAR(255) NOT NULL,
+            class_name VARCHAR(255),
             email VARCHAR(255) NOT NULL,
-            grade VARCHAR(255) NOT NULL,
-            major VARCHAR(255) NOT NULL,
+            encryption_key_id VARCHAR(255),
+            grade VARCHAR(255),
+            major VARCHAR(255),
             personal_advantage VARCHAR(255) NOT NULL,
             phone VARCHAR(255) NOT NULL,
-            real_name VARCHAR(255) NOT NULL,
+            real_name VARCHAR(255),
             remark VARCHAR(255) NOT NULL,
-            student_id VARCHAR(255) NOT NULL,
+            student_id VARCHAR(255),
             PRIMARY KEY(id)
         );
 
@@ -745,6 +785,48 @@ CREATE
             last_reset_time TIMESTAMP(6),
             updated_at TIMESTAMP(6) NOT NULL,
             user_id BIGINT,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        user_real_name_access_logs(
+            accessor_id BIGINT NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            module_entity_id BIGINT,
+            target_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            access_reason VARCHAR(255) NOT NULL,
+            access_type VARCHAR(255) NOT NULL CHECK(
+                access_type IN(
+                    'VIEW',
+                    'EXPORT'
+                )
+            ),
+            ip_address VARCHAR(255) NOT NULL,
+            module_type VARCHAR(255) CHECK(
+                module_type IN('TASK')
+            ),
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        user_real_name_identities(
+            encrypted BOOLEAN DEFAULT FALSE NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            user_id BIGINT NOT NULL,
+            class_name VARCHAR(255) NOT NULL,
+            encryption_key_id VARCHAR(255) NOT NULL,
+            grade VARCHAR(255) NOT NULL,
+            major VARCHAR(255) NOT NULL,
+            real_name VARCHAR(255) NOT NULL,
+            student_id VARCHAR(255) NOT NULL,
             PRIMARY KEY(id)
         );
 
@@ -945,7 +1027,7 @@ CREATE
     team_user_relation(user_id);
 
 CREATE
-    INDEX IDXoj50qpdthexxxmvur61ggy2fb ON
+    INDEX IDXapcc8lxk2xnug8377fatvbn04 ON
     user_role(user_id);
 
 ALTER TABLE
@@ -1054,6 +1136,9 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS task ADD CONSTRAINT FK6r32b6vk1rpu7ww7gratmce1i FOREIGN KEY(team_id) REFERENCES team;
+
+ALTER TABLE
+    IF EXISTS task_membership_team_members ADD CONSTRAINT FKqqe540ncjf6ylguc5r3mt51sm FOREIGN KEY(task_membership_id) REFERENCES task_membership;
 
 ALTER TABLE
     IF EXISTS task_submission_schema ADD CONSTRAINT FKeipe4rx4f493n82xgon4padr5 FOREIGN KEY(task_id) REFERENCES task;

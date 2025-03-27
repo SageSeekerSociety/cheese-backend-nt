@@ -12,6 +12,7 @@ package org.rucca.cheese.common.error
 import jakarta.servlet.http.HttpServletRequest
 import org.rucca.cheese.auth.annotation.NoAuth
 import org.rucca.cheese.auth.error.AuthenticationRequiredError
+import org.rucca.cheese.auth.spring.AccessDeniedError
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -87,18 +88,13 @@ class GlobalErrorHandler {
                 BadRequestError(e.message ?: "Invalid request caused http message conversion error"),
             )
 
-    @ExceptionHandler(org.rucca.cheese.auth.spring.AccessDeniedException::class)
+    @ExceptionHandler(AccessDeniedError::class)
     @ResponseBody
     fun handleAccessDeniedException(
-        e: org.rucca.cheese.auth.spring.AccessDeniedException,
+        e: AccessDeniedError,
         request: HttpServletRequest,
     ): ResponseEntity<*> =
-        ResponseEntity.status(HttpStatus.FORBIDDEN)
-            .handleSseOrJson(
-                request,
-                e.message ?: "Access Denied",
-                ForbiddenError(e.message ?: "Access Denied"),
-            )
+        ResponseEntity.status(HttpStatus.FORBIDDEN).handleSseOrJson(request, e.message, e)
 
     @ExceptionHandler(NoResourceFoundException::class)
     @ResponseBody

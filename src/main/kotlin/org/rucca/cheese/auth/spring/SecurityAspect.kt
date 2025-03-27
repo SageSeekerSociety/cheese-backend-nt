@@ -130,11 +130,11 @@ class SecurityAspect(
                 "Permission denied: $domainName:$actionName:$resourceName for user ${userInfo.userId}"
             )
             if (resourceId == null) {
-                throw AccessDeniedException(
+                throw AccessDeniedError(
                     "Access denied for user ${userInfo.userId} to perform $actionName on $resourceName"
                 )
             } else {
-                throw AccessDeniedException(
+                throw AccessDeniedError(
                     "Access denied for user ${userInfo.userId} to perform $actionName on $resourceName:$resourceId"
                 )
             }

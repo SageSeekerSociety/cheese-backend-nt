@@ -22,7 +22,7 @@ import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @UseOldAuth
@@ -42,7 +42,7 @@ class TeamController(
             _: Map<String, Any?>?,
             _: IdGetter?,
             _: Any? ->
-            teamService.isTeamAdmin(
+            teamService.isTeamAtLeastAdmin(
                 resourceId ?: throw IllegalArgumentException("resourceId is null"),
                 userId,
             )
@@ -124,11 +124,20 @@ class TeamController(
 
     @Guard("enumerate-members", "team")
     override fun getTeamMembers(
-        @ResourceId teamId: Long
+        @ResourceId teamId: Long,
+        queryRealNameStatus: Boolean,
     ): ResponseEntity<GetTeamMembers200ResponseDTO> {
-        val memberDTOs = teamService.getTeamMembers(teamId)
+        val (memberDTOs, allMembersVerified) =
+            teamService.getTeamMembers(teamId, queryRealNameStatus)
         return ResponseEntity.ok(
-            GetTeamMembers200ResponseDTO(200, GetTeamMembers200ResponseDataDTO(memberDTOs), "OK")
+            GetTeamMembers200ResponseDTO(
+                200,
+                GetTeamMembers200ResponseDataDTO(
+                    members = memberDTOs,
+                    allMembersVerified = allMembersVerified,
+                ),
+                "OK",
+            )
         )
     }
 

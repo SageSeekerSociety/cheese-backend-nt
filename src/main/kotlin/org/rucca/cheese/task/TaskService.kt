@@ -13,6 +13,7 @@ package org.rucca.cheese.task
 
 import jakarta.persistence.criteria.*
 import java.time.LocalDateTime
+import java.time.ZoneId
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.common.error.NotFoundError
@@ -35,6 +36,7 @@ import org.rucca.cheese.task.option.TaskQueryOptions
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.team.TeamUserRelation
+import org.rucca.cheese.team.toTeamSummaryDTO
 import org.rucca.cheese.topic.Topic
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
@@ -139,22 +141,9 @@ class TaskService(
         val joined =
             if (options.queryJoined) taskMembershipService.getJoined(this, userId)
             else Pair(null, null)
-        val joinedApproved =
-            if (options.queryJoinedApproved)
-                taskMembershipService.getJoinedWithApproveType(this, userId, ApproveType.APPROVED)
-            else Pair(null, null)
-        val joinedDisapproved =
-            if (options.queryJoinedDisapproved)
-                taskMembershipService.getJoinedWithApproveType(
-                    this,
-                    userId,
-                    ApproveType.DISAPPROVED,
-                )
-            else Pair(null, null)
-        val joinedNotApprovedOrDisapproved =
-            if (options.queryJoinedNotApprovedOrDisapproved)
-                taskMembershipService.getJoinedWithApproveType(this, userId, ApproveType.NONE)
-            else Pair(null, null)
+        val userDeadline =
+            if (options.queryUserDeadline) taskMembershipService.getUserDeadline(this.id!!, userId)
+            else null
         val topics =
             if (options.queryTopics) taskTopicsService.getTaskTopicDTOs(this.id!!) else null
         return TaskDTO(
@@ -181,8 +170,8 @@ class TaskService(
                         )
                     },
             submitters = getTaskSubmittersSummary(this.id!!),
-            updatedAt = this.updatedAt!!.toEpochMilli(),
-            createdAt = this.createdAt!!.toEpochMilli(),
+            updatedAt = this.updatedAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+            createdAt = this.createdAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             joinable = joinability.first,
             joinableAsTeam = joinability.second,
             submittable = submittability.first,
@@ -191,14 +180,10 @@ class TaskService(
             approved = this.approved!!.convert(),
             rejectReason = this.rejectReason,
             joined = joined.first,
-            joinedAsTeam = joined.second,
-            joinedApproved = joinedApproved.first,
-            joinedApprovedAsTeam = joinedApproved.second,
-            joinedDisapproved = joinedDisapproved.first,
-            joinedDisapprovedAsTeam = joinedDisapproved.second,
-            joinedNotApprovedOrDisapproved = joinedNotApprovedOrDisapproved.first,
-            joinedNotApprovedOrDisapprovedAsTeam = joinedNotApprovedOrDisapproved.second,
+            joinedTeams = joined.second,
             topics = topics,
+            requireRealName = this.requireRealName,
+            userDeadline = userDeadline,
         )
     }
 
@@ -217,6 +202,7 @@ class TaskService(
         teamId: IdType?,
         spaceId: IdType?,
         rank: Int? = null,
+        requireRealName: Boolean = false,
     ): IdType {
         val task =
             taskRepository.save(
@@ -239,6 +225,7 @@ class TaskService(
                         if (spaceId != null || teamId != null) ApproveType.NONE
                         else ApproveType.APPROVED,
                     rejectReason = "",
+                    requireRealName = requireRealName,
                 )
             )
         return task.id!!
@@ -317,6 +304,12 @@ class TaskService(
     fun updateRejectReason(taskId: IdType, rejectReason: String) {
         val task = getTask(taskId)
         task.rejectReason = rejectReason
+        taskRepository.save(task)
+    }
+
+    fun updateTaskRequireRealName(taskId: IdType, requireRealName: Boolean) {
+        val task = getTask(taskId)
+        task.requireRealName = requireRealName
         taskRepository.save(task)
     }
 
@@ -700,5 +693,47 @@ class TaskService(
         }
         taskMembershipRepository.saveAll(participants)
         taskRepository.save(task)
+    }
+
+    /**
+     * Gets teams that can be used for a task based on filter criteria
+     *
+     * @param taskId The task ID
+     * @param filter Filter type ("eligible" for teams that meet requirements, "all" for all user's
+     *   admin teams)
+     * @return List of extended team DTOs with real name verification status
+     */
+    fun getTeamsForTask(taskId: IdType, filter: String): List<TeamSummaryDTO> {
+        val userId = jwtService.getCurrentUserId()
+        val task = getTask(taskId)
+
+        // Get teams where the user is admin (team leader)
+        val userAdminTeams = teamService.getTeamsWhereUserIsAdmin(userId)
+
+        // Process all teams with verification status regardless of filter
+        return userAdminTeams.map { team ->
+            // Get all team members with real name status
+            val (members, allMembersVerified) = teamService.getTeamMembers(team.id!!, true)
+
+            // Convert members to status DTOs
+            val memberStatusList =
+                members.map { member ->
+                    TeamMemberRealNameStatusDTO(
+                        memberId = member.user.id,
+                        hasRealNameInfo = member.hasRealNameInfo ?: false,
+                        userName = member.user.username,
+                    )
+                }
+
+            // Convert to ExtendedTeamSummaryDTO
+            team
+                .toTeamSummaryDTO()
+                .copy(
+                    allMembersVerified = allMembersVerified ?: false,
+                    memberRealNameStatus =
+                        if (filter == "all" || allMembersVerified == false) memberStatusList
+                        else null,
+                )
+        }
     }
 }

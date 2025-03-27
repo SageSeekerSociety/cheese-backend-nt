@@ -22,6 +22,7 @@ import javax.validation.Valid
  * @param approved
  * @param rejectReason
  * @param topics
+ * @param requireRealName
  */
 data class PatchTaskRequestDTO(
     @Schema(example = "null", description = "")
@@ -74,6 +75,9 @@ data class PatchTaskRequestDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("topics")
     val topics: kotlin.collections.List<kotlin.Long>? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("requireRealName")
+    val requireRealName: kotlin.Boolean? = null,
 ) : Serializable {
 
     companion object {
