@@ -10,14 +10,14 @@ import javax.validation.Valid
  * @param &#x60;data&#x60;
  * @param message
  */
-data class PatchTaskMembership200ResponseDTO(
+data class GetTaskParticipant200ResponseDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("code", required = true)
     val code: kotlin.Int,
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("data", required = true)
-    val `data`: PatchTaskMembership200ResponseDataDTO,
+    val `data`: GetTaskParticipant200ResponseDataDTO,
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("message", required = true)
     val message: kotlin.String,

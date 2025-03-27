@@ -46,6 +46,12 @@ class UserService(
         )
     }
 
+    // use batch query to improve performance
+    fun getUserDtos(userIds: List<IdType>): Map<Long, UserDTO> {
+        val users = userRepository.findAllById(userIds.map { it.toInt() })
+        return convertUsersToDto(users)
+    }
+
     /**
      * Batch converts User entities to DTOs with optimized query performance.
      *

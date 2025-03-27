@@ -15,10 +15,8 @@ data class TaskQueryOptions(
     val queryJoinability: Boolean,
     val querySubmittability: Boolean,
     val queryJoined: Boolean,
-    val queryJoinedApproved: Boolean,
-    val queryJoinedDisapproved: Boolean,
-    val queryJoinedNotApprovedOrDisapproved: Boolean,
     val queryTopics: Boolean,
+    val queryUserDeadline: Boolean,
 ) {
     companion object {
         val MINIMUM =
@@ -28,10 +26,8 @@ data class TaskQueryOptions(
                 queryJoinability = false,
                 querySubmittability = false,
                 queryJoined = false,
-                queryJoinedApproved = false,
-                queryJoinedDisapproved = false,
-                queryJoinedNotApprovedOrDisapproved = false,
                 queryTopics = false,
+                queryUserDeadline = false,
             )
 
         val MAXIMUM =
@@ -41,10 +37,8 @@ data class TaskQueryOptions(
                 queryJoinability = true,
                 querySubmittability = true,
                 queryJoined = true,
-                queryJoinedApproved = true,
-                queryJoinedDisapproved = true,
-                queryJoinedNotApprovedOrDisapproved = true,
                 queryTopics = true,
+                queryUserDeadline = true,
             )
     }
 }

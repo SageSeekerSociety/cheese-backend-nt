@@ -5,6 +5,212 @@ info:
 servers:
   - url: "http://localhost:8080"
 paths:
+  /users/{userId}/identity:
+    get:
+      tags: [ ]
+      operationId: get-user-identity
+      summary: Get User Real Name Identity Info
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      parameters:
+        - description: User ID
+          in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Whether to return the precise identity info
+          in: query
+          name: precise
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      hasIdentity:
+                        type: boolean
+                      identity:
+                        $ref: "#/components/schemas/UserIdentity"
+                    required:
+                      - hasIdentity
+                    type: object
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+    put:
+      tags: [ ]
+      operationId: put-user-identity
+      summary: Update User Real Name Identity Info
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      parameters:
+        - description: User ID
+          in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                realName:
+                  type: string
+                studentId:
+                  type: string
+                grade:
+                  type: string
+                major:
+                  type: string
+                className:
+                  type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      identity:
+                        $ref: "#/components/schemas/UserIdentity"
+                    required:
+                      - identity
+                    type: object
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+    patch:
+      tags: [ ]
+      operationId: patch-user-identity
+      summary: Update User Real Name Identity Info
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      parameters:
+        - description: User ID
+          in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                realName:
+                  type: string
+                studentId:
+                  type: string
+                grade:
+                  type: string
+                major:
+                  type: string
+                className:
+                  type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      identity:
+                        $ref: "#/components/schemas/UserIdentity"
+                    required:
+                      - identity
+                    type: object
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+  /users/{userId}/identity/access-logs:
+    get:
+      tags: [ ]
+      operationId: get-user-identity-access-logs
+      summary: Get User Real Name Identity Access Logs
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      parameters:
+        - description: User ID
+          in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - schema:
+            type: integer
+            format: int64
+          in: query
+          name: page_size
+          description: Page Size
+        - schema:
+            type: integer
+            format: int64
+          in: query
+          name: page_start
+          description: ID of First Element
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      logs:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/UserIdentityAccessLog"
+                      page:
+                        $ref: "#/components/schemas/Page"
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
   /spaces/{spaceId}:
     delete:
       parameters:
@@ -461,20 +667,8 @@ paths:
             type: boolean
             default: false
           in: query
-          name: queryJoinedApproved
-          description: Check whether current user has joined this task and has been approved
-        - schema:
-            type: boolean
-            default: false
-          in: query
-          name: queryJoinedDisapproved
-          description: Check whether current user has joined this task and has been disapproved
-        - schema:
-            type: boolean
-            default: false
-          in: query
-          name: queryJoinedNotApprovedOrDisapproved
-          description: Check whether current user has joined this task and has not been approved or disapproved
+          name: queryUserDeadline
+          description: Check whether current user has a specific deadline for this task
         - schema:
             type: boolean
             default: false
@@ -493,8 +687,11 @@ paths:
                     properties:
                       task:
                         $ref: "#/components/schemas/Task"
+                      participation:
+                        $ref: "#/components/schemas/TaskParticipationInfo"
                     required:
                       - task
+                      - participation
                     type: object
                   message:
                     type: string
@@ -587,7 +784,60 @@ paths:
                   items:
                     type: integer
                     format: int64
+                requireRealName:
+                  type: boolean
       summary: Update Task
+  /tasks/{taskId}/teams:
+    get:
+      summary: Get teams associated with a task
+      description: |
+        Retrieves a list of teams associated with a specific task. 
+        The teams can be filtered based on eligibility criteria.
+      operationId: getTaskTeams
+      tags:
+        - Tasks
+      parameters:
+        - in: path
+          name: taskId
+          schema:
+            type: integer
+            format: int64
+          required: true
+          description: The ID of the task
+        - in: query
+          name: filter
+          schema:
+            type: string
+            enum: [ eligible, all ]
+            default: eligible
+          description: |
+            Filter teams based on eligibility. 
+            "eligible" returns teams that meet the task's requirements (e.g., real name info).
+            "all" returns all teams.
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    description: Response code
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      teams:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TeamSummary"
+                    description: List of teams
+                  message:
+                    type: string
+                    description: Response message
+                    example: OK
   /tasks/{taskId}/ai-advice/conversations:
     post:
       summary: Create AI Advice Conversation
@@ -944,20 +1194,8 @@ paths:
             type: boolean
             default: false
           in: query
-          name: queryJoinedApproved
-          description: Check whether current user has joined this task and has been approved
-        - schema:
-            type: boolean
-            default: false
-          in: query
-          name: queryJoinedDisapproved
-          description: Check whether current user has joined this task and has been disapproved
-        - schema:
-            type: boolean
-            default: false
-          in: query
-          name: queryJoinedNotApprovedOrDisapproved
-          description: Check whether current user has joined this task and has not been approved or disapproved
+          name: queryUserDeadline
+          description: Check whether current user has a specific deadline for this task
         - schema:
             type: boolean
             default: false
@@ -1048,7 +1286,11 @@ paths:
                   items:
                     type: integer
                     format: int64
-                  default: []
+                  default: [ ]
+                requireRealName:
+                  type: boolean
+                  description: Whether the task requires real name information
+                  default: false
       summary: Create Task
   /tasks/{taskId}/participants:
     get:
@@ -1100,7 +1342,7 @@ paths:
                     type: string
           description: OK
     patch:
-      summary: Update TaskMembership
+      summary: Update TaskMembership By Member ID
       parameters:
         - description: Task ID
           in: path
@@ -1141,22 +1383,14 @@ paths:
                   - message
                 type: object
           description: OK
-      operationId: patch-task-membership
       tags: [ ]
+      operationId: patch-task-membership-by-member
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                deadline:
-                  type: integer
-                  format: int64
-                approved:
-                  $ref: "#/components/schemas/ApproveType"
-                realNameInfo:
-                  $ref: "#/components/schemas/TaskParticipantRealNameInfo"
+              $ref: "#/components/schemas/PatchTaskMembershipRequest"
     delete:
       parameters:
         - description: Task ID
@@ -1174,33 +1408,11 @@ paths:
             type: integer
             format: int64
       responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    type: integer
-                  data:
-                    properties:
-                      participants:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/TaskMembership"
-                    required:
-                      - task
-                    type: object
-                  message:
-                    type: string
-                required:
-                  - code
-                  - data
-                  - message
-                type: object
-          description: OK
-      tags: []
-      operationId: delete-task-participant
-      summary: Leave Task
+        "204":
+          description: No Content
+      tags: [ ]
+      operationId: delete-task-participant-by-member
+      summary: Leave Task By Member ID
     post:
       parameters:
         - description: Task ID
@@ -1227,10 +1439,8 @@ paths:
                     type: integer
                   data:
                     properties:
-                      participants:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/TaskMembership"
+                      participant:
+                        $ref: "#/components/schemas/TaskMembership"
                     required:
                       - task
                     type: object
@@ -1252,12 +1462,133 @@ paths:
                 deadline:
                   type: integer
                   format: int64
-                realNameInfo:
-                  $ref: "#/components/schemas/TaskParticipantRealNameInfo"
-      tags: []
+                email:
+                  type: string
+                phone:
+                  type: string
+                applyReason:
+                  type: string
+                personalAdvantage:
+                  type: string
+                remark:
+                  type: string
+      tags: [ ]
       operationId: post-task-participant
       summary: Apply for Task
-  /tasks/{taskId}/submissions:
+  /tasks/{taskId}/participants/{participantId}:
+    get:
+      summary: Get TaskMembership
+      tags: [ ]
+      operationId: get-task-participant
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Participant ID
+          in: path
+          name: participantId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      taskMembership:
+                        $ref: "#/components/schemas/TaskMembership"
+                    required:
+                      - taskMembership
+                    type: object
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+    patch:
+      summary: Update TaskMembership
+      tags: [ ]
+      operationId: patch-task-participant
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Member ID
+          in: path
+          name: participantId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchTaskMembershipRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      taskMembership:
+                        $ref: "#/components/schemas/TaskMembership"
+                    required:
+                      - taskMembership
+                    type: object
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+    delete:
+      summary: Delete TaskMembership
+      tags: [ ]
+      operationId: delete-task-participant
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Member ID
+          in: path
+          name: participantId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: No Content
+  /tasks/{taskId}/participants/{participantId}/submissions:
     get:
       summary: Enumerate Submissions
       tags: [ ]
@@ -1294,16 +1625,17 @@ paths:
         - description: Task ID
           in: path
           name: taskId
-          required: true
           schema:
             type: integer
             format: int64
+          required: true
         - schema:
             type: integer
             format: int64
-          in: query
-          name: member
-          description: Submitter's User/Team ID
+          in: path
+          name: participantId
+          description: Submitters' TaskMembership ID
+          required: true
         - schema:
             type: boolean
             default: false
@@ -1383,9 +1715,9 @@ paths:
         - schema:
             type: integer
             format: int64
-          in: query
-          name: member
-          description: Member's User/Group ID
+          in: path
+          name: participantId
+          description: Submitters' TaskMembership ID
           required: true
       requestBody:
         required: true
@@ -1394,14 +1726,8 @@ paths:
             schema:
               type: array
               items:
-                type: object
-                properties:
-                  contentText:
-                    type: string
-                  contentAttachmentId:
-                    type: integer
-                    format: int64
-  /tasks/{taskId}/submissions/{version}:
+                $ref: "#/components/schemas/TaskSubmissionContent"
+  /tasks/{taskId}/participants/{participantId}/submissions/{version}:
     patch:
       summary: Update Submission
       tags: [ ]
@@ -1440,9 +1766,9 @@ paths:
         - schema:
             type: integer
             format: int64
-          in: query
-          name: member
-          description: Member's User/Group ID
+          in: path
+          name: participantId
+          description: Submitters' TaskMembership ID
           required: true
         - schema:
             type: integer
@@ -1457,14 +1783,8 @@ paths:
             schema:
               type: array
               items:
-                type: object
-                properties:
-                  contentText:
-                    type: string
-                  contentAttachmentId:
-                    type: integer
-                    format: int64
-  "/tasks/submissions/{submissionId}/review":
+                $ref: "#/components/schemas/TaskSubmissionContent"
+  /tasks/{taskId}/participants/{participantId}/submissions/{submissionId}/review:
     post:
       summary: Review Submission
       tags: [ ]
@@ -1496,6 +1816,20 @@ paths:
                     type: string
       operationId: post-task-submission-review
       parameters:
+        - schema:
+            type: integer
+            format: int64
+          in: path
+          name: taskId
+          description: Task ID
+          required: true
+        - schema:
+            type: integer
+            format: int64
+          in: path
+          name: participantId
+          description: Submitters' TaskMembership ID
+          required: true
         - schema:
             type: integer
             format: int64
@@ -1555,6 +1889,20 @@ paths:
             type: integer
             format: int64
           in: path
+          name: taskId
+          description: Task ID
+          required: true
+        - schema:
+            type: integer
+            format: int64
+          in: path
+          name: participantId
+          description: Submitters' TaskMembership ID
+          required: true
+        - schema:
+            type: integer
+            format: int64
+          in: path
           name: submissionId
           description: Task Submission ID
           required: true
@@ -1579,6 +1927,20 @@ paths:
           description: OK
       operationId: delete-task-submission-review
       parameters:
+        - schema:
+            type: integer
+            format: int64
+          in: path
+          name: taskId
+          description: Task ID
+          required: true
+        - schema:
+            type: integer
+            format: int64
+          in: path
+          name: participantId
+          description: Submitters' TaskMembership ID
+          required: true
         - schema:
             type: integer
             format: int64
@@ -1848,6 +2210,8 @@ paths:
                         type: array
                         items:
                           $ref: "#/components/schemas/TeamMember"
+                      allMembersVerified:
+                        type: boolean
                   message:
                     type: string
       operationId: get-team-members
@@ -1859,6 +2223,13 @@ paths:
           name: teamId
           description: Team ID
           required: true
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryRealNameStatus
+          description: Whether to query real name verification status of members
+          required: false
     post:
       parameters:
         - description: Team ID
@@ -3326,6 +3697,62 @@ paths:
                         $ref: "#/components/schemas/Knowledge"
 components:
   schemas:
+    UserIdentity:
+      title: UserIdentity
+      type: object
+      required:
+        - realName
+        - studentId
+        - grade
+        - major
+        - className
+      properties:
+        realName:
+          type: string
+        studentId:
+          type: string
+        grade:
+          type: string
+        major:
+          type: string
+        className:
+          type: string
+    UserIdentityAccessModuleType:
+      title: UserIdentityAccessModuleType
+      type: string
+      enum:
+        - TASK
+    UserIdentityAccessType:
+      title: UserIdentityAccessType
+      type: string
+      enum:
+        - VIEW
+        - EXPORT
+    UserIdentityAccessLog:
+      title: UserIdentityAccessLog
+      type: object
+      required:
+        - accessor
+        - accessTime
+        - accessType
+        - ipAddress
+      properties:
+        accessor:
+          $ref: "#/components/schemas/User"
+        accessModuleType:
+          $ref: "#/components/schemas/UserIdentityAccessModuleType"
+        accessEntityId:
+          type: integer
+          format: int64
+        accessEntityName:
+          type: string
+        accessTime:
+          type: integer
+          format: int64
+        accessType:
+          $ref: "#/components/schemas/UserIdentityAccessType"
+        ipAddress:
+          type: string
     KnowledgeType:
       type: string
       enum: [ MATERIAL, LINK, TEXT, CODE ]
@@ -3420,6 +3847,7 @@ components:
         - description
         - submissionSchema
         - submitters
+        - requireRealName
         - updatedAt
         - createdAt
       properties:
@@ -3502,32 +3930,20 @@ components:
           type: string
         joined:
           type: boolean
-        joinedAsTeam:
+        joinedTeams:
           type: array
           items:
             $ref: "#/components/schemas/TeamSummary"
-        joinedApproved:
-          type: boolean
-        joinedApprovedAsTeam:
-          type: array
-          items:
-            $ref: "#/components/schemas/TeamSummary"
-        joinedDisapproved:
-          type: boolean
-        joinedDisapprovedAsTeam:
-          type: array
-          items:
-            $ref: "#/components/schemas/TeamSummary"
-        joinedNotApprovedOrDisapproved:
-          type: boolean
-        joinedNotApprovedOrDisapprovedAsTeam:
-          type: array
-          items:
-            $ref: "#/components/schemas/TeamSummary"
+        userDeadline:
+          type: integer
+          format: int64
         topics:
           type: array
           items:
             $ref: "#/components/schemas/Topic"
+        requireRealName:
+          type: boolean
+          description: Whether the task requires real name information
     TaskSubmitterType:
       title: TaskSubmitterType
       enum:
@@ -3571,6 +3987,14 @@ components:
               type: integer
             comment:
               type: string
+    TaskSubmissionContent:
+      type: object
+      properties:
+        text:
+          type: string
+        attachmentId:
+          type: integer
+          format: int64
     TaskSubmission:
       title: TaskSubmission
       type: object
@@ -3685,6 +4109,21 @@ components:
           type: boolean
         role:
           $ref: "#/components/schemas/TeamMemberRoleType"
+    TeamMemberRealNameStatus:
+      title: TeamMemberRealNameStatus
+      type: object
+      required:
+        - memberId
+        - hasRealNameInfo
+        - userName
+      properties:
+        memberId:
+          type: integer
+          format: int64
+        hasRealNameInfo:
+          type: boolean
+        userName:
+          type: string
     TeamSummary:
       title: TeamSummary
       type: object
@@ -3704,6 +4143,12 @@ components:
         avatarId:
           type: integer
           format: int64
+        allMembersVerified:
+          type: boolean
+        memberRealNameStatus:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamMemberRealNameStatus"
         updatedAt:
           type: integer
           format: int64
@@ -3738,6 +4183,49 @@ components:
           $ref: "#/components/schemas/ApproveType"
         realNameInfo:
           $ref: "#/components/schemas/TaskParticipantRealNameInfo"
+        applyReason:
+          type: string
+        personalAdvantage:
+          type: string
+        remark:
+          type: string
+    TaskParticipationIdentity:
+      title: TaskParticipationIdentity
+      type: object
+      required:
+        - id
+        - type
+        - memberId
+        - canSubmit
+        - approved
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          $ref: "#/components/schemas/TaskSubmitterType"
+        memberId:
+          type: integer
+          format: int64
+        teamName:
+          type: string
+        canSubmit:
+          type: boolean
+        approved:
+          $ref: "#/components/schemas/ApproveType"
+    TaskParticipationInfo:
+      title: TaskParticipationInfo
+      type: object
+      required:
+        - hasParticipation
+        - identities
+      properties:
+        hasParticipation:
+          type: boolean
+        identities:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskParticipationIdentity"
     TaskParticipantRealNameInfo:
       title: TaskParticipantRealNameInfo
       type: object
@@ -3747,11 +4235,6 @@ components:
         - grade
         - major
         - className
-        - email
-        - phone
-        - applyReason
-        - personalAdvantage
-        - remark
       properties:
         realName:
           type: string
@@ -3762,16 +4245,6 @@ components:
         major:
           type: string
         className:
-          type: string
-        email:
-          type: string
-        phone:
-          type: string
-        applyReason:
-          type: string
-        personalAdvantage:
-          type: string
-        remark:
           type: string
     TaskParticipantSummary:
       title: TaskParticipantSummary
@@ -3798,6 +4271,8 @@ components:
           $ref: "#/components/schemas/TeamMemberRoleType"
         user:
           $ref: "#/components/schemas/User"
+        hasRealNameInfo:
+          type: boolean
         updatedAt:
           type: integer
           format: int64

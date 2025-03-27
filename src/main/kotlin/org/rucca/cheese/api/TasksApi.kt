@@ -22,10 +22,13 @@ import org.rucca.cheese.model.GetTaskAiAdvice400ResponseDTO
 import org.rucca.cheese.model.GetTaskAiAdviceConversation200ResponseDTO
 import org.rucca.cheese.model.GetTaskAiAdviceConversationsGrouped200ResponseDTO
 import org.rucca.cheese.model.GetTaskAiAdviceStatus200ResponseDTO
+import org.rucca.cheese.model.GetTaskParticipant200ResponseDTO
 import org.rucca.cheese.model.GetTaskParticipants200ResponseDTO
 import org.rucca.cheese.model.GetTaskSubmissions200ResponseDTO
+import org.rucca.cheese.model.GetTaskTeams200ResponseDTO
 import org.rucca.cheese.model.GetTasks200ResponseDTO
-import org.rucca.cheese.model.PatchTaskMembership200ResponseDTO
+import org.rucca.cheese.model.PatchTask200ResponseDTO
+import org.rucca.cheese.model.PatchTaskMembershipByMember200ResponseDTO
 import org.rucca.cheese.model.PatchTaskMembershipRequestDTO
 import org.rucca.cheese.model.PatchTaskRequestDTO
 import org.rucca.cheese.model.PatchTaskSubmissionReviewRequestDTO
@@ -33,10 +36,10 @@ import org.rucca.cheese.model.PostTaskParticipant200ResponseDTO
 import org.rucca.cheese.model.PostTaskParticipantRequestDTO
 import org.rucca.cheese.model.PostTaskRequestDTO
 import org.rucca.cheese.model.PostTaskSubmission200ResponseDTO
-import org.rucca.cheese.model.PostTaskSubmissionRequestInnerDTO
 import org.rucca.cheese.model.PostTaskSubmissionReview200ResponseDTO
 import org.rucca.cheese.model.PostTaskSubmissionReviewRequestDTO
 import org.rucca.cheese.model.RequestTaskAiAdvice200ResponseDTO
+import org.rucca.cheese.model.TaskSubmissionContentDTO
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -137,33 +140,37 @@ interface TasksApi {
 
     @Operation(
         tags = ["default"],
-        summary = "Leave Task",
+        summary = "Delete TaskMembership",
         operationId = "deleteTaskParticipant",
         description = """""",
-        responses =
-            [
-                ApiResponse(
-                    responseCode = "200",
-                    description = "OK",
-                    content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(
-                                        implementation = PostTaskParticipant200ResponseDTO::class
-                                    )
-                            )
-                        ],
-                )
-            ],
+        responses = [ApiResponse(responseCode = "204", description = "No Content")],
         security = [SecurityRequirement(name = "bearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.DELETE],
-        value = ["/tasks/{taskId}/participants"],
-        produces = ["application/json"],
+        value = ["/tasks/{taskId}/participants/{participantId}"],
     )
     fun deleteTaskParticipant(
+        @Parameter(description = "Task ID", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
+        @Parameter(description = "Member ID", required = true)
+        @PathVariable("participantId")
+        participantId: kotlin.Long,
+    ): ResponseEntity<Unit> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["default"],
+        summary = "Leave Task By Member ID",
+        operationId = "deleteTaskParticipantByMember",
+        description = """""",
+        responses = [ApiResponse(responseCode = "204", description = "No Content")],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(method = [RequestMethod.DELETE], value = ["/tasks/{taskId}/participants"])
+    fun deleteTaskParticipantByMember(
         @Parameter(description = "Task ID", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
@@ -172,7 +179,7 @@ interface TasksApi {
         @Valid
         @RequestParam(value = "member", required = true)
         member: kotlin.Long,
-    ): ResponseEntity<PostTaskParticipant200ResponseDTO> {
+    ): ResponseEntity<Unit> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -186,12 +193,18 @@ interface TasksApi {
     )
     @RequestMapping(
         method = [RequestMethod.DELETE],
-        value = ["/tasks/submissions/{submissionId}/review"],
+        value = ["/tasks/{taskId}/participants/{participantId}/submissions/{submissionId}/review"],
     )
     fun deleteTaskSubmissionReview(
+        @Parameter(description = "Task ID", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
+        @Parameter(description = "Submitters' TaskMembership ID", required = true)
+        @PathVariable("participantId")
+        participantId: kotlin.Long,
         @Parameter(description = "Task Submission ID", required = true)
         @PathVariable("submissionId")
-        submissionId: kotlin.Long
+        submissionId: kotlin.Long,
     ): ResponseEntity<Unit> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -259,32 +272,12 @@ interface TasksApi {
         @RequestParam(value = "queryJoined", required = false, defaultValue = "false")
         queryJoined: kotlin.Boolean,
         @Parameter(
-            description = "Check whether current user has joined this task and has been approved",
+            description = "Check whether current user has a specific deadline for this task",
             schema = Schema(defaultValue = "false"),
         )
         @Valid
-        @RequestParam(value = "queryJoinedApproved", required = false, defaultValue = "false")
-        queryJoinedApproved: kotlin.Boolean,
-        @Parameter(
-            description =
-                "Check whether current user has joined this task and has been disapproved",
-            schema = Schema(defaultValue = "false"),
-        )
-        @Valid
-        @RequestParam(value = "queryJoinedDisapproved", required = false, defaultValue = "false")
-        queryJoinedDisapproved: kotlin.Boolean,
-        @Parameter(
-            description =
-                "Check whether current user has joined this task and has not been approved or disapproved",
-            schema = Schema(defaultValue = "false"),
-        )
-        @Valid
-        @RequestParam(
-            value = "queryJoinedNotApprovedOrDisapproved",
-            required = false,
-            defaultValue = "false",
-        )
-        queryJoinedNotApprovedOrDisapproved: kotlin.Boolean,
+        @RequestParam(value = "queryUserDeadline", required = false, defaultValue = "false")
+        queryUserDeadline: kotlin.Boolean,
         @Parameter(description = "Query task's topics", schema = Schema(defaultValue = "false"))
         @Valid
         @RequestParam(value = "queryTopics", required = false, defaultValue = "false")
@@ -449,6 +442,43 @@ interface TasksApi {
 
     @Operation(
         tags = ["default"],
+        summary = "Get TaskMembership",
+        operationId = "getTaskParticipant",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(implementation = GetTaskParticipant200ResponseDTO::class)
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/tasks/{taskId}/participants/{participantId}"],
+        produces = ["application/json"],
+    )
+    fun getTaskParticipant(
+        @Parameter(description = "Task ID", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
+        @Parameter(description = "Participant ID", required = true)
+        @PathVariable("participantId")
+        participantId: kotlin.Long,
+    ): ResponseEntity<GetTaskParticipant200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["default"],
         summary = "Get Participants",
         operationId = "getTaskParticipants",
         description = """""",
@@ -517,17 +547,16 @@ interface TasksApi {
     )
     @RequestMapping(
         method = [RequestMethod.GET],
-        value = ["/tasks/{taskId}/submissions"],
+        value = ["/tasks/{taskId}/participants/{participantId}/submissions"],
         produces = ["application/json"],
     )
     fun getTaskSubmissions(
         @Parameter(description = "Task ID", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
-        @Parameter(description = "Submitter's User/Team ID")
-        @Valid
-        @RequestParam(value = "member", required = false)
-        member: kotlin.Long?,
+        @Parameter(description = "Submitters' TaskMembership ID", required = true)
+        @PathVariable("participantId")
+        participantId: kotlin.Long,
         @Parameter(description = "Include All Versions", schema = Schema(defaultValue = "false"))
         @Valid
         @RequestParam(value = "allVersions", required = false, defaultValue = "false")
@@ -563,6 +592,50 @@ interface TasksApi {
         @RequestParam(value = "sort_order", required = false, defaultValue = "desc")
         sortOrder: kotlin.String,
     ): ResponseEntity<GetTaskSubmissions200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Tasks"],
+        summary = "Get teams associated with a task",
+        operationId = "getTaskTeams",
+        description =
+            """Retrieves a list of teams associated with a specific task. 
+The teams can be filtered based on eligibility criteria.
+""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "Successful operation",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = GetTaskTeams200ResponseDTO::class)
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/tasks/{taskId}/teams"],
+        produces = ["application/json"],
+    )
+    fun getTaskTeams(
+        @Parameter(description = "The ID of the task", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
+        @Parameter(
+            description =
+                "Filter teams based on eligibility.  \"eligible\" returns teams that meet the task's requirements (e.g., real name info). \"all\" returns all teams. ",
+            schema = Schema(allowableValues = ["eligible", "all"], defaultValue = "eligible"),
+        )
+        @Valid
+        @RequestParam(value = "filter", required = false, defaultValue = "eligible")
+        filter: kotlin.String,
+    ): ResponseEntity<GetTaskTeams200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -672,32 +745,12 @@ interface TasksApi {
         @RequestParam(value = "queryJoined", required = false, defaultValue = "false")
         queryJoined: kotlin.Boolean,
         @Parameter(
-            description = "Check whether current user has joined this task and has been approved",
+            description = "Check whether current user has a specific deadline for this task",
             schema = Schema(defaultValue = "false"),
         )
         @Valid
-        @RequestParam(value = "queryJoinedApproved", required = false, defaultValue = "false")
-        queryJoinedApproved: kotlin.Boolean,
-        @Parameter(
-            description =
-                "Check whether current user has joined this task and has been disapproved",
-            schema = Schema(defaultValue = "false"),
-        )
-        @Valid
-        @RequestParam(value = "queryJoinedDisapproved", required = false, defaultValue = "false")
-        queryJoinedDisapproved: kotlin.Boolean,
-        @Parameter(
-            description =
-                "Check whether current user has joined this task and has not been approved or disapproved",
-            schema = Schema(defaultValue = "false"),
-        )
-        @Valid
-        @RequestParam(
-            value = "queryJoinedNotApprovedOrDisapproved",
-            required = false,
-            defaultValue = "false",
-        )
-        queryJoinedNotApprovedOrDisapproved: kotlin.Boolean,
+        @RequestParam(value = "queryUserDeadline", required = false, defaultValue = "false")
+        queryUserDeadline: kotlin.Boolean,
         @Parameter(description = "Query task's topics", schema = Schema(defaultValue = "false"))
         @Valid
         @RequestParam(value = "queryTopics", required = false, defaultValue = "false")
@@ -721,7 +774,7 @@ interface TasksApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [Content(schema = Schema(implementation = GetTask200ResponseDTO::class))],
+                        [Content(schema = Schema(implementation = PatchTask200ResponseDTO::class))],
                 )
             ],
         security = [SecurityRequirement(name = "bearerAuth")],
@@ -740,14 +793,14 @@ interface TasksApi {
         @Valid
         @RequestBody
         patchTaskRequestDTO: PatchTaskRequestDTO,
-    ): ResponseEntity<GetTask200ResponseDTO> {
+    ): ResponseEntity<PatchTask200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
         tags = ["default"],
-        summary = "Update TaskMembership",
-        operationId = "patchTaskMembership",
+        summary = "Update TaskMembership By Member ID",
+        operationId = "patchTaskMembershipByMember",
         description = """""",
         responses =
             [
@@ -759,7 +812,8 @@ interface TasksApi {
                             Content(
                                 schema =
                                     Schema(
-                                        implementation = PatchTaskMembership200ResponseDTO::class
+                                        implementation =
+                                            PatchTaskMembershipByMember200ResponseDTO::class
                                     )
                             )
                         ],
@@ -773,7 +827,7 @@ interface TasksApi {
         produces = ["application/json"],
         consumes = ["application/json"],
     )
-    fun patchTaskMembership(
+    fun patchTaskMembershipByMember(
         @Parameter(description = "Task ID", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
@@ -786,7 +840,49 @@ interface TasksApi {
         @Valid
         @RequestBody
         patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO,
-    ): ResponseEntity<PatchTaskMembership200ResponseDTO> {
+    ): ResponseEntity<PatchTaskMembershipByMember200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["default"],
+        summary = "Update TaskMembership",
+        operationId = "patchTaskParticipant",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(implementation = GetTaskParticipant200ResponseDTO::class)
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.PATCH],
+        value = ["/tasks/{taskId}/participants/{participantId}"],
+        produces = ["application/json"],
+        consumes = ["application/json"],
+    )
+    fun patchTaskParticipant(
+        @Parameter(description = "Task ID", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
+        @Parameter(description = "Member ID", required = true)
+        @PathVariable("participantId")
+        participantId: kotlin.Long,
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO,
+    ): ResponseEntity<GetTaskParticipant200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -813,7 +909,7 @@ interface TasksApi {
     )
     @RequestMapping(
         method = [RequestMethod.PATCH],
-        value = ["/tasks/{taskId}/submissions/{version}"],
+        value = ["/tasks/{taskId}/participants/{participantId}/submissions/{version}"],
         produces = ["application/json"],
         consumes = ["application/json"],
     )
@@ -821,19 +917,16 @@ interface TasksApi {
         @Parameter(description = "Task ID", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
-        @NotNull
-        @Parameter(description = "Member's User/Group ID", required = true)
-        @Valid
-        @RequestParam(value = "member", required = true)
-        member: kotlin.Long,
+        @Parameter(description = "Submitters' TaskMembership ID", required = true)
+        @PathVariable("participantId")
+        participantId: kotlin.Long,
         @Parameter(description = "Version Index", required = true)
         @PathVariable("version")
         version: kotlin.Int,
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
-        postTaskSubmissionRequestInnerDTO:
-            kotlin.collections.List<PostTaskSubmissionRequestInnerDTO>,
+        taskSubmissionContentDTO: kotlin.collections.List<TaskSubmissionContentDTO>,
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -864,11 +957,17 @@ interface TasksApi {
     )
     @RequestMapping(
         method = [RequestMethod.PATCH],
-        value = ["/tasks/submissions/{submissionId}/review"],
+        value = ["/tasks/{taskId}/participants/{participantId}/submissions/{submissionId}/review"],
         produces = ["application/json"],
         consumes = ["application/json"],
     )
     fun patchTaskSubmissionReview(
+        @Parameter(description = "Task ID", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
+        @Parameter(description = "Submitters' TaskMembership ID", required = true)
+        @PathVariable("participantId")
+        participantId: kotlin.Long,
         @Parameter(description = "Task Submission ID", required = true)
         @PathVariable("submissionId")
         submissionId: kotlin.Long,
@@ -891,7 +990,7 @@ interface TasksApi {
                     responseCode = "200",
                     description = "OK",
                     content =
-                        [Content(schema = Schema(implementation = GetTask200ResponseDTO::class))],
+                        [Content(schema = Schema(implementation = PatchTask200ResponseDTO::class))],
                 )
             ],
         security = [SecurityRequirement(name = "bearerAuth")],
@@ -907,7 +1006,7 @@ interface TasksApi {
         @Valid
         @RequestBody
         postTaskRequestDTO: PostTaskRequestDTO
-    ): ResponseEntity<GetTask200ResponseDTO> {
+    ): ResponseEntity<PatchTask200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -980,7 +1079,7 @@ interface TasksApi {
     )
     @RequestMapping(
         method = [RequestMethod.POST],
-        value = ["/tasks/{taskId}/submissions"],
+        value = ["/tasks/{taskId}/participants/{participantId}/submissions"],
         produces = ["application/json"],
         consumes = ["application/json"],
     )
@@ -988,16 +1087,13 @@ interface TasksApi {
         @Parameter(description = "Task ID", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
-        @NotNull
-        @Parameter(description = "Member's User/Group ID", required = true)
-        @Valid
-        @RequestParam(value = "member", required = true)
-        member: kotlin.Long,
+        @Parameter(description = "Submitters' TaskMembership ID", required = true)
+        @PathVariable("participantId")
+        participantId: kotlin.Long,
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
-        postTaskSubmissionRequestInnerDTO:
-            kotlin.collections.List<PostTaskSubmissionRequestInnerDTO>,
+        taskSubmissionContentDTO: kotlin.collections.List<TaskSubmissionContentDTO>,
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -1028,11 +1124,17 @@ interface TasksApi {
     )
     @RequestMapping(
         method = [RequestMethod.POST],
-        value = ["/tasks/submissions/{submissionId}/review"],
+        value = ["/tasks/{taskId}/participants/{participantId}/submissions/{submissionId}/review"],
         produces = ["application/json"],
         consumes = ["application/json"],
     )
     fun postTaskSubmissionReview(
+        @Parameter(description = "Task ID", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
+        @Parameter(description = "Submitters' TaskMembership ID", required = true)
+        @PathVariable("participantId")
+        participantId: kotlin.Long,
         @Parameter(description = "Task Submission ID", required = true)
         @PathVariable("submissionId")
         submissionId: kotlin.Long,

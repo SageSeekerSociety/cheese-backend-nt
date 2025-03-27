@@ -171,7 +171,14 @@ interface TeamsApi {
     fun getTeamMembers(
         @Parameter(description = "Team ID", required = true)
         @PathVariable("teamId")
-        teamId: kotlin.Long
+        teamId: kotlin.Long,
+        @Parameter(
+            description = "Whether to query real name verification status of members",
+            schema = Schema(defaultValue = "false"),
+        )
+        @Valid
+        @RequestParam(value = "queryRealNameStatus", required = false, defaultValue = "false")
+        queryRealNameStatus: kotlin.Boolean,
     ): ResponseEntity<GetTeamMembers200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
