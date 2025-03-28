@@ -18,7 +18,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
 import org.springframework.context.ApplicationListener
 import org.springframework.context.annotation.Bean
+import org.springframework.scheduling.annotation.EnableScheduling
 
+@EnableScheduling
 @SpringBootApplication
 @EnableConfigurationProperties(ApplicationConfig::class)
 class BackendApplication(private val applicationConfig: ApplicationConfig) {

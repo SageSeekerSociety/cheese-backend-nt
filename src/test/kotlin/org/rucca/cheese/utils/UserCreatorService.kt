@@ -34,6 +34,7 @@ class UserCreatorService(
         val nickname: String,
         val avatarId: IdType,
         val intro: String,
+        val isLegacyAuth: Boolean = false,
     )
 
     fun createUser(

@@ -1,6 +1,7 @@
 package org.rucca.cheese.llm.service
 
 import java.math.BigDecimal
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.OffsetDateTime
@@ -29,10 +30,6 @@ class UserQuotaService(
     private val redisTemplate: RedisTemplate<String, String>,
     private val properties: LLMProperties,
 ) {
-    private val logger = LoggerFactory.getLogger(UserQuotaService::class.java)
-    private val QUOTA_KEY_PREFIX = "user:seu:quota:"
-    private val QUOTA_LOCK_PREFIX = "user:seu:quota:lock:"
-
     @Autowired private lateinit var applicationContext: ApplicationContext
 
     @Service
@@ -66,7 +63,7 @@ class UserQuotaService(
         @Transactional
         fun resetQuota(quota: UserAIQuota) {
             try {
-                quota.remainingSeu = quota.dailySeuQuota
+                quota.remainingSeu = properties.quota.defaultDailyQuota.toBigDecimal()
                 quota.lastResetTime = LocalDateTime.now()
                 userAIQuotaRepository.save(quota)
             } catch (e: Exception) {
@@ -91,7 +88,7 @@ class UserQuotaService(
         fun resetAllQuotasInDatabase(quotas: List<UserAIQuota>) {
             quotas.forEach { quota ->
                 try {
-                    quota.remainingSeu = quota.dailySeuQuota
+                    quota.remainingSeu = properties.quota.defaultDailyQuota.toBigDecimal()
                     quota.lastResetTime = LocalDateTime.now()
                     userAIQuotaRepository.save(quota)
                 } catch (e: Exception) {
@@ -229,10 +226,14 @@ class UserQuotaService(
     private fun checkAndResetQuota(quota: UserAIQuota) {
         val transactionalService = applicationContext.getBean(TransactionalService::class.java)
         val now = LocalDateTime.now()
-        val lastResetDate = quota.lastResetTime.toLocalDate()
-        val today = now.toLocalDate()
+        val resetTime = LocalTime.of(properties.quota.resetHour, properties.quota.resetMinute)
+        val lastResetDateTime = quota.lastResetTime
+        val nextResetAfterLastReset =
+            lastResetDateTime.toLocalDate().atTime(resetTime).let {
+                if (lastResetDateTime.toLocalTime().isAfter(resetTime)) it.plusDays(1) else it
+            }
 
-        if (lastResetDate.isBefore(today)) {
+        if (now.isAfter(nextResetAfterLastReset)) {
             try {
                 transactionalService.resetQuota(quota)
 
@@ -269,7 +270,7 @@ class UserQuotaService(
     private fun calculateSecondsUntilNextReset(): Long {
         val now = LocalDateTime.now()
         val nextReset = calculateNextResetTime()
-        return java.time.Duration.between(now, nextReset).seconds
+        return Duration.between(now, nextReset).seconds
     }
 
     // 每天在重置时间运行，重置所有用户的配额
@@ -293,7 +294,7 @@ class UserQuotaService(
                         .opsForValue()
                         .set(
                             quotaKey,
-                            quota.dailySeuQuota.toString(),
+                            properties.quota.defaultDailyQuota.toString(),
                             expirationSeconds,
                             TimeUnit.SECONDS,
                         )
@@ -334,6 +335,9 @@ class UserQuotaService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(UserQuotaService::class.java)
+
+        private const val QUOTA_KEY_PREFIX = "user:seu:quota:"
+        private const val QUOTA_LOCK_PREFIX = "user:seu:quota:lock:"
     }
 }
 

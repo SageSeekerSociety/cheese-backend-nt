@@ -17,9 +17,11 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.utils.UserCreatorService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 
 @Disabled("Disabled to speed up tests")
 @SpringBootTest
+@ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AuthorizationServiceTest
 @Autowired
