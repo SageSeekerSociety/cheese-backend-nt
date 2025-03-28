@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 
 /**
@@ -19,6 +20,7 @@ import javax.validation.Valid
  * @param space
  * @param rank
  * @param topics
+ * @param requireRealName Whether the task requires real name information
  */
 data class PostTaskRequestDTO(
     @Schema(example = "null", required = true, description = "")
@@ -65,4 +67,12 @@ data class PostTaskRequestDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("topics")
     val topics: kotlin.collections.List<kotlin.Long>? = arrayListOf(),
-) {}
+    @Schema(example = "null", description = "Whether the task requires real name information")
+    @get:JsonProperty("requireRealName")
+    val requireRealName: kotlin.Boolean? = false,
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

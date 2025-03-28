@@ -42,7 +42,7 @@ abstract class BaseEntity(
     var id: IdType? = null,
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
-    val createdAt: LocalDateTime? = null,
-    @Column(nullable = false) @UpdateTimestamp val updatedAt: LocalDateTime? = null,
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+    @Column(nullable = false) @UpdateTimestamp val updatedAt: LocalDateTime = LocalDateTime.now(),
     var deletedAt: LocalDateTime? = null,
 )

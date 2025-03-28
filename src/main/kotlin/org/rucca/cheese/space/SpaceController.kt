@@ -12,11 +12,12 @@ package org.rucca.cheese.space
 import javax.annotation.PostConstruct
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.SpacesApi
-import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
 import org.rucca.cheese.auth.AuthorizedAction
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
@@ -25,10 +26,11 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
+@UseOldAuth
 class SpaceController(
     private val spaceService: SpaceService,
     private val authorizationService: AuthorizationService,
-    private val authenticationService: AuthenticationService,
+    private val jwtService: JwtService,
 ) : SpacesApi {
     @PostConstruct
     fun initialize() {
@@ -108,33 +110,7 @@ class SpaceController(
         @ResourceId spaceId: Long,
         patchSpaceRequestDTO: PatchSpaceRequestDTO,
     ): ResponseEntity<GetSpace200ResponseDTO> {
-        if (patchSpaceRequestDTO.name != null) {
-            spaceService.updateSpaceName(spaceId, patchSpaceRequestDTO.name)
-        }
-        if (patchSpaceRequestDTO.intro != null) {
-            spaceService.updateSpaceIntro(spaceId, patchSpaceRequestDTO.intro)
-        }
-        if (patchSpaceRequestDTO.description != null) {
-            spaceService.updateSpaceDescription(spaceId, patchSpaceRequestDTO.description)
-        }
-        if (patchSpaceRequestDTO.avatarId != null) {
-            spaceService.updateSpaceAvatar(spaceId, patchSpaceRequestDTO.avatarId)
-        }
-        if (patchSpaceRequestDTO.enableRank != null) {
-            spaceService.updateSpaceEnableRank(spaceId, patchSpaceRequestDTO.enableRank)
-        }
-        if (patchSpaceRequestDTO.announcements != null) {
-            spaceService.updateSpaceAnnouncements(spaceId, patchSpaceRequestDTO.announcements)
-        }
-        if (patchSpaceRequestDTO.taskTemplates != null) {
-            spaceService.updateSpaceTaskTemplates(spaceId, patchSpaceRequestDTO.taskTemplates)
-        }
-        if (patchSpaceRequestDTO.classificationTopics != null) {
-            spaceService.updateSpaceClassificationTopics(
-                spaceId,
-                patchSpaceRequestDTO.classificationTopics,
-            )
-        }
+        spaceService.patchSpace(spaceId, patchSpaceRequestDTO)
         val spaceDTO = spaceService.getSpaceDto(spaceId, SpaceQueryOptions.MAXIMUM)
         return ResponseEntity.ok(
             GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
@@ -174,7 +150,7 @@ class SpaceController(
                 intro = postSpaceRequestDTO.intro,
                 description = postSpaceRequestDTO.description,
                 avatarId = postSpaceRequestDTO.avatarId,
-                ownerId = authenticationService.getCurrentUserId(),
+                ownerId = jwtService.getCurrentUserId(),
                 enableRank = postSpaceRequestDTO.enableRank ?: false,
                 announcements = postSpaceRequestDTO.announcements,
                 taskTemplates = postSpaceRequestDTO.taskTemplates,

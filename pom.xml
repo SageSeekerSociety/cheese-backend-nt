@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.2</version>
+        <version>3.4.4</version>
         <relativePath/>
     </parent>
 
@@ -31,7 +31,8 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <kotlin.version>2.1.10</kotlin.version>
+        <kotlin.version>2.1.20</kotlin.version>
+        <serialization.version>1.8.0</serialization.version>
     </properties>
 
     <!-- Project Dependencies -->
@@ -114,12 +115,12 @@
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations</artifactId>
-            <version>2.2.27</version>
+            <version>2.2.29</version>
         </dependency>
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-models</artifactId>
-            <version>2.2.28</version>
+            <version>2.2.29</version>
         </dependency>
         <dependency>
             <groupId>com.ninja-squad</groupId>
@@ -176,7 +177,7 @@
         <dependency>
             <groupId>io.ktor</groupId>
             <artifactId>ktor-client-java-jvm</artifactId>
-            <version>3.1.0</version>
+            <version>3.1.2</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -203,12 +204,25 @@
         <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
             <artifactId>kotlinx-coroutines-reactor</artifactId>
-            <version>1.8.0</version>
+            <version>1.10.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-serialization-json</artifactId>
+            <version>${serialization.version}</version>
         </dependency>
         <dependency>
             <groupId>io.hypersistence</groupId>
             <artifactId>hypersistence-utils-hibernate-63</artifactId>
-            <version>3.9.2</version>
+            <version>3.9.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
     </dependencies>
 
@@ -229,9 +243,15 @@
                     <compilerPlugins>
                         <plugin>spring</plugin>
                         <plugin>jpa</plugin>
+                        <plugin>kotlinx-serialization</plugin>
                     </compilerPlugins>
                 </configuration>
                 <dependencies>
+                    <dependency>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-maven-noarg</artifactId>
+                        <version>${kotlin.version}</version>
+                    </dependency>
                     <dependency>
                         <groupId>org.jetbrains.kotlin</groupId>
                         <artifactId>kotlin-maven-allopen</artifactId>
@@ -239,8 +259,8 @@
                     </dependency>
                     <dependency>
                         <groupId>org.jetbrains.kotlin</groupId>
-                        <artifactId>kotlin-maven-noarg</artifactId>
-                        <version>2.1.10</version>
+                        <artifactId>kotlin-maven-serialization</artifactId>
+                        <version>${kotlin.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -258,6 +278,7 @@
                             <generatorName>kotlin-spring</generatorName>
                             <skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>
                             <modelNameSuffix>DTO</modelNameSuffix>
+                            <templateDirectory>./specs/template</templateDirectory>
                             <configOptions>
                                 <java8>true</java8>
                                 <interfaceOnly>true</interfaceOnly>
@@ -265,7 +286,11 @@
                                 <apiPackage>org.rucca.cheese.api</apiPackage>
                                 <useBeanValidation>true</useBeanValidation>
                                 <exceptionHandler>false</exceptionHandler>
+                                <serializableModel>true</serializableModel>
                             </configOptions>
+                            <importMappings>
+                                <importMapping>AuthUserInfo=org.rucca.cheese.auth.model.AuthUserInfo</importMapping>
+                            </importMappings>
                         </configuration>
                     </execution>
                 </executions>
@@ -359,7 +384,12 @@
                     </java>
                     <kotlin>
                         <ktfmt>
-                            <style>KOTLINLANG</style>
+                            <style>GOOGLE</style>
+                            <maxWidth>100</maxWidth>
+                            <blockIndent>4</blockIndent>
+                            <continuationIndent>4</continuationIndent>
+                            <removeUnusedImports>true</removeUnusedImports>
+                            <manageTrailingCommas>true</manageTrailingCommas>
                         </ktfmt>
                     </kotlin>
                     <pom>

@@ -59,7 +59,7 @@ open class User {
     @Column(name = "username", nullable = false, length = Integer.MAX_VALUE)
     open var username: String? = null
 
-    @Column(name = "hashed_password", nullable = false, length = Integer.MAX_VALUE)
+    @Column(name = "hashed_password", nullable = true, length = Integer.MAX_VALUE)
     open var hashedPassword: String? = null
 
     @Column(name = "email", nullable = false, length = Integer.MAX_VALUE)
@@ -76,4 +76,6 @@ open class User {
     @Column(name = "deleted_at") open var deletedAt: OffsetDateTime? = null
 }
 
-interface UserRepository : JpaRepository<User, Int>
+interface UserRepository : JpaRepository<User, Int> {
+    fun countByIdIn(ids: List<Int>): Int
+}

@@ -49,6 +49,7 @@ services:
     image: pgvector/pgvector:pg16
     container_name: postgres
     environment:
+      - TZ=Asia/Shanghai
       - POSTGRES_PASSWORD=postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -68,6 +69,7 @@ services:
     image: pgvector/pgvector:pg16
     container_name: postgres_test
     environment:
+      - TZ=Asia/Shanghai
       - POSTGRES_PASSWORD=postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -118,6 +120,7 @@ services:
     ports:
       - "7777:7777"
     environment:
+      - TZ=Asia/Shanghai
       - APP_NAME=Cheese
       - PORT=7777
       - PRISMA_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres?schema=public&connection_limit=16
@@ -156,8 +159,9 @@ services:
     image: ghcr.io/sageseekersociety/cheese-backend-dev:dev
     container_name: cheese_legacy_test
     ports:
-      - "7778:7777"
+      - "7779:7777"
     environment:
+      - TZ=Asia/Shanghai
       - APP_NAME=Cheese
       - PORT=7777
       - JWT_SECRET=test-secret
@@ -174,7 +178,7 @@ services:
     env_file:
       - .env
     volumes:
-      - cheese_legacy_uploads:/app/uploads
+      - cheese_legacy_uploads_test:/app/uploads
     command: >
       bash -c '
         if [ ! -f "FLAG_INIT" ]; then

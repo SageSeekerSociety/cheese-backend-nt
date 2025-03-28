@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 
 /**
@@ -9,6 +10,7 @@ import javax.validation.Valid
  * @param user
  * @param updatedAt
  * @param createdAt
+ * @param hasRealNameInfo
  */
 data class TeamMemberDTO(
     @field:Valid
@@ -25,4 +27,12 @@ data class TeamMemberDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("createdAt", required = true)
     val createdAt: kotlin.Long,
-) {}
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("hasRealNameInfo")
+    val hasRealNameInfo: kotlin.Boolean? = null,
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

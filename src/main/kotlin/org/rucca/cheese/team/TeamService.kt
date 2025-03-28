@@ -10,7 +10,8 @@
 package org.rucca.cheese.team
 
 import java.time.LocalDateTime
-import org.rucca.cheese.auth.AuthenticationService
+import java.time.ZoneId
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
@@ -23,6 +24,7 @@ import org.rucca.cheese.team.error.TeamRoleConflictError
 import org.rucca.cheese.user.Avatar
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
+import org.rucca.cheese.user.services.UserRealNameService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate
 import org.springframework.data.elasticsearch.core.SearchHitSupport
@@ -46,7 +48,8 @@ class TeamService(
     private val teamUserRelationRepository: TeamUserRelationRepository,
     private val userService: UserService,
     private val elasticsearchTemplate: ElasticsearchTemplate,
-    private val authenticateService: AuthenticationService,
+    private val authenticateService: JwtService,
+    private val userRealNameService: UserRealNameService,
 ) {
     fun convertApproveType(type: ApproveType): ApproveTypeDTO {
         return when (type) {
@@ -157,7 +160,7 @@ class TeamService(
             .map { it.toTeamSummaryDTO() }
     }
 
-    fun isTeamAdmin(teamId: IdType, userId: IdType): Boolean {
+    fun isTeamAtLeastAdmin(teamId: IdType, userId: IdType): Boolean {
         val relationOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId)
         return relationOptional.isPresent &&
             (relationOptional.get().role == TeamMemberRole.ADMIN ||
@@ -234,6 +237,10 @@ class TeamService(
         return teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
     }
 
+    fun ensureTeamIdExists(teamId: IdType) {
+        if (!teamRepository.existsById(teamId)) throw NotFoundError("team", teamId)
+    }
+
     fun updateTeamName(teamId: IdType, name: String) {
         ensureTeamNameNotExists(name)
         val team = getTeam(teamId)
@@ -288,16 +295,67 @@ class TeamService(
         return convertMemberRole(relation.role!!)
     }
 
-    fun getTeamMembers(teamId: IdType): List<TeamMemberDTO> {
+    fun getTeamMembers(
+        teamId: IdType,
+        queryRealNameStatus: Boolean = false,
+    ): Pair<List<TeamMemberDTO>, Boolean?> {
         val relations = teamUserRelationRepository.findAllByTeamId(teamId)
-        return relations.map {
-            TeamMemberDTO(
-                role = convertMemberRole(it.role!!),
-                user = userService.getUserDto(it.user!!.id!!.toLong()),
-                updatedAt = it.updatedAt!!.toEpochMilli(),
-                createdAt = it.createdAt!!.toEpochMilli(),
-            )
-        }
+        val members =
+            relations.map {
+                val user = userService.getUserDto(it.user!!.id!!.toLong())
+
+                val hasRealNameInfo =
+                    if (queryRealNameStatus) {
+                        try {
+                            userRealNameService.getUserIdentity(user.id)
+                            true
+                        } catch (e: Exception) {
+                            false
+                        }
+                    } else null
+
+                TeamMemberDTO(
+                    role = convertMemberRole(it.role!!),
+                    user = user,
+                    updatedAt =
+                        it.updatedAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                    createdAt =
+                        it.createdAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                    hasRealNameInfo = hasRealNameInfo,
+                )
+            }
+
+        // 如果查询实名认证状态，计算是否所有成员都已认证
+        val allMembersVerified =
+            if (queryRealNameStatus) {
+                members.all { it.hasRealNameInfo == true }
+            } else null
+
+        return Pair(members, allMembersVerified)
+    }
+
+    /**
+     * Retrieves all teams where a user has admin privileges.
+     *
+     * @param userId The ID of the user.
+     * @return A list of teams where the user is an admin.
+     */
+    fun getTeamsWhereUserIsAdmin(userId: IdType): List<Team> {
+        return teamUserRelationRepository
+            .findAllByUserId(userId)
+            .filter { it.role == TeamMemberRole.OWNER || it.role == TeamMemberRole.ADMIN }
+            .map { it.team!! }
+    }
+
+    /**
+     * Retrieves the summary DTO of a team.
+     *
+     * @param teamId The ID of the team.
+     * @return The team summary DTO.
+     */
+    fun getTeamSummaryDto(teamId: IdType): TeamSummaryDTO {
+        val team = getTeam(teamId)
+        return team.toTeamSummaryDTO()
     }
 
     private fun addTeamMember(teamId: IdType, userId: IdType, role: TeamMemberRole) {
@@ -350,5 +408,44 @@ class TeamService(
             }
         relation.deletedAt = LocalDateTime.now()
         teamUserRelationRepository.save(relation)
+    }
+
+    /**
+     * Gets the real name verification status of all members in a team
+     *
+     * @param teamId The ID of the team
+     * @return A pair containing a list of member status DTOs and whether all members are verified
+     */
+    fun getTeamMembersRealNameStatus(
+        teamId: IdType
+    ): Pair<List<TeamMemberRealNameStatusDTO>, Boolean> {
+        // Check if team exists
+        ensureTeamIdExists(teamId)
+
+        // Get all team members with real name status
+        val (members, allVerified) = getTeamMembers(teamId, true)
+
+        // Map members to status DTOs
+        val memberStatusList =
+            members.map { member ->
+                TeamMemberRealNameStatusDTO(
+                    memberId = member.user.id,
+                    hasRealNameInfo = member.hasRealNameInfo ?: false,
+                    userName = member.user.username,
+                )
+            }
+
+        return Pair(memberStatusList, allVerified ?: false)
+    }
+
+    /**
+     * 获取用户是成员的所有团队
+     *
+     * @param userId 用户ID
+     * @return 用户所在的所有团队列表
+     */
+    fun getTeamsWhereUserIsMember(userId: IdType): List<Team> {
+        val teamUserRelations = teamUserRelationRepository.findAllByUserId(userId)
+        return teamUserRelations.mapNotNull { it.team }
     }
 }

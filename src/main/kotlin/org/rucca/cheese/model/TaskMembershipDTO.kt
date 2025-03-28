@@ -2,6 +2,7 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import java.io.Serializable
 import javax.validation.Valid
 
 /**
@@ -12,6 +13,9 @@ import javax.validation.Valid
  * @param approved
  * @param deadline
  * @param realNameInfo
+ * @param applyReason
+ * @param personalAdvantage
+ * @param remark
  */
 data class TaskMembershipDTO(
     @Schema(example = "null", required = true, description = "")
@@ -38,4 +42,18 @@ data class TaskMembershipDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("realNameInfo")
     val realNameInfo: TaskParticipantRealNameInfoDTO? = null,
-) {}
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("applyReason")
+    val applyReason: kotlin.String? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("personalAdvantage")
+    val personalAdvantage: kotlin.String? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("remark")
+    val remark: kotlin.String? = null,
+) : Serializable {
+
+    companion object {
+        private const val serialVersionUID: kotlin.Long = 1
+    }
+}

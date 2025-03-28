@@ -12,6 +12,7 @@ package org.rucca.cheese.common.error
 import jakarta.servlet.http.HttpServletRequest
 import org.rucca.cheese.auth.annotation.NoAuth
 import org.rucca.cheese.auth.error.AuthenticationRequiredError
+import org.rucca.cheese.auth.spring.AccessDeniedError
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import org.springframework.web.servlet.resource.NoResourceFoundException
 
 @ControllerAdvice
 class GlobalErrorHandler {
@@ -84,6 +86,27 @@ class GlobalErrorHandler {
                 request,
                 e.message ?: "Invalid request caused http message conversion error",
                 BadRequestError(e.message ?: "Invalid request caused http message conversion error"),
+            )
+
+    @ExceptionHandler(AccessDeniedError::class)
+    @ResponseBody
+    fun handleAccessDeniedException(
+        e: AccessDeniedError,
+        request: HttpServletRequest,
+    ): ResponseEntity<*> =
+        ResponseEntity.status(HttpStatus.FORBIDDEN).handleSseOrJson(request, e.message, e)
+
+    @ExceptionHandler(NoResourceFoundException::class)
+    @ResponseBody
+    fun handleNoResourceFoundException(
+        e: NoResourceFoundException,
+        request: HttpServletRequest,
+    ): ResponseEntity<*> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .handleSseOrJson(
+                request,
+                e.message ?: "Resource not found",
+                NotFoundError(e.message ?: "Resource not found"),
             )
 
     @ExceptionHandler(Exception::class)

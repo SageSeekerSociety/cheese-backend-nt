@@ -55,7 +55,20 @@ class RolePermissionService {
                         authorizedActions = listOf("query", "create", "enumerate"),
                         authorizedResource = AuthorizedResource(types = listOf("space")),
                     ),
-
+                    // Knowledge permissions
+                    //                    Permission(
+                    //                        authorizedActions =
+                    //                            listOf("ship-ownership", "add-admin",
+                    // "modify-admin", "remove-admin"),
+                    //                        authorizedResource =
+                    // AuthorizedResource(types =
+                    // listOf("space")),
+                    //                        customLogic = "owned",
+                    //                    ),
+                    Permission(
+                        authorizedActions = listOf("create", "query", "query2", "delete", "update"),
+                        authorizedResource = AuthorizedResource(types = listOf("knowledge")),
+                    ),
                     // Team permissions
                     Permission(
                         authorizedActions =
@@ -92,70 +105,29 @@ class RolePermissionService {
                         authorizedResource = AuthorizedResource(types = listOf("team")),
                     ),
 
-                    // Task permissions
+                    // Notification permissions
                     Permission(
                         authorizedActions =
-                            listOf(
-                                "enumerate-submissions",
-                                "remove-participant",
-                                "modify-membership",
-                                "query-participant-real-name-info",
-                            ),
-                        authorizedResource = AuthorizedResource(types = listOf("task")),
-                        customLogic = "owned || is-space-admin-of-task || is-team-admin-of-task",
+                            listOf("list-notifications", "get-unread-count", "mark-as-read"),
+                        authorizedResource = AuthorizedResource(types = listOf("notification")),
                     ),
                     Permission(
-                        authorizedActions = listOf("modify", "delete"),
-                        authorizedResource = AuthorizedResource(types = listOf("task")),
-                        customLogic =
-                            "(owned && ((!is-task-in-space && !is-task-in-team) || (!task-has-any-submission && !task-has-any-participant))) " +
-                                "|| is-space-admin-of-task || is-team-admin-of-task",
+                        authorizedActions = listOf("delete"),
+                        authorizedResource = AuthorizedResource(types = listOf("notification")),
+                        customLogic = "is-notification-owner",
                     ),
+
+                    // Project permissions
                     Permission(
-                        authorizedActions = listOf("modify-approved", "modify-reject-reason"),
-                        authorizedResource = AuthorizedResource(types = listOf("task")),
-                        customLogic =
-                            "is-space-admin-of-task || is-team-admin-of-task || (owned && is-modifying-approved-to-none)",
+                        authorizedActions = listOf("create", "enumerate", "update", "delete"),
+                        authorizedResource = AuthorizedResource(types = listOf("project")),
                     ),
+
+                    // Discussion permissions
                     Permission(
                         authorizedActions =
-                            listOf(
-                                "create-submission-review",
-                                "modify-submission-review",
-                                "delete-submission-review",
-                            ),
-                        authorizedResource = AuthorizedResource(types = listOf("task")),
-                        customLogic = "is-task-owner-of-submission",
-                    ),
-                    Permission(
-                        authorizedActions =
-                            listOf("submit", "modify-submission", "enumerate-submissions"),
-                        authorizedResource = AuthorizedResource(types = listOf("task")),
-                        customLogic = "is-task-participant && is-participant-approved",
-                    ),
-                    Permission(
-                        authorizedActions = listOf("remove-participant"),
-                        authorizedResource = AuthorizedResource(types = listOf("task")),
-                        customLogic =
-                            "(is-user-task && task-member-is-self) || (is-team-task && task-user-is-admin-of-member)",
-                    ),
-                    Permission(
-                        authorizedActions = listOf("add-participant"),
-                        authorizedResource = AuthorizedResource(types = listOf("task")),
-                        customLogic =
-                            "(!deadline-is-set && is-task-approved && ((is-user-task && task-member-is-self) || (is-team-task && task-user-is-admin-of-member)))" +
-                                "|| (deadline-is-set && (owned || is-space-admin-of-task || is-team-admin-of-task))",
-                    ),
-                    Permission(
-                        authorizedActions = listOf("create"),
-                        authorizedResource = AuthorizedResource(types = listOf("task")),
-                    ),
-                    Permission(
-                        authorizedActions = listOf("query", "enumerate", "enumerate-participants"),
-                        authorizedResource = AuthorizedResource(types = listOf("task")),
-                        customLogic =
-                            "is-task-approved || (owned || is-enumerating-owned-tasks) " +
-                                "|| is-space-admin-of-task || is-team-admin-of-task",
+                            listOf("query-discussion", "create-discussion", "create-reaction"),
+                        authorizedResource = AuthorizedResource(types = listOf("project")),
                     ),
                 ),
         )

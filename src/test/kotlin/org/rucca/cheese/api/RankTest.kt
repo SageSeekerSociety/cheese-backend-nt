@@ -62,6 +62,10 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     private var submissionId: IdType = -1
     private var submissionId2: IdType = -1
     private var submissionId3: IdType = -1
+    private var participantTaskMembershipId: IdType = -1
+    private var participant2TaskMembershipId: IdType = -1
+    private var participant3TaskMembershipId: IdType = -1
+    private var participant4TaskMembershipId: IdType = -1
 
     fun createSpace(
         creatorToken: String,
@@ -168,7 +172,7 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
             .andExpect(jsonPath("$.data.task.approved").value("APPROVED"))
     }
 
-    fun addParticipantUser(token: String, taskId: IdType, userId: IdType) {
+    fun addParticipantUser(token: String, taskId: IdType, userId: IdType): IdType {
         val request =
             MockMvcRequestBuilders.post("/tasks/${taskId}/participants")
                 .header("Authorization", "Bearer $token")
@@ -176,16 +180,20 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .contentType("application/json")
                 .content(
                     """
-                {}
+                {
+                  "email": "test@example.com"
+                }
             """
                 )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val json = JSONObject(response.andReturn().response.contentAsString)
+        val participantId = json.getJSONObject("data").getJSONObject("participant").getLong("id")
+        return participantId
     }
 
-    fun approveTaskParticipant(token: String, taskId: IdType, memberId: IdType) {
+    fun approveTaskParticipant(token: String, taskId: IdType, participantId: IdType) {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants")
-                .queryParam("member", memberId.toString())
+            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants/${participantId}")
                 .header("Authorization", "Bearer $token")
                 .contentType("application/json")
                 .content(
@@ -198,25 +206,19 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath(
-                        "$.data.participants[?(@.member.id == $memberId)].approved"
-                    )
-                    .value("APPROVED")
-            )
+            .andExpect(jsonPath("$.data.taskMembership.approved").value("APPROVED"))
     }
 
-    fun submitTaskUser(token: String, taskId: IdType, userId: IdType): IdType {
+    fun submitTaskUser(token: String, taskId: IdType, participantId: IdType): IdType {
         val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.post("/tasks/$taskId/participants/$participantId/submissions")
                 .header("Authorization", "Bearer $token")
-                .param("member", userId.toString())
                 .contentType("application/json")
                 .content(
                     """
                         [
                           {
-                            "contentText": "This is a test submission."
+                            "text": "This is a test submission."
                           }
                         ]
                     """
@@ -251,9 +253,10 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 1,
             )
         approveTask(taskId, creatorToken)
-        addParticipantUser(participantToken, taskId, participant.userId)
-        approveTaskParticipant(creatorToken, taskId, participant.userId)
-        submissionId = submitTaskUser(participantToken, taskId, participant.userId)
+        participantTaskMembershipId =
+            addParticipantUser(participantToken, taskId, participant.userId)
+        approveTaskParticipant(creatorToken, taskId, participantTaskMembershipId)
+        submissionId = submitTaskUser(participantToken, taskId, participantTaskMembershipId)
         taskId2 =
             createTask(
                 creatorToken,
@@ -270,9 +273,10 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 2,
             )
         approveTask(taskId2, creatorToken)
-        addParticipantUser(participantToken, taskId2, participant.userId)
-        approveTaskParticipant(creatorToken, taskId2, participant.userId)
-        submissionId2 = submitTaskUser(participantToken, taskId2, participant.userId)
+        participant2TaskMembershipId =
+            addParticipantUser(participantToken, taskId2, participant.userId)
+        approveTaskParticipant(creatorToken, taskId2, participant2TaskMembershipId)
+        submissionId2 = submitTaskUser(participantToken, taskId2, participant2TaskMembershipId)
         taskId3 =
             createTask(
                 creatorToken,
@@ -289,9 +293,10 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 1,
             )
         approveTask(taskId3, creatorToken)
-        addParticipantUser(participantToken, taskId3, participant.userId)
-        approveTaskParticipant(creatorToken, taskId3, participant.userId)
-        submissionId3 = submitTaskUser(participantToken, taskId3, participant.userId)
+        participant3TaskMembershipId =
+            addParticipantUser(participantToken, taskId3, participant.userId)
+        approveTaskParticipant(creatorToken, taskId3, participant3TaskMembershipId)
+        submissionId3 = submitTaskUser(participantToken, taskId3, participant3TaskMembershipId)
         taskId4 =
             createTask(
                 creatorToken,
@@ -392,7 +397,9 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .contentType("application/json")
                 .content(
                     """
-                    {}
+                    {
+                      "email": "test@example.com"
+                    }
                 """
                 )
         mockMvc
@@ -409,7 +416,9 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     @Order(60)
     fun testCreateReview() {
         val request =
-            MockMvcRequestBuilders.post("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -447,7 +456,9 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     @Order(70)
     fun testUpdateReview() {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.patch(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -472,7 +483,9 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 .contentType("application/json")
                 .content(
                     """
-                    {}
+                    {
+                      "email": "test@example.com"
+                    }
                 """
                 )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
@@ -496,7 +509,9 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     @Order(90)
     fun testCreateReview2() {
         val request =
-            MockMvcRequestBuilders.post("/tasks/submissions/$submissionId2/review")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participant2TaskMembershipId/submissions/$submissionId2/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -534,7 +549,9 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
     @Order(110)
     fun testCreateReview3() {
         val request =
-            MockMvcRequestBuilders.post("/tasks/submissions/$submissionId3/review")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participant3TaskMembershipId/submissions/$submissionId3/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(

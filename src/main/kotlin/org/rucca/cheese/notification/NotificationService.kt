@@ -1,7 +1,7 @@
 package org.rucca.cheese.notification
 
-import java.util.*
-import org.rucca.cheese.auth.AuthenticationService
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
@@ -9,59 +9,123 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.NotificationContentDTO
 import org.rucca.cheese.model.NotificationDTO
 import org.rucca.cheese.model.PageDTO
+import org.rucca.cheese.user.User
+import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
 
 @Service
 open class NotificationService(
     private val notificationRepository: NotificationRepository,
-    private val authenticateService: AuthenticationService,
+    private val userService: UserService,
+    private val authenticateService: JwtService,
+    private val objectMapper: ObjectMapper,
 ) {
+
+    fun getNotificationDTO(notificationId: IdType): NotificationDTO {
+        val notification = notificationRepository.findById(notificationId)
+        if (!notification.isPresent) {
+            throw NotFoundError("notification", notificationId)
+        }
+        return notification.get().toNotificationDTO()
+    }
 
     fun listNotifications(
         type: NotificationType? = null,
         read: Boolean? = null,
-        pageStart: IdType,
+        pageStart: IdType?,
         pageSize: Int,
     ): Pair<List<NotificationDTO>, PageDTO> {
-        val notification = notificationRepository.findById(pageStart)
-        if (!notification.isPresent) {
-            throw NotFoundError("notification", pageStart)
+        val currentUser = User().apply { id = authenticateService.getCurrentUserId().toInt() }
+
+        val actualPageStart =
+            when {
+                pageStart == null || pageStart == 0L -> {
+                    val firstNotification =
+                        when {
+                            type == null && read == null ->
+                                notificationRepository.findFirstByReceiver(currentUser)
+                            type != null && read == null ->
+                                notificationRepository.findFirstByReceiverAndType(currentUser, type)
+                            type == null && read != null ->
+                                notificationRepository.findFirstByReceiverAndRead(currentUser, read)
+                            else ->
+                                notificationRepository.findFirstByReceiverAndTypeAndRead(
+                                    currentUser,
+                                    type,
+                                    read,
+                                )
+                        }
+                    firstNotification?.id
+                        ?: return Pair(emptyList(), PageDTO(0, pageSize, false, false))
+                }
+                else -> pageStart
+            }
+
+        notificationRepository.findById(actualPageStart).orElseThrow {
+            NotFoundError("notification", actualPageStart)
         }
+
         val notifications =
-            notificationRepository.findAllByReceiverIdAndTypeAndRead(
-                notification.get().receiverId,
-                type,
-                read,
-            )
+            notificationRepository
+                .findAllByReceiver(currentUser)
+                .filter { type == null || it.type == type }
+                .filter { read == null || it.read == read }
+
         val (curr, page) =
             PageHelper.pageFromAll(
                 notifications,
-                pageStart,
+                actualPageStart,
                 pageSize,
                 { it.id!! },
                 { id -> throw NotFoundError("notification", id) },
             )
-        return Pair(curr.map { it.toNotificationDTO(it) }, page)
+
+        return Pair(curr.map { it.toNotificationDTO() }, page)
     }
 
-    //  unused function
-    fun createNotification(notification: Notification) {
-        notificationRepository.save(notification)
+    fun createNotification(
+        type: NotificationType,
+        receiverId: Long,
+        text: String,
+        projectId: Long? = null,
+        discussionId: Long? = null,
+        knowledgeId: Long? = null,
+    ): IdType {
+        if (!userService.existsUser(receiverId)) {
+            throw NotFoundError("user", receiverId)
+        }
+        val notification =
+            notificationRepository.save(
+                Notification(
+                    type = type,
+                    receiver = User().apply { id = receiverId.toInt() },
+                    content = NotificationContent(text, projectId, discussionId, knowledgeId),
+                    read = false,
+                )
+            )
+        return notification.id!!
     }
 
-    //  unused function
     fun deleteNotification(notificationId: Long) {
-        notificationRepository.delete(notificationRepository.findById(notificationId).get())
+        val notification =
+            notificationRepository.findById(notificationId).orElseThrow {
+                NotFoundError("notification", notificationId)
+            }
+        notificationRepository.delete(notification)
     }
 
     fun markAsRead(notificationIds: List<Long>) {
         val notification = mutableListOf<Notification>()
-        for (id in notificationIds) {
-            val entity: Optional<Notification> = notificationRepository.findById(id)
+        for (notificationId in notificationIds) {
+            val entity =
+                notificationRepository.findByIdAndReceiver(
+                    notificationId,
+                    User().apply { id = authenticateService.getCurrentUserId().toInt() },
+                )
             if (entity.isPresent) {
                 notification.add(entity.get())
             } else {
-                throw NotFoundError("notification", id)
+                throw NotFoundError("Notification not found", notificationId)
             }
         }
         notification.forEach { it.read = true }
@@ -69,7 +133,10 @@ open class NotificationService(
     }
 
     fun getUnreadCount(receiverId: Long): Int {
-        return notificationRepository.countByReceiverIdAndRead(receiverId, false).toInt()
+        return notificationRepository.countByReceiverAndRead(
+            User().apply { id = receiverId.toInt() },
+            false,
+        )
     }
 
     fun getNotificationOwner(notificationId: IdType): IdType {
@@ -77,36 +144,33 @@ open class NotificationService(
         if (!notification.isPresent) {
             throw NotFoundError("notification", notificationId)
         }
-        return notification.get().receiverId
+        return notification.get().receiver.id!!.toLong()
     }
 
-    fun isNotificationAdmin(notificationId: IdType, userId: IdType): Boolean {
-        val notification = notificationRepository.findByIdAndReceiverId(notificationId, userId)
-        if (!notification.isPresent) {
-            throw NotFoundError("notification", notificationId)
-        }
-        return notification.get().receiverId == authenticateService.getCurrentUserId()
+    fun isNotificationAdmin(notificationId: IdType?, userId: IdType): Boolean {
+        require(notificationId != null) { "notificationId cannot be null for this operation" }
+        val notification =
+            notificationRepository
+                .findByIdAndReceiver(notificationId, User().apply { id = userId.toInt() })
+                .orElseThrow { NotFoundError("notification", notificationId) }
+
+        return notification.receiver.id!!.toLong() == authenticateService.getCurrentUserId()
     }
 
-    fun Notification.toNotificationDTO(notification: Notification): NotificationDTO {
+    fun Notification.toNotificationDTO(): NotificationDTO {
         return NotificationDTO(
-            id = notification.id!!,
-            type = NotificationDTO.Type.valueOf(notification.type.name),
-            read = notification.read,
-            receiverId = notification.receiverId,
-            content = notification.content.toNotificationContentDTO(notification.content),
-            createdAt = notification.createdAt!!.toEpochMilli(),
-        )
-    }
-
-    fun NotificationContent.toNotificationContentDTO(
-        content: NotificationContent
-    ): NotificationContentDTO {
-        return NotificationContentDTO(
-            content.text,
-            content.projectId,
-            content.discussionId,
-            content.knowledgeId,
+            id = this.id!!,
+            type = NotificationDTO.Type.valueOf(this.type.name),
+            read = this.read,
+            receiverId = this.receiver.id!!.toLong(),
+            content =
+                NotificationContentDTO(
+                    this.content.text,
+                    this.content.projectId,
+                    this.content.discussionId,
+                    this.content.knowledgeId,
+                ),
+            createdAt = this.createdAt!!.toEpochMilli(),
         )
     }
 }
