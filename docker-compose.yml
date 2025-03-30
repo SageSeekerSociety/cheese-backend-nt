@@ -115,7 +115,7 @@ services:
       start_period: 30s
 
   cheese_legacy:
-    image: ghcr.io/sageseekersociety/cheese-backend-dev:dev
+    image: ghcr.io/sageseekersociety/cheese-backend:dev
     container_name: cheese_legacy
     ports:
       - "7777:7777"
@@ -123,6 +123,11 @@ services:
       - TZ=Asia/Shanghai
       - APP_NAME=Cheese
       - PORT=7777
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+      - FLYWAY_BASELINE_VERSION=20250328220000
       - PRISMA_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres?schema=public&connection_limit=16
       - ELASTICSEARCH_NODE=http://elasticsearch:9200/
       - ELASTICSEARCH_AUTH_USERNAME=elastic
@@ -137,14 +142,6 @@ services:
       - .env
     volumes:
       - cheese_legacy_uploads:/app/uploads
-    command: >
-      bash -c '
-        if [ ! -f "FLAG_INIT" ]; then
-          touch FLAG_INIT
-          pnpm prisma db push
-        fi
-        pnpm start
-      '
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -156,7 +153,7 @@ services:
       - cheese_network
 
   cheese_legacy_test:
-    image: ghcr.io/sageseekersociety/cheese-backend-dev:dev
+    image: ghcr.io/sageseekersociety/cheese-backend:dev
     container_name: cheese_legacy_test
     ports:
       - "7779:7777"
@@ -164,6 +161,11 @@ services:
       - TZ=Asia/Shanghai
       - APP_NAME=Cheese
       - PORT=7777
+      - POSTGRES_HOST=postgres_test
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+      - FLYWAY_BASELINE_VERSION=20250328220000
       - JWT_SECRET=test-secret
       - PRISMA_DATABASE_URL=postgresql://postgres:postgres@postgres_test:5432/postgres?schema=public&connection_limit=16
       - ELASTICSEARCH_NODE=http://elasticsearch_test:9200/
@@ -179,14 +181,6 @@ services:
       - .env
     volumes:
       - cheese_legacy_uploads_test:/app/uploads
-    command: >
-      bash -c '
-        if [ ! -f "FLAG_INIT" ]; then
-          touch FLAG_INIT
-          pnpm prisma db push
-        fi
-        pnpm start
-      '
     depends_on:
       elasticsearch_test:
         condition: service_healthy
