@@ -65,13 +65,13 @@ jobs:
 
       - name: Test Legacy Service
         id: test_legacy
-        run: sudo docker exec cheese_legacy npm run test
+        run: sudo docker exec cheese_legacy_test npm run test
 
       - name: Show Legacy Service Logs on Failure
         if: failure() && steps.test_legacy.outcome == 'failure' # Run only if the 'test_legacy' step failed
         run: |
           echo "::error::Legacy Service tests failed. Dumping container logs:"
-          sudo docker logs cheese_legacy
+          sudo docker logs cheese_legacy_test
 
       - name: Upload jar
         uses: actions/upload-artifact@v4

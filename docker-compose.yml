@@ -128,6 +128,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
       - FLYWAY_BASELINE_VERSION=20250328220000
+      - WAIT_TIMEOUT=600
       - PRISMA_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres?schema=public&connection_limit=16
       - ELASTICSEARCH_NODE=http://elasticsearch:9200/
       - ELASTICSEARCH_AUTH_USERNAME=elastic
@@ -166,6 +167,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
       - FLYWAY_BASELINE_VERSION=20250328220000
+      - WAIT_TIMEOUT=600
       - JWT_SECRET=test-secret
       - PRISMA_DATABASE_URL=postgresql://postgres:postgres@postgres_test:5432/postgres?schema=public&connection_limit=16
       - ELASTICSEARCH_NODE=http://elasticsearch_test:9200/
