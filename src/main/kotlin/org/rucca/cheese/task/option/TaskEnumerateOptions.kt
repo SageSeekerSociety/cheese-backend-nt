@@ -13,8 +13,8 @@ import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
 
 data class TaskEnumerateOptions(
-    val space: IdType?,
-    val team: IdType?,
+    val space: IdType,
+    val categoryId: IdType?,
     val approved: ApproveType?,
     val owner: IdType?,
     val joined: Boolean?,

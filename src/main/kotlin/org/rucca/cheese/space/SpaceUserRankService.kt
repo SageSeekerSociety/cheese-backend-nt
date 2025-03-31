@@ -12,6 +12,10 @@ package org.rucca.cheese.space
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.space.error.RankNotEnabledForSpaceError
+import org.rucca.cheese.space.models.Space
+import org.rucca.cheese.space.models.SpaceUserRank
+import org.rucca.cheese.space.repositories.SpaceRepository
+import org.rucca.cheese.space.repositories.SpaceUserRankRepository
 import org.rucca.cheese.user.User
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

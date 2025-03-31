@@ -59,6 +59,10 @@ class TeamService(
         }
     }
 
+    fun getTeamSize(teamId: IdType): Int {
+        return teamUserRelationRepository.countByTeamIdAndDeletedAtIsNull(teamId)
+    }
+
     fun getTeamDto(teamId: IdType): TeamDTO {
         val team = getTeam(teamId)
         val currentUserId = authenticateService.getCurrentUserId()

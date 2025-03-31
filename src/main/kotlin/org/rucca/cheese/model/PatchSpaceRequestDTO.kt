@@ -13,6 +13,7 @@ import java.io.Serializable
  * @param announcements
  * @param taskTemplates
  * @param classificationTopics
+ * @param defaultCategoryId ID of the default category for tasks in this space.
  */
 data class PatchSpaceRequestDTO(
     @Schema(example = "null", description = "")
@@ -39,6 +40,9 @@ data class PatchSpaceRequestDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("classificationTopics")
     val classificationTopics: kotlin.collections.List<kotlin.Long>? = null,
+    @Schema(example = "1", description = "ID of the default category for tasks in this space.")
+    @get:JsonProperty("defaultCategoryId")
+    val defaultCategoryId: kotlin.Long? = null,
 ) : Serializable {
 
     companion object {

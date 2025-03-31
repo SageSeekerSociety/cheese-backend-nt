@@ -1,31 +1,30 @@
 /*
- *  Description: This file defines the SpaceUserRank entity and its repository.
- *               It stores the rank of a user in a space.
+ *  Description: This file defines the SpaceAdminRelation entity and its repository.
+ *               It stores the relationship between a space and its admin.
  *
  *  Author(s):
  *      Nictheboy Li    <nictheboy@outlook.com>
+ *      CH3COOH-JYR
  *
  */
 
-package org.rucca.cheese.space
+package org.rucca.cheese.space.models
 
 import jakarta.persistence.*
-import java.util.Optional
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
-import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.user.User
-import org.springframework.data.jpa.repository.JpaRepository
+
+enum class SpaceAdminRole {
+    OWNER,
+    ADMIN,
+}
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
 @Table(indexes = [Index(columnList = "space_id"), Index(columnList = "user_id")])
-class SpaceUserRank(
+class SpaceAdminRelation(
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val space: Space? = null,
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val user: User? = null,
-    @Column(nullable = false) var rank: Int? = null,
+    @Column(nullable = false) var role: SpaceAdminRole? = null,
 ) : BaseEntity()
-
-interface SpaceUserRankRepository : JpaRepository<SpaceUserRank, IdType> {
-    fun findBySpaceIdAndUserId(spaceId: IdType, userId: IdType): Optional<SpaceUserRank>
-}

@@ -12,7 +12,10 @@ package org.rucca.cheese.space
 import java.time.LocalDateTime
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.TopicDTO
-import org.rucca.cheese.topic.Topic
+import org.rucca.cheese.space.models.SpaceClassificationTopicsRelation
+import org.rucca.cheese.space.repositories.SpaceClassificationTopicsRelationRepository
+import org.rucca.cheese.space.repositories.SpaceRepository
+import org.rucca.cheese.topic.TopicRepository
 import org.rucca.cheese.topic.TopicService
 import org.rucca.cheese.topic.toDTO
 import org.springframework.stereotype.Service
@@ -20,6 +23,8 @@ import org.springframework.stereotype.Service
 @Service
 class SpaceClassificationTopicsService(
     private val topicsRelationRepository: SpaceClassificationTopicsRelationRepository,
+    private val spaceRepository: SpaceRepository,
+    private val topicRepository: TopicRepository,
     private val topicService: TopicService,
 ) {
     fun getClassificationTopicIds(spaceId: IdType): List<IdType> {
@@ -53,8 +58,8 @@ class SpaceClassificationTopicsService(
             topicService.ensureTopicExists(it)
             val relation =
                 SpaceClassificationTopicsRelation(
-                    space = Space().apply { id = spaceId },
-                    topic = Topic().apply { id = it.toInt() },
+                    space = spaceRepository.getReferenceById(spaceId),
+                    topic = topicRepository.getReferenceById(it.toInt()),
                 )
             topicsRelationRepository.save(relation)
         }

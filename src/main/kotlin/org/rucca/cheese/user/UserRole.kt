@@ -31,4 +31,6 @@ class UserRoleEntity(
 
 interface UserRoleRepository : JpaRepository<UserRoleEntity, IdType> {
     fun findAllByUserId(userId: Long): Set<UserRoleEntity>
+
+    fun existsByUserIdAndRole(userId: IdType, role: UserRole): Boolean
 }

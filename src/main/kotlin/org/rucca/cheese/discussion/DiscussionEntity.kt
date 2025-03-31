@@ -21,7 +21,8 @@ import org.springframework.stereotype.Repository
 
 /** 模型类型枚举 */
 enum class DiscussableModelType {
-    PROJECT
+    PROJECT,
+    SPACE,
 }
 
 fun DiscussableModelType.toDTO(): DiscussableModelTypeDTO =

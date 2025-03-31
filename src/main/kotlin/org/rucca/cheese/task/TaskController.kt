@@ -94,7 +94,6 @@ class TaskController(
         val queryOptions =
             TaskQueryOptions(
                 querySpace = querySpace,
-                queryTeam = false,
                 queryJoinability = queryJoinability,
                 querySubmittability = querySubmittability,
                 queryJoined = queryJoined,
@@ -181,8 +180,8 @@ class TaskController(
 
     @Auth("task:enumerate:task")
     override fun getTasks(
-        @AuthContext("spaceId") space: Long?,
-        @AuthContext("teamId") team: Long?,
+        @AuthContext("spaceId") space: Long,
+        @AuthContext("categoryId") categoryId: Long?,
         @AuthContext("approved") approved: ApproveTypeDTO?,
         @AuthContext("queryOwner") owner: Long?,
         @AuthContext("queryJoined") joined: Boolean?,
@@ -216,7 +215,7 @@ class TaskController(
         val enumerateOptions =
             TaskEnumerateOptions(
                 space = space,
-                team = null,
+                categoryId = categoryId,
                 approved = approved?.convert(),
                 owner = owner,
                 joined = joined,
@@ -225,7 +224,6 @@ class TaskController(
         val queryOptions =
             TaskQueryOptions(
                 querySpace = querySpace,
-                queryTeam = false,
                 queryJoinability = queryJoinability,
                 querySubmittability = querySubmittability,
                 queryJoined = queryJoined,
@@ -310,6 +308,9 @@ class TaskController(
         }
         if (patchTaskRequestDTO.requireRealName != null) {
             taskService.updateTaskRequireRealName(taskId, patchTaskRequestDTO.requireRealName)
+        }
+        if (patchTaskRequestDTO.categoryId != null) {
+            taskService.updateTaskCategory(taskId, patchTaskRequestDTO.categoryId)
         }
         val taskDTO = taskService.getTaskDto(taskId, TaskQueryOptions.MAXIMUM)
         return ResponseEntity.ok(
@@ -405,8 +406,8 @@ class TaskController(
                         )
                     },
                 creatorId = jwtService.getCurrentUserId(),
-                teamId = null,
                 spaceId = postTaskRequestDTO.space,
+                categoryId = postTaskRequestDTO.categoryId,
                 rank = postTaskRequestDTO.rank,
                 requireRealName = postTaskRequestDTO.requireRealName ?: false,
             )
@@ -731,7 +732,7 @@ class TaskController(
         return ResponseEntity.noContent().build()
     }
 
-    @Auth("task:enumerate:task")
+    @Auth("task:query:task")
     override fun getTaskTeams(
         @ResourceId taskId: Long,
         filter: String,
