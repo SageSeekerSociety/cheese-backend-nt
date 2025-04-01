@@ -10,6 +10,8 @@ import org.rucca.cheese.common.pagination.model.Cursor
 import org.rucca.cheese.common.pagination.model.CursorValue
 import org.rucca.cheese.common.pagination.model.SimpleCursor
 import org.rucca.cheese.common.pagination.model.TypedCompositeCursor
+import org.rucca.cheese.common.pagination.util.JpaUtils
+import org.rucca.cheese.common.pagination.util.ReflectionUtils
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.data.jpa.repository.JpaRepository
@@ -21,37 +23,112 @@ import org.springframework.data.jpa.repository.JpaRepository
  * @param C The concrete cursor type
  */
 class CursorSpecificationBuilder<T, C : Cursor<T>>
-private constructor(private val cursorType: Class<C>, vararg cursorBy: KProperty1<T, *>) {
-    private val sortProperties = mutableListOf<Pair<KProperty1<T, *>, Sort.Direction>>()
-    private var cursorProperties = mutableListOf<KProperty1<T, *>>()
+private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
+    private val sortProperties = mutableListOf<Pair<String, Sort.Direction>>()
+    private var cursorProperties = mutableListOf<String>()
     private var specification: Specification<T>? = null
 
     init {
         cursorProperties.addAll(cursorBy)
     }
 
-    /** Add a sort property with direction. */
+    /**
+     * Add a sort property using KProperty1 (compile-time safe).
+     *
+     * @param property The property reference.
+     * @param direction Sort direction (default: ASC).
+     */
     fun sortBy(
         property: KProperty1<T, *>,
         direction: Sort.Direction = Sort.Direction.ASC,
     ): CursorSpecificationBuilder<T, C> {
-        sortProperties.add(property to direction)
+        sortProperties.add(property.name to direction) // Store by name
+        // If cursor properties haven't been explicitly set by path, implicitly add sort property
+        // name
+        if (cursorProperties.isEmpty() || cursorProperties.all { !it.contains('.') }) {
+            if (!cursorProperties.contains(property.name)) {
+                // Heuristic: If only simple properties were added before, add this one too.
+                // Avoid adding if path-based properties were already set explicitly.
+                cursorProperties.add(property.name)
+            }
+        }
         return this
     }
 
-    /** Set multiple sort properties at once. */
+    /**
+     * Set multiple sort properties using KProperty1 (compile-time safe). Clears existing sort
+     * properties.
+     */
     fun sortBy(
         vararg properties: Pair<KProperty1<T, *>, Sort.Direction>
     ): CursorSpecificationBuilder<T, C> {
         sortProperties.clear()
-        sortProperties.addAll(properties)
+        properties.forEach { (prop, dir) -> sortProperties.add(prop.name to dir) }
+        // Implicitly update cursor properties if needed (similar logic to single sortBy)
+        if (cursorProperties.isEmpty() || cursorProperties.all { !it.contains('.') }) {
+            cursorProperties.clear()
+            cursorProperties.addAll(sortProperties.map { it.first })
+        }
         return this
     }
 
-    /** Set properties to use for cursor extraction. */
+    /**
+     * Set properties to use for cursor extraction using KProperty1 (compile-time safe). Clears
+     * existing cursor properties. Note: Best for simple properties of the root entity T. For
+     * related entity properties, use `cursorByPath`.
+     */
     fun cursorBy(vararg properties: KProperty1<T, *>): CursorSpecificationBuilder<T, C> {
         cursorProperties.clear()
-        cursorProperties.addAll(properties)
+        cursorProperties.addAll(properties.map { it.name })
+        return this
+    }
+
+    /**
+     * Add a sort property using a String path (flexible, allows "related.property"). Use this for
+     * sorting by properties of related entities. Note: Loses compile-time safety compared to
+     * KProperty1 version.
+     *
+     * @param path The property path (e.g., "name", "discussion.createdAt").
+     * @param direction Sort direction (default: ASC).
+     */
+    fun sortByPath(
+        path: String,
+        direction: Sort.Direction = Sort.Direction.ASC,
+    ): CursorSpecificationBuilder<T, C> {
+        sortProperties.add(path to direction)
+        // If cursor properties haven't been explicitly set, implicitly add sort path
+        if (cursorProperties.isEmpty()) {
+            cursorProperties.add(path)
+        }
+        return this
+    }
+
+    /**
+     * Set multiple sort properties using String paths (flexible). Clears existing sort properties.
+     */
+    fun sortByPath(
+        vararg properties: Pair<String, Sort.Direction>
+    ): CursorSpecificationBuilder<T, C> {
+        sortProperties.clear()
+        sortProperties.addAll(properties)
+        // Implicitly update cursor properties if needed
+        if (cursorProperties.isEmpty()) {
+            cursorProperties.clear()
+            cursorProperties.addAll(sortProperties.map { it.first })
+        }
+        return this
+    }
+
+    /**
+     * Set properties (using String paths) to use for cursor extraction (flexible, allows
+     * "related.property"). Clears existing cursor properties. This is the recommended method when
+     * dealing with related entity properties.
+     *
+     * @param paths The property paths (e.g., "name", "discussion.id").
+     */
+    fun cursorByPath(vararg paths: String): CursorSpecificationBuilder<T, C> {
+        cursorProperties.clear()
+        cursorProperties.addAll(paths)
         return this
     }
 
@@ -74,30 +151,48 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: KProperty
     fun build(): CursorSpecification<T, C> {
         require(sortProperties.isNotEmpty()) { "At least one sort property must be set" }
 
-        // If no cursor properties specified, use sort properties
+        // If no cursor properties specified explicitly, default to using sort properties' paths
         if (cursorProperties.isEmpty()) {
             cursorProperties.addAll(sortProperties.map { it.first })
+        }
+
+        // Ensure cursor properties are consistent (e.g., all paths exist conceptually) - basic
+        // check
+        require(cursorProperties.isNotEmpty()) {
+            "Cursor properties cannot be empty after defaulting."
         }
 
         // Create base specification
         val baseSpec = specification ?: Specification { _, _, _ -> null }
 
+        // Use String paths for internal implementation details
+        val finalSortProperties = sortProperties.toList() // Immutable copy
+        val finalCursorProperties = cursorProperties.toList() // Immutable copy
+
         // Choose appropriate implementation based on cursor type and properties
+        // Note: SimpleCursor is generally suitable only for single, non-nested properties.
+        // CompositeCursor is more general purpose, especially with paths.
         return when {
-            SimpleCursor::class.java.isAssignableFrom(cursorType) && cursorProperties.size == 1 -> {
+            // SimpleCursor: Only if configured with exactly one non-nested property path.
+            SimpleCursor::class.java.isAssignableFrom(cursorType) &&
+                finalCursorProperties.size == 1 &&
+                !finalCursorProperties.first().contains('.') -> {
                 createSimpleCursorSpecification(
-                    cursorProperty = cursorProperties.first(),
-                    sortProperty = sortProperties.first().first,
-                    direction = sortProperties.first().second,
+                    // Use the single path for both cursor and sort (common case for SimpleCursor)
+                    cursorPath = finalCursorProperties.first(),
+                    sortPath =
+                        finalSortProperties.first().first, // Assumes first sort matches cursor
+                    direction = finalSortProperties.first().second,
                     baseSpec = baseSpec,
                 )
                     as CursorSpecification<T, C>
             }
 
+            // TypedCompositeCursor: Handles single or multiple properties, including nested paths.
             TypedCompositeCursor::class.java.isAssignableFrom(cursorType) -> {
                 createCompositeCursorSpecification(
-                    sortProperties = sortProperties,
-                    cursorProperties = cursorProperties,
+                    sortProperties = finalSortProperties,
+                    cursorPaths = finalCursorProperties,
                     baseSpec = baseSpec,
                 )
                     as CursorSpecification<T, C>
@@ -106,175 +201,190 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: KProperty
             else -> {
                 throw IllegalArgumentException(
                     "Cannot create cursor specification for cursor type: ${cursorType.simpleName} " +
-                        "with ${cursorProperties.size} properties"
+                        "with cursor paths: $finalCursorProperties. Ensure compatibility (e.g., SimpleCursor needs one non-nested path)."
                 )
             }
         }
     }
 
-    /** Create simple cursor specification for single property. */
+    /** Create simple cursor specification for a single, non-nested property path. */
     private fun createSimpleCursorSpecification(
-        cursorProperty: KProperty1<T, *>,
-        sortProperty: KProperty1<T, *>,
+        cursorPath: String, // Now uses path
+        sortPath: String, // Now uses path
         direction: Sort.Direction,
         baseSpec: Specification<T>,
     ): CursorSpecification<T, SimpleCursor<T, *>> {
-        // Implementation remains the same, just typed specifically to SimpleCursor
         return object : CursorSpecification<T, SimpleCursor<T, *>> {
             override fun toPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                criteriaBuilder: CriteriaBuilder,
+                cb: CriteriaBuilder,
             ): Predicate {
-                return baseSpec.toPredicate(root, query, criteriaBuilder)
-                    ?: criteriaBuilder.conjunction()
+                return baseSpec.toPredicate(root, query, cb) ?: cb.conjunction()
             }
 
             @Suppress("UNCHECKED_CAST")
             override fun toCursorPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                criteriaBuilder: CriteriaBuilder,
+                cb: CriteriaBuilder,
                 cursor: SimpleCursor<T, *>?,
             ): Predicate? {
                 if (cursor == null) return null
+                val cursorValue = cursor.value as? Comparable<Any> ?: return null // Safe cast
 
-                // Create predicate
-                val path = root.get<Comparable<Any>>(cursorProperty.name)
-                val cursorValue = cursor.value as Comparable<Any>
+                // Use helper to get the actual Path object from the path string
+                val path = JpaUtils.getPath<Comparable<Any>>(root, cursorPath) // Use helper
 
                 return when (direction) {
-                    Sort.Direction.ASC -> criteriaBuilder.greaterThanOrEqualTo(path, cursorValue)
-                    Sort.Direction.DESC -> criteriaBuilder.lessThanOrEqualTo(path, cursorValue)
+                    Sort.Direction.ASC -> cb.greaterThanOrEqualTo(path, cursorValue)
+                    Sort.Direction.DESC -> cb.lessThanOrEqualTo(path, cursorValue)
                 }
             }
 
             override fun getSort(): Sort {
-                return Sort.by(direction, sortProperty.name)
+                return Sort.by(direction, sortPath) // Sort uses path string directly
             }
 
-            @Suppress("UNCHECKED_CAST")
             override fun extractCursor(entity: T): SimpleCursor<T, *>? {
-                val value = cursorProperty.get(entity) ?: return null
+                // Use reflection helper to get value based on path string
+                val value = ReflectionUtils.getPropertyValue(entity, cursorPath) ?: return null
                 return SimpleCursor<T, Any>(value)
             }
         }
     }
 
-    /** Create composite cursor specification for multiple properties. */
+    /** Create composite cursor specification for multiple property paths (including nested). */
     private fun createCompositeCursorSpecification(
-        sortProperties: List<Pair<KProperty1<T, *>, Sort.Direction>>,
-        cursorProperties: List<KProperty1<T, *>>,
+        sortProperties: List<Pair<String, Sort.Direction>>, // Uses paths
+        cursorPaths: List<String>, // Uses paths
         baseSpec: Specification<T>,
     ): CursorSpecification<T, TypedCompositeCursor<T>> {
-        // Implementation remains similar, just typed specifically to TypedCompositeCursor
         return object : CursorSpecification<T, TypedCompositeCursor<T>> {
-            // Implementation details remain the same but with specific TypedCompositeCursor type
-            // ... implementation details ...
-
             override fun toPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                criteriaBuilder: CriteriaBuilder,
+                cb: CriteriaBuilder,
             ): Predicate {
-                return baseSpec.toPredicate(root, query, criteriaBuilder)
-                    ?: criteriaBuilder.conjunction()
+                return baseSpec.toPredicate(root, query, cb) ?: cb.conjunction()
             }
 
             override fun toCursorPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                criteriaBuilder: CriteriaBuilder,
+                cb: CriteriaBuilder,
                 cursor: TypedCompositeCursor<T>?,
             ): Predicate? {
-                // Existing implementation...
                 if (cursor == null) return null
 
-                // Extract values from cursor
+                // Extract raw values from cursor map, keyed by path strings
                 val cursorValues =
-                    cursor.values.mapValues { (_, value) ->
-                        when (value) {
-                            is CursorValue.StringValue -> value.value
-                            is CursorValue.LongValue -> value.value
-                            is CursorValue.DoubleValue -> value.value
-                            is CursorValue.BooleanValue -> value.value
-                            is CursorValue.TimestampValue -> value.value
-                            CursorValue.NullValue -> null
-                        }
+                    cursor.values.mapValues { (_, valueWrapper) ->
+                        valueWrapper.unwrap() // Assumes CursorValue has an unwrap() method
                     }
 
                 if (cursorValues.isEmpty()) return null
 
-                // Build OR conditions for each progressive property combination
                 val predicates = mutableListOf<Predicate>()
 
-                // Build predicates based on sort properties
+                // Build OR conditions based on sort properties (paths)
                 for (i in sortProperties.indices) {
-                    val (prop, direction) = sortProperties[i]
-                    val propName = prop.name
-                    val cursorValue = cursorValues[propName] ?: continue
+                    val (propPath, direction) = sortProperties[i]
+                    val cursorValue =
+                        cursorValues[propPath]
+                            ?: continue // Skip if cursor doesn't have value for this sort path
 
-                    // Equal conditions for preceding properties
+                    // Equal conditions for preceding sort properties
                     val equalPredicates =
                         (0 until i).mapNotNull { j ->
-                            val (prevProp, _) = sortProperties[j]
-                            val prevPropName = prevProp.name
-                            val prevValue = cursorValues[prevPropName] ?: return@mapNotNull null
-
-                            criteriaBuilder.equal(root.get<Any>(prevPropName), prevValue)
+                            val (prevPropPath, _) = sortProperties[j]
+                            val prevValue = cursorValues[prevPropPath] // Get value using path
+                            if (prevValue == null) {
+                                // If previous cursor value is null, equality check is IS NULL
+                                cb.isNull(JpaUtils.getPath<Any>(root, prevPropPath))
+                            } else {
+                                cb.equal(JpaUtils.getPath<Any>(root, prevPropPath), prevValue)
+                            }
+                            // Note: If a previous required cursor value is missing entirely from
+                            // cursorValues map,
+                            // this specific OR branch might be invalid. Consider adding checks or
+                            // ensure cursor is complete.
                         }
 
-                    // Comparison condition for current property
-                    val path = root.get<Comparable<Any>>(propName)
+                    // Comparison condition for the current sort property
+                    val currentPath =
+                        JpaUtils.getPath<Comparable<Any>>(root, propPath) // Use helper
                     val compPredicate =
-                        when (direction) {
-                            Sort.Direction.ASC ->
-                                criteriaBuilder.greaterThan(path, cursorValue as Comparable<Any>)
-                            Sort.Direction.DESC ->
-                                criteriaBuilder.lessThan(path, cursorValue as Comparable<Any>)
+                        try {
+                            when (direction) {
+                                Sort.Direction.ASC ->
+                                    cb.greaterThan(currentPath, cursorValue as Comparable<Any>)
+                                Sort.Direction.DESC ->
+                                    cb.lessThan(currentPath, cursorValue as Comparable<Any>)
+                            }
+                        } catch (e: ClassCastException) {
+                            // Handle case where cursor value is not comparable (should not happen
+                            // if used correctly)
+                            throw IllegalArgumentException(
+                                "Property '$propPath' value in cursor is not comparable.",
+                                e,
+                            )
                         }
 
-                    // Combine conditions
+                    // Combine equal predicates and comparison predicate
                     val combined =
                         if (equalPredicates.isEmpty()) {
                             compPredicate
                         } else {
-                            criteriaBuilder.and(
-                                criteriaBuilder.and(*equalPredicates.toTypedArray()),
-                                compPredicate,
-                            )
+                            cb.and(*equalPredicates.toTypedArray(), compPredicate)
                         }
-
                     predicates.add(combined)
                 }
 
-                // Add equality case for the cursor record itself
+                // Add equality case for the cursor record itself (all sort properties must be
+                // equal)
+                // This is crucial for >= / <= logic in cursor pagination
                 val allEqualPredicates =
-                    sortProperties.mapNotNull { (prop, _) ->
-                        val propName = prop.name
-                        val value = cursorValues[propName] ?: return@mapNotNull null
-
-                        criteriaBuilder.equal(root.get<Any>(propName), value)
+                    sortProperties.mapNotNull { (propPath, _) ->
+                        val value = cursorValues[propPath]
+                        if (value == null) {
+                            cb.isNull(JpaUtils.getPath<Any>(root, propPath))
+                        } else {
+                            cb.equal(JpaUtils.getPath<Any>(root, propPath), value)
+                        }
                     }
 
-                if (allEqualPredicates.isNotEmpty()) {
-                    predicates.add(criteriaBuilder.and(*allEqualPredicates.toTypedArray()))
+                if (
+                    allEqualPredicates.isNotEmpty() &&
+                        allEqualPredicates.size == sortProperties.size
+                ) {
+                    // Only add if all sort properties could be evaluated for equality
+                    predicates.add(cb.and(*allEqualPredicates.toTypedArray()))
                 }
 
-                return if (predicates.isEmpty()) null
-                else criteriaBuilder.or(*predicates.toTypedArray())
+                return if (predicates.isEmpty()) null else cb.or(*predicates.toTypedArray())
             }
 
             override fun getSort(): Sort {
-                return Sort.by(sortProperties.map { (prop, dir) -> Sort.Order(dir, prop.name) })
+                // Sort uses path strings directly
+                return Sort.by(sortProperties.map { (path, dir) -> Sort.Order(dir, path) })
             }
 
             override fun extractCursor(entity: T): TypedCompositeCursor<T>? {
-                // Extract all cursor properties from entity
+                // Extract values based on cursorPaths using reflection helper
                 val values =
-                    cursorProperties.associate { prop ->
-                        prop.name to CursorValue.of(prop.get(entity))
+                    cursorPaths.associateWith { path ->
+                        // Use reflection helper to get potentially nested value
+                        val value = ReflectionUtils.getPropertyValue(entity, path)
+                        CursorValue.of(value) // Wrap value (handle nulls inside CursorValue.of)
                     }
+
+                // Check if any essential value extraction failed (optional, depends on
+                // ReflectionUtils behavior)
+                // if (values.any { it.value == null && !cursorPaths.contains(it.key) }) { //
+                // Example check
+                //     return null // Or log warning
+                // }
 
                 return TypedCompositeCursor(values)
             }
@@ -282,25 +392,38 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: KProperty
     }
 
     companion object {
-        /** Create a builder for simple cursor specifications */
+        /** Create a builder for simple cursor specifications using KProperty1. */
         fun <T, V : Comparable<V>> simple(
             cursorProperty: KProperty1<T, V?>
         ): CursorSpecificationBuilder<T, SimpleCursor<T, V>> {
             @Suppress("UNCHECKED_CAST")
             return CursorSpecificationBuilder<T, SimpleCursor<T, V>>(
-                SimpleCursor::class.java as Class<SimpleCursor<T, V>>,
-                cursorProperty,
-            )
+                    SimpleCursor::class.java as Class<SimpleCursor<T, V>>,
+                    cursorProperty.name, // Store as path internally
+                )
+                .sortBy(cursorProperty) // Default sort by the same property
         }
 
-        /** Create a builder for composite cursor specifications */
+        /** Create a builder for composite cursor specifications using KProperty1. */
         fun <T> composite(
             vararg cursorBy: KProperty1<T, *>
         ): CursorSpecificationBuilder<T, TypedCompositeCursor<T>> {
             @Suppress("UNCHECKED_CAST")
             return CursorSpecificationBuilder(
                 TypedCompositeCursor::class.java as Class<TypedCompositeCursor<T>>,
-                *cursorBy,
+                *(cursorBy.map { it.name }.toTypedArray()), // Store as paths internally
+            )
+        }
+
+        /** Create a builder for composite cursor specifications using String paths. */
+        fun <T> compositeWithPath(
+            vararg cursorByPaths: String
+        ): CursorSpecificationBuilder<T, TypedCompositeCursor<T>> {
+            require(cursorByPaths.isNotEmpty()) { "At least one cursor path must be provided." }
+            @Suppress("UNCHECKED_CAST")
+            return CursorSpecificationBuilder(
+                TypedCompositeCursor::class.java as Class<TypedCompositeCursor<T>>,
+                *cursorByPaths, // Store paths directly
             )
         }
     }

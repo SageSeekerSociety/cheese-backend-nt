@@ -285,8 +285,28 @@ class TaskPermissionConfig(
                     .on(TaskResource.TASK, TaskResource.PARTICIPANT)
                     .all()
 
-                can(TaskAction.MODIFY, TaskAction.DELETE).on(TaskResource.TASK).where {
-                    withCondition { _, action: TaskAction, _, resourceId, context ->
+                can(TaskAction.DELETE).on(TaskResource.TASK).where {
+                    withCondition { userInfo, action, resourceType, resourceId, context ->
+                        val hasAnyParticipant =
+                            TaskContextKeys.GET_HAS_ANY_PARTICIPANT.get(context)
+                                ?: return@withCondition false
+                        val hasAnySubmission =
+                            TaskContextKeys.GET_HAS_ANY_SUBMISSION.get(context)
+                                ?: return@withCondition false
+
+                        // Only allow deletion if there are no participants or submissions
+                        if (hasAnyParticipant(resourceId!!) || hasAnySubmission(resourceId)) {
+                            return@withCondition false
+                        }
+
+                        true
+                    }
+                }
+
+                can(TaskAction.MODIFY, TaskAction.DELETE).on(TaskResource.PARTICIPANT).all()
+
+                can(TaskAction.MODIFY).on(TaskResource.TASK).where {
+                    withCondition { _, _, _, resourceId, context ->
                         val taskId = resourceId ?: return@withCondition false
                         val getHasAnyParticipant =
                             TaskContextKeys.GET_HAS_ANY_PARTICIPANT.get(context)
@@ -298,10 +318,7 @@ class TaskPermissionConfig(
                         val approved = TaskContextKeys.APPROVED.get(context)
                         val rejectReason = TaskContextKeys.REJECT_REASON.get(context)
 
-                        if (
-                            action == TaskAction.MODIFY &&
-                                (approved != null || rejectReason != null)
-                        ) {
+                        if ((approved != null || rejectReason != null)) {
                             return@withCondition false
                         }
 

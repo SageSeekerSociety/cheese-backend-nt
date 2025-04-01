@@ -103,6 +103,11 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
+    SEQUENCE space_categories_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE space_classification_topics_relation_seq
 START WITH
     1 INCREMENT BY 50;
@@ -264,7 +269,10 @@ CREATE
             parent_id BIGINT,
             updated_at TIMESTAMP(6) NOT NULL,
             model_type VARCHAR(255) NOT NULL CHECK(
-                model_type IN('PROJECT')
+                model_type IN(
+                    'PROJECT',
+                    'SPACE'
+                )
             ),
             content JSONB NOT NULL,
             PRIMARY KEY(id)
@@ -490,6 +498,7 @@ CREATE
             avatar_id INTEGER NOT NULL,
             enable_rank BOOLEAN NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
+            default_category_id BIGINT,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
@@ -499,6 +508,25 @@ CREATE
             name VARCHAR(255) NOT NULL,
             task_templates TEXT NOT NULL,
             PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        space_categories(
+            display_order INT DEFAULT 0 NOT NULL,
+            archived_at TIMESTAMP(6) WITH TIME ZONE,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            space_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            description TEXT,
+            name VARCHAR(255) NOT NULL,
+            PRIMARY KEY(id),
+            UNIQUE(
+                space_id,
+                name
+            )
         );
 
 CREATE
@@ -547,8 +575,10 @@ CREATE
             approved SMALLINT NOT NULL CHECK(
                 approved BETWEEN 0 AND 2
             ),
-            "creator_id" INTEGER NOT NULL,
+            creator_id INTEGER NOT NULL,
             editable BOOLEAN NOT NULL,
+            max_team_size INTEGER,
+            min_team_size INTEGER,
             participant_limit INTEGER,
             RANK INTEGER,
             require_real_name BOOLEAN DEFAULT FALSE NOT NULL,
@@ -556,18 +586,18 @@ CREATE
             submitter_type SMALLINT NOT NULL CHECK(
                 submitter_type BETWEEN 0 AND 1
             ),
+            category_id BIGINT NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deadline TIMESTAMP(6),
             default_deadline BIGINT NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
-            space_id BIGINT,
-            team_id BIGINT,
+            space_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
             description TEXT NOT NULL,
             intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
-            reject_reason VARCHAR(255) NOT NULL,
+            reject_reason VARCHAR(255),
             PRIMARY KEY(id)
         );
 
@@ -963,6 +993,10 @@ CREATE
     SPACE(name);
 
 CREATE
+    INDEX idx_spacecategories_archived ON
+    space_categories(archived_at);
+
+CREATE
     INDEX IDXfmekoev1y1edqr9achyy8jp3b ON
     space_admin_relation(space_id);
 
@@ -1111,6 +1145,12 @@ ALTER TABLE
     IF EXISTS SPACE ADD CONSTRAINT FK77tn26hq1ml6ri82fp970we8n FOREIGN KEY(avatar_id) REFERENCES avatar;
 
 ALTER TABLE
+    IF EXISTS SPACE ADD CONSTRAINT FKfumv58c5xoatfj5qa9cw6grgy FOREIGN KEY(default_category_id) REFERENCES space_categories;
+
+ALTER TABLE
+    IF EXISTS space_categories ADD CONSTRAINT FKtk9fc6aqpb9hr1yg4rk284a2i FOREIGN KEY(space_id) REFERENCES SPACE;
+
+ALTER TABLE
     IF EXISTS space_admin_relation ADD CONSTRAINT FKhkpyunhmsubl1gvahyk9e9lff FOREIGN KEY(space_id) REFERENCES SPACE;
 
 ALTER TABLE
@@ -1129,13 +1169,13 @@ ALTER TABLE
     IF EXISTS space_user_rank ADD CONSTRAINT FKiego7kcolpikn8o93o3qdjt3p FOREIGN KEY("user_id") REFERENCES public."user";
 
 ALTER TABLE
-    IF EXISTS task ADD CONSTRAINT FK67uenor8d9f8lq7wjv7h56n2o FOREIGN KEY("creator_id") REFERENCES public."user";
+    IF EXISTS task ADD CONSTRAINT FKm8oxgq962olauqi7d4s0cufoj FOREIGN KEY(category_id) REFERENCES space_categories;
+
+ALTER TABLE
+    IF EXISTS task ADD CONSTRAINT FKgbm6entex11ihw1lb57wb1vgt FOREIGN KEY(creator_id) REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS task ADD CONSTRAINT FKe6m3e5625asfu59r4doayop1o FOREIGN KEY(space_id) REFERENCES SPACE;
-
-ALTER TABLE
-    IF EXISTS task ADD CONSTRAINT FK6r32b6vk1rpu7ww7gratmce1i FOREIGN KEY(team_id) REFERENCES team;
 
 ALTER TABLE
     IF EXISTS task_membership_team_members ADD CONSTRAINT FKqqe540ncjf6ylguc5r3mt51sm FOREIGN KEY(task_membership_id) REFERENCES task_membership;

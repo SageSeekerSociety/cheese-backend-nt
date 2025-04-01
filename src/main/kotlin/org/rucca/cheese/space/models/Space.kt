@@ -8,14 +8,12 @@
  *
  */
 
-package org.rucca.cheese.space
+package org.rucca.cheese.space.models
 
 import jakarta.persistence.*
 import org.hibernate.annotations.DynamicUpdate
 import org.hibernate.annotations.SQLRestriction
-import org.rucca.cheese.common.pagination.repository.CursorPagingRepository
 import org.rucca.cheese.common.persistent.BaseEntity
-import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.user.Avatar
 
 @DynamicUpdate
@@ -30,8 +28,22 @@ class Space(
     @Column(nullable = false) var enableRank: Boolean? = null,
     @Column(nullable = false, columnDefinition = "TEXT") var announcements: String? = null,
     @Column(nullable = false, columnDefinition = "TEXT") var taskTemplates: String? = null,
+    @OneToMany(
+        mappedBy = "space", // References the 'space' field in SpaceCategory
+        cascade = [CascadeType.ALL], // When Space is deleted, its Categories are also deleted
+        orphanRemoval =
+            true, // When a Category is removed from the categories collection, it's also deleted
+        // from the database
+        fetch = FetchType.LAZY, // Default lazy loading to avoid unnecessary queries
+    )
+    @OrderBy("displayOrder ASC, name ASC") // Specifies default sorting when loading categories
+    var categories: MutableList<SpaceCategory> = mutableListOf(),
+    @ManyToOne(
+        fetch = FetchType.LAZY
+    ) // Eager fetch might be okay if always needed with Space, but LAZY is safer
+    @JoinColumn(
+        name = "default_category_id",
+        nullable = true,
+    ) // Nullable initially during creation process
+    var defaultCategory: SpaceCategory? = null,
 ) : BaseEntity()
-
-interface SpaceRepository : CursorPagingRepository<Space, IdType> {
-    fun existsByName(name: String): Boolean
-}

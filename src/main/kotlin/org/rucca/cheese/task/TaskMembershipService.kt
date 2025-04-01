@@ -424,7 +424,8 @@ class TaskMembershipService(
 
         if (
             patchTaskMembershipRequestDTO.deadline != null &&
-                participant.approved != ApproveType.APPROVED
+                participant.approved != ApproveType.APPROVED &&
+                patchTaskMembershipRequestDTO.approved != ApproveTypeDTO.APPROVED
         ) {
             throw ForbiddenError(
                 "Cannot set deadline for non-approved task membership",
@@ -462,7 +463,8 @@ class TaskMembershipService(
 
         if (
             patchTaskMembershipRequestDTO.deadline != null &&
-                participant.approved != ApproveType.APPROVED
+                participant.approved != ApproveType.APPROVED &&
+                patchTaskMembershipRequestDTO.approved != ApproveTypeDTO.APPROVED
         ) {
             throw ForbiddenError(
                 "Cannot set deadline for non-approved task membership",
@@ -599,15 +601,30 @@ class TaskMembershipService(
         // Have enough rank
         val needToCheckRank =
             applicationConfig.rankCheckEnforced &&
-                task.submitterType == TaskSubmitterType.USER &&
                 task.space != null &&
                 task.space.enableRank!! &&
                 task.rank != null
         if (needToCheckRank) {
             val requiredRank = task.rank!! - applicationConfig.rankJump
-            val actualRank = spaceUserRankService.getRank(task.space!!.id!!, memberId)
-            if (actualRank < requiredRank)
-                return YourRankIsNotHighEnoughError(actualRank, requiredRank)
+            if (task.submitterType == TaskSubmitterType.USER) {
+                val actualRank = spaceUserRankService.getRank(task.space!!.id!!, memberId)
+                if (actualRank < requiredRank)
+                    return YourRankIsNotHighEnoughError(actualRank, requiredRank)
+            } else {
+                // For team tasks, check if all team members have enough rank
+                val (teamMembers, _) = teamService.getTeamMembers(memberId)
+                for (teamMember in teamMembers) {
+                    val actualRank =
+                        spaceUserRankService.getRank(task.space!!.id!!, teamMember.user.id)
+                    if (actualRank < requiredRank) {
+                        return YourTeamMemberRankIsNotHighEnoughError(
+                            teamMember.user.id,
+                            actualRank,
+                            requiredRank,
+                        )
+                    }
+                }
+            }
         }
 
         // Is not full
@@ -627,18 +644,40 @@ class TaskMembershipService(
             }
         }
 
+        // Check team size for team tasks
+        if (task.submitterType == TaskSubmitterType.TEAM) {
+            val teamSize = teamService.getTeamSize(memberId)
+            task.minTeamSize?.let { min ->
+                if (teamSize < min) {
+                    return TeamSizeNotEnoughError(teamSize, min)
+                }
+            }
+
+            task.maxTeamSize?.let { max ->
+                if (teamSize > max) {
+                    return TeamSizeTooLargeError(teamSize, max)
+                }
+            }
+        }
+
         return null
     }
 
-    fun getJoinability(task: Task, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
-        when (task.submitterType!!) {
-            TaskSubmitterType.USER -> return Pair(isTaskJoinable(task, userId) == null, null)
+    fun getJoinability(
+        task: Task,
+        userId: IdType,
+    ): Triple<Boolean, List<TeamSummaryDTO>?, BaseError?> {
+        return when (task.submitterType!!) {
+            TaskSubmitterType.USER -> {
+                val joinReject = isTaskJoinable(task, userId)
+                Triple(joinReject == null, null, joinReject)
+            }
             TaskSubmitterType.TEAM -> {
                 val teams =
                     teamService.getTeamsThatUserCanUseToJoinTask(task.id!!, userId).filter {
                         isTaskJoinable(task, it.id) == null
                     }
-                return Pair(teams.isNotEmpty(), teams)
+                Triple(teams.isNotEmpty(), teams, null)
             }
         }
     }

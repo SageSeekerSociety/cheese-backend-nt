@@ -26,8 +26,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.patch
+import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
@@ -49,15 +52,47 @@ constructor(
     lateinit var participant: UserCreatorService.CreateUserResponse
     lateinit var participantToken: String
     private var attachmentId: IdType = -1
+    private var spaceId: IdType = -1
+    private var categoryId: IdType = -1
     private var taskId: IdType = -1
     private var submissionId: IdType = -1
     private var participantTaskMembershipId: IdType = -1
+    private val spaceName = "Test Space (${floor(Math.random() * 10000000000).toLong()})"
     private val taskName = "Test Task (${floor(Math.random() * 10000000000).toLong()})"
     private val taskIntro = "This is a test task."
     private val taskDescription = "A lengthy text. ".repeat(1000)
     private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
     private val taskSubmissionSchema =
         listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE"))
+
+    fun createSpace(
+        creatorToken: String,
+        spaceName: String,
+        spaceIntro: String,
+        spaceDescription: String,
+        spaceAvatarId: IdType,
+    ): Pair<IdType, IdType> {
+        val result =
+            mockMvc
+                .post("/spaces") {
+                    headers { setBearerAuth(creatorToken) }
+                    contentType = MediaType.APPLICATION_JSON
+                    content =
+                        """ { "name": "$spaceName", "intro": "$spaceIntro", "description": "$spaceDescription", "avatarId": $spaceAvatarId, "announcements": "[]", "taskTemplates": "[]" } """
+                }
+                .andExpect { status { isOk() } }
+                .andExpect { jsonPath("$.data.space.id") { exists() } }
+                .andExpect { jsonPath("$.data.space.defaultCategoryId") { exists() } }
+                .andReturn()
+        val json = JSONObject(result.response.contentAsString)
+        val spaceData = json.getJSONObject("data").getJSONObject("space")
+        val createdSpaceId = spaceData.getLong("id")
+        val createdDefaultCategoryId = spaceData.getLong("defaultCategoryId")
+        logger.info(
+            "Created space: $createdSpaceId with default category ID: $createdDefaultCategoryId"
+        )
+        return Pair(createdSpaceId, createdDefaultCategoryId)
+    }
 
     fun createTask(
         name: String,
@@ -68,8 +103,8 @@ constructor(
         intro: String,
         description: String,
         submissionSchema: List<Pair<String, String>>,
-        team: IdType?,
-        space: IdType?,
+        space: IdType,
+        categoryId: IdType?,
     ): IdType {
         val request =
             MockMvcRequestBuilders.post("/tasks")
@@ -78,29 +113,29 @@ constructor(
                 .content(
                     """
                 {
-                  "name": "$name",
-                  "submitterType": "$submitterType",
-                  "deadline": "$deadline",
-                  "resubmittable": $resubmittable,
-                  "editable": $editable,
-                  "intro": "$intro",
-                  "description": "$description",
-                  "submissionSchema": [
+                    "name": "$name",
+                    "submitterType": "$submitterType",
+                    "deadline": "$deadline",
+                    "resubmittable": $resubmittable,
+                    "editable": $editable,
+                    "intro": "$intro",
+                    "description": "$description",
+                    "submissionSchema": [
                     ${
-                        submissionSchema
-                            .map { """
+                        submissionSchema.joinToString(",\n") {
+                            """
                                 {
                                   "prompt": "${it.first}",
                                   "type": "${it.second}"
                                 }
-                            """ }
-                            .joinToString(",\n")
+                            """
+                        }
                     }
-                  ],
-                  "team": ${team?: "null"},
-                  "space": ${space?: "null"}
-                }
-            """
+                    ],
+                    "space": $space,
+                    "categoryId": $categoryId
+                }"""
+                        .trimIndent()
                 )
         val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
         val json = JSONObject(response.andReturn().response.contentAsString)
@@ -172,13 +207,42 @@ constructor(
         return submissionId
     }
 
+    /** Approves a task. */
+    fun approveTask(taskId: IdType, token: String) {
+        mockMvc
+            .patch("/tasks/$taskId") {
+                headers { setBearerAuth(token) }
+                contentType = MediaType.APPLICATION_JSON
+                content = """ { "approved": "APPROVED" } """
+            }
+            .andExpect { status { isOk() } }
+            .andExpect { jsonPath("$.data.task.approved") { value("APPROVED") } }
+    }
+
     @BeforeAll
     fun prepare() {
+        // Create users
         creator = userCreatorService.createUser()
         creatorToken = userCreatorService.login(creator.username, creator.password)
         participant = userCreatorService.createUser()
         participantToken = userCreatorService.login(participant.username, participant.password)
+
+        // Create space
+        val spaceResult =
+            createSpace(
+                creatorToken = creatorToken,
+                spaceName = "Test Space (${floor(Math.random() * 10000000000).toLong()})",
+                spaceIntro = "This is a test space.",
+                spaceDescription = "A lengthy text. ".repeat(100),
+                spaceAvatarId = userCreatorService.testAvatarId(),
+            )
+        spaceId = spaceResult.first
+        categoryId = spaceResult.second
+
+        // Create attachment
         attachmentId = attachmentCreatorService.createAttachment(creatorToken)
+
+        // Create task within the space
         taskId =
             createTask(
                 taskName,
@@ -189,9 +253,13 @@ constructor(
                 taskIntro,
                 taskDescription,
                 taskSubmissionSchema,
-                null,
-                null,
+                spaceId, // Use the created space ID,
+                categoryId, // Use the created category ID
             )
+
+        approveTask(taskId, creatorToken) // Approve the task to make it available for participants
+
+        // Join task and submit
         participantTaskMembershipId = joinTask(taskId, participant.userId, participantToken)
         approveTaskParticipant(creatorToken, taskId, participantTaskMembershipId)
         submissionId = submitTask(taskId, participantTaskMembershipId, participantToken)

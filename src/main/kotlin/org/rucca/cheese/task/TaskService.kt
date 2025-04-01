@@ -16,9 +16,9 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.JwtService
+import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
-import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.pagination.model.toPageDTO
 import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
 import org.rucca.cheese.common.pagination.repository.idSeekSpec
@@ -29,8 +29,11 @@ import org.rucca.cheese.common.persistent.convert
 import org.rucca.cheese.model.*
 import org.rucca.cheese.model.TaskSubmitterTypeDTO.TEAM
 import org.rucca.cheese.model.TaskSubmitterTypeDTO.USER
-import org.rucca.cheese.space.Space
 import org.rucca.cheese.space.SpaceService
+import org.rucca.cheese.space.models.Space
+import org.rucca.cheese.space.models.SpaceCategory
+import org.rucca.cheese.space.repositories.SpaceCategoryRepository
+import org.rucca.cheese.space.repositories.SpaceRepository
 import org.rucca.cheese.task.option.TaskEnumerateOptions
 import org.rucca.cheese.task.option.TaskQueryOptions
 import org.rucca.cheese.team.Team
@@ -55,6 +58,8 @@ class TaskService(
     private val taskMembershipRepository: TaskMembershipRepository,
     private val taskSubmissionRepository: TaskSubmissionRepository,
     private val elasticsearchTemplate: ElasticsearchTemplate,
+    private val spaceRepository: SpaceRepository,
+    private val spaceCategoryRepository: SpaceCategoryRepository,
     private val spaceService: SpaceService,
     private val taskTopicsService: TaskTopicsService,
     private val taskMembershipService: TaskMembershipService,
@@ -66,7 +71,7 @@ class TaskService(
 
     fun getTaskOwner(taskId: IdType): IdType {
         val task = getTask(taskId)
-        return task.creator!!.id!!.toLong()
+        return task.creator.id!!.toLong()
     }
 
     fun isTaskParticipant(taskId: IdType, userId: IdType, memberId: IdType): Boolean {
@@ -74,6 +79,7 @@ class TaskService(
             USER ->
                 userId == memberId &&
                     taskMembershipRepository.existsByTaskIdAndMemberId(taskId, memberId)
+
             TEAM ->
                 teamService.isTeamMember(memberId, userId) &&
                     taskMembershipRepository.existsByTaskIdAndMemberId(taskId, memberId)
@@ -126,15 +132,16 @@ class TaskService(
     fun Task.toTaskDTO(options: TaskQueryOptions): TaskDTO {
         val userId = jwtService.getCurrentUserId()
         val space =
-            if (options.querySpace && this.space?.id != null)
+            if (options.querySpace && this.space.id != null)
                 spaceService.getSpaceDto(this.space.id!!)
             else null
-        val team =
-            if (options.queryTeam && this.team?.id != null) teamService.getTeamDto(this.team.id!!)
+        val category =
+            if (options.querySpace && this.category.id != null)
+                spaceService.getCategoryDTO(this.space.id!!, this.category.id!!)
             else null
         val joinability =
             if (options.queryJoinability) taskMembershipService.getJoinability(this, userId)
-            else Pair(null, null)
+            else null
         val submittability =
             if (options.querySubmittability) taskMembershipService.getSubmittability(this, userId)
             else Pair(null, null)
@@ -148,18 +155,18 @@ class TaskService(
             if (options.queryTopics) taskTopicsService.getTaskTopicDTOs(this.id!!) else null
         return TaskDTO(
             id = this.id!!,
-            name = this.name!!,
-            submitterType = convertTaskSubmitterType(this.submitterType!!),
-            creator = userService.getUserDto(this.creator!!.id!!.toLong()),
-            deadline = this.deadline?.toEpochMilli(),
+            name = this.name,
+            submitterType = convertTaskSubmitterType(this.submitterType),
+            creator = userService.getUserDto(this.creator.id!!.toLong()),
+            deadline = this.deadline?.atZone(ZoneId.systemDefault())?.toInstant()?.toEpochMilli(),
             participantLimit = this.participantLimit,
-            defaultDeadline = this.defaultDeadline!!,
-            resubmittable = this.resubmittable!!,
-            editable = this.editable!!,
-            intro = this.intro!!,
-            description = this.description!!,
+            defaultDeadline = this.defaultDeadline,
+            resubmittable = this.resubmittable,
+            editable = this.editable,
+            intro = this.intro,
+            description = this.description,
             space = space,
-            team = team,
+            category = category,
             submissionSchema =
                 this.submissionSchema!!
                     .sortedBy { it.index }
@@ -172,12 +179,13 @@ class TaskService(
             submitters = getTaskSubmittersSummary(this.id!!),
             updatedAt = this.updatedAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             createdAt = this.createdAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
-            joinable = joinability.first,
-            joinableAsTeam = joinability.second,
+            joinable = joinability?.first,
+            joinableTeams = joinability?.second,
+            joinRejectReason = joinability?.third?.let { it::class.simpleName },
             submittable = submittability.first,
             submittableAsTeam = submittability.second,
             rank = this.rank,
-            approved = this.approved!!.convert(),
+            approved = this.approved.convert(),
             rejectReason = this.rejectReason,
             joined = joined.first,
             joinedTeams = joined.second,
@@ -185,6 +193,22 @@ class TaskService(
             requireRealName = this.requireRealName,
             userDeadline = userDeadline,
         )
+    }
+
+    private fun validateAndGetCategory(categoryId: IdType, spaceId: IdType): SpaceCategory {
+        val categoryEntity =
+            spaceCategoryRepository.findByIdAndSpaceId(categoryId, spaceId)
+                ?: throw NotFoundError("Category not found or does not belong to space ${spaceId}.")
+
+        if (categoryEntity.isArchived) {
+            throw BadRequestError("Cannot assign task to an archived category (id=$categoryId).")
+        }
+
+        if (categoryEntity.deletedAt != null) {
+            throw BadRequestError("Cannot assign task to a deleted category (id=$categoryId).")
+        }
+
+        return categoryEntity
     }
 
     fun createTask(
@@ -199,11 +223,32 @@ class TaskService(
         description: String,
         submissionSchema: List<TaskSubmissionSchema>,
         creatorId: IdType,
-        teamId: IdType?,
-        spaceId: IdType?,
+        spaceId: IdType,
+        categoryId: IdType?,
         rank: Int? = null,
         requireRealName: Boolean = false,
+        minTeamSize: Int? = null,
+        maxTeamSize: Int? = null,
     ): IdType {
+        if (
+            submitterType != TaskSubmitterType.TEAM && (minTeamSize != null || maxTeamSize != null)
+        ) {
+            throw BadRequestError(
+                "minTeamSize and maxTeamSize can only be set for TEAM type tasks."
+            )
+        }
+
+        val spaceEntity = spaceService.getSpaceDto(spaceId)
+
+        val categoryEntity =
+            if (categoryId != null) {
+                // Validate the provided category ID (includes archived check)
+                validateAndGetCategory(categoryId, spaceId)
+            } else {
+                // Use the space's default category
+                validateAndGetCategory(spaceEntity.defaultCategoryId, spaceId)
+            }
+
         val task =
             taskRepository.save(
                 Task(
@@ -215,20 +260,32 @@ class TaskService(
                     defaultDeadline = defaultDeadline,
                     resubmittable = resubmittable,
                     editable = editable,
-                    team = if (teamId != null) Team().apply { id = teamId } else null,
-                    space = if (spaceId != null) Space().apply { id = spaceId } else null,
+                    space = spaceRepository.getReferenceById(spaceId),
+                    category = categoryEntity,
                     intro = intro,
                     description = description,
                     submissionSchema = submissionSchema,
                     rank = rank,
-                    approved =
-                        if (spaceId != null || teamId != null) ApproveType.NONE
-                        else ApproveType.APPROVED,
+                    approved = ApproveType.NONE,
                     rejectReason = "",
                     requireRealName = requireRealName,
+                    minTeamSize = minTeamSize,
+                    maxTeamSize = maxTeamSize,
                 )
             )
         return task.id!!
+    }
+
+    fun updateTaskCategory(taskId: IdType, newCategoryId: IdType) {
+        val task = getTask(taskId)
+        val spaceId = task.space.id!!
+
+        val newCategory = validateAndGetCategory(newCategoryId, spaceId)
+
+        if (task.category.id != newCategory.id) {
+            task.category = newCategory
+            taskRepository.save(task)
+        }
     }
 
     private fun getTask(taskId: IdType): Task {
@@ -321,17 +378,12 @@ class TaskService(
 
     fun getTaskSumbitterType(taskId: IdType): TaskSubmitterTypeDTO {
         val task = getTask(taskId)
-        return convertTaskSubmitterType(task.submitterType!!)
+        return convertTaskSubmitterType(task.submitterType)
     }
 
     fun getTaskSpaceId(taskId: IdType): IdType? {
         val task = getTask(taskId)
-        return task.space?.id
-    }
-
-    fun getTaskTeamId(taskId: IdType): IdType? {
-        val task = getTask(taskId)
-        return task.team?.id
+        return task.space.id
     }
 
     fun getTaskSubmittersSummary(taskId: IdType): TaskSubmittersDTO {
@@ -399,13 +451,13 @@ class TaskService(
             val predicates = mutableListOf<Predicate>()
 
             // Space filter
-            options.space?.let {
+            options.space.let {
                 predicates.add(cb.equal(root.get<Space>("space").get<IdType>("id"), it))
             }
 
-            // Team filter
-            options.team?.let {
-                predicates.add(cb.equal(root.get<Team>("team").get<IdType>("id"), it))
+            // Category filter
+            options.categoryId?.let {
+                predicates.add(cb.equal(root.get<SpaceCategory>("category").get<IdType>("id"), it))
             }
 
             // Approved status filter
@@ -650,11 +702,10 @@ class TaskService(
                 TaskElasticSearch
             >()
         var entities = taskRepository.findAllById(result.map { it.id })
-        if (options.space != null) entities = entities.filter { it.space?.id == options.space }
-        if (options.team != null) entities = entities.filter { it.team?.id == options.team }
+        if (options.space != null) entities = entities.filter { it.space.id == options.space }
         if (options.approved != null) entities = entities.filter { it.approved == options.approved }
         if (options.owner != null)
-            entities = entities.filter { it.creator?.id == options.owner.toInt() }
+            entities = entities.filter { it.creator.id == options.owner.toInt() }
         if (options.joined != null)
             entities =
                 entities.filter {
@@ -665,7 +716,7 @@ class TaskService(
             entities =
                 entities.filter { task ->
                     val topics = taskTopicsService.getTaskTopicIds(task.id!!)
-                    options.topics.intersect(topics).isNotEmpty()
+                    options.topics.intersect(topics.toSet()).isNotEmpty()
                 }
         val (tasks, page) =
             PageHelper.pageFromAll(
@@ -711,29 +762,54 @@ class TaskService(
         val userAdminTeams = teamService.getTeamsWhereUserIsAdmin(userId)
 
         // Process all teams with verification status regardless of filter
-        return userAdminTeams.map { team ->
-            // Get all team members with real name status
-            val (members, allMembersVerified) = teamService.getTeamMembers(team.id!!, true)
+        return userAdminTeams
+            .map { team ->
+                // Get all team members with real name status
+                val (members, allMembersVerified) = teamService.getTeamMembers(team.id!!, true)
 
-            // Convert members to status DTOs
-            val memberStatusList =
-                members.map { member ->
-                    TeamMemberRealNameStatusDTO(
-                        memberId = member.user.id,
-                        hasRealNameInfo = member.hasRealNameInfo ?: false,
-                        userName = member.user.username,
+                // Convert members to status DTOs
+                val memberStatusList =
+                    members.map { member ->
+                        TeamMemberRealNameStatusDTO(
+                            memberId = member.user.id,
+                            hasRealNameInfo = member.hasRealNameInfo ?: false,
+                            userName = member.user.username,
+                        )
+                    }
+
+                val joinRejectReason =
+                    taskMembershipService.isTaskJoinable(task, team.id!!)?.let {
+                        it::class.simpleName
+                    }
+
+                // Convert to ExtendedTeamSummaryDTO
+                team
+                    .toTeamSummaryDTO()
+                    .copy(
+                        allMembersVerified = allMembersVerified ?: false,
+                        memberRealNameStatus =
+                            if (filter == "all" || allMembersVerified == false) memberStatusList
+                            else null,
+                        joinRejectReason = joinRejectReason,
                     )
-                }
+            }
+            .filter { team ->
+                when (filter) {
+                    "eligible" -> {
+                        // Only include teams that are eligible to join the task
+                        team.joinRejectReason != null
+                    }
 
-            // Convert to ExtendedTeamSummaryDTO
-            team
-                .toTeamSummaryDTO()
-                .copy(
-                    allMembersVerified = allMembersVerified ?: false,
-                    memberRealNameStatus =
-                        if (filter == "all" || allMembersVerified == false) memberStatusList
-                        else null,
-                )
-        }
+                    "all" -> {
+                        // Include all teams where the user is admin
+                        true
+                    }
+
+                    else -> {
+                        // Invalid filter, return empty list
+                        false
+                    }
+                }
+            }
     }
 }

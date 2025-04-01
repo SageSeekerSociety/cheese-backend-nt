@@ -661,14 +661,15 @@ The teams can be filtered based on eligibility criteria.
         produces = ["application/json"],
     )
     fun getTasks(
-        @Parameter(description = "Space ID")
+        @NotNull
+        @Parameter(description = "Space ID", required = true)
         @Valid
-        @RequestParam(value = "space", required = false)
-        space: kotlin.Long?,
-        @Parameter(description = "Team ID")
+        @RequestParam(value = "space", required = true)
+        space: kotlin.Long,
+        @Parameter(description = "Filter tasks by the ID of the category they belong to.")
         @Valid
-        @RequestParam(value = "team", required = false)
-        team: kotlin.Long?,
+        @RequestParam(value = "categoryId", required = false)
+        categoryId: kotlin.Long?,
         @Parameter(
             description = "Distinguish task status",
             schema = Schema(allowableValues = ["APPROVED", "DISAPPROVED", "NONE"]),

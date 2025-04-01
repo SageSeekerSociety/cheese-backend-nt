@@ -9,7 +9,8 @@
 
 package org.rucca.cheese.space
 
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
+import java.net.URI
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.SpacesApi
 import org.rucca.cheese.auth.AuthorizationService
@@ -110,8 +111,7 @@ class SpaceController(
         @ResourceId spaceId: Long,
         patchSpaceRequestDTO: PatchSpaceRequestDTO,
     ): ResponseEntity<GetSpace200ResponseDTO> {
-        spaceService.patchSpace(spaceId, patchSpaceRequestDTO)
-        val spaceDTO = spaceService.getSpaceDto(spaceId, SpaceQueryOptions.MAXIMUM)
+        val spaceDTO = spaceService.patchSpace(spaceId, patchSpaceRequestDTO)
         return ResponseEntity.ok(
             GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
         )
@@ -144,7 +144,7 @@ class SpaceController(
     override fun postSpace(
         postSpaceRequestDTO: PostSpaceRequestDTO
     ): ResponseEntity<GetSpace200ResponseDTO> {
-        val spaceId =
+        val spaceDTO =
             spaceService.createSpace(
                 name = postSpaceRequestDTO.name,
                 intro = postSpaceRequestDTO.intro,
@@ -152,11 +152,12 @@ class SpaceController(
                 avatarId = postSpaceRequestDTO.avatarId,
                 ownerId = jwtService.getCurrentUserId(),
                 enableRank = postSpaceRequestDTO.enableRank ?: false,
-                announcements = postSpaceRequestDTO.announcements,
-                taskTemplates = postSpaceRequestDTO.taskTemplates,
+                announcements =
+                    postSpaceRequestDTO.announcements.takeUnless { it.isEmpty() } ?: "[]",
+                taskTemplates =
+                    postSpaceRequestDTO.taskTemplates.takeUnless { it.isEmpty() } ?: "[]",
                 classificationTopics = postSpaceRequestDTO.classificationTopics ?: emptyList(),
             )
-        val spaceDTO = spaceService.getSpaceDto(spaceId, SpaceQueryOptions.MAXIMUM)
         return ResponseEntity.ok(
             GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
         )
@@ -180,6 +181,120 @@ class SpaceController(
         val spaceDTO = spaceService.getSpaceDto(spaceId)
         return ResponseEntity.ok(
             GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
+        )
+    }
+
+    @Guard("query", "space")
+    override fun listSpaceCategories(
+        @ResourceId spaceId: Long,
+        includeArchived: Boolean,
+    ): ResponseEntity<ListSpaceCategories200ResponseDTO> {
+        val categories = spaceService.listCategories(spaceId, includeArchived)
+        return ResponseEntity.ok(
+            ListSpaceCategories200ResponseDTO(
+                200,
+                ListSpaceCategories200ResponseDataDTO(categories),
+                "OK",
+            )
+        )
+    }
+
+    @Guard("modify", "space")
+    override fun createSpaceCategory(
+        @ResourceId spaceId: Long,
+        createSpaceCategoryRequestDTO: CreateSpaceCategoryRequestDTO,
+    ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
+        val createdCategory =
+            spaceService.createCategory(
+                spaceId = spaceId,
+                name = createSpaceCategoryRequestDTO.name,
+                description = createSpaceCategoryRequestDTO.description,
+                displayOrder = createSpaceCategoryRequestDTO.displayOrder,
+            )
+        return ResponseEntity.created(
+                URI.create("/spaces/$spaceId/categories/${createdCategory.id}")
+            )
+            .body(
+                CreateSpaceCategory201ResponseDTO(
+                    201,
+                    CreateSpaceCategory201ResponseDataDTO(createdCategory),
+                    "Created",
+                )
+            )
+    }
+
+    @Guard("query", "space")
+    override fun getSpaceCategory(
+        @ResourceId spaceId: Long,
+        @PathVariable("categoryId") categoryId: Long,
+    ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
+        val category = spaceService.getCategoryDTO(spaceId, categoryId)
+        return ResponseEntity.ok(
+            CreateSpaceCategory201ResponseDTO(
+                200,
+                CreateSpaceCategory201ResponseDataDTO(category),
+                "OK",
+            )
+        )
+    }
+
+    @Guard("modify", "space")
+    override fun updateSpaceCategory(
+        @ResourceId spaceId: Long,
+        @PathVariable("categoryId") categoryId: Long,
+        updateSpaceCategoryRequestDTO: UpdateSpaceCategoryRequestDTO,
+    ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
+        val updatedCategory =
+            spaceService.updateCategory(
+                spaceId = spaceId,
+                categoryId = categoryId,
+                patch = updateSpaceCategoryRequestDTO,
+            )
+        return ResponseEntity.ok(
+            CreateSpaceCategory201ResponseDTO(
+                200,
+                CreateSpaceCategory201ResponseDataDTO(updatedCategory),
+                "OK",
+            )
+        )
+    }
+
+    @Guard("modify", "space")
+    override fun deleteSpaceCategory(
+        @ResourceId spaceId: Long,
+        @PathVariable("categoryId") categoryId: Long,
+    ): ResponseEntity<Unit> {
+        spaceService.deleteCategory(spaceId, categoryId)
+        return ResponseEntity.noContent().build()
+    }
+
+    @Guard("modify", "space")
+    override fun archiveSpaceCategory(
+        @ResourceId spaceId: Long,
+        categoryId: Long,
+    ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
+        val archivedCategory = spaceService.archiveCategory(spaceId, categoryId)
+        return ResponseEntity.ok(
+            CreateSpaceCategory201ResponseDTO(
+                200,
+                CreateSpaceCategory201ResponseDataDTO(archivedCategory),
+                "OK",
+            )
+        )
+    }
+
+    @Guard("modify", "space")
+    override fun unarchiveSpaceCategory(
+        @ResourceId spaceId: Long,
+        @PathVariable("categoryId") categoryId: Long,
+    ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
+        val unarchivedCategory = spaceService.unarchiveCategory(spaceId, categoryId)
+        return ResponseEntity.ok(
+            CreateSpaceCategory201ResponseDTO(
+                200,
+                CreateSpaceCategory201ResponseDataDTO(unarchivedCategory),
+                "OK",
+            )
         )
     }
 }

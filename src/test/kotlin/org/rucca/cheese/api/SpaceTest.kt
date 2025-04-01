@@ -59,6 +59,8 @@ constructor(
     private var spaceIdOfLast: IdType = -1
     private var topicsCount = 3
     private val topics: MutableList<IdType> = mutableListOf()
+    private var defaultCategoryId: IdType = -1
+    private var categoryIds = mutableListOf<IdType>()
 
     @BeforeAll
     fun prepare() {
@@ -333,7 +335,273 @@ constructor(
     }
 
     @Test
+    @Order(65)
+    fun testCreateCategory() {
+        // First, get the default category ID that's created with the space
+        val getSpaceRequest =
+            MockMvcRequestBuilders.get("/spaces/$spaceId")
+                .header("Authorization", "Bearer $creatorToken")
+        val response = mockMvc.perform(getSpaceRequest).andExpect(status().isOk).andReturn()
+
+        defaultCategoryId =
+            JSONObject(response.response.contentAsString)
+                .getJSONObject("data")
+                .getJSONObject("space")
+                .getLong("defaultCategoryId")
+
+        // Create a new category
+        val createRequest =
+            MockMvcRequestBuilders.post("/spaces/$spaceId/categories")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                    "name": "Backend Tasks",
+                    "description": "Tasks related to backend development",
+                    "displayOrder": 10
+                }
+            """
+                )
+
+        val categoryId =
+            JSONObject(
+                    mockMvc
+                        .perform(createRequest)
+                        .andExpect(status().isCreated)
+                        .andExpect(jsonPath("$.data.category.name").value("Backend Tasks"))
+                        .andExpect(
+                            jsonPath("$.data.category.description")
+                                .value("Tasks related to backend development")
+                        )
+                        .andExpect(jsonPath("$.data.category.displayOrder").value(10))
+                        .andReturn()
+                        .response
+                        .contentAsString
+                )
+                .getJSONObject("data")
+                .getJSONObject("category")
+                .getLong("id")
+
+        categoryIds.add(categoryId)
+
+        // Create another category
+        val createRequest2 =
+            MockMvcRequestBuilders.post("/spaces/$spaceId/categories")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                    "name": "Frontend Tasks",
+                    "description": "Tasks related to frontend development",
+                    "displayOrder": 20
+                }
+            """
+                )
+
+        val categoryId2 =
+            JSONObject(
+                    mockMvc
+                        .perform(createRequest2)
+                        .andExpect(status().isCreated)
+                        .andExpect(jsonPath("$.data.category.name").value("Frontend Tasks"))
+                        .andReturn()
+                        .response
+                        .contentAsString
+                )
+                .getJSONObject("data")
+                .getJSONObject("category")
+                .getLong("id")
+
+        categoryIds.add(categoryId2)
+    }
+
+    @Test
+    @Order(66)
+    fun testListCategories() {
+        val request =
+            MockMvcRequestBuilders.get("/spaces/$spaceId/categories")
+                .header("Authorization", "Bearer $creatorToken")
+
+        mockMvc
+            .perform(request)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.categories.length()").value(3)) // Default + 2 created
+            .andExpect(jsonPath("$.data.categories[?(@.id == $defaultCategoryId)].name").exists())
+            .andExpect(
+                jsonPath("$.data.categories[?(@.id == ${categoryIds[0]})].name")
+                    .value("Backend Tasks")
+            )
+            .andExpect(
+                jsonPath("$.data.categories[?(@.id == ${categoryIds[1]})].name")
+                    .value("Frontend Tasks")
+            )
+    }
+
+    @Test
+    @Order(67)
+    fun testUpdateCategory() {
+        val request =
+            MockMvcRequestBuilders.patch("/spaces/$spaceId/categories/${categoryIds[0]}")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                    "name": "Updated Backend Tasks",
+                    "description": "Updated description",
+                    "displayOrder": 15
+                }
+            """
+                )
+
+        mockMvc
+            .perform(request)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.category.name").value("Updated Backend Tasks"))
+            .andExpect(jsonPath("$.data.category.description").value("Updated description"))
+            .andExpect(jsonPath("$.data.category.displayOrder").value(15))
+    }
+
+    @Test
+    @Order(68)
+    fun testSetDefaultCategory() {
+        // Set a new default category
+        val request =
+            MockMvcRequestBuilders.patch("/spaces/$spaceId")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                    "defaultCategoryId": ${categoryIds[0]}
+                }
+            """
+                )
+
+        mockMvc
+            .perform(request)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.space.defaultCategoryId").value(categoryIds[0]))
+
+        // Verify in a separate request
+        val getRequest =
+            MockMvcRequestBuilders.get("/spaces/$spaceId")
+                .header("Authorization", "Bearer $creatorToken")
+
+        mockMvc
+            .perform(getRequest)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.space.defaultCategoryId").value(categoryIds[0]))
+    }
+
+    @Test
+    @Order(69)
+    fun testArchiveAndUnarchiveCategory() {
+        // Archive the category
+        val archiveRequest =
+            MockMvcRequestBuilders.post("/spaces/$spaceId/categories/${categoryIds[1]}/archive")
+                .header("Authorization", "Bearer $creatorToken")
+
+        mockMvc
+            .perform(archiveRequest)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.category.id").value(categoryIds[1]))
+            .andExpect(jsonPath("$.data.category.archivedAt").isNotEmpty)
+
+        // Verify that archived categories aren't listed by default
+        val listRequest =
+            MockMvcRequestBuilders.get("/spaces/$spaceId/categories")
+                .header("Authorization", "Bearer $creatorToken")
+
+        mockMvc
+            .perform(listRequest)
+            .andExpect(status().isOk)
+            .andExpect(
+                jsonPath("$.data.categories.length()").value(2)
+            ) // Only default and the first one
+
+        // Include archived categories
+        val listWithArchivedRequest =
+            MockMvcRequestBuilders.get("/spaces/$spaceId/categories")
+                .param("includeArchived", "true")
+                .header("Authorization", "Bearer $creatorToken")
+
+        mockMvc
+            .perform(listWithArchivedRequest)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.categories.length()").value(3)) // All three
+
+        // Unarchive the category
+        val unarchiveRequest =
+            MockMvcRequestBuilders.delete("/spaces/$spaceId/categories/${categoryIds[1]}/archive")
+                .header("Authorization", "Bearer $creatorToken")
+
+        mockMvc
+            .perform(unarchiveRequest)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.category.id").value(categoryIds[1]))
+            .andExpect(jsonPath("$.data.category.archivedAt").isEmpty)
+    }
+
+    @Test
     @Order(70)
+    fun testDeleteCategoryFailsForDefault() {
+        // Try to delete the default category (should fail)
+        val request =
+            MockMvcRequestBuilders.delete("/spaces/$spaceId/categories/${categoryIds[0]}")
+                .header("Authorization", "Bearer $creatorToken")
+
+        mockMvc
+            .perform(request)
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.name").value("BadRequestError"))
+    }
+
+    @Test
+    @Order(71)
+    fun testDeleteCategory() {
+        // First, change the default category back to the original
+        val setDefaultRequest =
+            MockMvcRequestBuilders.patch("/spaces/$spaceId")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType("application/json")
+                .content(
+                    """
+                {
+                    "defaultCategoryId": $defaultCategoryId
+                }
+            """
+                )
+
+        mockMvc.perform(setDefaultRequest).andExpect(status().isOk)
+
+        // Now delete the previously default category
+        val deleteRequest =
+            MockMvcRequestBuilders.delete("/spaces/$spaceId/categories/${categoryIds[0]}")
+                .header("Authorization", "Bearer $creatorToken")
+
+        mockMvc.perform(deleteRequest).andExpect(status().isNoContent)
+
+        // Verify it's gone
+        val listRequest =
+            MockMvcRequestBuilders.get("/spaces/$spaceId/categories")
+                .header("Authorization", "Bearer $creatorToken")
+
+        mockMvc
+            .perform(listRequest)
+            .andExpect(status().isOk)
+            .andExpect(
+                jsonPath("$.data.categories.length()").value(2)
+            ) // Original default and the unarchived one
+            .andExpect(
+                jsonPath("$.data.categories[?(@.id == ${categoryIds[0]})].name").doesNotExist()
+            )
+    }
+
+    @Test
+    @Order(73)
     fun testPatchSpaceWithAnonymous() {
         val request =
             MockMvcRequestBuilders.patch("/spaces/$spaceId")

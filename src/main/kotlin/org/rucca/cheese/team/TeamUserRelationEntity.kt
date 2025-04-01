@@ -44,6 +44,8 @@ interface TeamUserRelationRepository : JpaRepository<TeamUserRelation, IdType> {
 
     fun countByTeamIdAndRole(teamId: IdType, role: TeamMemberRole): Int
 
+    fun countByTeamIdAndDeletedAtIsNull(teamId: IdType): Int
+
     fun findAllByTeamIdAndRoleOrderByUpdatedAtDesc(
         teamId: IdType,
         role: TeamMemberRole,

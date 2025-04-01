@@ -13,14 +13,18 @@ import javax.validation.Valid
  * @param intro
  * @param description
  * @param submissionSchema
+ * @param space
  * @param deadline
  * @param participantLimit
  * @param defaultDeadline
- * @param team
- * @param space
+ * @param categoryId The ID of the category to assign this task to. Requires spaceId to be set.
  * @param rank
  * @param topics
  * @param requireRealName Whether the task requires real name information
+ * @param minTeamSize Minimum team size required to submit the task, only valid if submitterType is
+ *   TEAM. `undefined` if not specified.
+ * @param maxTeamSize Maximum team size allowed to submit the task, only valid if submitterType is
+ *   TEAM. `undefined` if not specified.
  */
 data class PostTaskRequestDTO(
     @Schema(example = "null", required = true, description = "")
@@ -46,6 +50,9 @@ data class PostTaskRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("submissionSchema", required = true)
     val submissionSchema: kotlin.collections.List<TaskSubmissionSchemaEntryDTO>,
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("space", required = true)
+    val space: kotlin.Long,
     @Schema(example = "null", description = "")
     @get:JsonProperty("deadline")
     val deadline: kotlin.Long? = null,
@@ -55,12 +62,12 @@ data class PostTaskRequestDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("defaultDeadline")
     val defaultDeadline: kotlin.Long? = 30L,
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("team")
-    val team: kotlin.Long? = null,
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("space")
-    val space: kotlin.Long? = null,
+    @Schema(
+        example = "123",
+        description = "The ID of the category to assign this task to. Requires spaceId to be set.",
+    )
+    @get:JsonProperty("categoryId")
+    val categoryId: kotlin.Long? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("rank")
     val rank: kotlin.Int? = null,
@@ -70,6 +77,20 @@ data class PostTaskRequestDTO(
     @Schema(example = "null", description = "Whether the task requires real name information")
     @get:JsonProperty("requireRealName")
     val requireRealName: kotlin.Boolean? = false,
+    @Schema(
+        example = "null",
+        description =
+            "Minimum team size required to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.",
+    )
+    @get:JsonProperty("minTeamSize")
+    val minTeamSize: kotlin.Long? = null,
+    @Schema(
+        example = "null",
+        description =
+            "Maximum team size allowed to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.",
+    )
+    @get:JsonProperty("maxTeamSize")
+    val maxTeamSize: kotlin.Long? = null,
 ) : Serializable {
 
     companion object {
