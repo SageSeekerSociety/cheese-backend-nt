@@ -13,7 +13,7 @@
     <!-- Project Info -->
     <groupId>org.rucca</groupId>
     <artifactId>cheese</artifactId>
-    <version>0.12.0</version>
+    <version>0.13.0</version>
     <name>backend</name>
     <description>Backend for Cheese Web Application</description>
     <url/>
@@ -214,7 +214,7 @@
         <dependency>
             <groupId>io.hypersistence</groupId>
             <artifactId>hypersistence-utils-hibernate-63</artifactId>
-            <version>3.9.8</version>
+            <version>3.9.9</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -306,7 +306,7 @@
             <plugin>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
-                <version>10.0.0</version>
+                <version>11.5.0</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

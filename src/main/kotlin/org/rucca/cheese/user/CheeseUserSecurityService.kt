@@ -23,6 +23,7 @@ class CheeseUserSecurityService(private val userService: UserService) : UserSecu
 
         if (roles.isEmpty()) {
             userService.addRole(userId, USER)
+            return setOf(SystemRole.USER)
         }
 
         return userService.getUserRoles(userId).map { it.toSystemRole() }.toSet()

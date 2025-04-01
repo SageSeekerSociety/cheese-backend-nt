@@ -341,7 +341,293 @@ paths:
                   items:
                     type: integer
                     format: int64
+                defaultCategoryId:
+                  type: integer
+                  format: int64
+                  description: ID of the default category for tasks in this space.
+                  example: 1
       summary: Update Space
+  /spaces/{spaceId}/categories:
+    parameters:
+      - name: spaceId
+        in: path
+        required: true
+        description: ID of the space to manage categories for.
+        schema:
+          type: integer
+          format: int64
+    get:
+      tags:
+        - Space Categories
+      summary: List categories in a space
+      description: Retrieves a list of all categories belonging to the specified space, ordered by displayOrder and name.
+      operationId: listSpaceCategories
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: A list of categories.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      categories:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SpaceCategory'
+                    required:
+                      - categories
+                  message:
+                    type: string
+      parameters:
+        - name: spaceId
+          in: path
+          required: true
+          description: ID of the space to manage categories for.
+          schema:
+            type: integer
+            format: int64
+        - name: includeArchived
+          in: query
+          required: false
+          description: Set to true to include archived categories in the results. Defaults to false.
+          schema:
+            type: boolean
+            default: false
+    post:
+      tags:
+        - Space Categories
+      summary: Create a category in a space
+      description: Creates a new category within the specified space. Requires admin privileges for the space.
+      operationId: createSpaceCategory
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name for the new category. Must be unique within the space.
+                  minLength: 1
+                  example: "Urgent"
+                description:
+                  type: string
+                  nullable: true
+                  description: Optional description for the category.
+                  example: "High priority tasks."
+                displayOrder:
+                  type: integer
+                  description: Optional display order. Defaults to 0 if not provided.
+                  example: 5
+              required:
+                - name
+      responses:
+        '201':
+          description: Category created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      category:
+                        $ref: '#/components/schemas/SpaceCategory'
+                    required:
+                      - category
+                  message:
+                    type: string
+  /spaces/{spaceId}/categories/{categoryId}:
+    parameters:
+      - name: spaceId
+        in: path
+        required: true
+        description: ID of the space the category belongs to.
+        schema:
+          type: integer
+          format: int64
+      - name: categoryId
+        in: path
+        required: true
+        description: ID of the category to retrieve, update, or delete.
+        schema:
+          type: integer
+          format: int64
+    get:
+      tags:
+        - Space Categories
+      summary: Get a specific category
+      description: Retrieves details of a specific category within a space.
+      operationId: getSpaceCategory
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: Category details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      category:
+                        $ref: '#/components/schemas/SpaceCategory'
+                    required:
+                      - category
+                  message:
+                    type: string
+    patch:
+      tags:
+        - Space Categories
+      summary: Update a category
+      description: Updates specific fields of a category. Requires admin privileges for the space.
+      operationId: updateSpaceCategory
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: New name for the category. Must be unique within the space if changed.
+                  minLength: 1
+                  example: "High Priority"
+                description:
+                  type: string
+                  nullable: true
+                  description: New description for the category. Set to null to clear.
+                  example: "Tasks requiring immediate attention."
+                displayOrder:
+                  type: integer
+                  description: New display order for the category.
+                  example: 2
+      responses:
+        '200':
+          description: Category updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      category:
+                        $ref: '#/components/schemas/SpaceCategory'
+                    required:
+                      - category
+                  message:
+                    type: string
+    delete:
+      tags:
+        - Space Categories
+      summary: Delete a category
+      description: Soft-deletes a category ONLY if it contains no tasks. For categories with tasks, use the archive endpoint. Cannot delete the default category.
+      operationId: deleteSpaceCategory
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '204':
+          description: Category deleted successfully.
+  /spaces/{spaceId}/categories/{categoryId}/archive:
+    post:
+      tags:
+        - Space Categories
+      summary: Archive a category
+      description: Marks a category as archived. Tasks within it remain associated. Cannot archive the default category.
+      operationId: archiveSpaceCategory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: spaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Category archived successfully. Returns updated category details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      category:
+                        $ref: '#/components/schemas/SpaceCategory'
+                    required:
+                      - category
+                  message:
+                    type: string
+    delete:
+      tags:
+        - Space Categories
+      summary: Unarchive a category
+      description: Removes the archived status from a category, making it active again.
+      operationId: unarchiveSpaceCategory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: spaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Category unarchived successfully. Returns updated category details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      category:
+                        $ref: '#/components/schemas/SpaceCategory'
+                    required:
+                      - category
+                  message:
+                    type: string
   /spaces:
     get:
       summary: Enumerate Spaces
@@ -786,6 +1072,11 @@ paths:
                     format: int64
                 requireRealName:
                   type: boolean
+                categoryId:
+                  type: integer
+                  format: int64
+                  description: ID of the category to which the task belongs.
+                  example: 1
       summary: Update Task
   /tasks/{taskId}/teams:
     get:
@@ -1106,12 +1397,14 @@ paths:
           in: query
           name: space
           description: Space ID
-        - schema:
+          required: true
+        - name: categoryId
+          in: query
+          required: false
+          description: Filter tasks by the ID of the category they belong to.
+          schema:
             type: integer
             format: int64
-          in: query
-          name: team
-          description: Team ID
         - schema:
             $ref: "#/components/schemas/ApproveType"
           in: query
@@ -1241,6 +1534,7 @@ paths:
               type: object
               required:
                 - name
+                - space
                 - submitterType
                 - resubmittable
                 - editable
@@ -1273,12 +1567,14 @@ paths:
                   type: array
                   items:
                     $ref: "#/components/schemas/TaskSubmissionSchemaEntry"
-                team:
-                  type: integer
-                  format: int64
                 space:
                   type: integer
                   format: int64
+                categoryId:
+                  type: integer
+                  format: int64
+                  description: The ID of the category to assign this task to. Requires spaceId to be set.
+                  example: 123
                 rank:
                   type: integer
                 topics:
@@ -1291,6 +1587,14 @@ paths:
                   type: boolean
                   description: Whether the task requires real name information
                   default: false
+                minTeamSize:
+                  type: integer
+                  format: int64
+                  description: Minimum team size required to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.
+                maxTeamSize:
+                  type: integer
+                  format: int64
+                  description: Maximum team size allowed to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.
       summary: Create Task
   /tasks/{taskId}/participants:
     get:
@@ -3697,6 +4001,49 @@ paths:
                         $ref: "#/components/schemas/Knowledge"
 components:
   schemas:
+    SpaceCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the category.
+          readOnly: true # ID is typically assigned by the server
+        name:
+          type: string
+          description: Name of the category. Must be unique within the space.
+          example: "Backend Development"
+        description:
+          type: string
+          nullable: true
+          description: Optional description for the category.
+          example: "Tasks related to server-side logic and databases."
+        displayOrder:
+          type: integer
+          description: Order in which the category should be displayed. Lower numbers typically come first.
+          default: 0
+          example: 10
+        createdAt:
+          type: integer
+          format: int64
+          description: Category creation timestamp (epoch milliseconds).
+          readOnly: true
+        updatedAt:
+          type: integer
+          format: int64
+          description: Category last update timestamp (epoch milliseconds).
+          readOnly: true
+        archivedAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: Timestamp when the category was archived (epoch milliseconds). Null if not archived.
+      required:
+        - id
+        - name
+        - displayOrder
+        - createdAt
+        - updatedAt
     UserIdentity:
       title: UserIdentity
       type: object
@@ -3772,6 +4119,7 @@ components:
         - announcements
         - taskTemplates
         - classificationTopics
+        - defaultCategoryId
       properties:
         id:
           type: integer
@@ -3808,6 +4156,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Topic"
+        defaultCategoryId:
+          type: integer
+          format: int64
+          description: Default category ID for new content in this space.
     SpaceAdmin:
       title: SpaceAdmin
       type: object
@@ -3878,6 +4230,8 @@ components:
           type: string
         space:
           $ref: "#/components/schemas/Space"
+        category:
+          $ref: "#/components/schemas/SpaceCategory"
         team:
           $ref: "#/components/schemas/Team"
         submissionSchema:
@@ -3911,10 +4265,13 @@ components:
         joinable:
           type: boolean
           description: "Only has value when: 'queryJoinablity' == true"
-        joinableAsTeam:
+        joinableTeams:
           type: array
           items:
             $ref: "#/components/schemas/TeamSummary"
+        joinRejectReason:
+          type: string
+          description: The reason why the user cannot join the task
         submittable:
           type: boolean
           description: "Only has value when: 'querySubmitability' == true"
@@ -3944,6 +4301,12 @@ components:
         requireRealName:
           type: boolean
           description: Whether the task requires real name information
+        minTeamSize:
+          type: integer
+          description: Minimum size of team that can join this task
+        maxTeamSize:
+          type: integer
+          description: Maximum size of team that can join this task
     TaskSubmitterType:
       title: TaskSubmitterType
       enum:
@@ -4149,6 +4512,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TeamMemberRealNameStatus"
+        joinRejectReason:
+          type: string
+          description: The reason why the team cannot join the team
         updatedAt:
           type: integer
           format: int64

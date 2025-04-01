@@ -28,8 +28,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -63,6 +66,7 @@ constructor(
     lateinit var irrelevantUserToken: String
     private var teamId: IdType = -1
     private var spaceId: IdType = -1
+    private var defaultCategoryId: IdType = -1
     private var attachmentId: IdType = -1
     private val taskIds = mutableListOf<IdType>()
     private val taskName = "Test Task (${floor(Math.random() * 10000000000).toLong()})"
@@ -81,30 +85,27 @@ constructor(
         spaceIntro: String,
         spaceDescription: String,
         spaceAvatarId: IdType,
-    ): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/spaces")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                    "name": "$spaceName",
-                    "intro": "$spaceIntro",
-                    "description": "$spaceDescription",
-                    "avatarId": $spaceAvatarId,
-                    "announcements": "[]",
-                    "taskTemplates": "[]"
+    ): Pair<IdType, IdType> {
+        val result =
+            mockMvc
+                .post("/spaces") {
+                    headers { setBearerAuth(creatorToken) }
+                    contentType = MediaType.APPLICATION_JSON
+                    content =
+                        """ { "name": "$spaceName", "intro": "$spaceIntro", "description": "$spaceDescription", "avatarId": $spaceAvatarId, "announcements": "[]", "taskTemplates": "[]" } """
                 }
-            """
-                )
-        val spaceId =
-            JSONObject(mockMvc.perform(request).andReturn().response.contentAsString)
-                .getJSONObject("data")
-                .getJSONObject("space")
-                .getLong("id")
-        logger.info("Created space: $spaceId")
-        return spaceId
+                .andExpect { status { isOk() } }
+                .andExpect { jsonPath("$.data.space.id") { exists() } }
+                .andExpect { jsonPath("$.data.space.defaultCategoryId") { exists() } }
+                .andReturn()
+        val json = JSONObject(result.response.contentAsString)
+        val spaceData = json.getJSONObject("data").getJSONObject("space")
+        val createdSpaceId = spaceData.getLong("id")
+        val createdDefaultCategoryId = spaceData.getLong("defaultCategoryId")
+        logger.info(
+            "Created space: $createdSpaceId with default category ID: $createdDefaultCategoryId"
+        )
+        return Pair(createdSpaceId, createdDefaultCategoryId)
     }
 
     fun createTeam(
@@ -146,7 +147,7 @@ constructor(
                     """
                 {
                   "role": "MEMBER",
-                  "user_id": ${userId}
+                  "user_id": $userId
                 }
             """
                 )
@@ -170,7 +171,7 @@ constructor(
         irrelevantUser = userCreatorService.createUser()
         irrelevantUserToken =
             userCreatorService.login(irrelevantUser.username, irrelevantUser.password)
-        spaceId =
+        val spaceResult =
             createSpace(
                 creatorToken = spaceCreatorToken,
                 spaceName = "Test Space (${floor(Math.random() * 10000000000).toLong()})",
@@ -178,6 +179,8 @@ constructor(
                 spaceDescription = "A lengthy text. ".repeat(1000),
                 spaceAvatarId = userCreatorService.testAvatarId(),
             )
+        spaceId = spaceResult.first
+        defaultCategoryId = spaceResult.second
         teamId =
             createTeam(
                 creatorToken = teamCreatorToken,
@@ -191,79 +194,93 @@ constructor(
     }
 
     fun createTask(
+        token: String = creatorToken,
         name: String,
         submitterType: String,
-        deadline: Long,
+        deadline: Long?,
+        defaultDeadline: Long?,
         resubmittable: Boolean,
         editable: Boolean,
         intro: String,
         description: String,
         submissionSchema: List<Pair<String, String>>,
-        team: IdType?,
-        space: IdType?,
-    ) {
-        val request =
-            MockMvcRequestBuilders.post("/tasks")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "name": "$name",
-                  "submitterType": "$submitterType",
-                  "deadline": "$deadline",
-                  "resubmittable": $resubmittable,
-                  "editable": $editable,
-                  "intro": "$intro",
-                  "description": "$description",
-                  "submissionSchema": [
-                    ${
-                        submissionSchema
-                            .map { """
-                                {
-                                  "prompt": "${it.first}",
-                                  "type": "${it.second}"
-                                }
-                            """ }
-                            .joinToString(",\n")
-                    }
-                  ],
-                  "team": ${team?: "null"},
-                  "space": ${space?: "null"}
-                }
-            """
-                )
-        val response =
+        spaceId: IdType,
+        categoryId: IdType?,
+        expectedStatus: Int = HttpStatus.OK.value(), // Match original test expectation
+    ): IdType? {
+        val resultActions =
             mockMvc
-                .perform(request)
-                .andExpect(MockMvcResultMatchers.status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.name").value(name))
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.submitterType").value(submitterType)
-                )
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.creator.id").value(creator.userId)
-                )
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.deadline").value(deadline))
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.resubmittable").value(resubmittable)
-                )
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.editable").value(editable))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.intro").value(intro))
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.data.task.description").value(description)
-                )
-        val json = JSONObject(response.andReturn().response.contentAsString)
-        for (entry in submissionSchema) {
-            val schema =
-                json.getJSONObject("data").getJSONObject("task").getJSONArray("submissionSchema")
-            val found = JsonArrayUtil.toArray(schema).find { it.getString("prompt") == entry.first }
-            assert(found != null)
-            assert(found!!.getString("type") == entry.second)
+                .post("/tasks") {
+                    headers { setBearerAuth(token) }
+                    contentType = MediaType.APPLICATION_JSON
+                    content =
+                        """
+                {
+                    "name": "$name",
+                    "submitterType": "$submitterType",
+                    "deadline": ${deadline?.toString() ?: "null"},
+                    "defaultDeadline": $defaultDeadline,
+                    "resubmittable": $resubmittable,
+                    "editable": $editable,
+                    "intro": "$intro",
+                    "description": "$description",
+                    "submissionSchema": [ ${submissionSchema.joinToString(",\n") { """{"prompt": "${it.first}", "type": "${it.second}"}""" }} ],
+                    "space": $spaceId,
+                    "categoryId": ${categoryId?.toString() ?: "null"}
+                }
+                """
+                }
+                .andExpect { status { isEqualTo(expectedStatus) } }
+
+        if (expectedStatus == HttpStatus.OK.value()) {
+            val result =
+                resultActions
+                    .andExpect { jsonPath("$.data.task.id") { exists() } }
+                    .andExpect { jsonPath("$.data.task.name") { value(name) } }
+                    .andExpect { jsonPath("$.data.task.submitterType") { value(submitterType) } }
+                    .andExpect { jsonPath("$.data.task.creator.id") { value(creator.userId) } }
+                    .andExpect { jsonPath("$.data.task.deadline") { value(deadline) } }
+                    .andExpect {
+                        jsonPath("$.data.task.defaultDeadline") { value(defaultDeadline) }
+                    }
+                    .andExpect { jsonPath("$.data.task.resubmittable") { value(resubmittable) } }
+                    .andExpect { jsonPath("$.data.task.editable") { value(editable) } }
+                    .andExpect { jsonPath("$.data.task.intro") { value(intro) } }
+                    .andExpect { jsonPath("$.data.task.description") { value(description) } }
+                    .andExpect { jsonPath("$.data.task.space.id") { value(spaceId) } }
+                    //                    .andExpect {
+                    //                        jsonPath("$.data.task.category.id") {
+                    //                            value(categoryId ?: defaultCategoryId)
+                    //                        }
+                    //                    }
+                    //                    .andExpect { jsonPath("$.data.task.category.name") {
+                    // exists() } }
+                    .andExpect { jsonPath("$.data.task.approved") { value("NONE") } }
+                    .andReturn()
+
+            val json = JSONObject(result.response.contentAsString)
+            // Submission schema validation
+            for (entry in submissionSchema) {
+                val schema =
+                    json
+                        .getJSONObject("data")
+                        .getJSONObject("task")
+                        .getJSONArray("submissionSchema")
+                val found =
+                    JsonArrayUtil.toArray(schema).find { it.getString("prompt") == entry.first }
+                assert(found != null) { "Submission schema entry '${entry.first}' not found" }
+                assert(found!!.getString("type") == entry.second) {
+                    "Type mismatch for '${entry.first}'"
+                }
+            }
+            val taskId = json.getJSONObject("data").getJSONObject("task").getLong("id")
+            taskIds.add(taskId)
+            logger.info(
+                "Created task: $taskId (Type: $submitterType, Space: $spaceId, Category: ${categoryId ?: defaultCategoryId})"
+            )
+            return taskId
         }
-        val taskId = json.getJSONObject("data").getJSONObject("task").getLong("id")
-        taskIds.add(taskId)
-        logger.info("Created task: $taskId")
+        return null
     }
 
     fun approveTask(taskId: IdType, token: String) {
@@ -352,8 +369,9 @@ constructor(
             intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
-            team = teamId,
-            space = spaceId,
+            spaceId = spaceId,
+            categoryId = defaultCategoryId,
+            defaultDeadline = 30,
         )
         approveTask(taskIds[0], spaceCreatorToken)
         createTask(
@@ -365,8 +383,9 @@ constructor(
             intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
-            team = teamId,
-            space = spaceId,
+            spaceId = spaceId,
+            categoryId = defaultCategoryId,
+            defaultDeadline = 30,
         )
         approveTask(taskIds[1], spaceCreatorToken)
         createTask(
@@ -378,8 +397,9 @@ constructor(
             intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
-            team = null,
-            space = spaceId,
+            spaceId = spaceId,
+            categoryId = defaultCategoryId,
+            defaultDeadline = 30,
         )
         approveTask(taskIds[2], spaceCreatorToken)
         createTask(
@@ -391,20 +411,9 @@ constructor(
             intro = taskIntro,
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
-            team = teamId,
-            space = null,
-        )
-        createTask(
-            name = "$taskName (5)",
-            submitterType = "USER",
-            deadline = taskDeadline,
-            resubmittable = true,
-            editable = true,
-            intro = taskIntro,
-            description = taskDescription,
-            submissionSchema = taskSubmissionSchema,
-            team = null,
-            space = null,
+            spaceId = spaceId,
+            categoryId = defaultCategoryId,
+            defaultDeadline = 30,
         )
     }
 
@@ -470,8 +479,8 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(false))
+            .andExpect(jsonPath("$.data.task.joinable").value(false))
+            .andExpect(jsonPath("$.data.task.submittable").value(false))
     }
 
     @Test
@@ -486,9 +495,9 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittableAsTeam").isEmpty)
+            .andExpect(jsonPath("$.data.task.joinable").value(false))
+            .andExpect(jsonPath("$.data.task.submittable").value(false))
+            .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty)
     }
 
     @Test
@@ -532,9 +541,7 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
-                        "$.data.participants[?(@.member.id == ${participant.userId})].approved"
-                    )
+                jsonPath("$.data.participants[?(@.member.id == ${participant.userId})].approved")
                     .value("APPROVED")
             )
     }
@@ -551,8 +558,8 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(true))
+            .andExpect(jsonPath("$.data.task.joinable").value(false))
+            .andExpect(jsonPath("$.data.task.submittable").value(true))
     }
 
     @Test
@@ -574,9 +581,7 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
-                        "$.data.participants[?(@.member.id == ${participant2.userId})].approved"
-                    )
+                jsonPath("$.data.participants[?(@.member.id == ${participant2.userId})].approved")
                     .value("APPROVED")
             )
     }
@@ -600,9 +605,7 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
-                        "$.data.participants[?(@.member.id == $teamId)].approved"
-                    )
+                jsonPath("$.data.participants[?(@.member.id == $teamId)].approved")
                     .value("APPROVED")
             )
     }
@@ -618,11 +621,9 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.joinable").value(false))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.task.submittable").value(true))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.task.submittableAsTeam[0].id").value(teamId)
-            )
+            .andExpect(jsonPath("$.data.task.joinable").value(false))
+            .andExpect(jsonPath("$.data.task.submittable").value(true))
+            .andExpect(jsonPath("$.data.task.submittableAsTeam[0].id").value(teamId))
     }
 
     @Test
@@ -647,25 +648,14 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.id").exists())
+            .andExpect(jsonPath("$.data.submission.id").exists())
+            .andExpect(jsonPath("$.data.submission.member.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submission.submitter.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submission.version").value(1))
+            .andExpect(jsonPath("$.data.submission.content[0].title").value("Text Entry"))
+            .andExpect(jsonPath("$.data.submission.content[0].type").value("TEXT"))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.member.id")
-                    .value(participant.userId)
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.submitter.id")
-                    .value(participant.userId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.version").value(1))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].title")
-                    .value("Text Entry")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].type").value("TEXT")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].contentText")
+                jsonPath("$.data.submission.content[0].contentText")
                     .value("This is a test submission.")
             )
     }
@@ -692,22 +682,11 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.member.id")
-                    .value(participant2.userId)
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.submitter.id")
-                    .value(participant2.userId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.version").value(1))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].title")
-                    .value("Text Entry")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].type").value("TEXT")
-            )
+            .andExpect(jsonPath("$.data.submission.member.id").value(participant2.userId))
+            .andExpect(jsonPath("$.data.submission.submitter.id").value(participant2.userId))
+            .andExpect(jsonPath("$.data.submission.version").value(1))
+            .andExpect(jsonPath("$.data.submission.content[0].title").value("Text Entry"))
+            .andExpect(jsonPath("$.data.submission.content[0].type").value("TEXT"))
     }
 
     @Test
@@ -735,34 +714,20 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.id").exists())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.member.id").value(teamId))
+            .andExpect(jsonPath("$.data.submission.id").exists())
+            .andExpect(jsonPath("$.data.submission.member.id").value(teamId))
+            .andExpect(jsonPath("$.data.submission.submitter.id").value(teamCreator.userId))
+            .andExpect(jsonPath("$.data.submission.version").value(1))
+            .andExpect(jsonPath("$.data.submission.content[0].title").value("Text Entry"))
+            .andExpect(jsonPath("$.data.submission.content[0].type").value("TEXT"))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.submitter.id")
-                    .value(teamCreator.userId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.version").value(1))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].title")
-                    .value("Text Entry")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].type").value("TEXT")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].contentText")
+                jsonPath("$.data.submission.content[0].contentText")
                     .value("This is a test submission.")
             )
+            .andExpect(jsonPath("$.data.submission.content[1].title").value("Attachment Entry"))
+            .andExpect(jsonPath("$.data.submission.content[1].type").value("FILE"))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[1].title")
-                    .value("Attachment Entry")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[1].type").value("FILE")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[1].contentAttachment.id")
-                    .value(attachmentId)
+                jsonPath("$.data.submission.content[1].contentAttachment.id").value(attachmentId)
             )
     }
 
@@ -788,10 +753,8 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isBadRequest)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name").value("TaskNotResubmittableError")
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.taskId").value(taskId))
+            .andExpect(jsonPath("$.error.name").value("TaskNotResubmittableError"))
+            .andExpect(jsonPath("$.error.data.taskId").value(taskId))
     }
 
     @Test
@@ -852,25 +815,14 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.id").exists())
+            .andExpect(jsonPath("$.data.submission.id").exists())
+            .andExpect(jsonPath("$.data.submission.member.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submission.submitter.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submission.version").value(2))
+            .andExpect(jsonPath("$.data.submission.content[0].title").value("Text Entry"))
+            .andExpect(jsonPath("$.data.submission.content[0].type").value("TEXT"))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.member.id")
-                    .value(participant.userId)
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.submitter.id")
-                    .value(participant.userId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.version").value(2))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].title")
-                    .value("Text Entry")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].type").value("TEXT")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].contentText")
+                jsonPath("$.data.submission.content[0].contentText")
                     .value("This is a test submission. (Version 2)")
             )
     }
@@ -897,11 +849,8 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isBadRequest)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name")
-                    .value("TaskSubmissionNotEditableError")
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.data.taskId").value(taskId))
+            .andExpect(jsonPath("$.error.name").value("TaskSubmissionNotEditableError"))
+            .andExpect(jsonPath("$.error.data.taskId").value(taskId))
     }
 
     @Test
@@ -944,25 +893,14 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.id").exists())
+            .andExpect(jsonPath("$.data.submission.id").exists())
+            .andExpect(jsonPath("$.data.submission.member.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submission.submitter.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submission.version").value(2))
+            .andExpect(jsonPath("$.data.submission.content[0].title").value("Text Entry"))
+            .andExpect(jsonPath("$.data.submission.content[0].type").value("TEXT"))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.member.id")
-                    .value(participant.userId)
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.submitter.id")
-                    .value(participant.userId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submission.version").value(2))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].title")
-                    .value("Text Entry")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].type").value("TEXT")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submission.content[0].contentText")
+                jsonPath("$.data.submission.content[0].contentText")
                     .value("This is a test submission. (Version 2) (edited)")
             )
     }
@@ -979,7 +917,7 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("AccessDeniedError"))
+            .andExpect(jsonPath("$.error.name").value("AccessDeniedError"))
     }
 
     @Test
@@ -994,7 +932,7 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("AccessDeniedError"))
+            .andExpect(jsonPath("$.error.name").value("AccessDeniedError"))
     }
 
     @Test
@@ -1009,26 +947,14 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].id").exists())
+            .andExpect(jsonPath("$.data.submissions[0].id").exists())
+            .andExpect(jsonPath("$.data.submissions[0].member.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submissions[0].submitter.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submissions[0].version").value(2))
+            .andExpect(jsonPath("$.data.submissions[0].content[0].title").value("Text Entry"))
+            .andExpect(jsonPath("$.data.submissions[0].content[0].type").value("TEXT"))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].member.id")
-                    .value(participant.userId)
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].submitter.id")
-                    .value(participant.userId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].version").value(2))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].title")
-                    .value("Text Entry")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].type")
-                    .value("TEXT")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].contentText")
+                jsonPath("$.data.submissions[0].content[0].contentText")
                     .value("This is a test submission. (Version 2) (edited)")
             )
     }
@@ -1046,31 +972,19 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].id").exists())
+            .andExpect(jsonPath("$.data.submissions[0].id").exists())
+            .andExpect(jsonPath("$.data.submissions[0].member.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submissions[0].submitter.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submissions[0].version").value(2))
+            .andExpect(jsonPath("$.data.submissions[0].content[0].title").value("Text Entry"))
+            .andExpect(jsonPath("$.data.submissions[0].content[0].type").value("TEXT"))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].member.id")
-                    .value(participant.userId)
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].submitter.id")
-                    .value(participant.userId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].version").value(2))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].title")
-                    .value("Text Entry")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].type")
-                    .value("TEXT")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].contentText")
+                jsonPath("$.data.submissions[0].content[0].contentText")
                     .value("This is a test submission. (Version 2) (edited)")
             )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[1].version").value(1))
+            .andExpect(jsonPath("$.data.submissions[1].version").value(1))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[1].content[0].contentText")
+                jsonPath("$.data.submissions[1].content[0].contentText")
                     .value("This is a test submission.")
             )
     }
@@ -1088,7 +1002,7 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("AccessDeniedError"))
+            .andExpect(jsonPath("$.error.name").value("AccessDeniedError"))
     }
 
     @Test
@@ -1104,32 +1018,18 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].id").exists())
+            .andExpect(jsonPath("$.data.submissions[0].id").exists())
+            .andExpect(jsonPath("$.data.submissions[0].member.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submissions[0].submitter.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submissions[0].version").value(2))
+            .andExpect(jsonPath("$.data.submissions[0].content[0].title").value("Text Entry"))
+            .andExpect(jsonPath("$.data.submissions[0].content[0].type").value("TEXT"))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].member.id")
-                    .value(participant.userId)
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].submitter.id")
-                    .value(participant.userId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].version").value(2))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].title")
-                    .value("Text Entry")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].type")
-                    .value("TEXT")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].contentText")
+                jsonPath("$.data.submissions[0].content[0].contentText")
                     .value("This is a test submission. (Version 2) (edited)")
             )
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
-                        "$.data.submissions[?(@[0].memberId == ${participant2.userId})][0]"
-                    )
+                jsonPath("$.data.submissions[?(@[0].memberId == ${participant2.userId})][0]")
                     .doesNotExist()
             )
     }
@@ -1146,32 +1046,18 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].id").exists())
+            .andExpect(jsonPath("$.data.submissions[0].id").exists())
+            .andExpect(jsonPath("$.data.submissions[0].member.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submissions[0].submitter.id").value(participant.userId))
+            .andExpect(jsonPath("$.data.submissions[0].version").value(2))
+            .andExpect(jsonPath("$.data.submissions[0].content[0].title").value("Text Entry"))
+            .andExpect(jsonPath("$.data.submissions[0].content[0].type").value("TEXT"))
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].member.id")
-                    .value(participant.userId)
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].submitter.id")
-                    .value(participant.userId)
-            )
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.submissions[0].version").value(2))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].title")
-                    .value("Text Entry")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].type")
-                    .value("TEXT")
-            )
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.submissions[0].content[0].contentText")
+                jsonPath("$.data.submissions[0].content[0].contentText")
                     .value("This is a test submission. (Version 2) (edited)")
             )
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
-                        "$.data.submissions[?(@[0].memberId == ${participant2.userId})][0]"
-                    )
+                jsonPath("$.data.submissions[?(@[0].memberId == ${participant2.userId})][0]")
                     .doesNotExist()
             )
     }

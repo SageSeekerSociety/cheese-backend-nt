@@ -11,7 +11,6 @@ package org.rucca.cheese.task.option
 
 data class TaskQueryOptions(
     val querySpace: Boolean,
-    val queryTeam: Boolean,
     val queryJoinability: Boolean,
     val querySubmittability: Boolean,
     val queryJoined: Boolean,
@@ -22,7 +21,6 @@ data class TaskQueryOptions(
         val MINIMUM =
             TaskQueryOptions(
                 querySpace = false,
-                queryTeam = false,
                 queryJoinability = false,
                 querySubmittability = false,
                 queryJoined = false,
@@ -33,7 +31,6 @@ data class TaskQueryOptions(
         val MAXIMUM =
             TaskQueryOptions(
                 querySpace = true,
-                queryTeam = true,
                 queryJoinability = true,
                 querySubmittability = true,
                 queryJoined = true,

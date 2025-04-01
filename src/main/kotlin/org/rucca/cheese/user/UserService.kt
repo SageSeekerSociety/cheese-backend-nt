@@ -15,6 +15,7 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.UserDTO
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class UserService(
@@ -22,12 +23,13 @@ class UserService(
     private val userProfileRepository: UserProfileRepository,
     private val userRoleRepository: UserRoleRepository,
 ) {
+    @Transactional
     @CacheEvict(cacheNames = ["userRoles"], key = "#userId")
     fun addRole(userId: IdType, role: UserRole) {
         ensureUserIdExists(userId)
-        val roles = userRoleRepository.findAllByUserId(userId)
-        if (roles.any { it.role == role }) return
-        userRoleRepository.save(UserRoleEntity(userId, role))
+        if (!userRoleRepository.existsByUserIdAndRole(userId, role)) {
+            userRoleRepository.save(UserRoleEntity(userId, role))
+        }
     }
 
     fun getUserDto(userId: IdType): UserDTO {

@@ -12,12 +12,14 @@ package org.rucca.cheese.task
 import java.time.LocalDateTime
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.TopicDTO
-import org.rucca.cheese.topic.Topic
+import org.rucca.cheese.topic.TopicRepository
 import org.rucca.cheese.topic.TopicService
 import org.springframework.stereotype.Service
 
 @Service
 class TaskTopicsService(
+    private val taskRepository: TaskRepository,
+    private val topicRepository: TopicRepository,
     private val topicsRelationRepository: TaskTopicsRelationRepository,
     private val topicService: TopicService,
 ) {
@@ -49,8 +51,8 @@ class TaskTopicsService(
             topicService.ensureTopicExists(it)
             val relation =
                 TaskTopicsRelation(
-                    task = Task().apply { id = taskId },
-                    topic = Topic().apply { id = it.toInt() },
+                    task = taskRepository.getReferenceById(taskId),
+                    topic = topicRepository.getReferenceById(it.toInt()),
                 )
             topicsRelationRepository.save(relation)
         }

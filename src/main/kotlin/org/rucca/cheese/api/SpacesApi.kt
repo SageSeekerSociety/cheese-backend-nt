@@ -10,13 +10,17 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
+import org.rucca.cheese.model.CreateSpaceCategory201ResponseDTO
+import org.rucca.cheese.model.CreateSpaceCategoryRequestDTO
 import org.rucca.cheese.model.DeleteSpace200ResponseDTO
 import org.rucca.cheese.model.GetSpace200ResponseDTO
 import org.rucca.cheese.model.GetSpaces200ResponseDTO
+import org.rucca.cheese.model.ListSpaceCategories200ResponseDTO
 import org.rucca.cheese.model.PatchSpaceAdminRequestDTO
 import org.rucca.cheese.model.PatchSpaceRequestDTO
 import org.rucca.cheese.model.PostSpaceAdminRequestDTO
 import org.rucca.cheese.model.PostSpaceRequestDTO
+import org.rucca.cheese.model.UpdateSpaceCategoryRequestDTO
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -25,6 +29,87 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @Validated
 interface SpacesApi {
+
+    @Operation(
+        tags = ["Space Categories"],
+        summary = "Archive a category",
+        operationId = "archiveSpaceCategory",
+        description =
+            """Marks a category as archived. Tasks within it remain associated. Cannot archive the default category.""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description =
+                        "Category archived successfully. Returns updated category details.",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation = CreateSpaceCategory201ResponseDTO::class
+                                    )
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.POST],
+        value = ["/spaces/{spaceId}/categories/{categoryId}/archive"],
+        produces = ["application/json"],
+    )
+    fun archiveSpaceCategory(
+        @Parameter(description = "", required = true) @PathVariable("spaceId") spaceId: kotlin.Long,
+        @Parameter(description = "", required = true)
+        @PathVariable("categoryId")
+        categoryId: kotlin.Long,
+    ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Space Categories"],
+        summary = "Create a category in a space",
+        operationId = "createSpaceCategory",
+        description =
+            """Creates a new category within the specified space. Requires admin privileges for the space.""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "201",
+                    description = "Category created successfully.",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation = CreateSpaceCategory201ResponseDTO::class
+                                    )
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.POST],
+        value = ["/spaces/{spaceId}/categories"],
+        produces = ["application/json"],
+        consumes = ["application/json"],
+    )
+    fun createSpaceCategory(
+        @Parameter(description = "ID of the space to manage categories for.", required = true)
+        @PathVariable("spaceId")
+        spaceId: kotlin.Long,
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        createSpaceCategoryRequestDTO: CreateSpaceCategoryRequestDTO,
+    ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
 
     @Operation(
         tags = ["default"],
@@ -96,6 +181,34 @@ interface SpacesApi {
     }
 
     @Operation(
+        tags = ["Space Categories"],
+        summary = "Delete a category",
+        operationId = "deleteSpaceCategory",
+        description =
+            """Soft-deletes a category ONLY if it contains no tasks. For categories with tasks, use the archive endpoint. Cannot delete the default category.""",
+        responses =
+            [ApiResponse(responseCode = "204", description = "Category deleted successfully.")],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.DELETE],
+        value = ["/spaces/{spaceId}/categories/{categoryId}"],
+    )
+    fun deleteSpaceCategory(
+        @Parameter(description = "ID of the space the category belongs to.", required = true)
+        @PathVariable("spaceId")
+        spaceId: kotlin.Long,
+        @Parameter(
+            description = "ID of the category to retrieve, update, or delete.",
+            required = true,
+        )
+        @PathVariable("categoryId")
+        categoryId: kotlin.Long,
+    ): ResponseEntity<Unit> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
         tags = ["default"],
         summary = "Query Space",
         operationId = "getSpace",
@@ -128,6 +241,48 @@ interface SpacesApi {
         @RequestParam(value = "queryMyRank", required = false, defaultValue = "false")
         queryMyRank: kotlin.Boolean,
     ): ResponseEntity<GetSpace200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Space Categories"],
+        summary = "Get a specific category",
+        operationId = "getSpaceCategory",
+        description = """Retrieves details of a specific category within a space.""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "Category details.",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation = CreateSpaceCategory201ResponseDTO::class
+                                    )
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/spaces/{spaceId}/categories/{categoryId}"],
+        produces = ["application/json"],
+    )
+    fun getSpaceCategory(
+        @Parameter(description = "ID of the space the category belongs to.", required = true)
+        @PathVariable("spaceId")
+        spaceId: kotlin.Long,
+        @Parameter(
+            description = "ID of the category to retrieve, update, or delete.",
+            required = true,
+        )
+        @PathVariable("categoryId")
+        categoryId: kotlin.Long,
+    ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -180,6 +335,51 @@ interface SpacesApi {
         @RequestParam(value = "sort_order", required = false, defaultValue = "desc")
         sortOrder: kotlin.String,
     ): ResponseEntity<GetSpaces200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Space Categories"],
+        summary = "List categories in a space",
+        operationId = "listSpaceCategories",
+        description =
+            """Retrieves a list of all categories belonging to the specified space, ordered by displayOrder and name.""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "A list of categories.",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation = ListSpaceCategories200ResponseDTO::class
+                                    )
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/spaces/{spaceId}/categories"],
+        produces = ["application/json"],
+    )
+    fun listSpaceCategories(
+        @Parameter(description = "ID of the space to manage categories for.", required = true)
+        @PathVariable("spaceId")
+        spaceId: kotlin.Long,
+        @Parameter(
+            description =
+                "Set to true to include archived categories in the results. Defaults to false.",
+            schema = Schema(defaultValue = "false"),
+        )
+        @Valid
+        @RequestParam(value = "includeArchived", required = false, defaultValue = "false")
+        includeArchived: kotlin.Boolean,
+    ): ResponseEntity<ListSpaceCategories200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -316,6 +516,92 @@ interface SpacesApi {
         @RequestBody
         postSpaceAdminRequestDTO: PostSpaceAdminRequestDTO,
     ): ResponseEntity<GetSpace200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Space Categories"],
+        summary = "Unarchive a category",
+        operationId = "unarchiveSpaceCategory",
+        description = """Removes the archived status from a category, making it active again.""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description =
+                        "Category unarchived successfully. Returns updated category details.",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation = CreateSpaceCategory201ResponseDTO::class
+                                    )
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.DELETE],
+        value = ["/spaces/{spaceId}/categories/{categoryId}/archive"],
+        produces = ["application/json"],
+    )
+    fun unarchiveSpaceCategory(
+        @Parameter(description = "", required = true) @PathVariable("spaceId") spaceId: kotlin.Long,
+        @Parameter(description = "", required = true)
+        @PathVariable("categoryId")
+        categoryId: kotlin.Long,
+    ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Space Categories"],
+        summary = "Update a category",
+        operationId = "updateSpaceCategory",
+        description =
+            """Updates specific fields of a category. Requires admin privileges for the space.""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "Category updated successfully.",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation = CreateSpaceCategory201ResponseDTO::class
+                                    )
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "bearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.PATCH],
+        value = ["/spaces/{spaceId}/categories/{categoryId}"],
+        produces = ["application/json"],
+        consumes = ["application/json"],
+    )
+    fun updateSpaceCategory(
+        @Parameter(description = "ID of the space the category belongs to.", required = true)
+        @PathVariable("spaceId")
+        spaceId: kotlin.Long,
+        @Parameter(
+            description = "ID of the category to retrieve, update, or delete.",
+            required = true,
+        )
+        @PathVariable("categoryId")
+        categoryId: kotlin.Long,
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        updateSpaceCategoryRequestDTO: UpdateSpaceCategoryRequestDTO,
+    ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 }
