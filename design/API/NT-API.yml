@@ -5,6 +5,121 @@ info:
 servers:
   - url: "http://localhost:8080"
 paths:
+  /users/me/team-requests:
+    get:
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      summary: List my join requests
+      description: Retrieves a list of join requests initiated by the authenticated user.
+      operationId: listMyJoinRequests
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter requests by status.
+          schema:
+            $ref: '#/components/schemas/ApplicationStatus'
+        - $ref: '#/components/parameters/PageStart'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: A list of the user's join requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      requests:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TeamMembershipApplication'
+                      page:
+                        $ref: '#/components/schemas/Page'
+                    required:
+                      - requests
+                  message:
+                    type: string
+  /users/me/team-requests/{requestId}:
+    delete:
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      summary: Cancel my pending join request
+      description: Allows the authenticated user to cancel a join request they initiated, provided it's still pending.
+      operationId: cancelMyJoinRequest
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '204':
+          description: Request cancelled successfully.
+  /users/me/team-invitations:
+    get:
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      summary: List invitations received
+      description: Retrieves a list of invitations received by the authenticated user.
+      operationId: listMyInvitations
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter invitations by status (e.g., PENDING).
+          schema:
+            $ref: '#/components/schemas/ApplicationStatus'
+        - $ref: '#/components/parameters/PageStart'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: A list of invitations received by the user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      invitations:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TeamMembershipApplication'
+                      page:
+                        $ref: '#/components/schemas/Page'
+                    required:
+                      - invitations
+                      - page
+                  message:
+                    type: string
+  /users/me/team-invitations/{invitationId}/accept:
+    post:
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      summary: Accept a team invitation
+      description: Allows the authenticated user to accept a pending team invitation. Creates the team membership upon success.
+      operationId: acceptTeamInvitation
+      parameters:
+        - $ref: '#/components/parameters/InvitationId'
+      responses:
+        '204':
+          description: Invitation accepted successfully and membership created.
+  /users/me/team-invitations/{invitationId}/decline:
+    post:
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      summary: Decline a team invitation
+      description: Allows the authenticated user to decline a pending team invitation.
+      operationId: declineTeamInvitation
+      parameters:
+        - $ref: '#/components/parameters/InvitationId'
+      responses:
+        '204':
+          description: Invitation declined successfully.
   /users/{userId}/identity:
     get:
       tags: [ ]
@@ -13,13 +128,7 @@ paths:
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       parameters:
-        - description: User ID
-          in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: '#/components/parameters/UserId'
         - description: Whether to return the precise identity info
           in: query
           name: precise
@@ -58,13 +167,7 @@ paths:
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       parameters:
-        - description: User ID
-          in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: '#/components/parameters/UserId'
       requestBody:
         required: true
         content:
@@ -112,13 +215,7 @@ paths:
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       parameters:
-        - description: User ID
-          in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: '#/components/parameters/UserId'
       requestBody:
         required: true
         content:
@@ -167,13 +264,7 @@ paths:
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       parameters:
-        - description: User ID
-          in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: '#/components/parameters/UserId'
         - schema:
             type: integer
             format: int64
@@ -254,6 +345,13 @@ paths:
           schema:
             type: boolean
             default: false
+        - name: queryCategories
+          in: query
+          required: false
+          description: Set to true to include categories in the response.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           content:
@@ -266,6 +364,10 @@ paths:
                     properties:
                       space:
                         $ref: "#/components/schemas/Space"
+                      categories:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SpaceCategory"
                     required:
                       - space
                     type: object
@@ -557,7 +659,7 @@ paths:
       description: Marks a category as archived. Tasks within it remain associated. Cannot archive the default category.
       operationId: archiveSpaceCategory
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: spaceId
           in: path
@@ -596,7 +698,7 @@ paths:
       description: Removes the archived status from a category, making it active again.
       operationId: unarchiveSpaceCategory
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: spaceId
           in: path
@@ -2358,6 +2460,195 @@ paths:
                   type: integer
                   format: int64
       summary: Update Team
+  /teams/{teamId}/requests:
+    post:
+      summary: Request to join a team
+      description: Allows the authenticated user to submit a request to join the specified team.
+      operationId: createTeamJoinRequest
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      requestBody:
+        description: Optional message for the join request.
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamJoinRequestCreate'
+      responses:
+        '201':
+          description: Join request submitted successfully. Returns the created application details.
+          headers:
+            Location:
+              description: URL of the newly created request resource (e.g., /users/me/requests/{requestId})
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      application:
+                        $ref: '#/components/schemas/TeamMembershipApplication'
+                  message:
+                    type: string
+    get:
+      summary: List join requests for a team
+      description: Retrieves a list of join requests directed to the specified team. Requires team admin/owner privileges.
+      operationId: listTeamJoinRequests
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - name: status
+          in: query
+          required: false
+          description: Filter requests by status (e.g., PENDING).
+          schema:
+            $ref: '#/components/schemas/ApplicationStatus'
+        - $ref: '#/components/parameters/PageStart'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: A list of join requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      applications:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TeamMembershipApplication'
+                      page:
+                        $ref: '#/components/schemas/Page'
+                  message:
+                    type: string
+  /teams/{teamId}/requests/{requestId}/approve:
+    post:
+      summary: Approve a join request
+      description: Approves a pending join request for the team. Requires team admin/owner privileges. Creates the team membership upon success.
+      operationId: approveTeamJoinRequest
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '204':
+          description: Request approved successfully and membership created.
+  /teams/{teamId}/requests/{requestId}/reject:
+    post:
+      tags:
+        - Team Requests
+      summary: Reject a join request
+      description: Rejects a pending join request for the team. Requires team admin/owner privileges.
+      operationId: rejectTeamJoinRequest
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '204':
+          description: Request rejected successfully.
+  /teams/{teamId}/invitations:
+    post:
+      summary: Invite a user to the team
+      description: Allows a team admin/owner to invite a user to join the specified team.
+      operationId: createTeamInvitation
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+      requestBody:
+        description: Details of the user to invite and optional role/message.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamInvitationCreate'
+      responses:
+        '201':
+          description: Invitation sent successfully. Returns the created application details.
+          headers:
+            Location:
+              description: URL of the newly created invitation resource (e.g., /users/me/invitations/{invitationId})
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      invitation:
+                        $ref: '#/components/schemas/TeamMembershipApplication'
+                    required: [ invitation ]
+                  message:
+                    type: string
+                required: [ code, data, message ]
+    get:
+      summary: List invitations sent by a team
+      description: Retrieves a list of invitations sent by the specified team. Requires team admin/owner privileges.
+      operationId: listTeamInvitations
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - name: status
+          in: query
+          required: false
+          description: Filter invitations by status (e.g., PENDING).
+          schema:
+            $ref: '#/components/schemas/ApplicationStatus'
+        - $ref: '#/components/parameters/PageStart'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: A list of invitations.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      invitations:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TeamMembershipApplication'
+                      page:
+                        $ref: '#/components/schemas/Page'
+                    required: [ invitations, page ]
+                  message:
+                    type: string
+                required: [ code, data, message ]
+  /teams/{teamId}/invitations/{invitationId}:
+    delete:
+      tags:
+        - Team Invitations
+      summary: Cancel a pending invitation
+      description: Allows the initiator (team admin/owner) to cancel a pending invitation they sent.
+      operationId: cancelTeamInvitation
+      parameters:
+        - $ref: '#/components/parameters/TeamId'
+        - $ref: '#/components/parameters/InvitationId'
+      responses:
+        '204':
+          description: Invitation cancelled successfully.
   /teams/my-teams:
     get:
       responses:
@@ -4472,6 +4763,101 @@ components:
           type: boolean
         role:
           $ref: "#/components/schemas/TeamMemberRoleType"
+    TeamJoinRequestCreate:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Optional message accompanying the join request.
+          example: "Hi, I'd like to join your team because..."
+      additionalProperties: false
+    TeamInvitationCreate:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: The ID of the user to invite.
+          example: 12345
+        role:
+          $ref: '#/components/schemas/TeamMemberRoleType'
+          description: The role to assign to the user upon joining (defaults to MEMBER if not provided).
+        message:
+          type: string
+          description: Optional message accompanying the invitation.
+          example: "We'd love for you to join our project team!"
+      additionalProperties: false
+    TeamMembershipApplication:
+      title: TeamMembershipApplication
+      type: object
+      required:
+        - id
+        - user
+        - team
+        - initiator
+        - type
+        - status
+        - role
+        - message
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the application/invitation.
+          readOnly: true
+        user:
+          $ref: '#/components/schemas/User'
+          description: The user who is the subject of the application (applicant or invitee).
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+          description: The team involved in the application.
+        initiator:
+          $ref: '#/components/schemas/User'
+          description: The user who initiated the application (applicant or inviter).
+        type:
+          $ref: '#/components/schemas/ApplicationType'
+        status:
+          $ref: '#/components/schemas/ApplicationStatus'
+        role:
+          $ref: '#/components/schemas/TeamMemberRoleType'
+          description: The role requested or offered.
+        message:
+          type: string
+          nullable: true
+          description: Message associated with the application.
+        processedBy:
+          $ref: '#/components/schemas/User'
+          nullable: true
+          description: The user who processed the application (approved, rejected, accepted, declined).
+          readOnly: true
+        processedAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: Timestamp when the application was processed.
+          readOnly: true
+        createdAt:
+          type: integer
+          format: int64
+          description: Timestamp when the application was created.
+          readOnly: true
+        updatedAt:
+          type: integer
+          format: int64
+          description: Timestamp when the application was last updated.
+          readOnly: true
+    ApplicationType:
+      type: string
+      enum: [ REQUEST, INVITATION ]
+      description: Type of the membership application. REQUEST = User asks to join. INVITATION = Team asks user to join.
+    ApplicationStatus:
+      type: string
+      enum: [ PENDING, APPROVED, REJECTED, ACCEPTED, DECLINED, CANCELED ] # Removed EXPIRED for simplicity
+      description: Current status of the application. PENDING=Waiting action, APPROVED=Request approved, REJECTED=Request rejected, ACCEPTED=Invitation accepted, DECLINED=Invitation declined, CANCELED=Canceled by initiator.
     TeamMemberRealNameStatus:
       title: TeamMemberRealNameStatus
       type: object
@@ -5590,13 +5976,70 @@ components:
           type: string
         remark:
           type: string
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: The unique identifier of the user.
+      schema:
+        type: integer
+        format: int64
+    TeamId:
+      name: teamId
+      in: path
+      required: true
+      description: The unique identifier of the team.
+      schema:
+        type: integer
+        format: int64
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      description: The unique identifier of the join request.
+      schema:
+        type: integer
+        format: int64
+    InvitationId:
+      name: invitationId
+      in: path
+      required: true
+      description: The unique identifier of the invitation.
+      schema:
+        type: integer
+        format: int64
+    EncodedCursorPageStart:
+      name: pageStart
+      in: query
+      required: false
+      description: The cursor of the first item in the page.
+      schema:
+        type: string
+    PageStart:
+      name: pageStart
+      in: query
+      required: false
+      description: The ID of the first item in the page.
+      schema:
+        type: integer
+        format: int64
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      description: The number of items per page.
+      schema:
+        type: integer
+        format: int64
+        default: 20
+        minimum: 1
+        maximum: 100
   securitySchemes:
-    bearerAuth:
-      description: The access token is used in this way.
-      in: header
-      name: Authorization
-      type: apiKey
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token obtained through login.
 security:
-  - bearerAuth: [ ]
-x-components:
-  parameters: { }
+  - BearerAuth: [ ]
