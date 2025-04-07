@@ -14,7 +14,6 @@ package org.rucca.cheese.task
 import jakarta.servlet.http.HttpServletResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.TasksApi
@@ -107,7 +106,7 @@ class TaskController(
                 queryTopics = queryTopics,
                 queryUserDeadline = queryUserDeadline,
             )
-        val taskDTO = taskService.getTaskDto(taskId, queryOptions)
+        val taskDTO = taskService.getTaskDto(taskId, queryOptions, jwtService.getCurrentUserId())
         val participationInfoDTO =
             taskMembershipService.getUserParticipationInfo(
                 taskId = taskId,
@@ -239,6 +238,7 @@ class TaskController(
             )
         val (taskSummaryDTOs, page) =
             taskService.enumerateTasks(
+                currentUserId = jwtService.getCurrentUserId(),
                 enumerateOptions = enumerateOptions,
                 keywords = keywords,
                 pageSize = pageSize,
@@ -319,7 +319,8 @@ class TaskController(
         if (patchTaskRequestDTO.categoryId != null) {
             taskService.updateTaskCategory(taskId, patchTaskRequestDTO.categoryId)
         }
-        val taskDTO = taskService.getTaskDto(taskId, TaskQueryOptions.MAXIMUM)
+        val taskDTO =
+            taskService.getTaskDto(taskId, TaskQueryOptions.MAXIMUM, jwtService.getCurrentUserId())
         return ResponseEntity.ok(
             PatchTask200ResponseDTO(200, PatchTask200ResponseDataDTO(taskDTO), "OK")
         )
@@ -379,9 +380,9 @@ class TaskController(
         @ResourceId taskId: Long,
         @AuthContext("participantId") participantId: Long,
         version: Int,
-        taskSubmissionContentDTO: Flow<TaskSubmissionContentDTO>,
+        taskSubmissionContentDTO: List<TaskSubmissionContentDTO>,
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
-        val contents = taskSubmissionContentDTO.toList().toEntryList()
+        val contents = taskSubmissionContentDTO.toEntryList()
         val submissions =
             taskSubmissionService.modifySubmission(
                 taskId,
@@ -430,7 +431,8 @@ class TaskController(
                 requireRealName = postTaskRequestDTO.requireRealName ?: false,
             )
         taskTopicsService.updateTaskTopics(taskId, postTaskRequestDTO.topics ?: emptyList())
-        val taskDTO = taskService.getTaskDto(taskId, TaskQueryOptions.MAXIMUM)
+        val taskDTO =
+            taskService.getTaskDto(taskId, TaskQueryOptions.MAXIMUM, jwtService.getCurrentUserId())
         return ResponseEntity.ok(
             PatchTask200ResponseDTO(200, PatchTask200ResponseDataDTO(taskDTO), "OK")
         )
@@ -471,9 +473,9 @@ class TaskController(
     override suspend fun postTaskSubmission(
         @ResourceId taskId: Long,
         @AuthContext("participantId") participantId: Long,
-        taskSubmissionContentDTO: Flow<TaskSubmissionContentDTO>,
+        taskSubmissionContentDTO: List<TaskSubmissionContentDTO>,
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
-        val contents = taskSubmissionContentDTO.toList().toEntryList()
+        val contents = taskSubmissionContentDTO.toEntryList()
         val submissions =
             taskSubmissionService.submitTask(
                 taskId,
@@ -755,7 +757,7 @@ class TaskController(
         @ResourceId taskId: Long,
         filter: String,
     ): ResponseEntity<GetTaskTeams200ResponseDTO> {
-        val teamDTOs = taskService.getTeamsForTask(taskId, filter)
+        val teamDTOs = taskService.getTeamsForTask(jwtService.getCurrentUserId(), taskId, filter)
 
         return ResponseEntity.ok(
             GetTaskTeams200ResponseDTO(

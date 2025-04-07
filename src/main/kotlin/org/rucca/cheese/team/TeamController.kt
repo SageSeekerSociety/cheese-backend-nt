@@ -52,7 +52,7 @@ class TeamController(
     ): ResponseEntity<GetTeam200ResponseDTO> {
         // Service needs to internally get the initiator ID via authenticateService
         teamService.removeTeamMember(teamId, userId /* initiatorId resolved in service */)
-        val teamDTO = teamService.getTeamDto(teamId)
+        val teamDTO = teamService.`getTeamDto`(teamId, jwtService.getCurrentUserId())
         return ResponseEntity.ok(
             GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK")
         )
@@ -60,7 +60,7 @@ class TeamController(
 
     @Auth("team:view:team") // Requires MEMBER role or higher
     override suspend fun getTeam(@ResourceId teamId: Long): ResponseEntity<GetTeam200ResponseDTO> {
-        val teamDTO = teamService.getTeamDto(teamId)
+        val teamDTO = teamService.getTeamDto(teamId, jwtService.getCurrentUserId())
         return ResponseEntity.ok(
             GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK")
         )
@@ -72,7 +72,8 @@ class TeamController(
         pageStart: Long?,
         pageSize: Int,
     ): ResponseEntity<GetTeams200ResponseDTO> {
-        val (teamDTOs, page) = teamService.enumerateTeams(query, pageStart, pageSize)
+        val (teamDTOs, page) =
+            teamService.enumerateTeams(jwtService.getCurrentUserId(), query, pageStart, pageSize)
         return ResponseEntity.ok(
             GetTeams200ResponseDTO(200, GetTeams200ResponseDataDTO(teamDTOs, page), "OK")
         )
@@ -119,7 +120,7 @@ class TeamController(
             teamService.updateTeamDescription(teamId, patchTeamRequestDTO.description)
         if (patchTeamRequestDTO.avatarId != null)
             teamService.updateTeamAvatar(teamId, patchTeamRequestDTO.avatarId)
-        val teamDTO = teamService.getTeamDto(teamId)
+        val teamDTO = teamService.getTeamDto(teamId, jwtService.getCurrentUserId())
         return ResponseEntity.ok(
             GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK")
         )
@@ -148,7 +149,7 @@ class TeamController(
             userId,
             newRole, /* initiatorId resolved in service */
         )
-        val teamDTO = teamService.getTeamDto(teamId)
+        val teamDTO = teamService.getTeamDto(teamId, jwtService.getCurrentUserId())
         return ResponseEntity.ok(
             GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK")
         )
@@ -158,7 +159,6 @@ class TeamController(
     override suspend fun postTeam(
         postTeamRequestDTO: PostTeamRequestDTO
     ): ResponseEntity<GetTeam200ResponseDTO> {
-        // Service needs to internally get the owner ID (current user)
         val teamId =
             teamService.createTeam(
                 name = postTeamRequestDTO.name,
@@ -167,7 +167,7 @@ class TeamController(
                 avatarId = postTeamRequestDTO.avatarId,
                 ownerId = jwtService.getCurrentUserId(),
             )
-        val teamDTO = teamService.getTeamDto(teamId)
+        val teamDTO = teamService.getTeamDto(teamId, jwtService.getCurrentUserId())
         return ResponseEntity.ok(
             GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK")
         )

@@ -77,10 +77,13 @@ class SpaceController(
         queryMyRank: Boolean,
         queryCategories: Boolean,
     ): ResponseEntity<GetSpace200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
         val queryOptions =
             SpaceQueryOptions(queryMyRank = queryMyRank, queryCategories = queryCategories)
         val spaceDTO =
-            withContext(Dispatchers.IO) { spaceService.getSpaceDto(spaceId, queryOptions) }
+            withContext(Dispatchers.IO) {
+                spaceService.getSpaceDto(spaceId, queryOptions, currentUserId)
+            }
         val categories =
             if (queryCategories) {
                 withContext(Dispatchers.IO) {
@@ -102,6 +105,8 @@ class SpaceController(
         sortBy: String,
         sortOrder: String,
     ): ResponseEntity<GetSpaces200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+
         val by =
             when (sortBy) {
                 "updatedAt" -> SpaceService.SpacesSortBy.UPDATED_AT
@@ -117,7 +122,14 @@ class SpaceController(
         val queryOptions = SpaceQueryOptions(queryMyRank = queryMyRank)
         val (spaces, page) =
             withContext(Dispatchers.IO) {
-                spaceService.enumerateSpaces(by, order, pageSize ?: 10, pageStart, queryOptions)
+                spaceService.enumerateSpaces(
+                    currentUserId,
+                    by,
+                    order,
+                    pageSize ?: 10,
+                    pageStart,
+                    queryOptions,
+                )
             }
         return ResponseEntity.ok(
             GetSpaces200ResponseDTO(200, GetSpaces200ResponseDataDTO(spaces, page), "OK")
@@ -129,8 +141,16 @@ class SpaceController(
         @ResourceId spaceId: Long,
         patchSpaceRequestDTO: PatchSpaceRequestDTO,
     ): ResponseEntity<PatchSpace200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+
         val spaceDTO =
-            withContext(Dispatchers.IO) { spaceService.patchSpace(spaceId, patchSpaceRequestDTO) }
+            withContext(Dispatchers.IO) {
+                spaceService.patchSpace(
+                    currentUserId,
+                    spaceId,
+                    patchSpaceRequestDTO,
+                )
+            }
         return ResponseEntity.ok(
             PatchSpace200ResponseDTO(200, PatchSpace200ResponseDataDTO(spaceDTO), "OK")
         )
@@ -142,10 +162,12 @@ class SpaceController(
         userId: Long,
         patchSpaceAdminRequestDTO: PatchSpaceAdminRequestDTO,
     ): ResponseEntity<PatchSpace200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+        val token = jwtService.getToken()
         if (patchSpaceAdminRequestDTO.role != null) {
             when (patchSpaceAdminRequestDTO.role) {
                 SpaceAdminRoleTypeDTO.OWNER -> {
-                    authorizationService.audit("ship-ownership", "space", spaceId)
+                    authorizationService.audit(token, "ship-ownership", "space", spaceId)
                     withContext(Dispatchers.IO) { spaceService.shipSpaceOwnership(spaceId, userId) }
                 }
                 SpaceAdminRoleTypeDTO.ADMIN -> {
@@ -153,7 +175,10 @@ class SpaceController(
                 }
             }
         }
-        val spaceDTO = withContext(Dispatchers.IO) { spaceService.getSpaceDto(spaceId) }
+        val spaceDTO =
+            withContext(Dispatchers.IO) {
+                spaceService.getSpaceDto(spaceId, currentUserId = currentUserId)
+            }
         return ResponseEntity.ok(
             PatchSpace200ResponseDTO(200, PatchSpace200ResponseDataDTO(spaceDTO), "OK")
         )
@@ -163,6 +188,7 @@ class SpaceController(
     override suspend fun postSpace(
         postSpaceRequestDTO: PostSpaceRequestDTO
     ): ResponseEntity<PatchSpace200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
         val spaceDTO =
             withContext(Dispatchers.IO) {
                 spaceService.createSpace(
@@ -170,7 +196,7 @@ class SpaceController(
                     intro = postSpaceRequestDTO.intro,
                     description = postSpaceRequestDTO.description,
                     avatarId = postSpaceRequestDTO.avatarId,
-                    ownerId = jwtService.getCurrentUserId(),
+                    ownerId = currentUserId,
                     enableRank = postSpaceRequestDTO.enableRank ?: false,
                     announcements =
                         postSpaceRequestDTO.announcements.takeUnless { it.isEmpty() } ?: "[]",
@@ -189,12 +215,14 @@ class SpaceController(
         @ResourceId spaceId: Long,
         postSpaceAdminRequestDTO: PostSpaceAdminRequestDTO,
     ): ResponseEntity<PatchSpace200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+        val token = jwtService.getToken()
         withContext(Dispatchers.IO) {
             spaceService.addSpaceAdmin(spaceId, postSpaceAdminRequestDTO.userId)
         }
         when (postSpaceAdminRequestDTO.role) {
             SpaceAdminRoleTypeDTO.OWNER -> {
-                authorizationService.audit("ship-ownership", "space", spaceId)
+                authorizationService.audit(token, "ship-ownership", "space", spaceId)
                 withContext(Dispatchers.IO) {
                     spaceService.shipSpaceOwnership(spaceId, postSpaceAdminRequestDTO.userId)
                 }
@@ -203,7 +231,10 @@ class SpaceController(
                 /* do nothing */
             }
         }
-        val spaceDTO = withContext(Dispatchers.IO) { spaceService.getSpaceDto(spaceId) }
+        val spaceDTO =
+            withContext(Dispatchers.IO) {
+                spaceService.getSpaceDto(spaceId, currentUserId = currentUserId)
+            }
         return ResponseEntity.ok(
             PatchSpace200ResponseDTO(200, PatchSpace200ResponseDataDTO(spaceDTO), "OK")
         )

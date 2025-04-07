@@ -666,7 +666,7 @@ class TaskMembershipService(
         task: Task,
         userId: IdType,
     ): Triple<Boolean, List<TeamSummaryDTO>?, BaseError?> {
-        return when (task.submitterType!!) {
+        return when (task.submitterType) {
             TaskSubmitterType.USER -> {
                 val joinReject = isTaskJoinable(task, userId)
                 Triple(joinReject == null, null, joinReject)

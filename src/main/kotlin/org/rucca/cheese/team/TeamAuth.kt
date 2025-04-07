@@ -188,8 +188,8 @@ class TeamPermissionConfig(
 
             // --- SystemRole.USER Permissions (Any logged-in user) ---
             role(SystemRole.USER) {
-                // Can attempt to create a team
-                can(TeamAction.CREATE)
+                // Can attempt to create a team and view teams publicly
+                can(TeamAction.CREATE, TeamAction.VIEW, TeamAction.ENUMERATE)
                     .on(TeamResource.TEAM)
                     .all() // Service layer might have other limits (e.g., max teams per user)
                 // Can list/search teams (public/all teams endpoint)

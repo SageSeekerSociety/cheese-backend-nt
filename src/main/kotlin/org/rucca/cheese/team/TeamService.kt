@@ -11,6 +11,7 @@ package org.rucca.cheese.team
 
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.Optional
 import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.common.error.ConflictError
 import org.rucca.cheese.common.error.ForbiddenError
@@ -78,10 +79,12 @@ class TeamService(
         return teamUserRelationRepository.countByTeamIdAndDeletedAtIsNull(teamId)
     }
 
-    fun getTeamDto(teamId: IdType): TeamDTO {
+    fun getTeamDto(teamId: IdType, currentUserId: IdType? = null): TeamDTO {
         val team = getTeam(teamId)
-        val currentUserId = authenticateService.getCurrentUserId()
-        val myRoleOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, currentUserId)
+        val myRoleOptional =
+            if (currentUserId != null)
+                teamUserRelationRepository.findByTeamIdAndUserId(teamId, currentUserId)
+            else Optional.empty()
         return TeamDTO(
             id = team.id!!,
             name = team.name!!,
@@ -120,13 +123,14 @@ class TeamService(
     }
 
     fun enumerateTeams(
+        userId: IdType,
         query: String,
         pageStart: IdType?,
         pageSize: Int,
     ): Pair<List<TeamDTO>, PageDTO> {
         val id = query.toLongOrNull()
         if (id != null) {
-            return Pair(listOf(getTeamDto(id)), PageDTO(id, 1, hasMore = false))
+            return Pair(listOf(getTeamDto(id, userId)), PageDTO(id, 1, hasMore = false))
         }
         val criteria = Criteria("name").matches(query)
         val hints =
@@ -143,12 +147,12 @@ class TeamService(
                 { it.id!! },
                 { id -> throw NotFoundError("team", id) },
             )
-        return Pair(teams.map { getTeamDto(it.id!!) }, page)
+        return Pair(teams.map { getTeamDto(it.id!!, userId) }, page)
     }
 
     fun getTeamsOfUser(userId: IdType): List<TeamDTO> {
         val relations = teamUserRelationRepository.findAllByUserId(userId)
-        return relations.map { getTeamDto(it.team!!.id!!) }
+        return relations.map { getTeamDto(it.team!!.id!!, userId) }
     }
 
     fun getTeamsThatUserCanUseToJoinTask(taskId: IdType, userId: IdType): List<TeamSummaryDTO> {

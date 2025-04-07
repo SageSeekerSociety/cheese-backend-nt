@@ -109,12 +109,13 @@ class KnowledgeService(
                     sourceType = sourceType,
                     createdBy = userRepository.getReferenceById(userId.toInt()),
                 )
+                .apply {
+                    labels?.forEach { label ->
+                        this.knowledgeLabels.add(KnowledgeLabelEntity(this, label))
+                    }
+                }
                 .let { knowledgeRepository.save(it) }
 
-        labels?.forEach {
-            val knowledgeLabel = KnowledgeLabelEntity(knowledge = knowledge, label = it)
-            knowledgeLabelRepository.save(knowledgeLabel)
-        }
         return knowledge.toKnowledgeDTO()
     }
 

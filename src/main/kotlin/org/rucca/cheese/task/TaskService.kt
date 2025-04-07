@@ -64,9 +64,13 @@ class TaskService(
     private val taskTopicsService: TaskTopicsService,
     private val taskMembershipService: TaskMembershipService,
 ) {
-    fun getTaskDto(taskId: IdType, options: TaskQueryOptions = TaskQueryOptions.MINIMUM): TaskDTO {
+    fun getTaskDto(
+        taskId: IdType,
+        options: TaskQueryOptions = TaskQueryOptions.MINIMUM,
+        currentUserId: IdType? = null,
+    ): TaskDTO {
         val task = getTask(taskId)
-        return task.toTaskDTO(options)
+        return task.toTaskDTO(options, currentUserId)
     }
 
     fun getTaskOwner(taskId: IdType): IdType {
@@ -129,27 +133,30 @@ class TaskService(
         }
     }
 
-    fun Task.toTaskDTO(options: TaskQueryOptions): TaskDTO {
-        val userId = jwtService.getCurrentUserId()
+    fun Task.toTaskDTO(options: TaskQueryOptions, currentUserId: IdType? = null): TaskDTO {
         val space =
             if (options.querySpace && this.space.id != null)
-                spaceService.getSpaceDto(this.space.id!!)
+                spaceService.getSpaceDto(this.space.id!!, currentUserId = currentUserId)
             else null
         val category =
             if (options.querySpace && this.category.id != null)
                 spaceService.getCategoryDTO(this.space.id!!, this.category.id!!)
             else null
         val joinability =
-            if (options.queryJoinability) taskMembershipService.getJoinability(this, userId)
+            if (options.queryJoinability && currentUserId != null)
+                taskMembershipService.getJoinability(this, currentUserId)
             else null
         val submittability =
-            if (options.querySubmittability) taskMembershipService.getSubmittability(this, userId)
+            if (options.querySubmittability && currentUserId != null)
+                taskMembershipService.getSubmittability(this, currentUserId)
             else Pair(null, null)
         val joined =
-            if (options.queryJoined) taskMembershipService.getJoined(this, userId)
+            if (options.queryJoined && currentUserId != null)
+                taskMembershipService.getJoined(this, currentUserId)
             else Pair(null, null)
         val userDeadline =
-            if (options.queryUserDeadline) taskMembershipService.getUserDeadline(this.id!!, userId)
+            if (options.queryUserDeadline && currentUserId != null)
+                taskMembershipService.getUserDeadline(this.id!!, currentUserId)
             else null
         val topics =
             if (options.queryTopics) taskTopicsService.getTaskTopicDTOs(this.id!!) else null
@@ -238,7 +245,7 @@ class TaskService(
             )
         }
 
-        val spaceEntity = spaceService.getSpaceDto(spaceId)
+        val spaceEntity = spaceService.getSpaceDto(spaceId, currentUserId = creatorId)
 
         val categoryEntity =
             if (categoryId != null) {
@@ -254,7 +261,7 @@ class TaskService(
                 Task(
                     name = name,
                     submitterType = submitterType,
-                    creator = User().apply { id = creatorId.toInt() },
+                    creator = userService.getUserReference(creatorId),
                     deadline = deadline,
                     participantLimit = participantLimit,
                     defaultDeadline = defaultDeadline,
@@ -398,6 +405,7 @@ class TaskService(
     }
 
     fun enumerateTasks(
+        currentUserId: IdType,
         enumerateOptions: TaskEnumerateOptions,
         keywords: String?,
         pageSize: Int,
@@ -408,6 +416,7 @@ class TaskService(
     ): Pair<List<TaskDTO>, PageDTO> {
         if (keywords == null) {
             return enumerateTasksUseDatabase(
+                currentUserId,
                 enumerateOptions,
                 pageSize,
                 pageStart,
@@ -417,6 +426,7 @@ class TaskService(
             )
         } else {
             return enumerateTasksUseElasticSearch(
+                currentUserId,
                 enumerateOptions,
                 keywords,
                 pageSize,
@@ -649,6 +659,7 @@ class TaskService(
     }
 
     fun enumerateTasksUseDatabase(
+        currentUserId: IdType,
         options: TaskEnumerateOptions,
         pageSize: Int,
         pageStart: IdType?,
@@ -665,9 +676,6 @@ class TaskService(
 
         val direction = sortOrder.toJpaDirection()
 
-        // Get current user ID for joined filter
-        val currentUserId = jwtService.getCurrentUserId()
-
         // Create a specification for filtering tasks
         val specification = createTaskSpecification(options, currentUserId)
 
@@ -682,10 +690,14 @@ class TaskService(
         val (content, pageInfo) =
             taskRepository.findAllWithIdCursor(cursorSpec, pageStart, pageSize)
 
-        return Pair(content.map { it.toTaskDTO(queryOptions) }, pageInfo.toPageDTO())
+        return Pair(
+            content.map { it.toTaskDTO(queryOptions, currentUserId = currentUserId) },
+            pageInfo.toPageDTO(),
+        )
     }
 
     fun enumerateTasksUseElasticSearch(
+        currentUserId: IdType,
         options: TaskEnumerateOptions,
         keywords: String,
         pageSize: Int,
@@ -709,8 +721,7 @@ class TaskService(
         if (options.joined != null)
             entities =
                 entities.filter {
-                    taskMembershipService.getJoined(it, jwtService.getCurrentUserId()).first ==
-                        options.joined
+                    taskMembershipService.getJoined(it, currentUserId).first == options.joined
                 }
         if (options.topics != null)
             entities =
@@ -726,7 +737,7 @@ class TaskService(
                 { it.id!! },
                 { id -> throw NotFoundError("task", id) },
             )
-        val dtos = tasks.map { getTaskDto(it.id!!, queryOptions) }
+        val dtos = tasks.map { getTaskDto(it.id!!, queryOptions, currentUserId = currentUserId) }
         return Pair(dtos, page)
     }
 
@@ -754,8 +765,7 @@ class TaskService(
      *   admin teams)
      * @return List of extended team DTOs with real name verification status
      */
-    fun getTeamsForTask(taskId: IdType, filter: String): List<TeamSummaryDTO> {
-        val userId = jwtService.getCurrentUserId()
+    fun getTeamsForTask(userId: IdType, taskId: IdType, filter: String): List<TeamSummaryDTO> {
         val task = getTask(taskId)
 
         // Get teams where the user is admin (team leader)

@@ -17,6 +17,7 @@ import java.time.LocalDateTime
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.BaseEntity
+import org.rucca.cheese.model.TaskSubmitterTypeDTO
 import org.rucca.cheese.space.models.Space
 import org.rucca.cheese.space.models.SpaceCategory
 import org.rucca.cheese.user.User
@@ -24,6 +25,13 @@ import org.rucca.cheese.user.User
 enum class TaskSubmitterType {
     USER,
     TEAM,
+}
+
+fun TaskSubmitterType.toDTO(): TaskSubmitterTypeDTO {
+    return when (this) {
+        TaskSubmitterType.USER -> TaskSubmitterTypeDTO.USER
+        TaskSubmitterType.TEAM -> TaskSubmitterTypeDTO.TEAM
+    }
 }
 
 enum class TaskSubmissionEntryType {

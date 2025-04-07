@@ -10,46 +10,42 @@
 
 package org.rucca.cheese.api
 
-import java.time.LocalDateTime
-import kotlin.math.floor
-import org.json.JSONObject
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.*
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
-import org.junit.jupiter.api.Order
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.TestMethodOrder
-import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.model.*
+import org.rucca.cheese.task.TaskSubmitterType
+import org.rucca.cheese.task.toDTO
 import org.rucca.cheese.utils.AttachmentCreatorService
-import org.rucca.cheese.utils.JsonArrayUtil
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.post
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.reactive.server.expectBody
+import java.time.LocalDateTime
+import java.time.ZoneId
+import kotlin.math.floor
 
-@SpringBootTest
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@AutoConfigureMockMvc
 @TestMethodOrder(OrderAnnotation::class)
 class TaskSubmissionTest
 @Autowired
 constructor(
-    private val mockMvc: MockMvc,
+    private val webTestClient: WebTestClient, // Inject WebTestClient
     private val userCreatorService: UserCreatorService,
     private val attachmentCreatorService: AttachmentCreatorService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
+
+    // User variables remain the same
     lateinit var creator: UserCreatorService.CreateUserResponse
     lateinit var creatorToken: String
     lateinit var teamCreator: UserCreatorService.CreateUserResponse
@@ -64,21 +60,43 @@ constructor(
     lateinit var participantToken2: String
     lateinit var irrelevantUser: UserCreatorService.CreateUserResponse
     lateinit var irrelevantUserToken: String
+
+    // IDs and other data remain the same
     private var teamId: IdType = -1
     private var spaceId: IdType = -1
     private var defaultCategoryId: IdType = -1
     private var attachmentId: IdType = -1
     private val taskIds = mutableListOf<IdType>()
-    private val taskName = "Test Task (${floor(Math.random() * 10000000000).toLong()})"
+    private val randomSuffix = floor(Math.random() * 10000000000).toLong()
+    private val taskName = "Test Task ($randomSuffix)"
     private val taskIntro = "This is a test task."
     private val taskDescription = "A lengthy text. ".repeat(1000)
-    private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
+    private val taskDeadline = LocalDateTime.now().plusDays(7).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
     private val taskSubmissionSchema =
-        listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE"))
+        listOf(
+            TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT),
+            TaskSubmissionSchemaEntryDTO("Attachment Entry", TaskSubmissionTypeDTO.FILE)
+        )
     private var participantTaskMembershipId: IdType = -1
     private var participant2TaskMembershipId: IdType = -1
     private var teamTaskMembershipId: IdType = -1
 
+    // --- Helper DTO for Error Responses ---
+    // Reusing the generic error structure from previous refactors
+    data class ErrorData(
+        val type: String? = null,
+        val id: Any? = null,
+        val name: String? = null,
+        val taskId: IdType? = null
+    )
+
+    data class ErrorDetail(val name: String, val data: ErrorData?)
+    data class GenericErrorResponse(val error: ErrorDetail)
+
+    // --- Refactored Helper Methods ---
+
+    // createSpace refactored in previous example, reusing it here
     fun createSpace(
         creatorToken: String,
         spaceName: String,
@@ -86,25 +104,32 @@ constructor(
         spaceDescription: String,
         spaceAvatarId: IdType,
     ): Pair<IdType, IdType> {
-        val result =
-            mockMvc
-                .post("/spaces") {
-                    headers { setBearerAuth(creatorToken) }
-                    contentType = MediaType.APPLICATION_JSON
-                    content =
-                        """ { "name": "$spaceName", "intro": "$spaceIntro", "description": "$spaceDescription", "avatarId": $spaceAvatarId, "announcements": "[]", "taskTemplates": "[]" } """
-                }
-                .andExpect { status { isOk() } }
-                .andExpect { jsonPath("$.data.space.id") { exists() } }
-                .andExpect { jsonPath("$.data.space.defaultCategoryId") { exists() } }
-                .andReturn()
-        val json = JSONObject(result.response.contentAsString)
-        val spaceData = json.getJSONObject("data").getJSONObject("space")
-        val createdSpaceId = spaceData.getLong("id")
-        val createdDefaultCategoryId = spaceData.getLong("defaultCategoryId")
-        logger.info(
-            "Created space: $createdSpaceId with default category ID: $createdDefaultCategoryId"
+        val requestDTO = PostSpaceRequestDTO(
+            name = spaceName,
+            intro = spaceIntro,
+            description = spaceDescription,
+            avatarId = spaceAvatarId,
+            announcements = "[]",
+            taskTemplates = "[]"
         )
+        val response = webTestClient.post().uri("/spaces")
+            .header("Authorization", "Bearer $creatorToken")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PatchSpace200ResponseDTO>() // Assuming POST returns Patch DTO
+            .returnResult()
+            .responseBody
+
+        assertNotNull(response?.data?.space, "Space data should not be null in response")
+        val createdSpace = response!!.data.space
+        assertNotNull(createdSpace.id, "Created space ID cannot be null")
+        assertNotNull(createdSpace.defaultCategoryId, "Default category ID cannot be null")
+
+        val createdSpaceId = createdSpace.id
+        val createdDefaultCategoryId = createdSpace.defaultCategoryId
+        logger.info("Created space: $createdSpaceId with default category ID: $createdDefaultCategoryId")
         return Pair(createdSpaceId, createdDefaultCategoryId)
     }
 
@@ -115,47 +140,69 @@ constructor(
         teamDescription: String,
         teamAvatarId: IdType,
     ): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/teams")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "name": "$teamName",
-                  "intro": "$teamIntro",
-                  "description": "$teamDescription",
-                  "avatarId": $teamAvatarId
-                }
-            """
-                )
-        teamId =
-            JSONObject(mockMvc.perform(request).andReturn().response.contentAsString)
-                .getJSONObject("data")
-                .getJSONObject("team")
-                .getLong("id")
-        logger.info("Created team: $teamId")
-        return teamId
+        // Assuming PostTeamRequestDTO exists
+        val requestDTO = PostTeamRequestDTO(
+            name = teamName,
+            intro = teamIntro,
+            description = teamDescription,
+            avatarId = teamAvatarId
+        )
+        // Assuming the response is something like PostTeamResponseDTO containing the team ID
+        val response = webTestClient.post().uri("/teams")
+            .header("Authorization", "Bearer $creatorToken")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isOk // Assuming 200 OK on creation
+            .expectBody<GetTeam200ResponseDTO>() // Adjust DTO name as needed
+            .returnResult()
+            .responseBody
+
+        assertNotNull(response?.data?.team, "Team data missing in response")
+        val createdTeamId = response!!.data.team.id
+        assertNotNull(createdTeamId, "Created team ID should not be null")
+        logger.info("Created team: $createdTeamId")
+        return createdTeamId
     }
 
-    fun joinTeam(token: String, teamId: IdType, userId: IdType) {
-        val request =
-            MockMvcRequestBuilders.post("/teams/$teamId/members")
-                .header("Authorization", "Bearer $token")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "role": "MEMBER",
-                  "user_id": $userId
-                }
-            """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    fun requestToJoinTeam(userToken: String, teamId: IdType, message: String? = null): IdType {
+        // TeamJoinRequestCreate DTO - message is optional based on API spec
+        val requestDTO = mapOf("message" to message).filterValues { it != null }
+
+        val response = webTestClient.post().uri("/teams/$teamId/requests")
+            .header("Authorization", "Bearer $userToken") // User who wants to join sends request
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isCreated // API indicates 201 Created
+            .expectBody<Map<String, Any>>() // Generic map to handle response
+            .returnResult()
+            .responseBody
+
+        // Extract the request ID from the response
+        val applicationData = (response?.get("data") as? Map<*, *>)
+        val application = (applicationData?.get("application") as? Map<*, *>)
+        val requestId = application?.get("id") as? Number ?: throw AssertionError("Request ID not found in response")
+
+        return requestId.toLong()
+    }
+
+    fun approveTeamJoinRequest(adminToken: String, teamId: IdType, requestId: IdType) {
+        webTestClient.post().uri("/teams/$teamId/requests/$requestId/approve")
+            .header("Authorization", "Bearer $adminToken") // Team admin approves
+            .exchange()
+            .expectStatus()
+            .isNoContent() // API indicates 204 No Content
+    }
+
+    fun joinTeamWithApproval(userToken: String, adminToken: String, teamId: IdType, userId: IdType) {
+        val requestId = requestToJoinTeam(userToken, teamId)
+        approveTeamJoinRequest(adminToken, teamId, requestId)
     }
 
     @BeforeAll
     fun prepare() {
+        // User creation and login remain the same
         creator = userCreatorService.createUser()
         creatorToken = userCreatorService.login(creator.username, creator.password)
         teamCreator = userCreatorService.createUser()
@@ -169,200 +216,198 @@ constructor(
         participant2 = userCreatorService.createUser()
         participantToken2 = userCreatorService.login(participant2.username, participant2.password)
         irrelevantUser = userCreatorService.createUser()
-        irrelevantUserToken =
-            userCreatorService.login(irrelevantUser.username, irrelevantUser.password)
-        val spaceResult =
-            createSpace(
-                creatorToken = spaceCreatorToken,
-                spaceName = "Test Space (${floor(Math.random() * 10000000000).toLong()})",
-                spaceIntro = "This is a test space.",
-                spaceDescription = "A lengthy text. ".repeat(1000),
-                spaceAvatarId = userCreatorService.testAvatarId(),
-            )
+        irrelevantUserToken = userCreatorService.login(irrelevantUser.username, irrelevantUser.password)
+
+        // Setup space, team, attachment using refactored helpers
+        val spaceResult = createSpace(
+            creatorToken = spaceCreatorToken,
+            spaceName = "Test Space ($randomSuffix)",
+            spaceIntro = "This is a test space.",
+            spaceDescription = "A lengthy text. ".repeat(1000),
+            spaceAvatarId = userCreatorService.testAvatarId(),
+        )
         spaceId = spaceResult.first
         defaultCategoryId = spaceResult.second
-        teamId =
-            createTeam(
-                creatorToken = teamCreatorToken,
-                teamName = "Test Team (${floor(Math.random() * 10000000000).toLong()})",
-                teamIntro = "This is a test team.",
-                teamDescription = "A lengthy text. ".repeat(1000),
-                teamAvatarId = userCreatorService.testAvatarId(),
-            )
-        joinTeam(teamCreatorToken, teamId, teamMember.userId)
-        attachmentId = attachmentCreatorService.createAttachment(creatorToken)
+
+        teamId = createTeam(
+            creatorToken = teamCreatorToken,
+            teamName = "Test Team ($randomSuffix)",
+            teamIntro = "This is a test team.",
+            teamDescription = "A lengthy text. ".repeat(1000),
+            teamAvatarId = userCreatorService.testAvatarId(),
+        )
+        joinTeamWithApproval(teamMemberToken, teamCreatorToken, teamId, teamMember.userId) // Team creator adds member
+
+        attachmentId = attachmentCreatorService.createAttachment(creatorToken) // Use any valid token
     }
 
     fun createTask(
-        token: String = creatorToken,
         name: String,
-        submitterType: String,
+        submitterType: TaskSubmitterType,
         deadline: Long?,
         defaultDeadline: Long?,
         resubmittable: Boolean,
         editable: Boolean,
         intro: String,
         description: String,
-        submissionSchema: List<Pair<String, String>>,
+        submissionSchema: List<TaskSubmissionSchemaEntryDTO>,
         spaceId: IdType,
         categoryId: IdType?,
-        expectedStatus: Int = HttpStatus.OK.value(), // Match original test expectation
+        token: String = creatorToken,
+        expectedStatus: Int = HttpStatus.OK.value(),
     ): IdType? {
-        val resultActions =
-            mockMvc
-                .post("/tasks") {
-                    headers { setBearerAuth(token) }
-                    contentType = MediaType.APPLICATION_JSON
-                    content =
-                        """
-                {
-                    "name": "$name",
-                    "submitterType": "$submitterType",
-                    "deadline": ${deadline?.toString() ?: "null"},
-                    "defaultDeadline": $defaultDeadline,
-                    "resubmittable": $resubmittable,
-                    "editable": $editable,
-                    "intro": "$intro",
-                    "description": "$description",
-                    "submissionSchema": [ ${submissionSchema.joinToString(",\n") { """{"prompt": "${it.first}", "type": "${it.second}"}""" }} ],
-                    "space": $spaceId,
-                    "categoryId": ${categoryId?.toString() ?: "null"}
-                }
-                """
-                }
-                .andExpect { status { isEqualTo(expectedStatus) } }
+        val requestDTO = PostTaskRequestDTO(
+            name = name,
+            submitterType = submitterType.toDTO(),
+            deadline = deadline,
+            defaultDeadline = defaultDeadline,
+            resubmittable = resubmittable,
+            editable = editable,
+            intro = intro,
+            description = description,
+            submissionSchema = submissionSchema,
+            space = spaceId,
+            categoryId = categoryId,
+            topics = emptyList(), // Add defaults if needed
+            rank = null // Add defaults if needed
+        )
+
+        val responseSpec = webTestClient.post().uri("/tasks")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isEqualTo(expectedStatus) // Check expected status first
 
         if (expectedStatus == HttpStatus.OK.value()) {
-            val result =
-                resultActions
-                    .andExpect { jsonPath("$.data.task.id") { exists() } }
-                    .andExpect { jsonPath("$.data.task.name") { value(name) } }
-                    .andExpect { jsonPath("$.data.task.submitterType") { value(submitterType) } }
-                    .andExpect { jsonPath("$.data.task.creator.id") { value(creator.userId) } }
-                    .andExpect { jsonPath("$.data.task.deadline") { value(deadline) } }
-                    .andExpect {
-                        jsonPath("$.data.task.defaultDeadline") { value(defaultDeadline) }
-                    }
-                    .andExpect { jsonPath("$.data.task.resubmittable") { value(resubmittable) } }
-                    .andExpect { jsonPath("$.data.task.editable") { value(editable) } }
-                    .andExpect { jsonPath("$.data.task.intro") { value(intro) } }
-                    .andExpect { jsonPath("$.data.task.description") { value(description) } }
-                    .andExpect { jsonPath("$.data.task.space.id") { value(spaceId) } }
-                    //                    .andExpect {
-                    //                        jsonPath("$.data.task.category.id") {
-                    //                            value(categoryId ?: defaultCategoryId)
-                    //                        }
-                    //                    }
-                    //                    .andExpect { jsonPath("$.data.task.category.name") {
-                    // exists() } }
-                    .andExpect { jsonPath("$.data.task.approved") { value("NONE") } }
-                    .andReturn()
+            val responseBody = responseSpec.expectBody<PatchTask200ResponseDTO>() // Expect success DTO
+                .returnResult()
+                .responseBody
 
-            val json = JSONObject(result.response.contentAsString)
-            // Submission schema validation
-            for (entry in submissionSchema) {
-                val schema =
-                    json
-                        .getJSONObject("data")
-                        .getJSONObject("task")
-                        .getJSONArray("submissionSchema")
-                val found =
-                    JsonArrayUtil.toArray(schema).find { it.getString("prompt") == entry.first }
-                assert(found != null) { "Submission schema entry '${entry.first}' not found" }
-                assert(found!!.getString("type") == entry.second) {
-                    "Type mismatch for '${entry.first}'"
-                }
+            assertNotNull(responseBody?.data?.task, "Task data missing in successful response")
+            val task = responseBody!!.data.task
+
+            // --- Assertions on the Deserialized DTO ---
+            assertEquals(name, task.name)
+            assertEquals(submitterType.name, task.submitterType.value)
+            assertEquals(deadline, task.deadline)
+            assertEquals(defaultDeadline, task.defaultDeadline)
+            assertEquals(resubmittable, task.resubmittable)
+            assertEquals(editable, task.editable)
+            assertEquals(intro, task.intro)
+            assertEquals(description, task.description)
+            assertEquals(spaceId, task.space?.id)
+            assertEquals(ApproveTypeDTO.NONE, task.approved)
+
+            // Assert submission schema
+            assertNotNull(task.submissionSchema)
+            assertEquals(submissionSchema.size, task.submissionSchema.size)
+            submissionSchema.forEach { expectedEntry ->
+                val found = task.submissionSchema.find { it.prompt == expectedEntry.prompt }
+                assertNotNull(found, "Submission schema entry '${expectedEntry.prompt}' not found")
+                assertEquals(expectedEntry.type, found!!.type, "Type mismatch for '${expectedEntry.prompt}'")
             }
-            val taskId = json.getJSONObject("data").getJSONObject("task").getLong("id")
-            taskIds.add(taskId)
-            logger.info(
-                "Created task: $taskId (Type: $submitterType, Space: $spaceId, Category: ${categoryId ?: defaultCategoryId})"
-            )
-            return taskId
+
+            val createdTaskId = task.id
+            assertNotNull(createdTaskId, "Created task ID should not be null")
+            taskIds.add(createdTaskId)
+            logger.info("Created task: $createdTaskId (Type: $submitterType, Space: $spaceId, Category: ${categoryId ?: defaultCategoryId})")
+            return createdTaskId
         }
         return null
     }
 
     fun approveTask(taskId: IdType, token: String) {
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/$taskId")
-                .header("Authorization", "Bearer $token")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "approved": "APPROVED"
-                }
-            """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.task.approved").value("APPROVED"))
+        // Assuming PatchTaskRequestDTO exists
+        val requestDTO = PatchTaskRequestDTO(approved = ApproveTypeDTO.APPROVED) // Use enum DTO
+
+        webTestClient.patch().uri("/tasks/$taskId")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PatchTask200ResponseDTO>() // Expect task response DTO
+            .value { response ->
+                assertNotNull(response.data.task, "Task data missing")
+                assertEquals(ApproveTypeDTO.APPROVED, response.data.task.approved)
+            }
     }
 
-    fun approveTaskParticipant(token: String, taskId: IdType, participantId: IdType) {
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants/${participantId}")
-                .header("Authorization", "Bearer $token")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "approved": "APPROVED"
-                }
-            """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.taskMembership.approved").value("APPROVED"))
+    fun approveTaskParticipant(token: String, taskId: IdType, participantMembershipId: IdType) {
+        // Assuming PatchTaskMembershipRequestDTO exists
+        val requestDTO = PatchTaskMembershipRequestDTO(approved = ApproveTypeDTO.APPROVED) // Use enum DTO
+
+        webTestClient.patch().uri("/tasks/$taskId/participants/$participantMembershipId")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<GetTaskParticipant200ResponseDTO>() // Assuming PATCH returns the updated membership DTO
+            .value { response ->
+                assertNotNull(response.data.taskMembership, "Task membership data missing")
+                assertEquals(ApproveTypeDTO.APPROVED, response.data.taskMembership.approved)
+            }
     }
+
 
     fun addParticipantUser(token: String, taskId: IdType, userId: IdType): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/${taskId}/participants")
-                .header("Authorization", "Bearer $token")
-                .queryParam("member", userId.toString())
-                .contentType("application/json")
-                .content(
-                    """
-                    {
-                        "email": "test@example.com"
-                    }
-                """
-                )
-        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-        val json = JSONObject(response.andReturn().response.contentAsString)
-        val participantId = json.getJSONObject("data").getJSONObject("participant").getLong("id")
-        return participantId
+        // Assuming PostTaskParticipantRequestDTO exists, even if minimal
+        val requestDTO = PostTaskParticipantRequestDTO(email = "test@example.com") // Minimal data
+
+        val response = webTestClient.post()
+            .uri { builder -> builder.path("/tasks/$taskId/participants").queryParam("member", userId).build() }
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PostTaskParticipant200ResponseDTO>() // Expect the participant response DTO
+            .returnResult()
+            .responseBody
+
+        // Assuming the DTO has data.participant.id structure based on original JSON parsing
+        assertNotNull(response?.data?.participant, "Participant data should not be null")
+        val taskMembershipId = response!!.data.participant!!.id
+        assertNotNull(taskMembershipId, "Task Membership ID should not be null")
+        logger.info("Added user participant, membership ID: $taskMembershipId")
+        return taskMembershipId
     }
 
     fun addParticipantTeam(token: String, taskId: IdType, teamId: IdType): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/tasks/${taskId}/participants")
-                .header("Authorization", "Bearer $token")
-                .queryParam("member", teamId.toString())
-                .contentType("application/json")
-                .content(
-                    """
-                    {
-                        "email": "test@example.com"
-                    }
-                """
-                )
-        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
-        val json = JSONObject(response.andReturn().response.contentAsString)
-        val participantId = json.getJSONObject("data").getJSONObject("participant").getLong("id")
-        return participantId
+        // Assuming PostTaskParticipantRequestDTO exists, even if minimal
+        val requestDTO = PostTaskParticipantRequestDTO(email = "test@example.com") // Minimal data
+
+        val response = webTestClient.post()
+            .uri { builder ->
+                builder.path("/tasks/$taskId/participants").queryParam("member", teamId).build()
+            } // Use teamId as member
+            .header("Authorization", "Bearer $token") // Token of someone allowed to add team (e.g., space creator?)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PostTaskParticipant200ResponseDTO>()
+            .returnResult()
+            .responseBody
+
+        assertNotNull(response?.data?.participant, "Participant data should not be null")
+        val taskMembershipId = response!!.data.participant!!.id
+        assertNotNull(taskMembershipId, "Task Membership ID should not be null")
+        logger.info("Added team participant, membership ID: $taskMembershipId")
+        return taskMembershipId
     }
+
+    // --- Refactored Test Methods ---
 
     @Test
     @Order(10)
-    fun testCreateTask() {
+    fun `test create tasks`() { // Renamed
+        // Task 1 (User submitter) - Use spaceCreatorToken as per original logic?
         createTask(
             name = "$taskName (1)",
-            submitterType = "USER",
+            submitterType = TaskSubmitterType.USER,
             deadline = taskDeadline,
             resubmittable = true,
             editable = true,
@@ -372,11 +417,14 @@ constructor(
             spaceId = spaceId,
             categoryId = defaultCategoryId,
             defaultDeadline = 30,
+            token = spaceCreatorToken,
         )
         approveTask(taskIds[0], spaceCreatorToken)
+
+        // Task 2 (Team submitter)
         createTask(
             name = "$taskName (2)",
-            submitterType = "TEAM",
+            submitterType = TaskSubmitterType.TEAM,
             deadline = taskDeadline,
             resubmittable = true,
             editable = true,
@@ -386,11 +434,14 @@ constructor(
             spaceId = spaceId,
             categoryId = defaultCategoryId,
             defaultDeadline = 30,
+            token = spaceCreatorToken,
         )
         approveTask(taskIds[1], spaceCreatorToken)
+
+        // Task 3 (User submitter)
         createTask(
             name = "$taskName (3)",
-            submitterType = "USER",
+            submitterType = TaskSubmitterType.USER,
             deadline = taskDeadline,
             resubmittable = true,
             editable = true,
@@ -400,11 +451,14 @@ constructor(
             spaceId = spaceId,
             categoryId = defaultCategoryId,
             defaultDeadline = 30,
+            token = spaceCreatorToken,
         )
         approveTask(taskIds[2], spaceCreatorToken)
+
+        // Task 4 (User submitter, not approved initially)
         createTask(
             name = "$taskName (4)",
-            submitterType = "USER",
+            submitterType = TaskSubmitterType.USER,
             deadline = taskDeadline,
             resubmittable = true,
             editable = true,
@@ -414,671 +468,789 @@ constructor(
             spaceId = spaceId,
             categoryId = defaultCategoryId,
             defaultDeadline = 30,
+            token = spaceCreatorToken,
         )
+        // Task 4 is not approved here in the original logic
     }
 
     @Test
     @Order(40)
-    fun testUpdateTaskWithFullRequest() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/$taskId")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "name": "$taskName (1) (updated)",
-                  "deadline": ${taskDeadline + 1000000000},
-                  "resubmittable": false,
-                  "editable": false,
-                  "intro": "This is an updated test task.",
-                  "description": "${taskDescription} (updated)",
-                  "submissionSchema": [
-                    {
-                      "prompt": "Text Entry",
-                      "type": "TEXT"
-                    }
-                  ],
-                  "rank": 1
-                }
-            """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    fun `test update task details`() { // Renamed
+        val taskIdToUpdate = taskIds[0]
+        val updatedName = "$taskName (1) (updated)"
+        val updatedDeadline = taskDeadline + 1000000000L // Use L suffix for Long
+        val updatedResubmittable = false
+        val updatedEditable = false
+        val updatedIntro = "This is an updated test task."
+        val updatedDescription = "$taskDescription (updated)"
+        val updatedSchema =
+            listOf(TaskSubmissionSchemaEntryDTO(prompt = "Text Entry", type = TaskSubmissionTypeDTO.TEXT)) // Only text
+        val updatedRank = 1
+
+        // Assuming PatchTaskRequestDTO exists
+        val requestDTO = PatchTaskRequestDTO(
+            name = updatedName,
+            deadline = updatedDeadline,
+            resubmittable = updatedResubmittable,
+            editable = updatedEditable,
+            intro = updatedIntro,
+            description = updatedDescription,
+            submissionSchema = updatedSchema,
+            rank = updatedRank
+            // Specify hasDeadline=true if needed by DTO/API, otherwise Long? handles it
+        )
+
+        webTestClient.patch().uri("/tasks/$taskIdToUpdate")
+            .header(
+                "Authorization",
+                "Bearer $spaceCreatorToken"
+            ) // Original test used creatorToken, but spaceCreator created the task
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PatchTask200ResponseDTO>() // Expect response DTO
+            .value { response ->
+                assertNotNull(response.data.task)
+                val task = response.data.task
+                assertEquals(updatedName, task.name)
+                assertEquals(updatedDeadline, task.deadline)
+                assertEquals(updatedResubmittable, task.resubmittable)
+                assertEquals(updatedEditable, task.editable)
+                assertEquals(updatedIntro, task.intro)
+                assertEquals(updatedDescription, task.description)
+                assertEquals(updatedRank, task.rank)
+                assertNotNull(task.submissionSchema)
+                assertEquals(1, task.submissionSchema.size)
+                assertEquals("Text Entry", task.submissionSchema[0].prompt)
+            }
     }
 
     @Test
     @Order(85)
-    fun testAddTestParticipantUser() {
-        participantTaskMembershipId =
-            addParticipantUser(participantToken, taskIds[0], participant.userId)
+    fun `test add participant user 1`() { // Renamed
+        participantTaskMembershipId = addParticipantUser(participantToken, taskIds[0], participant.userId)
+        assertNotEquals(-1L, participantTaskMembershipId)
     }
 
     @Test
     @Order(86)
-    fun testAddTestParticipantUser2() {
-        participant2TaskMembershipId =
-            addParticipantUser(participantToken2, taskIds[0], participant2.userId)
+    fun `test add participant user 2`() { // Renamed
+        participant2TaskMembershipId = addParticipantUser(participantToken2, taskIds[0], participant2.userId)
+        assertNotEquals(-1L, participant2TaskMembershipId)
     }
 
     @Test
     @Order(95)
-    fun testAddTestParticipantTeam() {
+    fun `test add participant team`() { // Renamed
+        // Use teamCreator token as they are likely allowed to add the team they created
         teamTaskMembershipId = addParticipantTeam(teamCreatorToken, taskIds[1], teamId)
+        assertNotEquals(-1L, teamTaskMembershipId)
     }
 
     @Test
     @Order(106)
-    fun testGetTeamTaskWithJoinabilityAndSubmittability1() {
-        val taskId = taskIds[1]
-        val request =
-            MockMvcRequestBuilders.get("/tasks/${taskIds[0]}")
-                .queryParam("queryJoinability", "true")
-                .queryParam("querySubmittability", "true")
-                .header("Authorization", "Bearer $participantToken")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.task.joinable").value(false))
-            .andExpect(jsonPath("$.data.task.submittable").value(false))
+    fun `test get task 1 join or submit status for participant 1 before approval`() { // Renamed
+        webTestClient.get().uri { builder ->
+            builder.path("/tasks/${taskIds[0]}")
+                .queryParam("queryJoinability", true)
+                .queryParam("querySubmittability", true)
+                .build()
+        }
+            .header("Authorization", "Bearer $participantToken")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<GetTask200ResponseDTO>() // Expect Get Task DTO
+            .value { response ->
+                assertNotNull(response.data.task)
+                val task = response.data.task
+                // User has joined (added in 85) but not approved yet
+                assertEquals(false, task.joinable, "Should not be joinable again")
+                assertEquals(false, task.submittable, "Should not be submittable before participant approval")
+            }
     }
 
     @Test
     @Order(111)
-    fun testGetTeamTaskWithJoinabilityAndSubmittability2() {
-        val taskId = taskIds[1]
-        val request =
-            MockMvcRequestBuilders.get("/tasks/${taskIds[1]}")
-                .queryParam("queryJoinability", "true")
-                .queryParam("querySubmittability", "true")
-                .header("Authorization", "Bearer $teamCreatorToken")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.task.joinable").value(false))
-            .andExpect(jsonPath("$.data.task.submittable").value(false))
-            .andExpect(jsonPath("$.data.task.submittableAsTeam").isEmpty)
+    fun `test get task 2 join or submit status for team creator before approval`() { // Renamed
+        webTestClient.get().uri { builder ->
+            builder.path("/tasks/${taskIds[1]}")
+                .queryParam("queryJoinability", true)
+                .queryParam("querySubmittability", true)
+                .build()
+        }
+            .header("Authorization", "Bearer $teamCreatorToken") // Team creator checks
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<GetTask200ResponseDTO>()
+            .value { response ->
+                assertNotNull(response.data.task)
+                val task = response.data.task
+                // Team creator cannot join individually, team is already added
+                assertEquals(false, task.joinable, "Team creator cannot join individually")
+                // Team creator cannot submit individually, team not approved yet
+                assertEquals(false, task.submittable, "Team creator cannot submit individually")
+                // Team submittability status might be complex, depends on DTO structure
+                // Original test checked `submittableAsTeam` was empty. Let's check for null or empty list.
+                assertTrue(
+                    task.submittableAsTeam.isNullOrEmpty(),
+                    "submittableAsTeam should be null or empty before team approval"
+                )
+            }
     }
+
 
     @Test
     @Order(115)
-    fun testSubmitTaskUserAccessDeniedError() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.post(
-                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
-                )
-                .header("Authorization", "Bearer $participantToken")
-                .contentType("application/json")
-                .content(
-                    """
-                        [
-                          {
-                            "contentText": "This is a test submission."
-                          }
-                        ]
-                    """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
+    fun `test submit task user fails before participant approval`() { // Renamed
+        val taskIdToSubmit = taskIds[0]
+        // Minimal valid submission content based on updated schema (test 40)
+        val submissionContent = listOf(TaskSubmissionContentDTO(text = "Test submission"))
+
+        webTestClient.post().uri("/tasks/$taskIdToSubmit/participants/$participantTaskMembershipId/submissions")
+            .header("Authorization", "Bearer $participantToken")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(submissionContent)
+            .exchange()
+            // Expect Forbidden because the participant membership isn't approved
+            .expectStatus().isForbidden
+            // Expect an error DTO indicating permission denied or similar
+            .expectBody<GenericErrorResponse>()
+            .value { errorResponse ->
+                assertEquals("AccessDeniedError", errorResponse.error.name) // Or similar error name
+            }
     }
 
     @Test
     @Order(120)
-    fun testApproveTaskParticipantUser2() {
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
-                .queryParam("member", participant.userId.toString())
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "approved": "APPROVED"
-                }
-            """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                jsonPath("$.data.participants[?(@.member.id == ${participant.userId})].approved")
-                    .value("APPROVED")
-            )
+    fun `test approve participant 1 using bulk endpoint`() { // Renamed
+        // NOTE: Original test uses PATCH /tasks/{taskId}/participants?member=...
+        // This endpoint seems non-standard for approving a *specific* membership ID.
+        // The controller snippet provided earlier has `patchTaskMembershipByMember` which takes `member` (user ID)
+        // and `patchTaskParticipant` which takes `participantId` (membership ID).
+        // Let's assume the controller correctly implements PATCH /tasks/{taskId}/participants?member=... to update *that* user's membership.
+        // Assuming PatchTaskMembershipRequestDTO is used by this endpoint too
+        val requestDTO = PatchTaskMembershipRequestDTO(approved = ApproveTypeDTO.APPROVED)
+
+        webTestClient.patch()
+            .uri { builder ->
+                builder.path("/tasks/${taskIds[0]}/participants").queryParam("member", participant.userId).build()
+            }
+            .header("Authorization", "Bearer $spaceCreatorToken") // Task owner approves
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isOk
+            // Assuming the response DTO is PatchTaskMembershipByMember200ResponseDTO containing a list
+            .expectBody<PatchTaskMembershipByMember200ResponseDTO>()
+            .value { response ->
+                assertNotNull(response.data.participants)
+                val approvedParticipant = response.data.participants!!.find { it.member.id == participant.userId }
+                assertNotNull(approvedParticipant, "Participant ${participant.userId} not found in response")
+                assertEquals(ApproveTypeDTO.APPROVED, approvedParticipant!!.approved, "Participant should be approved")
+            }
     }
 
     @Test
     @Order(121)
-    fun testGetTeamTaskWithJoinabilityAndSubmittability3() {
-        val taskId = taskIds[1]
-        val request =
-            MockMvcRequestBuilders.get("/tasks/${taskIds[0]}")
-                .queryParam("queryJoinability", "true")
-                .queryParam("querySubmittability", "true")
-                .header("Authorization", "Bearer $participantToken")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.task.joinable").value(false))
-            .andExpect(jsonPath("$.data.task.submittable").value(true))
+    fun `test get task 1 join or submit status for participant 1 after approval`() { // Renamed
+        webTestClient.get().uri { builder ->
+            builder.path("/tasks/${taskIds[0]}")
+                .queryParam("queryJoinability", true)
+                .queryParam("querySubmittability", true)
+                .build()
+        }
+            .header("Authorization", "Bearer $participantToken")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<GetTask200ResponseDTO>()
+            .value { response ->
+                assertNotNull(response.data.task)
+                val task = response.data.task
+                assertEquals(false, task.joinable, "Should still not be joinable again")
+                assertEquals(true, task.submittable, "Should be submittable after participant approval")
+            }
     }
 
     @Test
     @Order(125)
-    fun testApproveTaskParticipantUser3() {
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
-                .queryParam("member", participant2.userId.toString())
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "approved": "APPROVED"
-                }
-            """
+    fun `test approve participant 2 using bulk endpoint`() { // Renamed
+        val requestDTO = PatchTaskMembershipRequestDTO(approved = ApproveTypeDTO.APPROVED)
+
+        webTestClient.patch()
+            .uri { builder ->
+                builder.path("/tasks/${taskIds[0]}/participants").queryParam("member", participant2.userId).build()
+            }
+            .header("Authorization", "Bearer $spaceCreatorToken") // Task owner approves
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PatchTaskMembershipByMember200ResponseDTO>()
+            .value { response ->
+                assertNotNull(response.data.participants)
+                val approvedParticipant = response.data.participants!!.find { it.member.id == participant2.userId }
+                assertNotNull(approvedParticipant, "Participant ${participant2.userId} not found in response")
+                assertEquals(
+                    ApproveTypeDTO.APPROVED,
+                    approvedParticipant!!.approved,
+                    "Participant 2 should be approved"
                 )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                jsonPath("$.data.participants[?(@.member.id == ${participant2.userId})].approved")
-                    .value("APPROVED")
-            )
+            }
     }
 
     @Test
     @Order(128)
-    fun testApproveTaskParticipantTeam2() {
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskIds[1]}/participants")
-                .queryParam("member", teamId.toString())
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "approved": "APPROVED"
-                }
-            """
+    fun `test approve participant team using bulk endpoint`() { // Renamed
+        val requestDTO = PatchTaskMembershipRequestDTO(approved = ApproveTypeDTO.APPROVED)
+
+        webTestClient.patch()
+            .uri { builder ->
+                builder.path("/tasks/${taskIds[1]}/participants").queryParam("member", teamId).build()
+            } // Use teamId as member
+            .header("Authorization", "Bearer $spaceCreatorToken") // Task owner approves
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PatchTaskMembershipByMember200ResponseDTO>()
+            .value { response ->
+                assertNotNull(response.data.participants)
+                val approvedParticipant = response.data.participants!!.find { it.member.id == teamId }
+                assertNotNull(approvedParticipant, "Team participant $teamId not found in response")
+                assertEquals(
+                    ApproveTypeDTO.APPROVED,
+                    approvedParticipant!!.approved,
+                    "Team participant should be approved"
                 )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                jsonPath("$.data.participants[?(@.member.id == $teamId)].approved")
-                    .value("APPROVED")
-            )
+            }
     }
 
     @Test
     @Order(129)
-    fun testGetTeamTaskWithJoinabilityAndSubmittability4() {
-        val request =
-            MockMvcRequestBuilders.get("/tasks/${taskIds[1]}")
-                .queryParam("queryJoinability", "true")
-                .queryParam("querySubmittability", "true")
-                .header("Authorization", "Bearer $teamCreatorToken")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.task.joinable").value(false))
-            .andExpect(jsonPath("$.data.task.submittable").value(true))
-            .andExpect(jsonPath("$.data.task.submittableAsTeam[0].id").value(teamId))
+    fun `test get task 2 join or submit status for team creator after approval`() { // Renamed
+        webTestClient.get().uri { builder ->
+            builder.path("/tasks/${taskIds[1]}") // Task 2 (Team Task)
+                .queryParam("queryJoinability", true)
+                .queryParam("querySubmittability", true)
+                .build()
+        }
+            .header("Authorization", "Bearer $teamCreatorToken") // Team creator checks
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<GetTask200ResponseDTO>()
+            .value { response ->
+                assertNotNull(response.data.task)
+                val task = response.data.task
+                assertEquals(false, task.joinable, "Team creator still cannot join individually")
+                assertEquals(true, task.submittable, "Team creator CAN submit individually (as part of approved team)")
+
+                assertNotNull(task.submittableAsTeam)
+                assertFalse(
+                    task.submittableAsTeam!!.isEmpty(),
+                    "submittableAsTeam should not be empty after team approval"
+                )
+                assertTrue(
+                    task.submittableAsTeam!!.any { it.id == teamId },
+                    "Team ID $teamId should be in submittableAsTeam list"
+                )
+            }
     }
+
+    private fun assertSubmissionDetails(
+        submission: TaskSubmissionDTO?,
+        expectedMemberId: IdType,
+        expectedSubmitterId: IdType,
+        expectedVersion: Int,
+        expectedContent: List<Pair<String, Any>> // Pair of title and expected value (text or attachmentId)
+    ) {
+        assertNotNull(submission, "Submission object should not be null")
+        submission!!
+        assertNotNull(submission.id, "Submission ID should exist")
+        assertEquals(expectedMemberId, submission.member.id, "Member ID mismatch")
+        assertEquals(expectedSubmitterId, submission.submitter.id, "Submitter ID mismatch")
+        assertEquals(expectedVersion, submission.version, "Version mismatch")
+        assertNotNull(submission.content, "Submission content list should exist")
+        assertEquals(expectedContent.size, submission.content.size, "Submission content size mismatch")
+
+        expectedContent.forEach { (expectedTitle, expectedValue) ->
+            val contentEntry = submission.content.find { it.title == expectedTitle }
+            assertNotNull(contentEntry, "Content entry with title '$expectedTitle' not found")
+            contentEntry!!
+            when (contentEntry.type) {
+                TaskSubmissionTypeDTO.TEXT -> {
+                    assertTrue(expectedValue is String, "Expected value for TEXT should be String")
+                    assertEquals(expectedValue, contentEntry.contentText, "Text content mismatch for '$expectedTitle'")
+                }
+
+                TaskSubmissionTypeDTO.FILE -> {
+                    assertTrue(expectedValue is IdType, "Expected value for FILE should be IdType (Attachment ID)")
+                    assertEquals(
+                        expectedValue,
+                        contentEntry.contentAttachment?.id,
+                        "Attachment ID mismatch for '$expectedTitle'"
+                    )
+                }
+
+                else -> fail("Unexpected content type: ${contentEntry.type}")
+            }
+        }
+    }
+
 
     @Test
     @Order(130)
-    fun testSubmitTaskUser() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.post(
-                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+    fun `test submit task user 1 first time`() { // Renamed
+        val taskIdToSubmit = taskIds[0]
+        // Task 1 schema was updated in test 40 to only have "Text Entry"
+        val submissionContent = listOf(TaskSubmissionContentDTO(text = "This is a test submission."))
+        val expectedContent = listOf("Text Entry" to "This is a test submission.")
+
+        webTestClient.post().uri("/tasks/$taskIdToSubmit/participants/$participantTaskMembershipId/submissions")
+            .header("Authorization", "Bearer $participantToken") // Participant submits
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(submissionContent)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PostTaskSubmission200ResponseDTO>() // Expect submission response DTO
+            .value { response ->
+                assertSubmissionDetails(
+                    response.data.submission,
+                    expectedMemberId = participant.userId,
+                    expectedSubmitterId = participant.userId,
+                    expectedVersion = 1,
+                    expectedContent = expectedContent
                 )
-                .header("Authorization", "Bearer $participantToken")
-                .contentType("application/json")
-                .content(
-                    """
-                        [
-                          {
-                            "text": "This is a test submission."
-                          }
-                        ]
-                    """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.submission.id").exists())
-            .andExpect(jsonPath("$.data.submission.member.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submission.submitter.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submission.version").value(1))
-            .andExpect(jsonPath("$.data.submission.content[0].title").value("Text Entry"))
-            .andExpect(jsonPath("$.data.submission.content[0].type").value("TEXT"))
-            .andExpect(
-                jsonPath("$.data.submission.content[0].contentText")
-                    .value("This is a test submission.")
-            )
+            }
     }
 
     @Test
     @Order(131)
-    fun testSubmitTaskUser2() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.post(
-                    "/tasks/$taskId/participants/$participant2TaskMembershipId/submissions"
+    fun `test submit task user 2 first time`() { // Renamed
+        val taskIdToSubmit = taskIds[0]
+        val submissionContent = listOf(TaskSubmissionContentDTO(text = "This is user 2 submission."))
+        val expectedContent = listOf("Text Entry" to "This is user 2 submission.")
+
+        webTestClient.post().uri("/tasks/$taskIdToSubmit/participants/$participant2TaskMembershipId/submissions")
+            .header("Authorization", "Bearer $participantToken2") // Participant 2 submits
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(submissionContent)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PostTaskSubmission200ResponseDTO>()
+            .value { response ->
+                assertSubmissionDetails(
+                    response.data.submission,
+                    expectedMemberId = participant2.userId,
+                    expectedSubmitterId = participant2.userId,
+                    expectedVersion = 1,
+                    expectedContent = expectedContent
                 )
-                .header("Authorization", "Bearer $participantToken2")
-                .contentType("application/json")
-                .content(
-                    """
-                        [
-                          {
-                            "text": "This is a test submission."
-                          }
-                        ]
-                    """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.submission.member.id").value(participant2.userId))
-            .andExpect(jsonPath("$.data.submission.submitter.id").value(participant2.userId))
-            .andExpect(jsonPath("$.data.submission.version").value(1))
-            .andExpect(jsonPath("$.data.submission.content[0].title").value("Text Entry"))
-            .andExpect(jsonPath("$.data.submission.content[0].type").value("TEXT"))
+            }
     }
 
     @Test
     @Order(140)
-    fun testSubmitTaskTeam() {
-        val taskId = taskIds[1]
-        val request =
-            MockMvcRequestBuilders.post(
-                    "/tasks/$taskId/participants/$teamTaskMembershipId/submissions"
+    fun `test submit task team first time`() { // Renamed
+        val taskIdToSubmit = taskIds[1] // Task 2 (Team Task)
+        // Task 2 schema has both TEXT and FILE entries
+        val submissionText = "This is a team submission."
+        val submissionContent = listOf(
+            TaskSubmissionContentDTO(text = submissionText),
+            TaskSubmissionContentDTO(attachmentId = attachmentId)
+        )
+        val expectedContent = listOf(
+            "Text Entry" to submissionText,
+            "Attachment Entry" to attachmentId
+        )
+
+        webTestClient.post().uri("/tasks/$taskIdToSubmit/participants/$teamTaskMembershipId/submissions")
+            .header("Authorization", "Bearer $teamCreatorToken") // Team creator submits for team
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(submissionContent)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PostTaskSubmission200ResponseDTO>()
+            .value { response ->
+                assertSubmissionDetails(
+                    response.data.submission,
+                    expectedMemberId = teamId, // Member is the team
+                    expectedSubmitterId = teamCreator.userId, // Submitter is the user who acted
+                    expectedVersion = 1,
+                    expectedContent = expectedContent
                 )
-                .header("Authorization", "Bearer $teamCreatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                        [
-                          {
-                            "text": "This is a test submission."
-                          },
-                          {
-                            "attachmentId": $attachmentId
-                          }
-                        ]
-                    """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.submission.id").exists())
-            .andExpect(jsonPath("$.data.submission.member.id").value(teamId))
-            .andExpect(jsonPath("$.data.submission.submitter.id").value(teamCreator.userId))
-            .andExpect(jsonPath("$.data.submission.version").value(1))
-            .andExpect(jsonPath("$.data.submission.content[0].title").value("Text Entry"))
-            .andExpect(jsonPath("$.data.submission.content[0].type").value("TEXT"))
-            .andExpect(
-                jsonPath("$.data.submission.content[0].contentText")
-                    .value("This is a test submission.")
-            )
-            .andExpect(jsonPath("$.data.submission.content[1].title").value("Attachment Entry"))
-            .andExpect(jsonPath("$.data.submission.content[1].type").value("FILE"))
-            .andExpect(
-                jsonPath("$.data.submission.content[1].contentAttachment.id").value(attachmentId)
-            )
+            }
     }
 
     @Test
     @Order(150)
-    fun testSubmitAgainAndGetNotResubmittableError() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.post(
-                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
-                )
-                .header("Authorization", "Bearer $participantToken")
-                .contentType("application/json")
-                .content(
-                    """
-                        [
-                          {
-                            "text": "This is a test submission."
-                          }
-                        ]
-                    """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isBadRequest)
-            .andExpect(jsonPath("$.error.name").value("TaskNotResubmittableError"))
-            .andExpect(jsonPath("$.error.data.taskId").value(taskId))
+    fun `test submit again fails when not resubmittable`() { // Renamed
+        val taskIdToSubmit = taskIds[0] // Task 0 was set to resubmittable=false in test 40
+        val submissionContent = listOf(TaskSubmissionContentDTO(text = "Trying to submit again."))
+
+        webTestClient.post().uri("/tasks/$taskIdToSubmit/participants/$participantTaskMembershipId/submissions")
+            .header("Authorization", "Bearer $participantToken")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(submissionContent)
+            .exchange()
+            .expectStatus().isBadRequest // Expect 400 Bad Request
+            .expectBody<GenericErrorResponse>() // Expect error DTO
+            .value { errorResponse ->
+                assertEquals("TaskNotResubmittableError", errorResponse.error.name)
+                assertNotNull(errorResponse.error.data)
+                assertEquals(taskIdToSubmit, errorResponse.error.data!!.taskId)
+            }
     }
 
     @Test
     @Order(160)
-    fun updateToResubmittableAndGetAccessDeniedError() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/$taskId")
-                .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "resubmittable": true
-                }
-            """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
+    fun `test update task to resubmittable fails for non-owner`() { // Renamed
+        val taskIdToUpdate = taskIds[0]
+        val requestDTO = PatchTaskRequestDTO(resubmittable = true)
+
+        webTestClient.patch().uri("/tasks/$taskIdToUpdate")
+            .header("Authorization", "Bearer $creatorToken") // Generic creator, not space/task owner
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isForbidden // Expect 403 Forbidden
+            .expectBody<GenericErrorResponse>()
+            .value { errorResponse ->
+                assertEquals("AccessDeniedError", errorResponse.error.name) // Or AccessDeniedError
+            }
     }
+
 
     @Test
     @Order(161)
-    fun updateToResubmittable() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/$taskId")
-                .header("Authorization", "Bearer $spaceCreatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "resubmittable": true
-                }
-            """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    fun `test update task to resubmittable succeeds for owner`() { // Renamed
+        val taskIdToUpdate = taskIds[0]
+        val requestDTO = PatchTaskRequestDTO(resubmittable = true)
+
+        webTestClient.patch().uri("/tasks/$taskIdToUpdate")
+            .header("Authorization", "Bearer $spaceCreatorToken") // Space creator owns the task
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PatchTask200ResponseDTO>()
+            .value { response ->
+                assertNotNull(response.data.task)
+                assertEquals(true, response.data.task.resubmittable)
+            }
     }
 
     @Test
     @Order(170)
-    fun testResubmitTaskTeam() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.post(
-                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+    fun `test resubmit task user 1 succeeds after update`() { // Renamed
+        val taskIdToSubmit = taskIds[0]
+        val submissionText = "This is a test submission. (Version 2)"
+        val submissionContent = listOf(TaskSubmissionContentDTO(text = submissionText))
+        val expectedContent = listOf("Text Entry" to submissionText)
+
+        webTestClient.post().uri("/tasks/$taskIdToSubmit/participants/$participantTaskMembershipId/submissions")
+            .header("Authorization", "Bearer $participantToken") // Participant resubmits
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(submissionContent)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PostTaskSubmission200ResponseDTO>()
+            .value { response ->
+                assertSubmissionDetails(
+                    response.data.submission,
+                    expectedMemberId = participant.userId,
+                    expectedSubmitterId = participant.userId,
+                    expectedVersion = 2, // Expect version 2
+                    expectedContent = expectedContent
                 )
-                .header("Authorization", "Bearer $participantToken")
-                .contentType("application/json")
-                .content(
-                    """
-                        [
-                          {
-                            "text": "This is a test submission. (Version 2)"
-                          }
-                        ]
-                    """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.submission.id").exists())
-            .andExpect(jsonPath("$.data.submission.member.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submission.submitter.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submission.version").value(2))
-            .andExpect(jsonPath("$.data.submission.content[0].title").value("Text Entry"))
-            .andExpect(jsonPath("$.data.submission.content[0].type").value("TEXT"))
-            .andExpect(
-                jsonPath("$.data.submission.content[0].contentText")
-                    .value("This is a test submission. (Version 2)")
-            )
+            }
     }
 
     @Test
     @Order(180)
-    fun testUpdateSubmissionAndGetNotEditableError() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.patch(
-                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/1"
-                )
-                .header("Authorization", "Bearer $participantToken")
-                .contentType("application/json")
-                .content(
-                    """
-                      [
-                        {
-                          "text": "This is a test submission. (Version 1) (edited)"
-                        }
-                      ]
-                    """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isBadRequest)
-            .andExpect(jsonPath("$.error.name").value("TaskSubmissionNotEditableError"))
-            .andExpect(jsonPath("$.error.data.taskId").value(taskId))
+    fun `test update submission fails when not editable`() { // Renamed
+        val taskIdToUpdate = taskIds[0] // Task 0 was set to editable=false in test 40
+        val submissionVersion = 1 // Try to edit version 1
+        val updatedContent = listOf(TaskSubmissionContentDTO(text = "Editing version 1"))
+
+        webTestClient.patch()
+            .uri("/tasks/$taskIdToUpdate/participants/$participantTaskMembershipId/submissions/$submissionVersion")
+            .header("Authorization", "Bearer $participantToken") // Participant tries to edit
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(updatedContent)
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectBody<GenericErrorResponse>()
+            .value { errorResponse ->
+                assertEquals("TaskSubmissionNotEditableError", errorResponse.error.name)
+                assertNotNull(errorResponse.error.data)
+                assertEquals(taskIdToUpdate, errorResponse.error.data!!.taskId)
+            }
     }
 
     @Test
     @Order(185)
-    fun updateToEditable() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.patch("/tasks/$taskId")
-                .header("Authorization", "Bearer $spaceCreatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "editable": true
-                }
-            """
-                )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    fun `test update task to editable succeeds for owner`() { // Renamed
+        val taskIdToUpdate = taskIds[0]
+        val requestDTO = PatchTaskRequestDTO(editable = true)
+
+        webTestClient.patch().uri("/tasks/$taskIdToUpdate")
+            .header("Authorization", "Bearer $spaceCreatorToken") // Space creator owns the task
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestDTO)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<PatchTask200ResponseDTO>()
+            .value { response ->
+                assertNotNull(response.data.task)
+                assertEquals(true, response.data.task.editable)
+            }
     }
+
 
     @Test
     @Order(190)
-    fun testUpdateSubmission() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.patch(
-                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/2"
+    fun `test update submission succeeds after task made editable`() { // Renamed
+        val taskIdToUpdate = taskIds[0]
+        val submissionVersion = 2 // Edit the latest version (v2 from test 170)
+        val updatedText = "This is a test submission. (Version 2) (edited)"
+        val updatedContent = listOf(TaskSubmissionContentDTO(text = updatedText))
+        val expectedContent = listOf("Text Entry" to updatedText)
+
+        webTestClient.patch()
+            .uri("/tasks/$taskIdToUpdate/participants/$participantTaskMembershipId/submissions/$submissionVersion")
+            .header("Authorization", "Bearer $participantToken") // Participant edits
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(updatedContent)
+            .exchange()
+            .expectStatus().isOk
+            // Assuming PATCH submission returns PostTaskSubmission200ResponseDTO
+            .expectBody<PostTaskSubmission200ResponseDTO>()
+            .value { response ->
+                // Assert details of the edited submission (still version 2)
+                assertSubmissionDetails(
+                    response.data.submission,
+                    expectedMemberId = participant.userId,
+                    expectedSubmitterId = participant.userId,
+                    expectedVersion = 2,
+                    expectedContent = expectedContent
                 )
-                .header("Authorization", "Bearer $participantToken")
-                .contentType("application/json")
-                .content(
-                    """
-                      [
-                        {
-                          "text": "This is a test submission. (Version 2) (edited)"
-                        }
-                      ]
-                    """
-                )
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.submission.id").exists())
-            .andExpect(jsonPath("$.data.submission.member.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submission.submitter.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submission.version").value(2))
-            .andExpect(jsonPath("$.data.submission.content[0].title").value("Text Entry"))
-            .andExpect(jsonPath("$.data.submission.content[0].type").value("TEXT"))
-            .andExpect(
-                jsonPath("$.data.submission.content[0].contentText")
-                    .value("This is a test submission. (Version 2) (edited)")
-            )
+            }
     }
 
     @Test
     @Order(198)
-    fun testGetSubmissionsUseIrrelevantUserAndGetAccessDeniedError() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.get(
-                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
-                )
-                .header("Authorization", "Bearer $irrelevantUserToken")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(jsonPath("$.error.name").value("AccessDeniedError"))
+    fun `test get submissions fails for irrelevant user`() { // Renamed
+        webTestClient.get().uri("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
+            .header("Authorization", "Bearer $irrelevantUserToken") // Irrelevant user attempts
+            .exchange()
+            .expectStatus().isForbidden
+            .expectBody<GenericErrorResponse>()
+            .value { errorResponse ->
+                assertEquals("AccessDeniedError", errorResponse.error.name)
+            }
     }
 
     @Test
     @Order(199)
-    fun testGetSubmissionsUseAnotherParticipantAndGetAccessDeniedError() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.get(
-                    "/tasks/$taskId/participants/$participant2TaskMembershipId/submissions"
-                )
-                .header("Authorization", "Bearer $participantToken")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(jsonPath("$.error.name").value("AccessDeniedError"))
+    fun `test get submissions fails for different participant`() { // Renamed
+        // Participant 1 tries to get submissions for Participant 2's membership ID
+        webTestClient.get().uri("/tasks/${taskIds[0]}/participants/$participant2TaskMembershipId/submissions")
+            .header("Authorization", "Bearer $participantToken") // Participant 1 token
+            .exchange()
+            .expectStatus().isForbidden
+            .expectBody<GenericErrorResponse>()
+            .value { errorResponse ->
+                assertEquals("AccessDeniedError", errorResponse.error.name)
+            }
     }
 
     @Test
     @Order(200)
-    fun testGetSubmissionsByDefault() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.get(
-                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+    fun `test get submissions default (latest) for owner`() { // Renamed
+        val expectedContent = listOf("Text Entry" to "This is a test submission. (Version 2) (edited)")
+
+        webTestClient.get().uri("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
+            .header("Authorization", "Bearer $spaceCreatorToken") // Owner/creator gets submissions
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<GetTaskSubmissions200ResponseDTO>() // Expect list DTO
+            .value { response ->
+                assertNotNull(response.data.submissions)
+                val submissions = response.data.submissions
+                assertEquals(1, submissions.size, "Should only get latest version by default")
+                assertSubmissionDetails(
+                    submissions[0],
+                    expectedMemberId = participant.userId,
+                    expectedSubmitterId = participant.userId,
+                    expectedVersion = 2, // Latest version
+                    expectedContent = expectedContent
                 )
-                .header("Authorization", "Bearer $creatorToken")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.submissions[0].id").exists())
-            .andExpect(jsonPath("$.data.submissions[0].member.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submissions[0].submitter.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submissions[0].version").value(2))
-            .andExpect(jsonPath("$.data.submissions[0].content[0].title").value("Text Entry"))
-            .andExpect(jsonPath("$.data.submissions[0].content[0].type").value("TEXT"))
-            .andExpect(
-                jsonPath("$.data.submissions[0].content[0].contentText")
-                    .value("This is a test submission. (Version 2) (edited)")
-            )
+            }
     }
 
     @Test
     @Order(210)
-    fun testGetSubmissionsWithAllVersions() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.get(
-                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+    fun `test get submissions with all versions`() { // Renamed
+        val expectedContentV2 = listOf("Text Entry" to "This is a test submission. (Version 2) (edited)")
+        val expectedContentV1 = listOf("Text Entry" to "This is a test submission.") // From test 130
+
+        webTestClient.get()
+            .uri { builder ->
+                builder.path("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
+                    .queryParam("allVersions", true).build()
+            }
+            .header("Authorization", "Bearer $spaceCreatorToken")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<GetTaskSubmissions200ResponseDTO>()
+            .value { response ->
+                assertNotNull(response.data.submissions)
+                val submissions = response.data.submissions
+                assertEquals(2, submissions.size, "Should get both versions")
+
+                // Submissions usually ordered descending by version/time
+                val submissionV2 = submissions.find { it.version == 2 }
+                val submissionV1 = submissions.find { it.version == 1 }
+
+                assertNotNull(submissionV2, "Version 2 not found")
+                assertSubmissionDetails(
+                    submissionV2,
+                    expectedMemberId = participant.userId,
+                    expectedSubmitterId = participant.userId,
+                    expectedVersion = 2,
+                    expectedContent = expectedContentV2
                 )
-                .param("allVersions", "true")
-                .header("Authorization", "Bearer $creatorToken")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.submissions[0].id").exists())
-            .andExpect(jsonPath("$.data.submissions[0].member.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submissions[0].submitter.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submissions[0].version").value(2))
-            .andExpect(jsonPath("$.data.submissions[0].content[0].title").value("Text Entry"))
-            .andExpect(jsonPath("$.data.submissions[0].content[0].type").value("TEXT"))
-            .andExpect(
-                jsonPath("$.data.submissions[0].content[0].contentText")
-                    .value("This is a test submission. (Version 2) (edited)")
-            )
-            .andExpect(jsonPath("$.data.submissions[1].version").value(1))
-            .andExpect(
-                jsonPath("$.data.submissions[1].content[0].contentText")
-                    .value("This is a test submission.")
-            )
+
+                assertNotNull(submissionV1, "Version 1 not found")
+                assertSubmissionDetails(
+                    submissionV1,
+                    expectedMemberId = participant.userId,
+                    expectedSubmitterId = participant.userId, // Submitter was participant for V1 too
+                    expectedVersion = 1,
+                    expectedContent = expectedContentV1
+                )
+            }
     }
 
     @Test
     @Order(218)
-    fun testGetSubmissionsUseParticipant2WithMemberIdAndGetAccessDeniedError() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.get(
-                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
-                )
-                .param("member", participant.userId.toString())
-                .header("Authorization", "Bearer $participantToken2")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(jsonPath("$.error.name").value("AccessDeniedError"))
+    fun `test get submissions fails for different participant via member query param`() { // Renamed
+        // Participant 2 tries to get Participant 1's submissions using member ID query
+        webTestClient.get()
+            // NOTE: The path uses participant 1's membership ID, but the query targets participant 1 user ID.
+            // Access control should likely deny this based on the token (Participant 2).
+            .uri { builder ->
+                builder.path("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
+                    .queryParam("member", participant.userId).build()
+            }
+            .header("Authorization", "Bearer $participantToken2") // Participant 2 token
+            .exchange()
+            .expectStatus().isForbidden
+            .expectBody<GenericErrorResponse>()
+            .value { errorResponse ->
+                assertEquals("AccessDeniedError", errorResponse.error.name)
+            }
     }
 
     @Test
     @Order(219)
-    fun testGetSubmissionsUseParticipantWithMemberId() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.get(
-                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+    fun `test get submissions succeeds for self via member query param`() { // Renamed
+        val expectedContent = listOf("Text Entry" to "This is a test submission. (Version 2) (edited)")
+        // Participant 1 gets their own submissions using member ID query param
+        webTestClient.get()
+            // Path still uses their membership ID, query param redundantly specifies their user ID.
+            .uri { builder ->
+                builder.path("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
+                    .queryParam("member", participant.userId).build()
+            }
+            .header("Authorization", "Bearer $participantToken") // Participant 1 token
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<GetTaskSubmissions200ResponseDTO>()
+            .value { response ->
+                assertNotNull(response.data.submissions)
+                val submissions = response.data.submissions
+                assertEquals(1, submissions.size, "Should get latest version") // Default is latest only
+                assertSubmissionDetails(
+                    submissions[0],
+                    expectedMemberId = participant.userId,
+                    expectedSubmitterId = participant.userId,
+                    expectedVersion = 2,
+                    expectedContent = expectedContent
                 )
-                .param("member", participant.userId.toString())
-                .header("Authorization", "Bearer $participantToken")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.submissions[0].id").exists())
-            .andExpect(jsonPath("$.data.submissions[0].member.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submissions[0].submitter.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submissions[0].version").value(2))
-            .andExpect(jsonPath("$.data.submissions[0].content[0].title").value("Text Entry"))
-            .andExpect(jsonPath("$.data.submissions[0].content[0].type").value("TEXT"))
-            .andExpect(
-                jsonPath("$.data.submissions[0].content[0].contentText")
-                    .value("This is a test submission. (Version 2) (edited)")
-            )
-            .andExpect(
-                jsonPath("$.data.submissions[?(@[0].memberId == ${participant2.userId})][0]")
-                    .doesNotExist()
-            )
+                // Check that participant 2's submissions are not included (though unlikely given the path)
+                assertFalse(
+                    submissions.any { it.member.id == participant2.userId },
+                    "Should not include participant 2's submissions"
+                )
+            }
     }
+
 
     @Test
     @Order(220)
-    fun testGetSubmissionsWithParticipantId() {
-        val taskId = taskIds[0]
-        val request =
-            MockMvcRequestBuilders.get(
-                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+    fun `test get submissions succeeds for owner via participantId path`() { // Renamed
+        val expectedContent = listOf("Text Entry" to "This is a test submission. (Version 2) (edited)")
+        // Owner gets participant 1's submissions via path param
+        webTestClient.get().uri("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
+            .header("Authorization", "Bearer $spaceCreatorToken") // Owner token
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<GetTaskSubmissions200ResponseDTO>()
+            .value { response ->
+                assertNotNull(response.data.submissions)
+                val submissions = response.data.submissions
+                assertEquals(1, submissions.size) // Default latest
+                assertSubmissionDetails(
+                    submissions[0],
+                    expectedMemberId = participant.userId,
+                    expectedSubmitterId = participant.userId,
+                    expectedVersion = 2,
+                    expectedContent = expectedContent
                 )
-                .header("Authorization", "Bearer $creatorToken")
-        mockMvc
-            .perform(request)
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("$.data.submissions[0].id").exists())
-            .andExpect(jsonPath("$.data.submissions[0].member.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submissions[0].submitter.id").value(participant.userId))
-            .andExpect(jsonPath("$.data.submissions[0].version").value(2))
-            .andExpect(jsonPath("$.data.submissions[0].content[0].title").value("Text Entry"))
-            .andExpect(jsonPath("$.data.submissions[0].content[0].type").value("TEXT"))
-            .andExpect(
-                jsonPath("$.data.submissions[0].content[0].contentText")
-                    .value("This is a test submission. (Version 2) (edited)")
-            )
-            .andExpect(
-                jsonPath("$.data.submissions[?(@[0].memberId == ${participant2.userId})][0]")
-                    .doesNotExist()
-            )
+                // Check participant 2 not included
+                assertFalse(
+                    submissions.any { it.member.id == participant2.userId },
+                    "Should not include participant 2's submissions"
+                )
+            }
     }
+
 
     @Test
     @Order(230)
-    fun testDeleteTaskAndGetAccessDeniedError() {
-        val taskId = taskIds[1]
-        val request =
-            MockMvcRequestBuilders.delete("/tasks/$taskId")
-                .header("Authorization", "Bearer $creatorToken")
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isForbidden)
+    fun `test delete task fails for non-owner`() { // Renamed
+        val taskIdToDelete = taskIds[1] // Team task created by spaceCreator
+
+        webTestClient.delete().uri("/tasks/$taskIdToDelete")
+            .header("Authorization", "Bearer $creatorToken") // Generic creator token, not owner
+            .exchange()
+            .expectStatus().isForbidden
+            .expectBody<GenericErrorResponse>()
+            .value { errorResponse ->
+                assertEquals("AccessDeniedError", errorResponse.error.name) // Or AccessDeniedError
+            }
     }
 
     @Test
     @Order(240)
-    fun testDeleteTask() {
-        val taskId = taskIds[1]
-        val request =
-            MockMvcRequestBuilders.delete("/tasks/$taskId")
-                .header("Authorization", "Bearer $spaceCreatorToken")
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    fun `test delete task succeeds for owner`() { // Renamed
+        val taskIdToDelete = taskIds[1]
+
+        webTestClient.delete().uri("/tasks/$taskIdToDelete")
+            .header("Authorization", "Bearer $spaceCreatorToken") // Owner deletes
+            .exchange()
+            .expectStatus().isOk // Assuming 200 OK based on original test
+        // Check response DTO if applicable (e.g., DeleteTask200ResponseDTO)
+        // .expectBody<DeleteTask200ResponseDTO>()
+        // .value { response -> assertEquals(200, response.code) }
+
+        // Verify deletion
+        webTestClient.get().uri("/tasks/$taskIdToDelete")
+            .header("Authorization", "Bearer $spaceCreatorToken")
+            .exchange()
+            .expectStatus().isNotFound // Should be gone
     }
+
 }

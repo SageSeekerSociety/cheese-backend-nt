@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
 import javax.validation.constraints.NotNull
 import kotlin.collections.List
-import kotlinx.coroutines.flow.Flow
 import org.rucca.cheese.model.ApproveTypeDTO
 import org.rucca.cheese.model.CommonResponseDTO
 import org.rucca.cheese.model.CreateTaskAIAdviceConversationRequestDTO
@@ -928,7 +927,7 @@ The teams can be filtered based on eligibility criteria.
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
-        taskSubmissionContentDTO: Flow<TaskSubmissionContentDTO>,
+        taskSubmissionContentDTO: List<TaskSubmissionContentDTO>,
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -1095,7 +1094,7 @@ The teams can be filtered based on eligibility criteria.
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
-        taskSubmissionContentDTO: Flow<TaskSubmissionContentDTO>,
+        taskSubmissionContentDTO: List<TaskSubmissionContentDTO>,
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }

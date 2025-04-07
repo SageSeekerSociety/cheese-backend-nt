@@ -88,12 +88,12 @@ class SpaceService(
         admins: List<SpaceAdminDTO>? = null,
         topics: List<TopicDTO>? = null,
         rank: Int? = null,
+        currentUserId: IdType? = null,
     ): SpaceDTO {
         val myRank =
             rank
-                ?: if (options.queryMyRank && this.enableRank!!) {
-                    val userId = jwtService.getCurrentUserId()
-                    spaceUserRankService.getRank(this.id!!, userId)
+                ?: if (options.queryMyRank && this.enableRank!! && currentUserId != null) {
+                    spaceUserRankService.getRank(this.id!!, currentUserId)
                 } else null
 
         val classificationTopics =
@@ -123,35 +123,11 @@ class SpaceService(
     fun getSpaceDto(
         spaceId: IdType,
         queryOptions: SpaceQueryOptions = SpaceQueryOptions.MINIMUM,
+        currentUserId: IdType? = null,
     ): SpaceDTO {
         val space = getSpace(spaceId)
 
-        val admins = spaceAdminRelationRepository.findAllBySpaceIdFetchUser(spaceId)
-        val classificationTopics =
-            spaceClassificationTopicsService.getClassificationTopicDTOs(spaceId)
-
-        val myRank =
-            if (queryOptions.queryMyRank && space.enableRank!!) {
-                val userId = jwtService.getCurrentUserId()
-                spaceUserRankService.getRank(spaceId, userId)
-            } else null
-
-        return SpaceDTO(
-            id = space.id!!,
-            intro = space.intro!!,
-            description = space.description!!,
-            name = space.name!!,
-            avatarId = space.avatar!!.id!!.toLong(),
-            admins = admins.map { it.toDTO() },
-            updatedAt = space.updatedAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
-            createdAt = space.createdAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
-            enableRank = space.enableRank!!,
-            announcements = space.announcements!!,
-            taskTemplates = space.taskTemplates!!,
-            myRank = myRank,
-            classificationTopics = classificationTopics,
-            defaultCategoryId = space.defaultCategory!!.id!!,
-        )
+        return space.toSpaceDTO(options = queryOptions, currentUserId = currentUserId)
     }
 
     fun getSpaceOwner(spaceId: IdType): IdType {
@@ -235,6 +211,7 @@ class SpaceService(
         return space.toSpaceDTO(
             options = SpaceQueryOptions.MAXIMUM,
             admins = listOf(ownerRelation.toDTO()), // Only include the owner in the admins list
+            currentUserId = ownerId,
         )
     }
 
@@ -262,12 +239,13 @@ class SpaceService(
      *
      * This pattern ensures a single UPDATE statement regardless of how many fields are changed.
      *
+     * @param userId The ID of the user making the request
      * @param spaceId The ID of the Space to update
      * @param patchDto The DTO containing fields to update
      * @return The updated Space DTO
      */
     @Transactional
-    fun patchSpace(spaceId: IdType, patchDto: PatchSpaceRequestDTO): SpaceDTO {
+    fun patchSpace(userId: IdType, spaceId: IdType, patchDto: PatchSpaceRequestDTO): SpaceDTO {
         val space = getSpace(spaceId)
 
         if (patchDto.name != null && patchDto.name != space.name) {
@@ -307,7 +285,9 @@ class SpaceService(
             }
 
         // IMPORTANT: Save the entity ONCE after all changes are applied
-        return spaceRepository.save(updatedSpace).toSpaceDTO(options = SpaceQueryOptions.MAXIMUM)
+        return spaceRepository
+            .save(updatedSpace)
+            .toSpaceDTO(options = SpaceQueryOptions.MAXIMUM, currentUserId = userId)
     }
 
     private fun getCategoryForSpace(spaceId: IdType, categoryId: IdType): SpaceCategory {
@@ -535,6 +515,7 @@ class SpaceService(
     }
 
     fun enumerateSpaces(
+        userId: IdType,
         sortBy: SpacesSortBy,
         sortOrder: SortDirection,
         pageSize: Int,
@@ -553,6 +534,9 @@ class SpaceService(
 
         val result = spaceRepository.findAllWithIdCursor(cursorSpec, pageStart, pageSize)
 
-        return Pair(result.content.map { it.toSpaceDTO(queryOptions) }, result.pageInfo.toPageDTO())
+        return Pair(
+            result.content.map { it.toSpaceDTO(queryOptions, currentUserId = userId) },
+            result.pageInfo.toPageDTO(),
+        )
     }
 }

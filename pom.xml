@@ -33,6 +33,8 @@
         <java.version>21</java.version>
         <kotlin.version>2.1.20</kotlin.version>
         <serialization.version>1.8.0</serialization.version>
+        <kotlinx.coroutines.version>1.10.1</kotlinx.coroutines.version>
+        <assertj.version>3.25.3</assertj.version>
     </properties>
 
     <!-- Project Dependencies -->
@@ -204,7 +206,19 @@
         <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
             <artifactId>kotlinx-coroutines-reactor</artifactId>
-            <version>1.10.1</version>
+            <version>${kotlinx.coroutines.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-coroutines-test</artifactId>
+            <version>${kotlinx.coroutines.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
