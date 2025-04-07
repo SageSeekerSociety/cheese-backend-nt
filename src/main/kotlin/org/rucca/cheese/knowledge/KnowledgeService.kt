@@ -20,7 +20,7 @@ import org.rucca.cheese.model.UpdateKnowledgeRequestDTO
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamRepository
 import org.rucca.cheese.user.UserRepository
-import org.rucca.cheese.user.UserService
+import org.rucca.cheese.user.services.UserService
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

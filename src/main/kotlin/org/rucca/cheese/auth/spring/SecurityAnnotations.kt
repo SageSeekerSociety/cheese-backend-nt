@@ -31,7 +31,7 @@ annotation class Secure(
 @Inherited
 annotation class Auth(
     /** Permission string in format "domain:action:resource". Example: "order:view:order" */
-    val value: String
+    val value: String = ""
 )
 
 /**

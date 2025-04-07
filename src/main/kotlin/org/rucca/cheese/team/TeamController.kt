@@ -9,101 +9,65 @@
 
 package org.rucca.cheese.team
 
-import jakarta.annotation.PostConstruct
+import java.net.URI
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.rucca.cheese.api.TeamsApi
-import org.rucca.cheese.auth.AuthorizationService
-import org.rucca.cheese.auth.AuthorizedAction
 import org.rucca.cheese.auth.JwtService
-import org.rucca.cheese.auth.annotation.Guard
-import org.rucca.cheese.auth.annotation.NoAuth
-import org.rucca.cheese.auth.annotation.ResourceId
-import org.rucca.cheese.auth.spring.UseOldAuth
-import org.rucca.cheese.common.persistent.IdGetter
-import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.auth.annotation.UseNewAuth
+import org.rucca.cheese.auth.model.AuthUserInfo
+import org.rucca.cheese.auth.spring.Auth
+import org.rucca.cheese.auth.spring.AuthContext
+import org.rucca.cheese.auth.spring.AuthUser
+import org.rucca.cheese.auth.spring.ResourceId
+import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.model.*
+import org.rucca.cheese.team.models.toEnum
+import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@UseOldAuth
+@UseNewAuth
 class TeamController(
     private val teamService: TeamService,
-    private val authorizationService: AuthorizationService,
     private val jwtService: JwtService,
+    private val teamMembershipService: TeamMembershipService,
 ) : TeamsApi {
-    @PostConstruct
-    fun initialize() {
-        authorizationService.ownerIds.register("team", teamService::getTeamOwner)
-        authorizationService.customAuthLogics.register("is-team-admin") {
-            userId: IdType,
-            _: AuthorizedAction,
-            _: String,
-            resourceId: IdType?,
-            _: Map<String, Any?>?,
-            _: IdGetter?,
-            _: Any? ->
-            teamService.isTeamAtLeastAdmin(
-                resourceId ?: throw IllegalArgumentException("resourceId is null"),
-                userId,
-            )
-        }
-        authorizationService.customAuthLogics.register("member-is-self") {
-            userId: IdType,
-            _: AuthorizedAction,
-            _: String,
-            _: IdType?,
-            authInfo: Map<String, Any?>?,
-            _: IdGetter?,
-            _: Any? ->
-            userId == authInfo?.get("member")
-        }
-    }
+    private val logger = LoggerFactory.getLogger(TeamController::class.java)
 
-    @Guard("delete", "team")
-    override fun deleteTeam(@ResourceId teamId: Long): ResponseEntity<CommonResponseDTO> {
+    @Auth("team:delete:team") // Requires OWNER role
+    override suspend fun deleteTeam(@ResourceId teamId: Long): ResponseEntity<CommonResponseDTO> {
         teamService.deleteTeam(teamId)
         return ResponseEntity.ok(CommonResponseDTO(200, "OK"))
     }
 
-    @NoAuth
-    override fun deleteTeamMember(
-        @ResourceId teamId: Long,
-        userId: Long,
+    @Auth(
+        "team:remove_member:membership"
+    ) // Permission check (e.g., MEMBER can remove self, ADMIN/OWNER others)
+    override suspend fun deleteTeamMember(
+        @AuthContext("teamId") teamId: Long,
+        @AuthContext("targetUserId") userId: Long,
     ): ResponseEntity<GetTeam200ResponseDTO> {
-        val role = teamService.getTeamMemberRole(teamId, userId)
-        when (role) {
-            TeamMemberRoleTypeDTO.OWNER ->
-                throw IllegalArgumentException("Cannot remove team owner")
-            TeamMemberRoleTypeDTO.ADMIN -> {
-                authorizationService.audit("remove-admin", "team", teamId)
-                teamService.removeTeamMember(teamId, userId)
-            }
-            TeamMemberRoleTypeDTO.MEMBER -> {
-                authorizationService.audit(
-                    "remove-normal-member",
-                    "team",
-                    teamId,
-                    mapOf("member" to userId),
-                )
-                teamService.removeTeamMember(teamId, userId)
-            }
-        }
+        // Service needs to internally get the initiator ID via authenticateService
+        teamService.removeTeamMember(teamId, userId /* initiatorId resolved in service */)
         val teamDTO = teamService.getTeamDto(teamId)
         return ResponseEntity.ok(
             GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK")
         )
     }
 
-    @Guard("query", "team")
-    override fun getTeam(@ResourceId teamId: Long): ResponseEntity<GetTeam200ResponseDTO> {
+    @Auth("team:view:team") // Requires MEMBER role or higher
+    override suspend fun getTeam(@ResourceId teamId: Long): ResponseEntity<GetTeam200ResponseDTO> {
         val teamDTO = teamService.getTeamDto(teamId)
         return ResponseEntity.ok(
             GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK")
         )
     }
 
-    @Guard("enumerate", "team")
-    override fun getTeams(
+    @Auth("team:enumerate:team") // Requires SystemRole.USER (login)
+    override suspend fun getTeams(
         query: String,
         pageStart: Long?,
         pageSize: Int,
@@ -114,17 +78,18 @@ class TeamController(
         )
     }
 
-    @Guard("enumerate-my-teams", "team")
-    override fun getMyTeams(): ResponseEntity<GetMyTeams200ResponseDTO> {
+    @Auth // Login check only
+    override suspend fun getMyTeams(): ResponseEntity<GetMyTeams200ResponseDTO> {
+        // Service needs to internally get the current user ID via authenticateService
         val teamDTOs = teamService.getTeamsOfUser(jwtService.getCurrentUserId())
         return ResponseEntity.ok(
             GetMyTeams200ResponseDTO(200, GetMyTeams200ResponseDataDTO(teamDTOs), "OK")
         )
     }
 
-    @Guard("enumerate-members", "team")
-    override fun getTeamMembers(
-        @ResourceId teamId: Long,
+    @Auth("team:view:membership") // Requires MEMBER role or higher
+    override suspend fun getTeamMembers(
+        @ResourceId @AuthContext("teamId") teamId: Long,
         queryRealNameStatus: Boolean,
     ): ResponseEntity<GetTeamMembers200ResponseDTO> {
         val (memberDTOs, allMembersVerified) =
@@ -141,69 +106,59 @@ class TeamController(
         )
     }
 
-    @Guard("modify", "team")
-    override fun patchTeam(
+    @Auth("team:update:team") // Requires ADMIN role or higher
+    override suspend fun patchTeam(
         @ResourceId teamId: Long,
         patchTeamRequestDTO: PatchTeamRequestDTO,
     ): ResponseEntity<GetTeam200ResponseDTO> {
-        if (patchTeamRequestDTO.name != null) {
+        if (patchTeamRequestDTO.name != null)
             teamService.updateTeamName(teamId, patchTeamRequestDTO.name)
-        }
-        if (patchTeamRequestDTO.intro != null) {
+        if (patchTeamRequestDTO.intro != null)
             teamService.updateTeamIntro(teamId, patchTeamRequestDTO.intro)
-        }
-        if (patchTeamRequestDTO.description != null) {
+        if (patchTeamRequestDTO.description != null)
             teamService.updateTeamDescription(teamId, patchTeamRequestDTO.description)
-        }
-        if (patchTeamRequestDTO.avatarId != null) {
+        if (patchTeamRequestDTO.avatarId != null)
             teamService.updateTeamAvatar(teamId, patchTeamRequestDTO.avatarId)
-        }
         val teamDTO = teamService.getTeamDto(teamId)
         return ResponseEntity.ok(
             GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK")
         )
     }
 
-    @NoAuth
-    override fun patchTeamMember(
-        @ResourceId teamId: Long,
-        userId: Long,
+    // Endpoint for updating an existing member's role
+    @Auth("team:update_member_role:membership") // Requires ADMIN/OWNER role
+    override suspend fun patchTeamMember(
+        @AuthContext("teamId") teamId: Long,
+        @AuthContext("targetUserId") userId: Long,
         patchTeamMemberRequestDTO: PatchTeamMemberRequestDTO,
     ): ResponseEntity<GetTeam200ResponseDTO> {
-        if (patchTeamMemberRequestDTO.role != null) {
-            when (patchTeamMemberRequestDTO.role) {
-                TeamMemberRoleTypeDTO.OWNER -> {
-                    authorizationService.audit("ship-ownership", "team", teamId)
-                    teamService.removeTeamMember(teamId, userId)
-                    teamService.shipTeamOwnershipToNoneMember(teamId, userId)
-                }
-                TeamMemberRoleTypeDTO.ADMIN -> {
-                    authorizationService.audit("add-admin", "team", teamId)
-                    teamService.removeTeamMember(teamId, userId)
-                    teamService.addTeamAdmin(teamId, userId)
-                }
-                TeamMemberRoleTypeDTO.MEMBER -> {
-                    authorizationService.audit(
-                        "add-normal-member",
-                        "team",
-                        teamId,
-                        mapOf("member" to userId),
-                    )
-                    teamService.removeTeamMember(teamId, userId)
-                    teamService.addTeamNormalMember(teamId, userId)
-                }
+        val newRoleDto =
+            patchTeamMemberRequestDTO.role
+                ?: throw BadRequestError("Missing 'role' in request body for patchTeamMember.")
+
+        val newRole =
+            when (newRoleDto) {
+                TeamMemberRoleTypeDTO.ADMIN -> TeamMemberRole.ADMIN
+                TeamMemberRoleTypeDTO.MEMBER -> TeamMemberRole.MEMBER
+                TeamMemberRoleTypeDTO.OWNER ->
+                    throw BadRequestError("Cannot set role to OWNER using this endpoint.")
             }
-        }
+        teamService.updateTeamMemberRole(
+            teamId,
+            userId,
+            newRole, /* initiatorId resolved in service */
+        )
         val teamDTO = teamService.getTeamDto(teamId)
         return ResponseEntity.ok(
             GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK")
         )
     }
 
-    @Guard("create", "team")
-    override fun postTeam(
+    @Auth("team:create:team") // Requires SystemRole.USER (login)
+    override suspend fun postTeam(
         postTeamRequestDTO: PostTeamRequestDTO
     ): ResponseEntity<GetTeam200ResponseDTO> {
+        // Service needs to internally get the owner ID (current user)
         val teamId =
             teamService.createTeam(
                 name = postTeamRequestDTO.name,
@@ -218,33 +173,156 @@ class TeamController(
         )
     }
 
-    @NoAuth
-    override fun postTeamMember(
+    @Auth
+    override suspend fun postTeamMember(
         @ResourceId teamId: Long,
         postTeamMemberRequestDTO: PostTeamMemberRequestDTO,
     ): ResponseEntity<GetTeam200ResponseDTO> {
-        when (postTeamMemberRequestDTO.role) {
-            TeamMemberRoleTypeDTO.OWNER -> {
-                authorizationService.audit("ship-ownership", "team", teamId)
-                teamService.shipTeamOwnershipToNoneMember(teamId, postTeamMemberRequestDTO.userId)
-            }
-            TeamMemberRoleTypeDTO.ADMIN -> {
-                authorizationService.audit("add-admin", "team", teamId)
-                teamService.addTeamAdmin(teamId, postTeamMemberRequestDTO.userId)
-            }
-            TeamMemberRoleTypeDTO.MEMBER -> {
-                authorizationService.audit(
-                    "add-normal-member",
-                    "team",
-                    teamId,
-                    mapOf("member" to postTeamMemberRequestDTO.userId),
-                )
-                teamService.addTeamNormalMember(teamId, postTeamMemberRequestDTO.userId)
-            }
+        logger.warn("Endpoint POST /teams/{}/members is deprecated. Use invitations.", teamId)
+        return ResponseEntity(HttpStatus.METHOD_NOT_ALLOWED)
+    }
+
+    @Auth("team:approve_request:request")
+    override suspend fun approveTeamJoinRequest(
+        @AuthContext("teamId") teamId: Long,
+        @ResourceId requestId: Long,
+    ): ResponseEntity<Unit> {
+        val currentUserId = jwtService.getCurrentUserId()
+        withContext(Dispatchers.IO) {
+            teamMembershipService.approveTeamJoinRequest(currentUserId, teamId, requestId)
         }
-        val teamDTO = teamService.getTeamDto(teamId)
+        return ResponseEntity.noContent().build()
+    }
+
+    @Auth("team:cancel_invitation:invitation")
+    override suspend fun cancelTeamInvitation(
+        @AuthContext("teamId") teamId: Long,
+        @ResourceId invitationId: Long,
+    ): ResponseEntity<Unit> {
+        val currentUserId = jwtService.getCurrentUserId()
+        withContext(Dispatchers.IO) {
+            teamMembershipService.cancelTeamInvitation(currentUserId, teamId, invitationId)
+        }
+        return ResponseEntity.noContent().build()
+    }
+
+    @Auth("team:create_invitation:invitation")
+    override suspend fun createTeamInvitation(
+        @AuthContext("teamId") teamId: Long,
+        teamInvitationCreateDTO: TeamInvitationCreateDTO,
+    ): ResponseEntity<CreateTeamInvitation201ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+        val applicationDto =
+            withContext(Dispatchers.IO) {
+                teamMembershipService.createTeamInvitation(
+                    initiatorUserId = currentUserId,
+                    teamId = teamId,
+                    userIdToInvite = teamInvitationCreateDTO.userId,
+                    role = teamInvitationCreateDTO.role.toTeamMemberRole(),
+                    message = teamInvitationCreateDTO.message,
+                    // Service internally gets initiator ID
+                )
+            }
+        val responseData = CreateTeamInvitation201ResponseDataDTO(invitation = applicationDto)
+        val responseDto =
+            CreateTeamInvitation201ResponseDTO(
+                code = 201,
+                data = responseData,
+                message = "Invitation created successfully",
+            )
+        return ResponseEntity.created(URI.create("/users/me/team-invitations/${applicationDto.id}"))
+            .body(responseDto)
+    }
+
+    @Auth
+    override suspend fun createTeamJoinRequest(
+        @AuthUser userInfo: AuthUserInfo?,
+        @AuthContext("teamId") teamId: Long,
+        teamJoinRequestCreateDTO: TeamJoinRequestCreateDTO?,
+    ): ResponseEntity<CreateTeamJoinRequest201ResponseDTO> {
+        val applicationDto =
+            withContext(Dispatchers.IO) {
+                teamMembershipService.createTeamJoinRequest(
+                    userId = userInfo!!.userId,
+                    teamId = teamId,
+                    message = teamJoinRequestCreateDTO?.message,
+                )
+            }
+        val responseData = CreateTeamJoinRequest201ResponseDataDTO(application = applicationDto)
+        val responseDto =
+            CreateTeamJoinRequest201ResponseDTO(
+                code = 201,
+                data = responseData,
+                message = "Request created successfully",
+            )
+        return ResponseEntity.created(URI.create("/users/team-requests/${applicationDto.id}"))
+            .body(responseDto)
+    }
+
+    @Auth("team:view:invitation")
+    override suspend fun listTeamInvitations(
+        @AuthContext("teamId") teamId: Long,
+        status: ApplicationStatusDTO?,
+        pageStart: Long?,
+        pageSize: Long,
+    ): ResponseEntity<ListTeamInvitations200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+        val (invitations, pageDto) =
+            teamMembershipService.listTeamInvitations(
+                requestingUserId = currentUserId,
+                teamId = teamId,
+                status = status?.toEnum(),
+                cursorId = pageStart,
+                pageSize = pageSize.toInt(),
+            )
         return ResponseEntity.ok(
-            GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK")
+            ListTeamInvitations200ResponseDTO(
+                code = 200,
+                data =
+                    ListMyInvitations200ResponseDataDTO(invitations = invitations, page = pageDto),
+                message = "OK",
+            )
         )
+    }
+
+    @Auth("team:view:request")
+    override suspend fun listTeamJoinRequests(
+        @AuthContext("teamId") teamId: Long,
+        status: ApplicationStatusDTO?,
+        pageStart: Long?,
+        pageSize: Long,
+    ): ResponseEntity<ListTeamJoinRequests200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+        val (applications, pageDto) =
+            teamMembershipService.listTeamJoinRequests(
+                requestingUserId = currentUserId,
+                teamId = teamId,
+                status = status?.toEnum(),
+                cursorId = pageStart,
+                pageSize = pageSize.toInt(),
+            )
+        return ResponseEntity.ok(
+            ListTeamJoinRequests200ResponseDTO(
+                code = 200,
+                data =
+                    ListTeamJoinRequests200ResponseDataDTO(
+                        applications = applications,
+                        page = pageDto,
+                    ),
+                message = "OK",
+            )
+        )
+    }
+
+    @Auth("team:reject_request:request")
+    override suspend fun rejectTeamJoinRequest(
+        @AuthContext("teamId") teamId: Long,
+        @ResourceId requestId: Long,
+    ): ResponseEntity<Unit> {
+        val currentUserId = jwtService.getCurrentUserId()
+        withContext(Dispatchers.IO) {
+            teamMembershipService.rejectTeamJoinRequest(currentUserId, teamId, requestId)
+        }
+        return ResponseEntity.noContent().build()
     }
 }

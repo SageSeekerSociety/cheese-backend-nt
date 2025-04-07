@@ -12,6 +12,8 @@ package org.rucca.cheese.team
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.rucca.cheese.auth.JwtService
+import org.rucca.cheese.common.error.ConflictError
+import org.rucca.cheese.common.error.ForbiddenError
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
@@ -21,16 +23,18 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.team.error.NotTeamMemberYetError
 import org.rucca.cheese.team.error.TeamRoleConflictError
+import org.rucca.cheese.team.models.TeamMembershipApplication
 import org.rucca.cheese.user.Avatar
 import org.rucca.cheese.user.User
-import org.rucca.cheese.user.UserService
 import org.rucca.cheese.user.services.UserRealNameService
+import org.rucca.cheese.user.services.UserService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate
 import org.springframework.data.elasticsearch.core.SearchHitSupport
 import org.springframework.data.elasticsearch.core.query.Criteria
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 fun Team.toTeamSummaryDTO() =
     TeamSummaryDTO(
@@ -38,8 +42,8 @@ fun Team.toTeamSummaryDTO() =
         name = this.name!!,
         intro = this.description!!,
         avatarId = this.avatar!!.id!!.toLong(),
-        updatedAt = this.updatedAt!!.toEpochMilli(),
-        createdAt = this.createdAt!!.toEpochMilli(),
+        updatedAt = this.updatedAt.toEpochMilli(),
+        createdAt = this.createdAt.toEpochMilli(),
     )
 
 @Service
@@ -51,12 +55,23 @@ class TeamService(
     private val authenticateService: JwtService,
     private val userRealNameService: UserRealNameService,
 ) {
-    fun convertApproveType(type: ApproveType): ApproveTypeDTO {
-        return when (type) {
-            ApproveType.APPROVED -> ApproveTypeDTO.APPROVED
-            ApproveType.DISAPPROVED -> ApproveTypeDTO.DISAPPROVED
-            ApproveType.NONE -> ApproveTypeDTO.NONE
-        }
+    /**
+     * Retrieves the user IDs of members with ADMIN or OWNER roles for a given team.
+     *
+     * @param teamId The ID of the team.
+     * @return A set of user IDs. Returns empty set if team not found or no admins/owners.
+     */
+    fun getTeamAdminAndOwnerIds(teamId: Long): Set<Long> {
+        val relations =
+            teamUserRelationRepository.findAllByTeamIdAndRoleIsIn(
+                teamId,
+                setOf(TeamMemberRole.ADMIN, TeamMemberRole.OWNER),
+            )
+        return relations.mapNotNull { it.user?.id?.toLong() }.toSet()
+    }
+
+    fun getTeamReference(teamId: IdType): Team {
+        return teamRepository.getReferenceById(teamId)
     }
 
     fun getTeamSize(teamId: IdType): Int {
@@ -84,8 +99,8 @@ class TeamService(
                     total = countTeamNormalMembers(teamId),
                     examples = getTeamMemberExamples(teamId),
                 ),
-            updatedAt = team.updatedAt!!.toEpochMilli(),
-            createdAt = team.createdAt!!.toEpochMilli(),
+            updatedAt = team.updatedAt.toEpochMilli(),
+            createdAt = team.createdAt.toEpochMilli(),
             joined = myRoleOptional.isPresent,
             role = myRoleOptional.map { convertMemberRole(it.role!!) }.orElse(null),
         )
@@ -111,7 +126,7 @@ class TeamService(
     ): Pair<List<TeamDTO>, PageDTO> {
         val id = query.toLongOrNull()
         if (id != null) {
-            return Pair(listOf(getTeamDto(id)), PageDTO(id, 1, hasPrev = false, hasMore = false))
+            return Pair(listOf(getTeamDto(id)), PageDTO(id, 1, hasMore = false))
         }
         val criteria = Criteria("name").matches(query)
         val hints =
@@ -231,14 +246,26 @@ class TeamService(
             TeamUserRelation(
                 team = team,
                 role = TeamMemberRole.OWNER,
-                user = User().apply { id = ownerId.toInt() },
+                user = userService.getUserReference(ownerId),
             )
         )
         return team.id!!
     }
 
-    fun getTeam(teamId: IdType): Team {
+    private fun getTeam(teamId: IdType): Team {
         return teamRepository.findById(teamId).orElseThrow { NotFoundError("team", teamId) }
+    }
+
+    private fun getTeams(teamIds: List<IdType>): List<Team> {
+        val teams = teamRepository.findAllById(teamIds)
+        if (teams.size != teamIds.size) {
+            val notFoundIds = teamIds.filter { id -> teams.none { it.id == id } }
+            throw NotFoundError(
+                "Team with IDs $notFoundIds not found",
+                mapOf("teamIds" to notFoundIds),
+            )
+        }
+        return teams
     }
 
     fun ensureTeamIdExists(teamId: IdType) {
@@ -357,9 +384,14 @@ class TeamService(
      * @param teamId The ID of the team.
      * @return The team summary DTO.
      */
-    fun getTeamSummaryDto(teamId: IdType): TeamSummaryDTO {
+    fun getTeamSummaryDTO(teamId: IdType): TeamSummaryDTO {
         val team = getTeam(teamId)
         return team.toTeamSummaryDTO()
+    }
+
+    fun getTeamSummaryDTOs(teamIds: List<IdType>): Map<IdType, TeamSummaryDTO> {
+        val teams = getTeams(teamIds)
+        return teams.associate { it.id!! to it.toTeamSummaryDTO() }
     }
 
     private fun addTeamMember(teamId: IdType, userId: IdType, role: TeamMemberRole) {
@@ -451,5 +483,172 @@ class TeamService(
     fun getTeamsWhereUserIsMember(userId: IdType): List<Team> {
         val teamUserRelations = teamUserRelationRepository.findAllByUserId(userId)
         return teamUserRelations.mapNotNull { it.team }
+    }
+
+    /**
+     * Internal method to create a team membership relation. Should only be called after an
+     * application/invitation is approved/accepted. Handles potential race conditions or conflicts.
+     * Marked public for now, but consider package-private or internal visibility if possible.
+     *
+     * @param application The finalized (APPROVED or ACCEPTED) membership application.
+     * @throws TeamRoleConflictError if the user somehow already has a role in the team.
+     */
+    @Transactional // Ensure atomicity
+    fun createMembershipFromApplication(application: TeamMembershipApplication) {
+        val teamId = application.team.id!!
+        val userId = application.user.id!!
+        val role = application.role // Role determined by the application
+
+        // Check for existing relation *again* within the transaction for safety
+        val existingRelation =
+            teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId.toLong())
+        if (existingRelation.isPresent) {
+            // This case should ideally not happen due to prior checks, but handle defensively
+            throw TeamRoleConflictError(
+                teamId,
+                userId.toLong(),
+                existingRelation.get().role!!,
+                role,
+            )
+        }
+
+        // Create and save the new relation
+        val newRelation =
+            TeamUserRelation(
+                team = application.team, // Use the reference from application
+                user = application.user, // Use the reference from application
+                role = role,
+            )
+        teamUserRelationRepository.save(newRelation)
+
+        // Optionally: Invalidate caches, update team member counts, emit events etc.
+    }
+
+    /**
+     * Removes a team member. Now likely called via a dedicated "leave team" or "kick member"
+     * endpoint/service method. Requires checks for OWNER role (cannot remove owner directly, needs
+     * ownership transfer).
+     */
+    @Transactional
+    fun removeTeamMember(teamId: IdType, userIdToRemove: IdType, initiatorId: IdType) {
+        // 1. Permission Check (e.g., initiator must be admin/owner OR the user themselves leaving)
+        val initiatorRelation =
+            teamUserRelationRepository.findByTeamIdAndUserId(teamId, initiatorId)
+        val targetRelation =
+            teamUserRelationRepository.findByTeamIdAndUserId(teamId, userIdToRemove).orElseThrow {
+                NotTeamMemberYetError(teamId, userIdToRemove)
+            } // Already checked if member?
+
+        val isSelfLeave = initiatorId == userIdToRemove
+        val isAdminOrOwner =
+            initiatorRelation.isPresent &&
+                (initiatorRelation.get().role == TeamMemberRole.ADMIN ||
+                    initiatorRelation.get().role == TeamMemberRole.OWNER)
+
+        if (!isSelfLeave && !isAdminOrOwner) {
+            throw ForbiddenError(
+                "User $initiatorId cannot remove member $userIdToRemove from team $teamId."
+            )
+        }
+
+        // 2. Cannot remove the OWNER directly
+        if (targetRelation.role == TeamMemberRole.OWNER) {
+            throw ForbiddenError(
+                "Cannot remove the team owner (ID: $userIdToRemove). Ownership must be transferred first."
+            )
+        }
+
+        // 3. If admin tries to remove another admin/owner (policy decision needed)
+        if (isAdminOrOwner && !isSelfLeave) {
+            val initiatorRole = initiatorRelation.get().role!!
+            val targetRole = targetRelation.role!!
+            // Example policy: Admins cannot remove Owner. Admins cannot remove other Admins unless
+            // they are Owner.
+            if (targetRole == TeamMemberRole.OWNER)
+                throw ForbiddenError("Admins cannot remove the Owner.")
+            if (targetRole == TeamMemberRole.ADMIN && initiatorRole == TeamMemberRole.ADMIN) {
+                throw ForbiddenError("Admins cannot remove other Admins.")
+            }
+        }
+
+        // 4. Perform soft delete
+        targetRelation.deletedAt = LocalDateTime.now() // Or OffsetDateTime? Be consistent.
+        teamUserRelationRepository.save(targetRelation)
+
+        // Optionally: Cancel any pending applications/invitations for this user/team?
+        // Optionally: Update counts, emit events etc.
+    }
+
+    /**
+     * Transfers team ownership. Requires careful validation. This logic remains largely the same
+     * but should enforce that the target user *exists* and might need role adjustments.
+     */
+    @Transactional
+    fun transferTeamOwnership(teamId: IdType, newOwnerId: IdType, initiatorId: IdType) {
+        // 1. Permission Check: Only current owner can transfer
+        val currentOwnerRelation =
+            teamUserRelationRepository
+                .findByTeamIdAndRole(teamId, TeamMemberRole.OWNER)
+                .orElseThrow {
+                    NotFoundError("Team Owner for team", teamId)
+                } // Should always exist if team exists
+
+        if (currentOwnerRelation.user?.id != initiatorId.toInt()) {
+            throw ForbiddenError(
+                "Only the current owner (ID: ${currentOwnerRelation.user?.id}) can transfer ownership."
+            )
+        }
+
+        if (currentOwnerRelation.user?.id == newOwnerId.toInt()) {
+            throw ConflictError(
+                "Cannot transfer ownership to the current owner."
+            ) // Or just return success?
+        }
+
+        // 2. Validate new owner exists
+        val newOwnerUser =
+            userService.getUserReference(newOwnerId) // Throws NotFoundError if user doesn't exist
+
+        // 3. Handle new owner's existing relation (if any)
+        val newOwnerExistingRelation =
+            teamUserRelationRepository.findByTeamIdAndUserId(teamId, newOwnerId)
+
+        if (newOwnerExistingRelation.isPresent) {
+            val relation = newOwnerExistingRelation.get()
+            if (relation.role == TeamMemberRole.OWNER) { // Should not happen if check above works
+                throw ConflictError("User $newOwnerId is already the owner.")
+            }
+            // Update existing relation to OWNER
+            relation.role = TeamMemberRole.OWNER
+            teamUserRelationRepository.save(relation)
+        } else {
+            // Create new relation for the new owner
+            val newRelation =
+                TeamUserRelation(
+                    team = getTeamReference(teamId), // Use reference
+                    user = newOwnerUser,
+                    role = TeamMemberRole.OWNER,
+                )
+            teamUserRelationRepository.save(newRelation)
+        }
+
+        // 4. Downgrade current owner to ADMIN (or remove? Policy decision - let's downgrade)
+        currentOwnerRelation.role = TeamMemberRole.ADMIN
+        teamUserRelationRepository.save(currentOwnerRelation)
+
+        // Optionally: Invalidate caches, emit events etc.
+    }
+
+    fun findTeamUserRelation(teamId: IdType, userId: IdType): TeamUserRelation? {
+        return teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId).orElse(null)
+    }
+
+    fun updateTeamMemberRole(teamId: IdType, userId: IdType, newRole: TeamMemberRole) {
+        val relation =
+            teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId).orElseThrow {
+                NotTeamMemberYetError(teamId, userId)
+            }
+        relation.role = newRole
+        teamUserRelationRepository.save(relation)
     }
 }

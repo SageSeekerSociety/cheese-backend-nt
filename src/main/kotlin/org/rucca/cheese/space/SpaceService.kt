@@ -39,6 +39,7 @@ import org.rucca.cheese.space.repositories.SpaceRepository
 import org.rucca.cheese.task.TaskRepository
 import org.rucca.cheese.topic.TopicService
 import org.rucca.cheese.user.*
+import org.rucca.cheese.user.services.UserService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

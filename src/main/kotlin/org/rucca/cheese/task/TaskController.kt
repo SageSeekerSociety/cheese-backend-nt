@@ -12,7 +12,10 @@
 package org.rucca.cheese.task
 
 import jakarta.servlet.http.HttpServletResponse
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withContext
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.TasksApi
 import org.rucca.cheese.auth.JwtService
@@ -28,7 +31,7 @@ import org.rucca.cheese.llm.error.ConversationNotFoundError
 import org.rucca.cheese.model.*
 import org.rucca.cheese.task.option.TaskEnumerateOptions
 import org.rucca.cheese.task.option.TaskQueryOptions
-import org.rucca.cheese.user.UserService
+import org.rucca.cheese.user.services.UserService
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -57,31 +60,35 @@ class TaskController(
 ) : TasksApi {
 
     @Auth("task:delete:task")
-    override fun deleteTask(@ResourceId taskId: Long): ResponseEntity<CommonResponseDTO> {
+    override suspend fun deleteTask(@ResourceId taskId: Long): ResponseEntity<CommonResponseDTO> {
         taskService.deleteTask(taskId)
         return ResponseEntity.ok(CommonResponseDTO(200, "OK"))
     }
 
     @Auth("task:delete:participant")
-    override fun deleteTaskParticipant(
+    override suspend fun deleteTaskParticipant(
         @ResourceId taskId: Long,
         @AuthContext("participantId") participantId: Long,
     ): ResponseEntity<Unit> {
-        taskMembershipService.removeTaskParticipant(taskId, participantId)
+        withContext(Dispatchers.IO) {
+            taskMembershipService.removeTaskParticipant(taskId, participantId)
+        }
         return ResponseEntity.noContent().build()
     }
 
     @Auth("task:delete:participant")
-    override fun deleteTaskParticipantByMember(
+    override suspend fun deleteTaskParticipantByMember(
         @ResourceId taskId: Long,
         @AuthContext("memberId") member: Long,
     ): ResponseEntity<Unit> {
-        taskMembershipService.removeTaskParticipantByMemberId(taskId, member)
+        withContext(Dispatchers.IO) {
+            taskMembershipService.removeTaskParticipantByMemberId(taskId, member)
+        }
         return ResponseEntity.noContent().build()
     }
 
     @Auth("task:query:task")
-    override fun getTask(
+    override suspend fun getTask(
         @ResourceId taskId: Long,
         querySpace: Boolean,
         queryTeam: Boolean,
@@ -116,7 +123,7 @@ class TaskController(
     }
 
     @Auth("task:enumerate:participant")
-    override fun getTaskParticipants(
+    override suspend fun getTaskParticipants(
         @ResourceId taskId: Long,
         approved: ApproveTypeDTO?,
         queryRealNameInfo: Boolean,
@@ -134,7 +141,7 @@ class TaskController(
     }
 
     @Auth("task:enumerate:submission")
-    override fun getTaskSubmissions(
+    override suspend fun getTaskSubmissions(
         @ResourceId taskId: Long,
         @AuthContext("participantId") participantId: Long,
         allVersions: Boolean,
@@ -179,7 +186,7 @@ class TaskController(
     }
 
     @Auth("task:enumerate:task")
-    override fun getTasks(
+    override suspend fun getTasks(
         @AuthContext("spaceId") space: Long,
         @AuthContext("categoryId") categoryId: Long?,
         @AuthContext("approved") approved: ApproveTypeDTO?,
@@ -246,7 +253,7 @@ class TaskController(
     }
 
     @Auth("task:modify:task")
-    override fun patchTask(
+    override suspend fun patchTask(
         @ResourceId taskId: Long,
         @AuthContext("approved", field = "approved")
         @AuthContext("rejectReason", field = "rejectReason")
@@ -319,7 +326,7 @@ class TaskController(
     }
 
     @Auth("task:modify:participant")
-    override fun patchTaskParticipant(
+    override suspend fun patchTaskParticipant(
         @ResourceId taskId: Long,
         @AuthContext("participantId") participantId: Long,
         @AuthContext("approved", "approved")
@@ -327,7 +334,12 @@ class TaskController(
         patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO,
     ): ResponseEntity<GetTaskParticipant200ResponseDTO> {
         val participant =
-            taskMembershipService.updateTaskMembership(participantId, patchTaskMembershipRequestDTO)
+            withContext(Dispatchers.IO) {
+                taskMembershipService.updateTaskMembership(
+                    participantId,
+                    patchTaskMembershipRequestDTO,
+                )
+            }
         return ResponseEntity.ok(
             GetTaskParticipant200ResponseDTO(
                 200,
@@ -338,14 +350,20 @@ class TaskController(
     }
 
     @Auth("task:modify:participant")
-    override fun patchTaskMembershipByMember(
+    override suspend fun patchTaskMembershipByMember(
         @ResourceId taskId: Long,
         @AuthContext("memberId") member: Long,
         @AuthContext("approved", "approved")
         @AuthContext("deadline", "deadline")
         patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO,
     ): ResponseEntity<PatchTaskMembershipByMember200ResponseDTO> {
-        taskMembershipService.updateTaskMembership(taskId, member, patchTaskMembershipRequestDTO)
+        withContext(Dispatchers.IO) {
+            taskMembershipService.updateTaskMembership(
+                taskId,
+                member,
+                patchTaskMembershipRequestDTO,
+            )
+        }
         val participants = taskMembershipService.getTaskMembershipDTOs(taskId, null)
         return ResponseEntity.ok(
             PatchTaskMembershipByMember200ResponseDTO(
@@ -357,13 +375,13 @@ class TaskController(
     }
 
     @Auth("task:modify:submission")
-    override fun patchTaskSubmission(
+    override suspend fun patchTaskSubmission(
         @ResourceId taskId: Long,
         @AuthContext("participantId") participantId: Long,
         version: Int,
-        taskSubmissionContentDTO: List<TaskSubmissionContentDTO>,
+        taskSubmissionContentDTO: Flow<TaskSubmissionContentDTO>,
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
-        val contents = taskSubmissionContentDTO.toEntryList()
+        val contents = taskSubmissionContentDTO.toList().toEntryList()
         val submissions =
             taskSubmissionService.modifySubmission(
                 taskId,
@@ -382,7 +400,7 @@ class TaskController(
     }
 
     @Auth("task:create:task")
-    override fun postTask(
+    override suspend fun postTask(
         postTaskRequestDTO: PostTaskRequestDTO
     ): ResponseEntity<PatchTask200ResponseDTO> {
         val taskId =
@@ -419,7 +437,7 @@ class TaskController(
     }
 
     @Auth("task:create:participant")
-    override fun postTaskParticipant(
+    override suspend fun postTaskParticipant(
         @ResourceId taskId: Long,
         @AuthContext("memberId") member: Long,
         @AuthContext("deadline", field = "deadline")
@@ -450,12 +468,12 @@ class TaskController(
     }
 
     @Auth("task:create:submission")
-    override fun postTaskSubmission(
+    override suspend fun postTaskSubmission(
         @ResourceId taskId: Long,
         @AuthContext("participantId") participantId: Long,
-        taskSubmissionContentDTO: List<TaskSubmissionContentDTO>,
+        taskSubmissionContentDTO: Flow<TaskSubmissionContentDTO>,
     ): ResponseEntity<PostTaskSubmission200ResponseDTO> {
-        val contents = taskSubmissionContentDTO.toEntryList()
+        val contents = taskSubmissionContentDTO.toList().toEntryList()
         val submissions =
             taskSubmissionService.submitTask(
                 taskId,
@@ -473,7 +491,7 @@ class TaskController(
     }
 
     @Auth("task:create:submission-review")
-    override fun postTaskSubmissionReview(
+    override suspend fun postTaskSubmissionReview(
         @ResourceId taskId: Long,
         @AuthContext("participantId") participantId: Long,
         @AuthContext("submissionId") submissionId: Long,
@@ -500,7 +518,7 @@ class TaskController(
     }
 
     @Auth("task:modify:submission-review")
-    override fun patchTaskSubmissionReview(
+    override suspend fun patchTaskSubmissionReview(
         @ResourceId taskId: Long,
         @AuthContext("participantId") participantId: Long,
         @AuthContext("submissionId") submissionId: Long,
@@ -540,7 +558,7 @@ class TaskController(
     }
 
     @Auth("task:delete:submission-review")
-    override fun deleteTaskSubmissionReview(
+    override suspend fun deleteTaskSubmissionReview(
         @ResourceId taskId: Long,
         @AuthContext("participantId") participantId: Long,
         @AuthContext("submissionId") submissionId: Long,
@@ -550,7 +568,7 @@ class TaskController(
     }
 
     @Auth("task:query:ai-advice")
-    override fun getTaskAiAdvice(
+    override suspend fun getTaskAiAdvice(
         @ResourceId taskId: IdType
     ): ResponseEntity<GetTaskAiAdvice200ResponseDTO> {
         return ResponseEntity.ok(
@@ -559,7 +577,7 @@ class TaskController(
     }
 
     @Auth("task:query:ai-advice")
-    override fun getTaskAiAdviceStatus(
+    override suspend fun getTaskAiAdviceStatus(
         @ResourceId taskId: IdType
     ): ResponseEntity<GetTaskAiAdviceStatus200ResponseDTO> {
         val data = taskAIAdviceService.getTaskAIAdviceStatus(taskId)
@@ -567,7 +585,7 @@ class TaskController(
     }
 
     @Auth("task:create:ai-advice")
-    override fun requestTaskAiAdvice(
+    override suspend fun requestTaskAiAdvice(
         @ResourceId taskId: IdType
     ): ResponseEntity<RequestTaskAiAdvice200ResponseDTO> {
         val userId = jwtService.getCurrentUserId()
@@ -640,7 +658,7 @@ class TaskController(
      * @return Conversation DTO and quota information.
      */
     @Auth("task:create:ai-advice")
-    override fun createTaskAiAdviceConversation(
+    override suspend fun createTaskAiAdviceConversation(
         @ResourceId taskId: IdType,
         @RequestBody
         createTaskAIAdviceConversationRequestDTO: CreateTaskAIAdviceConversationRequestDTO,
@@ -689,7 +707,7 @@ class TaskController(
     }
 
     @Auth("task:query:ai-advice")
-    override fun getTaskAiAdviceConversationsGrouped(
+    override suspend fun getTaskAiAdviceConversationsGrouped(
         @ResourceId taskId: Long
     ): ResponseEntity<GetTaskAiAdviceConversationsGrouped200ResponseDTO> {
         val userId = jwtService.getCurrentUserId()
@@ -705,7 +723,7 @@ class TaskController(
     }
 
     @Auth("task:query:ai-advice")
-    override fun getTaskAiAdviceConversation(
+    override suspend fun getTaskAiAdviceConversation(
         @ResourceId taskId: Long,
         @AuthContext("conversationId") conversationId: String,
     ): ResponseEntity<GetTaskAiAdviceConversation200ResponseDTO> {
@@ -724,7 +742,7 @@ class TaskController(
     }
 
     @Auth("task:delete:ai-advice")
-    override fun deleteTaskAiAdviceConversation(
+    override suspend fun deleteTaskAiAdviceConversation(
         @ResourceId taskId: Long,
         @AuthContext("conversationId") conversationId: String,
     ): ResponseEntity<Unit> {
@@ -733,7 +751,7 @@ class TaskController(
     }
 
     @Auth("task:query:task")
-    override fun getTaskTeams(
+    override suspend fun getTaskTeams(
         @ResourceId taskId: Long,
         filter: String,
     ): ResponseEntity<GetTaskTeams200ResponseDTO> {

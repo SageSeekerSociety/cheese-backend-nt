@@ -15,9 +15,9 @@ data class ListNotifications200ResponseDataDTO(
     @get:JsonProperty("notifications", required = true)
     val notifications: kotlin.collections.List<NotificationDTO>,
     @field:Valid
-    @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("page", required = true)
-    val page: PageDTO,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("page")
+    val page: EncodedCursorPageDTO? = null,
 ) : Serializable {
 
     companion object {

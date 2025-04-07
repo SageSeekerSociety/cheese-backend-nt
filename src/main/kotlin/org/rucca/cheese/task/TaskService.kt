@@ -42,7 +42,7 @@ import org.rucca.cheese.team.TeamUserRelation
 import org.rucca.cheese.team.toTeamSummaryDTO
 import org.rucca.cheese.topic.Topic
 import org.rucca.cheese.user.User
-import org.rucca.cheese.user.UserService
+import org.rucca.cheese.user.services.UserService
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate
 import org.springframework.data.elasticsearch.core.SearchHitSupport
 import org.springframework.data.elasticsearch.core.query.Criteria

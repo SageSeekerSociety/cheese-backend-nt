@@ -18,7 +18,7 @@ class AIController(
     private val jwtService: JwtService,
 ) : AiApi {
     @Guard("query", "ai:quota")
-    override fun getUserAiQuota(): ResponseEntity<GetUserAiQuota200ResponseDTO> {
+    override suspend fun getUserAiQuota(): ResponseEntity<GetUserAiQuota200ResponseDTO> {
         val userId = jwtService.getCurrentUserId()
         val quota = userQuotaService.getUserQuota(userId)
 

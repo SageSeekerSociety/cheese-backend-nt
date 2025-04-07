@@ -22,7 +22,7 @@ import org.rucca.cheese.project.models.ProjectMembership
 import org.rucca.cheese.project.repositories.ProjectMembershipRepository
 import org.rucca.cheese.project.repositories.ProjectRepository
 import org.rucca.cheese.team.TeamService
-import org.rucca.cheese.user.UserService
+import org.rucca.cheese.user.services.UserService
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.domain.Sort
 import org.springframework.data.repository.findByIdOrNull

@@ -14,6 +14,7 @@ import org.rucca.cheese.auth.dsl.defineRoleHierarchy
 import org.rucca.cheese.auth.hierarchy.GraphRoleHierarchy
 import org.rucca.cheese.auth.registry.RegistrationService
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.user.services.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
