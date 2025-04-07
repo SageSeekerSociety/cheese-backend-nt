@@ -2969,175 +2969,223 @@ paths:
                   $ref: "#/components/schemas/TeamMemberRoleType"
               type: object
       summary: Update Team Membership Info
-  /notifications/{notificationId}:
-    delete:
-      parameters:
-        - description: Notification ID
-          in: path
-          name: notificationId
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CommonResponse"
-          description: OK
-      tags: [ ]
-      operationId: delete-notification
-      summary: Delete Notification
   /notifications:
     get:
-      summary: List Notifications
-      tags: [ ]
-      parameters:
-        - schema:
-            type: string
-            enum:
-              - mention
-              - reply
-              - reaction
-              - project_invite
-              - deadline_remind
-          in: query
-          name: type
-          description: Notification Type
-          required: false
-        - schema:
-            type: boolean
-          in: query
-          name: read
-          description: Whether to filter read or unread notifications
-          required: false
-        - schema:
-            type: integer
-            format: int64
-          in: query
-          name: page_start
-          description: Page Start Index
-          required: true
-        - schema:
-            type: integer
-            format: int32
-          in: query
-          name: page_size
-          description: Page Size
-          required: true
+      summary: List Notifications for Current User
+      description: Retrieves a paginated list of notifications for the currently authenticated user, sorted by creation date descending. Uses cursor-based pagination.
       operationId: list-notifications
+      parameters:
+        - $ref: '#/components/parameters/EncodedCursorPageStart'
+        - $ref: '#/components/parameters/PageSize'
+        - name: type
+          in: query
+          description: Filter by notification type.
+          required: false
+          schema: { $ref: '#/components/schemas/NotificationType' }
+        - name: read
+          in: query
+          description: Filter by read status.
+          required: false
+          schema: { type: boolean, nullable: true }
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Paginated list of notifications.
           content:
             application/json:
               schema:
                 type: object
-                required:
-                  - code
-                  - message
-                  - data
                 properties:
                   code:
                     type: integer
-                    default: 200
-                  message:
-                    type: string
-                    default: "success"
+                    example: 200
                   data:
-                    required:
-                      - notifications
-                      - page
+                    type: object
                     properties:
                       notifications:
                         type: array
                         items:
-                          $ref: "#/components/schemas/Notification"
+                          $ref: '#/components/schemas/Notification'
                       page:
-                        $ref: "#/components/schemas/Page"
-  /notifications/read:
-    post:
-      summary: Mark Notifications as Read
-      tags: [ ]
+                        $ref: '#/components/schemas/EncodedCursorPage'
+                    required: [ notifications, cursor, hasMore ]
+                  message:
+                    type: string
+                required: [ code, data, message ]
+    patch:
+      summary: Bulk Update Notification Status (e.g., Mark Multiple as Read)
+      description: Updates the status (e.g., read state) of multiple notifications belonging to the current user in a single request.
+      operationId: bulk-update-notifications
       requestBody:
+        description: An array of notification updates. Currently only supports updating the 'read' status.
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - notificationIds
+              required: [ updates ]
               properties:
-                notificationIds:
+                updates:
                   type: array
+                  minItems: 1
                   items:
-                    type: integer
-                    format: int64
-      operationId: mark-notifications-as-read
+                    type: object
+                    required: [ id, read ]
+                    properties:
+                      id:
+                        type: integer
+                        format: int64
+                        description: The ID of the notification to update.
+                      read:
+                        type: boolean
+                        description: The desired read status.
+                  example: [ { "id": 123, "read": true }, { "id": 456, "read": true } ]
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Bulk update successful. Returns the IDs that were successfully updated.
           content:
             application/json:
               schema:
                 type: object
-                required:
-                  - code
-                  - message
-                  - data
+                required: [ code, message, data ]
                 properties:
-                  code:
-                    type: integer
-                    default: 200
-                  message:
-                    type: string
-                    default: "success"
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: "Success" }
                   data:
                     type: object
                     properties:
-                      notificationIds:
+                      updatedIds:
                         type: array
-                        items:
-                          type: integer
-                          format: int64
-  /notifications/unread/count:
+                        items: { type: integer, format: int64 }
+                        description: List of notification IDs successfully updated.
+  /notifications/{notificationId}:
     get:
-      summary: Get Unread Notifications Count
-      tags: [ ]
+      summary: Get a Single Notification
+      description: Retrieves details of a specific notification belonging to the current user.
+      operationId: get-notification-by-id
       parameters:
-        - name: receiverId
-          in: query
-          required: true
-          schema:
-            type: integer
-            format: int64
-      operationId: get-unread-notifications-count
+        - $ref: '#/components/parameters/NotificationId'
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Notification details.
           content:
             application/json:
               schema:
                 type: object
-                required:
-                  - code
-                  - message
-                  - data
+                required: [ code, message, data ]
                 properties:
-                  code:
-                    type: integer
-                    default: 200
-                  message:
-                    type: string
-                    default: "success"
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: "Success" }
+                  data:
+                    type: object
+                    properties:
+                      notification:
+                        $ref: '#/components/schemas/Notification'
+                    required: [ notification ]
+    patch:
+      summary: Update Notification Status (e.g., Mark as Read/Unread)
+      description: Updates the status (e.g., read state) of a specific notification belonging to the current user.
+      operationId: update-notification-status
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      requestBody:
+        description: The update to apply. Currently only supports changing the 'read' status.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ read ]
+              properties:
+                read:
+                  type: boolean
+                  description: The desired read status.
+              example: { "read": true }
+      responses:
+        '200':
+          description: Notification updated successfully. Returns the updated notification.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ code, message, data ]
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: "Success" }
+                  data:
+                    type: object
+                    properties:
+                      notification:
+                        $ref: '#/components/schemas/Notification'
+                    required: [ notification ]
+    delete:
+      summary: Delete a Notification
+      description: Deletes a specific notification belonging to the currently authenticated user.
+      operationId: delete-notification
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '204': { description: Notification successfully deleted. }
+  /notifications/status:
+    put:
+      summary: Set Collective Notification Status (e.g., Mark All as Read)
+      description: Sets a specific status for all applicable notifications of the current user. Currently only supports setting 'read' to true for all unread notifications.
+      operationId: set-collective-notification-status
+      requestBody:
+        description: The status to apply to the collection.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ read ]
+              properties:
+                read:
+                  type: boolean
+                  description: Must be 'true' to mark all as read. Setting to 'false' is not supported via this endpoint.
+                  enum: [ true ] # Enforce only true can be sent
+              example: { "read": true }
+      responses:
+        '200':
+          description: Collective status updated (all marked as read).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ code, message, data ]
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: "Success" }
                   data:
                     type: object
                     properties:
                       count:
                         type: integer
-                        nullable: false
-                        default: 0
+                        format: int32
+                        description: The number of notifications marked as read.
+  /notifications/unread-count:
+    get:
+      summary: Get Unread Notification Count
+      description: Retrieves the count of unread notifications for the currently authenticated user. (Pragmatic endpoint).
+      operationId: get-unread-notifications-count
+      responses:
+        '200':
+          description: Unread count retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ code, message, data ]
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: "Success" }
+                  data:
+                    type: object
+                    required: [ count ]
+                    properties:
+                      count:
+                        type: integer
+                        format: int64
+                        description: Total number of unread notifications.
   /projects:
     post:
       operationId: create-project
@@ -5464,6 +5512,30 @@ components:
           description: 用户名
           example: cheese
           type: string
+    EncodedCursorPage:
+      type: object
+      description: 分页信息
+      required:
+        - page_start
+        - page_size
+        - has_prev
+        - has_more
+      properties:
+        page_start:
+          type: string
+          description: 该页第一个 item 的 cursor
+        page_size:
+          type: integer
+          description: 每页 item 数量
+        has_more:
+          type: boolean
+          description: 是否有下一页
+        next_start:
+          type: string
+          description: 下一页第一个 item 的 cursor
+        total:
+          type: integer
+          description: 总 item 数量
     Page:
       type: object
       description: 分页信息
@@ -5480,13 +5552,6 @@ components:
         page_size:
           type: integer
           description: 每页 item 数量
-        has_prev:
-          type: boolean
-          description: 是否有上一页
-        prev_start:
-          type: integer
-          format: int64
-          description: 上一页第一个 item 的 ID
         has_more:
           type: boolean
           description: 是否有下一页
@@ -5593,68 +5658,111 @@ components:
       required:
         - id
         - name
-    Notification:
+    ResolvedEntityInfo:
       type: object
+      description: Represents basic display information for a resolved entity (User, Team, Project, etc.).
       required:
         - id
         - type
-        - receiverId
-        - content
+        - name
+      properties:
+        id:
+          type: string # Use string for ID for generality across different entity types
+          description: Unique identifier of the resolved entity.
+          example: "123"
+        type:
+          type: string
+          description: The type of the entity (e.g., 'user', 'team', 'project'). Helps the client understand the context.
+          example: "user"
+        name:
+          type: string
+          description: The display name (e.g., nickname, team name, project title) of the entity.
+          example: "Alice"
+        url:
+          type: string
+          nullable: true
+          description: A URL pointing to the entity's page or resource, if applicable.
+          example: "/users/123"
+        avatarUrl:
+          type: string
+          nullable: true
+          description: A URL pointing to an avatar, logo, or icon for the entity, if applicable.
+          example: "https://example.com/avatars/123.png"
+        status:
+          type: string
+          nullable: true
+          description: The status of the entity (e.g., 'online', 'offline', 'busy'), if applicable.
+          example: "online"
+    NotificationType:
+      type: string
+      enum:
+        - MENTION
+        - REPLY
+        - REACTION
+        - PROJECT_INVITE
+        - DEADLINE_REMIND
+        - TEAM_JOIN_REQUEST
+        - TEAM_INVITATION
+        - TEAM_REQUEST_APPROVED
+        - TEAM_REQUEST_REJECTED
+        - TEAM_INVITATION_ACCEPTED
+        - TEAM_INVITATION_DECLINED
+        - TEAM_INVITATION_CANCELED
+        - TEAM_REQUEST_CANCELED
+      description: The type category of the notification.
+      example: TEAM_JOIN_REQUEST
+    Notification:
+      type: object
+      description: Represents a notification with resolved entity information, ready for client-side rendering.
+      required:
+        - id
+        - type
         - read
         - createdAt
       properties:
         id:
           type: integer
           format: int64
+          description: Unique identifier for the notification.
+          readOnly: true
+          example: 101
         type:
-          type: string
-          enum:
-            - MENTION
-            - REPLY
-            - REACTION
-            - PROJECT_INVITE
-            - DEADLINE_REMIND
-        receiverId:
-          type: integer
-          format: int64
-          description: "The ID of the user who will receive the notification. This will be mapped to a User entity in the backend."
-        content:
-          type: object
-          properties:
-            text:
-              type: string
-            projectId:
-              type: integer
-              format: int64
-              nullable: true
-            discussionId:
-              type: integer
-              format: int64
-              nullable: true
-            knowledgeId:
-              type: integer
-              format: int64
-              nullable: true
+          $ref: "#/components/schemas/NotificationType"
+          example: TEAM_INVITATION
         read:
           type: boolean
-          default: false
+          description: Indicates if the notification has been read by the recipient.
+          example: false
         createdAt:
           type: integer
           format: int64
-    #    ProjectContent:
-    #      type: object
-    #      description: 项目富文本内容
-    #      properties:
-    #        raw:
-    #          type: string
-    #          description: 原始markdown内容
-    #        html:
-    #          type: string
-    #          description: 渲染后的HTML
-    #        attachments:
-    #          type: array
-    #          items:
-    #            $ref: '#/components/schemas/Attachment'
+          description: Notification creation timestamp as epoch milliseconds (Unix timestamp * 1000).
+          readOnly: true
+          example: 1700000000000
+        entities:
+          type: object
+          description: >
+            Map containing information about entities related to this notification,
+            resolved by the backend. Keys are logical roles (e.g., "actor", "team",
+            "subjectUser", "targetItem"), and values are the resolved entity details.
+            A value can be null if an entity reference in the metadata could not be resolved.
+          nullable: true
+          additionalProperties:
+            $ref: "#/components/schemas/ResolvedEntityInfo"
+            nullable: true
+        contextMetadata:
+          type: object
+          nullable: true
+          additionalProperties: {}
+          description: >
+            Map containing non-entity specific contextual data needed for rendering,
+            extracted from the original notification metadata. Examples include the role offered
+            in an invitation, the specific reaction emoji used, a custom message string, etc.
+          example:
+            role: "MEMBER"
+            reactionEmoji: "👍"
+            message: "Welcome aboard!"
+            someOtherFlag: true
     Project:
       type: object
       required:
@@ -6006,6 +6114,14 @@ components:
       in: path
       required: true
       description: The unique identifier of the invitation.
+      schema:
+        type: integer
+        format: int64
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      description: The unique identifier of the notification.
       schema:
         type: integer
         format: int64

@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
 import java.io.Serializable
 
-/** @param notificationIds */
-data class MarkNotificationsAsRead200ResponseDataDTO(
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("notificationIds")
-    val notificationIds: kotlin.collections.List<kotlin.Long>? = null
+/** @param read The desired read status. */
+data class UpdateNotificationStatusRequestDTO(
+    @Schema(example = "null", required = true, description = "The desired read status.")
+    @get:JsonProperty("read", required = true)
+    val read: kotlin.Boolean
 ) : Serializable {
 
     companion object {
