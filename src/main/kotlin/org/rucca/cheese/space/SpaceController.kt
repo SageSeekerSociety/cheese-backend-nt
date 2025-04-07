@@ -145,11 +145,7 @@ class SpaceController(
 
         val spaceDTO =
             withContext(Dispatchers.IO) {
-                spaceService.patchSpace(
-                    currentUserId,
-                    spaceId,
-                    patchSpaceRequestDTO,
-                )
+                spaceService.patchSpace(currentUserId, spaceId, patchSpaceRequestDTO)
             }
         return ResponseEntity.ok(
             PatchSpace200ResponseDTO(200, PatchSpace200ResponseDataDTO(spaceDTO), "OK")

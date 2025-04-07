@@ -10,6 +10,9 @@
 
 package org.rucca.cheese.api
 
+import java.time.LocalDateTime
+import java.time.ZoneId
+import kotlin.math.floor
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
@@ -27,10 +30,6 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
-import java.time.LocalDateTime
-import java.time.ZoneId
-import kotlin.math.floor
-
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -71,12 +70,13 @@ constructor(
     private val taskName = "Test Task ($randomSuffix)"
     private val taskIntro = "This is a test task."
     private val taskDescription = "A lengthy text. ".repeat(1000)
-    private val taskDeadline = LocalDateTime.now().plusDays(7).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    private val taskDeadline =
+        LocalDateTime.now().plusDays(7).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
     private val taskSubmissionSchema =
         listOf(
             TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT),
-            TaskSubmissionSchemaEntryDTO("Attachment Entry", TaskSubmissionTypeDTO.FILE)
+            TaskSubmissionSchemaEntryDTO("Attachment Entry", TaskSubmissionTypeDTO.FILE),
         )
     private var participantTaskMembershipId: IdType = -1
     private var participant2TaskMembershipId: IdType = -1
@@ -88,10 +88,11 @@ constructor(
         val type: String? = null,
         val id: Any? = null,
         val name: String? = null,
-        val taskId: IdType? = null
+        val taskId: IdType? = null,
     )
 
     data class ErrorDetail(val name: String, val data: ErrorData?)
+
     data class GenericErrorResponse(val error: ErrorDetail)
 
     // --- Refactored Helper Methods ---
@@ -104,23 +105,28 @@ constructor(
         spaceDescription: String,
         spaceAvatarId: IdType,
     ): Pair<IdType, IdType> {
-        val requestDTO = PostSpaceRequestDTO(
-            name = spaceName,
-            intro = spaceIntro,
-            description = spaceDescription,
-            avatarId = spaceAvatarId,
-            announcements = "[]",
-            taskTemplates = "[]"
-        )
-        val response = webTestClient.post().uri("/spaces")
-            .header("Authorization", "Bearer $creatorToken")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestDTO)
-            .exchange()
-            .expectStatus().isOk
-            .expectBody<PatchSpace200ResponseDTO>() // Assuming POST returns Patch DTO
-            .returnResult()
-            .responseBody
+        val requestDTO =
+            PostSpaceRequestDTO(
+                name = spaceName,
+                intro = spaceIntro,
+                description = spaceDescription,
+                avatarId = spaceAvatarId,
+                announcements = "[]",
+                taskTemplates = "[]",
+            )
+        val response =
+            webTestClient
+                .post()
+                .uri("/spaces")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestDTO)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<PatchSpace200ResponseDTO>() // Assuming POST returns Patch DTO
+                .returnResult()
+                .responseBody
 
         assertNotNull(response?.data?.space, "Space data should not be null in response")
         val createdSpace = response!!.data.space
@@ -129,7 +135,9 @@ constructor(
 
         val createdSpaceId = createdSpace.id
         val createdDefaultCategoryId = createdSpace.defaultCategoryId
-        logger.info("Created space: $createdSpaceId with default category ID: $createdDefaultCategoryId")
+        logger.info(
+            "Created space: $createdSpaceId with default category ID: $createdDefaultCategoryId"
+        )
         return Pair(createdSpaceId, createdDefaultCategoryId)
     }
 
@@ -141,22 +149,27 @@ constructor(
         teamAvatarId: IdType,
     ): IdType {
         // Assuming PostTeamRequestDTO exists
-        val requestDTO = PostTeamRequestDTO(
-            name = teamName,
-            intro = teamIntro,
-            description = teamDescription,
-            avatarId = teamAvatarId
-        )
+        val requestDTO =
+            PostTeamRequestDTO(
+                name = teamName,
+                intro = teamIntro,
+                description = teamDescription,
+                avatarId = teamAvatarId,
+            )
         // Assuming the response is something like PostTeamResponseDTO containing the team ID
-        val response = webTestClient.post().uri("/teams")
-            .header("Authorization", "Bearer $creatorToken")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestDTO)
-            .exchange()
-            .expectStatus().isOk // Assuming 200 OK on creation
-            .expectBody<GetTeam200ResponseDTO>() // Adjust DTO name as needed
-            .returnResult()
-            .responseBody
+        val response =
+            webTestClient
+                .post()
+                .uri("/teams")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestDTO)
+                .exchange()
+                .expectStatus()
+                .isOk // Assuming 200 OK on creation
+                .expectBody<GetTeam200ResponseDTO>() // Adjust DTO name as needed
+                .returnResult()
+                .responseBody
 
         assertNotNull(response?.data?.team, "Team data missing in response")
         val createdTeamId = response!!.data.team.id
@@ -169,33 +182,49 @@ constructor(
         // TeamJoinRequestCreate DTO - message is optional based on API spec
         val requestDTO = mapOf("message" to message).filterValues { it != null }
 
-        val response = webTestClient.post().uri("/teams/$teamId/requests")
-            .header("Authorization", "Bearer $userToken") // User who wants to join sends request
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestDTO)
-            .exchange()
-            .expectStatus().isCreated // API indicates 201 Created
-            .expectBody<Map<String, Any>>() // Generic map to handle response
-            .returnResult()
-            .responseBody
+        val response =
+            webTestClient
+                .post()
+                .uri("/teams/$teamId/requests")
+                .header(
+                    "Authorization",
+                    "Bearer $userToken",
+                ) // User who wants to join sends request
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestDTO)
+                .exchange()
+                .expectStatus()
+                .isCreated // API indicates 201 Created
+                .expectBody<Map<String, Any>>() // Generic map to handle response
+                .returnResult()
+                .responseBody
 
         // Extract the request ID from the response
         val applicationData = (response?.get("data") as? Map<*, *>)
         val application = (applicationData?.get("application") as? Map<*, *>)
-        val requestId = application?.get("id") as? Number ?: throw AssertionError("Request ID not found in response")
+        val requestId =
+            application?.get("id") as? Number
+                ?: throw AssertionError("Request ID not found in response")
 
         return requestId.toLong()
     }
 
     fun approveTeamJoinRequest(adminToken: String, teamId: IdType, requestId: IdType) {
-        webTestClient.post().uri("/teams/$teamId/requests/$requestId/approve")
+        webTestClient
+            .post()
+            .uri("/teams/$teamId/requests/$requestId/approve")
             .header("Authorization", "Bearer $adminToken") // Team admin approves
             .exchange()
             .expectStatus()
             .isNoContent() // API indicates 204 No Content
     }
 
-    fun joinTeamWithApproval(userToken: String, adminToken: String, teamId: IdType, userId: IdType) {
+    fun joinTeamWithApproval(
+        userToken: String,
+        adminToken: String,
+        teamId: IdType,
+        userId: IdType,
+    ) {
         val requestId = requestToJoinTeam(userToken, teamId)
         approveTeamJoinRequest(adminToken, teamId, requestId)
     }
@@ -216,29 +245,38 @@ constructor(
         participant2 = userCreatorService.createUser()
         participantToken2 = userCreatorService.login(participant2.username, participant2.password)
         irrelevantUser = userCreatorService.createUser()
-        irrelevantUserToken = userCreatorService.login(irrelevantUser.username, irrelevantUser.password)
+        irrelevantUserToken =
+            userCreatorService.login(irrelevantUser.username, irrelevantUser.password)
 
         // Setup space, team, attachment using refactored helpers
-        val spaceResult = createSpace(
-            creatorToken = spaceCreatorToken,
-            spaceName = "Test Space ($randomSuffix)",
-            spaceIntro = "This is a test space.",
-            spaceDescription = "A lengthy text. ".repeat(1000),
-            spaceAvatarId = userCreatorService.testAvatarId(),
-        )
+        val spaceResult =
+            createSpace(
+                creatorToken = spaceCreatorToken,
+                spaceName = "Test Space ($randomSuffix)",
+                spaceIntro = "This is a test space.",
+                spaceDescription = "A lengthy text. ".repeat(1000),
+                spaceAvatarId = userCreatorService.testAvatarId(),
+            )
         spaceId = spaceResult.first
         defaultCategoryId = spaceResult.second
 
-        teamId = createTeam(
-            creatorToken = teamCreatorToken,
-            teamName = "Test Team ($randomSuffix)",
-            teamIntro = "This is a test team.",
-            teamDescription = "A lengthy text. ".repeat(1000),
-            teamAvatarId = userCreatorService.testAvatarId(),
-        )
-        joinTeamWithApproval(teamMemberToken, teamCreatorToken, teamId, teamMember.userId) // Team creator adds member
+        teamId =
+            createTeam(
+                creatorToken = teamCreatorToken,
+                teamName = "Test Team ($randomSuffix)",
+                teamIntro = "This is a test team.",
+                teamDescription = "A lengthy text. ".repeat(1000),
+                teamAvatarId = userCreatorService.testAvatarId(),
+            )
+        joinTeamWithApproval(
+            teamMemberToken,
+            teamCreatorToken,
+            teamId,
+            teamMember.userId,
+        ) // Team creator adds member
 
-        attachmentId = attachmentCreatorService.createAttachment(creatorToken) // Use any valid token
+        attachmentId =
+            attachmentCreatorService.createAttachment(creatorToken) // Use any valid token
     }
 
     fun createTask(
@@ -256,33 +294,40 @@ constructor(
         token: String = creatorToken,
         expectedStatus: Int = HttpStatus.OK.value(),
     ): IdType? {
-        val requestDTO = PostTaskRequestDTO(
-            name = name,
-            submitterType = submitterType.toDTO(),
-            deadline = deadline,
-            defaultDeadline = defaultDeadline,
-            resubmittable = resubmittable,
-            editable = editable,
-            intro = intro,
-            description = description,
-            submissionSchema = submissionSchema,
-            space = spaceId,
-            categoryId = categoryId,
-            topics = emptyList(), // Add defaults if needed
-            rank = null // Add defaults if needed
-        )
+        val requestDTO =
+            PostTaskRequestDTO(
+                name = name,
+                submitterType = submitterType.toDTO(),
+                deadline = deadline,
+                defaultDeadline = defaultDeadline,
+                resubmittable = resubmittable,
+                editable = editable,
+                intro = intro,
+                description = description,
+                submissionSchema = submissionSchema,
+                space = spaceId,
+                categoryId = categoryId,
+                topics = emptyList(), // Add defaults if needed
+                rank = null, // Add defaults if needed
+            )
 
-        val responseSpec = webTestClient.post().uri("/tasks")
-            .header("Authorization", "Bearer $token")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestDTO)
-            .exchange()
-            .expectStatus().isEqualTo(expectedStatus) // Check expected status first
+        val responseSpec =
+            webTestClient
+                .post()
+                .uri("/tasks")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestDTO)
+                .exchange()
+                .expectStatus()
+                .isEqualTo(expectedStatus) // Check expected status first
 
         if (expectedStatus == HttpStatus.OK.value()) {
-            val responseBody = responseSpec.expectBody<PatchTask200ResponseDTO>() // Expect success DTO
-                .returnResult()
-                .responseBody
+            val responseBody =
+                responseSpec
+                    .expectBody<PatchTask200ResponseDTO>() // Expect success DTO
+                    .returnResult()
+                    .responseBody
 
             assertNotNull(responseBody?.data?.task, "Task data missing in successful response")
             val task = responseBody!!.data.task
@@ -305,13 +350,19 @@ constructor(
             submissionSchema.forEach { expectedEntry ->
                 val found = task.submissionSchema.find { it.prompt == expectedEntry.prompt }
                 assertNotNull(found, "Submission schema entry '${expectedEntry.prompt}' not found")
-                assertEquals(expectedEntry.type, found!!.type, "Type mismatch for '${expectedEntry.prompt}'")
+                assertEquals(
+                    expectedEntry.type,
+                    found!!.type,
+                    "Type mismatch for '${expectedEntry.prompt}'",
+                )
             }
 
             val createdTaskId = task.id
             assertNotNull(createdTaskId, "Created task ID should not be null")
             taskIds.add(createdTaskId)
-            logger.info("Created task: $createdTaskId (Type: $submitterType, Space: $spaceId, Category: ${categoryId ?: defaultCategoryId})")
+            logger.info(
+                "Created task: $createdTaskId (Type: $submitterType, Space: $spaceId, Category: ${categoryId ?: defaultCategoryId})"
+            )
             return createdTaskId
         }
         return null
@@ -321,12 +372,15 @@ constructor(
         // Assuming PatchTaskRequestDTO exists
         val requestDTO = PatchTaskRequestDTO(approved = ApproveTypeDTO.APPROVED) // Use enum DTO
 
-        webTestClient.patch().uri("/tasks/$taskId")
+        webTestClient
+            .patch()
+            .uri("/tasks/$taskId")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<PatchTask200ResponseDTO>() // Expect task response DTO
             .value { response ->
                 assertNotNull(response.data.task, "Task data missing")
@@ -336,36 +390,48 @@ constructor(
 
     fun approveTaskParticipant(token: String, taskId: IdType, participantMembershipId: IdType) {
         // Assuming PatchTaskMembershipRequestDTO exists
-        val requestDTO = PatchTaskMembershipRequestDTO(approved = ApproveTypeDTO.APPROVED) // Use enum DTO
+        val requestDTO =
+            PatchTaskMembershipRequestDTO(approved = ApproveTypeDTO.APPROVED) // Use enum DTO
 
-        webTestClient.patch().uri("/tasks/$taskId/participants/$participantMembershipId")
+        webTestClient
+            .patch()
+            .uri("/tasks/$taskId/participants/$participantMembershipId")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
-            .expectBody<GetTaskParticipant200ResponseDTO>() // Assuming PATCH returns the updated membership DTO
+            .expectStatus()
+            .isOk
+            .expectBody<
+                GetTaskParticipant200ResponseDTO
+            >() // Assuming PATCH returns the updated membership DTO
             .value { response ->
                 assertNotNull(response.data.taskMembership, "Task membership data missing")
                 assertEquals(ApproveTypeDTO.APPROVED, response.data.taskMembership.approved)
             }
     }
 
-
     fun addParticipantUser(token: String, taskId: IdType, userId: IdType): IdType {
         // Assuming PostTaskParticipantRequestDTO exists, even if minimal
         val requestDTO = PostTaskParticipantRequestDTO(email = "test@example.com") // Minimal data
 
-        val response = webTestClient.post()
-            .uri { builder -> builder.path("/tasks/$taskId/participants").queryParam("member", userId).build() }
-            .header("Authorization", "Bearer $token")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestDTO)
-            .exchange()
-            .expectStatus().isOk
-            .expectBody<PostTaskParticipant200ResponseDTO>() // Expect the participant response DTO
-            .returnResult()
-            .responseBody
+        val response =
+            webTestClient
+                .post()
+                .uri { builder ->
+                    builder.path("/tasks/$taskId/participants").queryParam("member", userId).build()
+                }
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestDTO)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<
+                    PostTaskParticipant200ResponseDTO
+                >() // Expect the participant response DTO
+                .returnResult()
+                .responseBody
 
         // Assuming the DTO has data.participant.id structure based on original JSON parsing
         assertNotNull(response?.data?.participant, "Participant data should not be null")
@@ -379,18 +445,24 @@ constructor(
         // Assuming PostTaskParticipantRequestDTO exists, even if minimal
         val requestDTO = PostTaskParticipantRequestDTO(email = "test@example.com") // Minimal data
 
-        val response = webTestClient.post()
-            .uri { builder ->
-                builder.path("/tasks/$taskId/participants").queryParam("member", teamId).build()
-            } // Use teamId as member
-            .header("Authorization", "Bearer $token") // Token of someone allowed to add team (e.g., space creator?)
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestDTO)
-            .exchange()
-            .expectStatus().isOk
-            .expectBody<PostTaskParticipant200ResponseDTO>()
-            .returnResult()
-            .responseBody
+        val response =
+            webTestClient
+                .post()
+                .uri { builder ->
+                    builder.path("/tasks/$taskId/participants").queryParam("member", teamId).build()
+                } // Use teamId as member
+                .header(
+                    "Authorization",
+                    "Bearer $token",
+                ) // Token of someone allowed to add team (e.g., space creator?)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestDTO)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<PostTaskParticipant200ResponseDTO>()
+                .returnResult()
+                .responseBody
 
         assertNotNull(response?.data?.participant, "Participant data should not be null")
         val taskMembershipId = response!!.data.participant!!.id
@@ -484,31 +556,40 @@ constructor(
         val updatedIntro = "This is an updated test task."
         val updatedDescription = "$taskDescription (updated)"
         val updatedSchema =
-            listOf(TaskSubmissionSchemaEntryDTO(prompt = "Text Entry", type = TaskSubmissionTypeDTO.TEXT)) // Only text
+            listOf(
+                TaskSubmissionSchemaEntryDTO(
+                    prompt = "Text Entry",
+                    type = TaskSubmissionTypeDTO.TEXT,
+                )
+            ) // Only text
         val updatedRank = 1
 
         // Assuming PatchTaskRequestDTO exists
-        val requestDTO = PatchTaskRequestDTO(
-            name = updatedName,
-            deadline = updatedDeadline,
-            resubmittable = updatedResubmittable,
-            editable = updatedEditable,
-            intro = updatedIntro,
-            description = updatedDescription,
-            submissionSchema = updatedSchema,
-            rank = updatedRank
-            // Specify hasDeadline=true if needed by DTO/API, otherwise Long? handles it
-        )
+        val requestDTO =
+            PatchTaskRequestDTO(
+                name = updatedName,
+                deadline = updatedDeadline,
+                resubmittable = updatedResubmittable,
+                editable = updatedEditable,
+                intro = updatedIntro,
+                description = updatedDescription,
+                submissionSchema = updatedSchema,
+                rank = updatedRank,
+                // Specify hasDeadline=true if needed by DTO/API, otherwise Long? handles it
+            )
 
-        webTestClient.patch().uri("/tasks/$taskIdToUpdate")
+        webTestClient
+            .patch()
+            .uri("/tasks/$taskIdToUpdate")
             .header(
                 "Authorization",
-                "Bearer $spaceCreatorToken"
+                "Bearer $spaceCreatorToken",
             ) // Original test used creatorToken, but spaceCreator created the task
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<PatchTask200ResponseDTO>() // Expect response DTO
             .value { response ->
                 assertNotNull(response.data.task)
@@ -529,14 +610,16 @@ constructor(
     @Test
     @Order(85)
     fun `test add participant user 1`() { // Renamed
-        participantTaskMembershipId = addParticipantUser(participantToken, taskIds[0], participant.userId)
+        participantTaskMembershipId =
+            addParticipantUser(participantToken, taskIds[0], participant.userId)
         assertNotEquals(-1L, participantTaskMembershipId)
     }
 
     @Test
     @Order(86)
     fun `test add participant user 2`() { // Renamed
-        participant2TaskMembershipId = addParticipantUser(participantToken2, taskIds[0], participant2.userId)
+        participant2TaskMembershipId =
+            addParticipantUser(participantToken2, taskIds[0], participant2.userId)
         assertNotEquals(-1L, participant2TaskMembershipId)
     }
 
@@ -551,37 +634,49 @@ constructor(
     @Test
     @Order(106)
     fun `test get task 1 join or submit status for participant 1 before approval`() { // Renamed
-        webTestClient.get().uri { builder ->
-            builder.path("/tasks/${taskIds[0]}")
-                .queryParam("queryJoinability", true)
-                .queryParam("querySubmittability", true)
-                .build()
-        }
+        webTestClient
+            .get()
+            .uri { builder ->
+                builder
+                    .path("/tasks/${taskIds[0]}")
+                    .queryParam("queryJoinability", true)
+                    .queryParam("querySubmittability", true)
+                    .build()
+            }
             .header("Authorization", "Bearer $participantToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTask200ResponseDTO>() // Expect Get Task DTO
             .value { response ->
                 assertNotNull(response.data.task)
                 val task = response.data.task
                 // User has joined (added in 85) but not approved yet
                 assertEquals(false, task.joinable, "Should not be joinable again")
-                assertEquals(false, task.submittable, "Should not be submittable before participant approval")
+                assertEquals(
+                    false,
+                    task.submittable,
+                    "Should not be submittable before participant approval",
+                )
             }
     }
 
     @Test
     @Order(111)
     fun `test get task 2 join or submit status for team creator before approval`() { // Renamed
-        webTestClient.get().uri { builder ->
-            builder.path("/tasks/${taskIds[1]}")
-                .queryParam("queryJoinability", true)
-                .queryParam("querySubmittability", true)
-                .build()
-        }
+        webTestClient
+            .get()
+            .uri { builder ->
+                builder
+                    .path("/tasks/${taskIds[1]}")
+                    .queryParam("queryJoinability", true)
+                    .queryParam("querySubmittability", true)
+                    .build()
+            }
             .header("Authorization", "Bearer $teamCreatorToken") // Team creator checks
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.task)
@@ -591,14 +686,14 @@ constructor(
                 // Team creator cannot submit individually, team not approved yet
                 assertEquals(false, task.submittable, "Team creator cannot submit individually")
                 // Team submittability status might be complex, depends on DTO structure
-                // Original test checked `submittableAsTeam` was empty. Let's check for null or empty list.
+                // Original test checked `submittableAsTeam` was empty. Let's check for null or
+                // empty list.
                 assertTrue(
                     task.submittableAsTeam.isNullOrEmpty(),
-                    "submittableAsTeam should be null or empty before team approval"
+                    "submittableAsTeam should be null or empty before team approval",
                 )
             }
     }
-
 
     @Test
     @Order(115)
@@ -607,13 +702,16 @@ constructor(
         // Minimal valid submission content based on updated schema (test 40)
         val submissionContent = listOf(TaskSubmissionContentDTO(text = "Test submission"))
 
-        webTestClient.post().uri("/tasks/$taskIdToSubmit/participants/$participantTaskMembershipId/submissions")
+        webTestClient
+            .post()
+            .uri("/tasks/$taskIdToSubmit/participants/$participantTaskMembershipId/submissions")
             .header("Authorization", "Bearer $participantToken")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(submissionContent)
             .exchange()
             // Expect Forbidden because the participant membership isn't approved
-            .expectStatus().isForbidden
+            .expectStatus()
+            .isForbidden
             // Expect an error DTO indicating permission denied or similar
             .expectBody<GenericErrorResponse>()
             .value { errorResponse ->
@@ -626,49 +724,73 @@ constructor(
     fun `test approve participant 1 using bulk endpoint`() { // Renamed
         // NOTE: Original test uses PATCH /tasks/{taskId}/participants?member=...
         // This endpoint seems non-standard for approving a *specific* membership ID.
-        // The controller snippet provided earlier has `patchTaskMembershipByMember` which takes `member` (user ID)
+        // The controller snippet provided earlier has `patchTaskMembershipByMember` which takes
+        // `member` (user ID)
         // and `patchTaskParticipant` which takes `participantId` (membership ID).
-        // Let's assume the controller correctly implements PATCH /tasks/{taskId}/participants?member=... to update *that* user's membership.
+        // Let's assume the controller correctly implements PATCH
+        // /tasks/{taskId}/participants?member=... to update *that* user's membership.
         // Assuming PatchTaskMembershipRequestDTO is used by this endpoint too
         val requestDTO = PatchTaskMembershipRequestDTO(approved = ApproveTypeDTO.APPROVED)
 
-        webTestClient.patch()
+        webTestClient
+            .patch()
             .uri { builder ->
-                builder.path("/tasks/${taskIds[0]}/participants").queryParam("member", participant.userId).build()
+                builder
+                    .path("/tasks/${taskIds[0]}/participants")
+                    .queryParam("member", participant.userId)
+                    .build()
             }
             .header("Authorization", "Bearer $spaceCreatorToken") // Task owner approves
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
-            // Assuming the response DTO is PatchTaskMembershipByMember200ResponseDTO containing a list
+            .expectStatus()
+            .isOk
+            // Assuming the response DTO is PatchTaskMembershipByMember200ResponseDTO containing a
+            // list
             .expectBody<PatchTaskMembershipByMember200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.participants)
-                val approvedParticipant = response.data.participants!!.find { it.member.id == participant.userId }
-                assertNotNull(approvedParticipant, "Participant ${participant.userId} not found in response")
-                assertEquals(ApproveTypeDTO.APPROVED, approvedParticipant!!.approved, "Participant should be approved")
+                val approvedParticipant =
+                    response.data.participants!!.find { it.member.id == participant.userId }
+                assertNotNull(
+                    approvedParticipant,
+                    "Participant ${participant.userId} not found in response",
+                )
+                assertEquals(
+                    ApproveTypeDTO.APPROVED,
+                    approvedParticipant!!.approved,
+                    "Participant should be approved",
+                )
             }
     }
 
     @Test
     @Order(121)
     fun `test get task 1 join or submit status for participant 1 after approval`() { // Renamed
-        webTestClient.get().uri { builder ->
-            builder.path("/tasks/${taskIds[0]}")
-                .queryParam("queryJoinability", true)
-                .queryParam("querySubmittability", true)
-                .build()
-        }
+        webTestClient
+            .get()
+            .uri { builder ->
+                builder
+                    .path("/tasks/${taskIds[0]}")
+                    .queryParam("queryJoinability", true)
+                    .queryParam("querySubmittability", true)
+                    .build()
+            }
             .header("Authorization", "Bearer $participantToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.task)
                 val task = response.data.task
                 assertEquals(false, task.joinable, "Should still not be joinable again")
-                assertEquals(true, task.submittable, "Should be submittable after participant approval")
+                assertEquals(
+                    true,
+                    task.submittable,
+                    "Should be submittable after participant approval",
+                )
             }
     }
 
@@ -677,24 +799,33 @@ constructor(
     fun `test approve participant 2 using bulk endpoint`() { // Renamed
         val requestDTO = PatchTaskMembershipRequestDTO(approved = ApproveTypeDTO.APPROVED)
 
-        webTestClient.patch()
+        webTestClient
+            .patch()
             .uri { builder ->
-                builder.path("/tasks/${taskIds[0]}/participants").queryParam("member", participant2.userId).build()
+                builder
+                    .path("/tasks/${taskIds[0]}/participants")
+                    .queryParam("member", participant2.userId)
+                    .build()
             }
             .header("Authorization", "Bearer $spaceCreatorToken") // Task owner approves
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<PatchTaskMembershipByMember200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.participants)
-                val approvedParticipant = response.data.participants!!.find { it.member.id == participant2.userId }
-                assertNotNull(approvedParticipant, "Participant ${participant2.userId} not found in response")
+                val approvedParticipant =
+                    response.data.participants!!.find { it.member.id == participant2.userId }
+                assertNotNull(
+                    approvedParticipant,
+                    "Participant ${participant2.userId} not found in response",
+                )
                 assertEquals(
                     ApproveTypeDTO.APPROVED,
                     approvedParticipant!!.approved,
-                    "Participant 2 should be approved"
+                    "Participant 2 should be approved",
                 )
             }
     }
@@ -704,24 +835,30 @@ constructor(
     fun `test approve participant team using bulk endpoint`() { // Renamed
         val requestDTO = PatchTaskMembershipRequestDTO(approved = ApproveTypeDTO.APPROVED)
 
-        webTestClient.patch()
+        webTestClient
+            .patch()
             .uri { builder ->
-                builder.path("/tasks/${taskIds[1]}/participants").queryParam("member", teamId).build()
+                builder
+                    .path("/tasks/${taskIds[1]}/participants")
+                    .queryParam("member", teamId)
+                    .build()
             } // Use teamId as member
             .header("Authorization", "Bearer $spaceCreatorToken") // Task owner approves
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<PatchTaskMembershipByMember200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.participants)
-                val approvedParticipant = response.data.participants!!.find { it.member.id == teamId }
+                val approvedParticipant =
+                    response.data.participants!!.find { it.member.id == teamId }
                 assertNotNull(approvedParticipant, "Team participant $teamId not found in response")
                 assertEquals(
                     ApproveTypeDTO.APPROVED,
                     approvedParticipant!!.approved,
-                    "Team participant should be approved"
+                    "Team participant should be approved",
                 )
             }
     }
@@ -729,30 +866,38 @@ constructor(
     @Test
     @Order(129)
     fun `test get task 2 join or submit status for team creator after approval`() { // Renamed
-        webTestClient.get().uri { builder ->
-            builder.path("/tasks/${taskIds[1]}") // Task 2 (Team Task)
-                .queryParam("queryJoinability", true)
-                .queryParam("querySubmittability", true)
-                .build()
-        }
+        webTestClient
+            .get()
+            .uri { builder ->
+                builder
+                    .path("/tasks/${taskIds[1]}") // Task 2 (Team Task)
+                    .queryParam("queryJoinability", true)
+                    .queryParam("querySubmittability", true)
+                    .build()
+            }
             .header("Authorization", "Bearer $teamCreatorToken") // Team creator checks
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.task)
                 val task = response.data.task
                 assertEquals(false, task.joinable, "Team creator still cannot join individually")
-                assertEquals(true, task.submittable, "Team creator CAN submit individually (as part of approved team)")
+                assertEquals(
+                    true,
+                    task.submittable,
+                    "Team creator CAN submit individually (as part of approved team)",
+                )
 
                 assertNotNull(task.submittableAsTeam)
                 assertFalse(
                     task.submittableAsTeam!!.isEmpty(),
-                    "submittableAsTeam should not be empty after team approval"
+                    "submittableAsTeam should not be empty after team approval",
                 )
                 assertTrue(
                     task.submittableAsTeam!!.any { it.id == teamId },
-                    "Team ID $teamId should be in submittableAsTeam list"
+                    "Team ID $teamId should be in submittableAsTeam list",
                 )
             }
     }
@@ -762,7 +907,8 @@ constructor(
         expectedMemberId: IdType,
         expectedSubmitterId: IdType,
         expectedVersion: Int,
-        expectedContent: List<Pair<String, Any>> // Pair of title and expected value (text or attachmentId)
+        expectedContent:
+            List<Pair<String, Any>>, // Pair of title and expected value (text or attachmentId)
     ) {
         assertNotNull(submission, "Submission object should not be null")
         submission!!
@@ -771,7 +917,11 @@ constructor(
         assertEquals(expectedSubmitterId, submission.submitter.id, "Submitter ID mismatch")
         assertEquals(expectedVersion, submission.version, "Version mismatch")
         assertNotNull(submission.content, "Submission content list should exist")
-        assertEquals(expectedContent.size, submission.content.size, "Submission content size mismatch")
+        assertEquals(
+            expectedContent.size,
+            submission.content.size,
+            "Submission content size mismatch",
+        )
 
         expectedContent.forEach { (expectedTitle, expectedValue) ->
             val contentEntry = submission.content.find { it.title == expectedTitle }
@@ -780,15 +930,22 @@ constructor(
             when (contentEntry.type) {
                 TaskSubmissionTypeDTO.TEXT -> {
                     assertTrue(expectedValue is String, "Expected value for TEXT should be String")
-                    assertEquals(expectedValue, contentEntry.contentText, "Text content mismatch for '$expectedTitle'")
+                    assertEquals(
+                        expectedValue,
+                        contentEntry.contentText,
+                        "Text content mismatch for '$expectedTitle'",
+                    )
                 }
 
                 TaskSubmissionTypeDTO.FILE -> {
-                    assertTrue(expectedValue is IdType, "Expected value for FILE should be IdType (Attachment ID)")
+                    assertTrue(
+                        expectedValue is IdType,
+                        "Expected value for FILE should be IdType (Attachment ID)",
+                    )
                     assertEquals(
                         expectedValue,
                         contentEntry.contentAttachment?.id,
-                        "Attachment ID mismatch for '$expectedTitle'"
+                        "Attachment ID mismatch for '$expectedTitle'",
                     )
                 }
 
@@ -797,21 +954,24 @@ constructor(
         }
     }
 
-
     @Test
     @Order(130)
     fun `test submit task user 1 first time`() { // Renamed
         val taskIdToSubmit = taskIds[0]
         // Task 1 schema was updated in test 40 to only have "Text Entry"
-        val submissionContent = listOf(TaskSubmissionContentDTO(text = "This is a test submission."))
+        val submissionContent =
+            listOf(TaskSubmissionContentDTO(text = "This is a test submission."))
         val expectedContent = listOf("Text Entry" to "This is a test submission.")
 
-        webTestClient.post().uri("/tasks/$taskIdToSubmit/participants/$participantTaskMembershipId/submissions")
+        webTestClient
+            .post()
+            .uri("/tasks/$taskIdToSubmit/participants/$participantTaskMembershipId/submissions")
             .header("Authorization", "Bearer $participantToken") // Participant submits
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(submissionContent)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<PostTaskSubmission200ResponseDTO>() // Expect submission response DTO
             .value { response ->
                 assertSubmissionDetails(
@@ -819,7 +979,7 @@ constructor(
                     expectedMemberId = participant.userId,
                     expectedSubmitterId = participant.userId,
                     expectedVersion = 1,
-                    expectedContent = expectedContent
+                    expectedContent = expectedContent,
                 )
             }
     }
@@ -828,15 +988,19 @@ constructor(
     @Order(131)
     fun `test submit task user 2 first time`() { // Renamed
         val taskIdToSubmit = taskIds[0]
-        val submissionContent = listOf(TaskSubmissionContentDTO(text = "This is user 2 submission."))
+        val submissionContent =
+            listOf(TaskSubmissionContentDTO(text = "This is user 2 submission."))
         val expectedContent = listOf("Text Entry" to "This is user 2 submission.")
 
-        webTestClient.post().uri("/tasks/$taskIdToSubmit/participants/$participant2TaskMembershipId/submissions")
+        webTestClient
+            .post()
+            .uri("/tasks/$taskIdToSubmit/participants/$participant2TaskMembershipId/submissions")
             .header("Authorization", "Bearer $participantToken2") // Participant 2 submits
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(submissionContent)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<PostTaskSubmission200ResponseDTO>()
             .value { response ->
                 assertSubmissionDetails(
@@ -844,7 +1008,7 @@ constructor(
                     expectedMemberId = participant2.userId,
                     expectedSubmitterId = participant2.userId,
                     expectedVersion = 1,
-                    expectedContent = expectedContent
+                    expectedContent = expectedContent,
                 )
             }
     }
@@ -855,21 +1019,23 @@ constructor(
         val taskIdToSubmit = taskIds[1] // Task 2 (Team Task)
         // Task 2 schema has both TEXT and FILE entries
         val submissionText = "This is a team submission."
-        val submissionContent = listOf(
-            TaskSubmissionContentDTO(text = submissionText),
-            TaskSubmissionContentDTO(attachmentId = attachmentId)
-        )
-        val expectedContent = listOf(
-            "Text Entry" to submissionText,
-            "Attachment Entry" to attachmentId
-        )
+        val submissionContent =
+            listOf(
+                TaskSubmissionContentDTO(text = submissionText),
+                TaskSubmissionContentDTO(attachmentId = attachmentId),
+            )
+        val expectedContent =
+            listOf("Text Entry" to submissionText, "Attachment Entry" to attachmentId)
 
-        webTestClient.post().uri("/tasks/$taskIdToSubmit/participants/$teamTaskMembershipId/submissions")
+        webTestClient
+            .post()
+            .uri("/tasks/$taskIdToSubmit/participants/$teamTaskMembershipId/submissions")
             .header("Authorization", "Bearer $teamCreatorToken") // Team creator submits for team
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(submissionContent)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<PostTaskSubmission200ResponseDTO>()
             .value { response ->
                 assertSubmissionDetails(
@@ -877,7 +1043,7 @@ constructor(
                     expectedMemberId = teamId, // Member is the team
                     expectedSubmitterId = teamCreator.userId, // Submitter is the user who acted
                     expectedVersion = 1,
-                    expectedContent = expectedContent
+                    expectedContent = expectedContent,
                 )
             }
     }
@@ -888,12 +1054,15 @@ constructor(
         val taskIdToSubmit = taskIds[0] // Task 0 was set to resubmittable=false in test 40
         val submissionContent = listOf(TaskSubmissionContentDTO(text = "Trying to submit again."))
 
-        webTestClient.post().uri("/tasks/$taskIdToSubmit/participants/$participantTaskMembershipId/submissions")
+        webTestClient
+            .post()
+            .uri("/tasks/$taskIdToSubmit/participants/$participantTaskMembershipId/submissions")
             .header("Authorization", "Bearer $participantToken")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(submissionContent)
             .exchange()
-            .expectStatus().isBadRequest // Expect 400 Bad Request
+            .expectStatus()
+            .isBadRequest // Expect 400 Bad Request
             .expectBody<GenericErrorResponse>() // Expect error DTO
             .value { errorResponse ->
                 assertEquals("TaskNotResubmittableError", errorResponse.error.name)
@@ -908,18 +1077,23 @@ constructor(
         val taskIdToUpdate = taskIds[0]
         val requestDTO = PatchTaskRequestDTO(resubmittable = true)
 
-        webTestClient.patch().uri("/tasks/$taskIdToUpdate")
-            .header("Authorization", "Bearer $creatorToken") // Generic creator, not space/task owner
+        webTestClient
+            .patch()
+            .uri("/tasks/$taskIdToUpdate")
+            .header(
+                "Authorization",
+                "Bearer $creatorToken",
+            ) // Generic creator, not space/task owner
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isForbidden // Expect 403 Forbidden
+            .expectStatus()
+            .isForbidden // Expect 403 Forbidden
             .expectBody<GenericErrorResponse>()
             .value { errorResponse ->
                 assertEquals("AccessDeniedError", errorResponse.error.name) // Or AccessDeniedError
             }
     }
-
 
     @Test
     @Order(161)
@@ -927,12 +1101,15 @@ constructor(
         val taskIdToUpdate = taskIds[0]
         val requestDTO = PatchTaskRequestDTO(resubmittable = true)
 
-        webTestClient.patch().uri("/tasks/$taskIdToUpdate")
+        webTestClient
+            .patch()
+            .uri("/tasks/$taskIdToUpdate")
             .header("Authorization", "Bearer $spaceCreatorToken") // Space creator owns the task
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<PatchTask200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.task)
@@ -948,12 +1125,15 @@ constructor(
         val submissionContent = listOf(TaskSubmissionContentDTO(text = submissionText))
         val expectedContent = listOf("Text Entry" to submissionText)
 
-        webTestClient.post().uri("/tasks/$taskIdToSubmit/participants/$participantTaskMembershipId/submissions")
+        webTestClient
+            .post()
+            .uri("/tasks/$taskIdToSubmit/participants/$participantTaskMembershipId/submissions")
             .header("Authorization", "Bearer $participantToken") // Participant resubmits
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(submissionContent)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<PostTaskSubmission200ResponseDTO>()
             .value { response ->
                 assertSubmissionDetails(
@@ -961,7 +1141,7 @@ constructor(
                     expectedMemberId = participant.userId,
                     expectedSubmitterId = participant.userId,
                     expectedVersion = 2, // Expect version 2
-                    expectedContent = expectedContent
+                    expectedContent = expectedContent,
                 )
             }
     }
@@ -973,13 +1153,17 @@ constructor(
         val submissionVersion = 1 // Try to edit version 1
         val updatedContent = listOf(TaskSubmissionContentDTO(text = "Editing version 1"))
 
-        webTestClient.patch()
-            .uri("/tasks/$taskIdToUpdate/participants/$participantTaskMembershipId/submissions/$submissionVersion")
+        webTestClient
+            .patch()
+            .uri(
+                "/tasks/$taskIdToUpdate/participants/$participantTaskMembershipId/submissions/$submissionVersion"
+            )
             .header("Authorization", "Bearer $participantToken") // Participant tries to edit
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(updatedContent)
             .exchange()
-            .expectStatus().isBadRequest
+            .expectStatus()
+            .isBadRequest
             .expectBody<GenericErrorResponse>()
             .value { errorResponse ->
                 assertEquals("TaskSubmissionNotEditableError", errorResponse.error.name)
@@ -994,19 +1178,21 @@ constructor(
         val taskIdToUpdate = taskIds[0]
         val requestDTO = PatchTaskRequestDTO(editable = true)
 
-        webTestClient.patch().uri("/tasks/$taskIdToUpdate")
+        webTestClient
+            .patch()
+            .uri("/tasks/$taskIdToUpdate")
             .header("Authorization", "Bearer $spaceCreatorToken") // Space creator owns the task
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<PatchTask200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.task)
                 assertEquals(true, response.data.task.editable)
             }
     }
-
 
     @Test
     @Order(190)
@@ -1017,13 +1203,17 @@ constructor(
         val updatedContent = listOf(TaskSubmissionContentDTO(text = updatedText))
         val expectedContent = listOf("Text Entry" to updatedText)
 
-        webTestClient.patch()
-            .uri("/tasks/$taskIdToUpdate/participants/$participantTaskMembershipId/submissions/$submissionVersion")
+        webTestClient
+            .patch()
+            .uri(
+                "/tasks/$taskIdToUpdate/participants/$participantTaskMembershipId/submissions/$submissionVersion"
+            )
             .header("Authorization", "Bearer $participantToken") // Participant edits
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(updatedContent)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             // Assuming PATCH submission returns PostTaskSubmission200ResponseDTO
             .expectBody<PostTaskSubmission200ResponseDTO>()
             .value { response ->
@@ -1033,7 +1223,7 @@ constructor(
                     expectedMemberId = participant.userId,
                     expectedSubmitterId = participant.userId,
                     expectedVersion = 2,
-                    expectedContent = expectedContent
+                    expectedContent = expectedContent,
                 )
             }
     }
@@ -1041,39 +1231,45 @@ constructor(
     @Test
     @Order(198)
     fun `test get submissions fails for irrelevant user`() { // Renamed
-        webTestClient.get().uri("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
+        webTestClient
+            .get()
+            .uri("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
             .header("Authorization", "Bearer $irrelevantUserToken") // Irrelevant user attempts
             .exchange()
-            .expectStatus().isForbidden
+            .expectStatus()
+            .isForbidden
             .expectBody<GenericErrorResponse>()
-            .value { errorResponse ->
-                assertEquals("AccessDeniedError", errorResponse.error.name)
-            }
+            .value { errorResponse -> assertEquals("AccessDeniedError", errorResponse.error.name) }
     }
 
     @Test
     @Order(199)
     fun `test get submissions fails for different participant`() { // Renamed
         // Participant 1 tries to get submissions for Participant 2's membership ID
-        webTestClient.get().uri("/tasks/${taskIds[0]}/participants/$participant2TaskMembershipId/submissions")
+        webTestClient
+            .get()
+            .uri("/tasks/${taskIds[0]}/participants/$participant2TaskMembershipId/submissions")
             .header("Authorization", "Bearer $participantToken") // Participant 1 token
             .exchange()
-            .expectStatus().isForbidden
+            .expectStatus()
+            .isForbidden
             .expectBody<GenericErrorResponse>()
-            .value { errorResponse ->
-                assertEquals("AccessDeniedError", errorResponse.error.name)
-            }
+            .value { errorResponse -> assertEquals("AccessDeniedError", errorResponse.error.name) }
     }
 
     @Test
     @Order(200)
     fun `test get submissions default (latest) for owner`() { // Renamed
-        val expectedContent = listOf("Text Entry" to "This is a test submission. (Version 2) (edited)")
+        val expectedContent =
+            listOf("Text Entry" to "This is a test submission. (Version 2) (edited)")
 
-        webTestClient.get().uri("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
+        webTestClient
+            .get()
+            .uri("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
             .header("Authorization", "Bearer $spaceCreatorToken") // Owner/creator gets submissions
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>() // Expect list DTO
             .value { response ->
                 assertNotNull(response.data.submissions)
@@ -1084,7 +1280,7 @@ constructor(
                     expectedMemberId = participant.userId,
                     expectedSubmitterId = participant.userId,
                     expectedVersion = 2, // Latest version
-                    expectedContent = expectedContent
+                    expectedContent = expectedContent,
                 )
             }
     }
@@ -1092,17 +1288,25 @@ constructor(
     @Test
     @Order(210)
     fun `test get submissions with all versions`() { // Renamed
-        val expectedContentV2 = listOf("Text Entry" to "This is a test submission. (Version 2) (edited)")
-        val expectedContentV1 = listOf("Text Entry" to "This is a test submission.") // From test 130
+        val expectedContentV2 =
+            listOf("Text Entry" to "This is a test submission. (Version 2) (edited)")
+        val expectedContentV1 =
+            listOf("Text Entry" to "This is a test submission.") // From test 130
 
-        webTestClient.get()
+        webTestClient
+            .get()
             .uri { builder ->
-                builder.path("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
-                    .queryParam("allVersions", true).build()
+                builder
+                    .path(
+                        "/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions"
+                    )
+                    .queryParam("allVersions", true)
+                    .build()
             }
             .header("Authorization", "Bearer $spaceCreatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.submissions)
@@ -1119,16 +1323,17 @@ constructor(
                     expectedMemberId = participant.userId,
                     expectedSubmitterId = participant.userId,
                     expectedVersion = 2,
-                    expectedContent = expectedContentV2
+                    expectedContent = expectedContentV2,
                 )
 
                 assertNotNull(submissionV1, "Version 1 not found")
                 assertSubmissionDetails(
                     submissionV1,
                     expectedMemberId = participant.userId,
-                    expectedSubmitterId = participant.userId, // Submitter was participant for V1 too
+                    expectedSubmitterId =
+                        participant.userId, // Submitter was participant for V1 too
                     expectedVersion = 1,
-                    expectedContent = expectedContentV1
+                    expectedContent = expectedContentV1,
                 )
             }
     }
@@ -1137,66 +1342,86 @@ constructor(
     @Order(218)
     fun `test get submissions fails for different participant via member query param`() { // Renamed
         // Participant 2 tries to get Participant 1's submissions using member ID query
-        webTestClient.get()
-            // NOTE: The path uses participant 1's membership ID, but the query targets participant 1 user ID.
+        webTestClient
+            .get()
+            // NOTE: The path uses participant 1's membership ID, but the query targets participant
+            // 1 user ID.
             // Access control should likely deny this based on the token (Participant 2).
             .uri { builder ->
-                builder.path("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
-                    .queryParam("member", participant.userId).build()
+                builder
+                    .path(
+                        "/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions"
+                    )
+                    .queryParam("member", participant.userId)
+                    .build()
             }
             .header("Authorization", "Bearer $participantToken2") // Participant 2 token
             .exchange()
-            .expectStatus().isForbidden
+            .expectStatus()
+            .isForbidden
             .expectBody<GenericErrorResponse>()
-            .value { errorResponse ->
-                assertEquals("AccessDeniedError", errorResponse.error.name)
-            }
+            .value { errorResponse -> assertEquals("AccessDeniedError", errorResponse.error.name) }
     }
 
     @Test
     @Order(219)
     fun `test get submissions succeeds for self via member query param`() { // Renamed
-        val expectedContent = listOf("Text Entry" to "This is a test submission. (Version 2) (edited)")
+        val expectedContent =
+            listOf("Text Entry" to "This is a test submission. (Version 2) (edited)")
         // Participant 1 gets their own submissions using member ID query param
-        webTestClient.get()
+        webTestClient
+            .get()
             // Path still uses their membership ID, query param redundantly specifies their user ID.
             .uri { builder ->
-                builder.path("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
-                    .queryParam("member", participant.userId).build()
+                builder
+                    .path(
+                        "/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions"
+                    )
+                    .queryParam("member", participant.userId)
+                    .build()
             }
             .header("Authorization", "Bearer $participantToken") // Participant 1 token
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.submissions)
                 val submissions = response.data.submissions
-                assertEquals(1, submissions.size, "Should get latest version") // Default is latest only
+                assertEquals(
+                    1,
+                    submissions.size,
+                    "Should get latest version",
+                ) // Default is latest only
                 assertSubmissionDetails(
                     submissions[0],
                     expectedMemberId = participant.userId,
                     expectedSubmitterId = participant.userId,
                     expectedVersion = 2,
-                    expectedContent = expectedContent
+                    expectedContent = expectedContent,
                 )
-                // Check that participant 2's submissions are not included (though unlikely given the path)
+                // Check that participant 2's submissions are not included (though unlikely given
+                // the path)
                 assertFalse(
                     submissions.any { it.member.id == participant2.userId },
-                    "Should not include participant 2's submissions"
+                    "Should not include participant 2's submissions",
                 )
             }
     }
 
-
     @Test
     @Order(220)
     fun `test get submissions succeeds for owner via participantId path`() { // Renamed
-        val expectedContent = listOf("Text Entry" to "This is a test submission. (Version 2) (edited)")
+        val expectedContent =
+            listOf("Text Entry" to "This is a test submission. (Version 2) (edited)")
         // Owner gets participant 1's submissions via path param
-        webTestClient.get().uri("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
+        webTestClient
+            .get()
+            .uri("/tasks/${taskIds[0]}/participants/$participantTaskMembershipId/submissions")
             .header("Authorization", "Bearer $spaceCreatorToken") // Owner token
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.submissions)
@@ -1207,26 +1432,28 @@ constructor(
                     expectedMemberId = participant.userId,
                     expectedSubmitterId = participant.userId,
                     expectedVersion = 2,
-                    expectedContent = expectedContent
+                    expectedContent = expectedContent,
                 )
                 // Check participant 2 not included
                 assertFalse(
                     submissions.any { it.member.id == participant2.userId },
-                    "Should not include participant 2's submissions"
+                    "Should not include participant 2's submissions",
                 )
             }
     }
-
 
     @Test
     @Order(230)
     fun `test delete task fails for non-owner`() { // Renamed
         val taskIdToDelete = taskIds[1] // Team task created by spaceCreator
 
-        webTestClient.delete().uri("/tasks/$taskIdToDelete")
+        webTestClient
+            .delete()
+            .uri("/tasks/$taskIdToDelete")
             .header("Authorization", "Bearer $creatorToken") // Generic creator token, not owner
             .exchange()
-            .expectStatus().isForbidden
+            .expectStatus()
+            .isForbidden
             .expectBody<GenericErrorResponse>()
             .value { errorResponse ->
                 assertEquals("AccessDeniedError", errorResponse.error.name) // Or AccessDeniedError
@@ -1238,19 +1465,24 @@ constructor(
     fun `test delete task succeeds for owner`() { // Renamed
         val taskIdToDelete = taskIds[1]
 
-        webTestClient.delete().uri("/tasks/$taskIdToDelete")
+        webTestClient
+            .delete()
+            .uri("/tasks/$taskIdToDelete")
             .header("Authorization", "Bearer $spaceCreatorToken") // Owner deletes
             .exchange()
-            .expectStatus().isOk // Assuming 200 OK based on original test
+            .expectStatus()
+            .isOk // Assuming 200 OK based on original test
         // Check response DTO if applicable (e.g., DeleteTask200ResponseDTO)
         // .expectBody<DeleteTask200ResponseDTO>()
         // .value { response -> assertEquals(200, response.code) }
 
         // Verify deletion
-        webTestClient.get().uri("/tasks/$taskIdToDelete")
+        webTestClient
+            .get()
+            .uri("/tasks/$taskIdToDelete")
             .header("Authorization", "Bearer $spaceCreatorToken")
             .exchange()
-            .expectStatus().isNotFound // Should be gone
+            .expectStatus()
+            .isNotFound // Should be gone
     }
-
 }

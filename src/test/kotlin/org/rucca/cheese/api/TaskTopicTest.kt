@@ -8,6 +8,9 @@
 
 package org.rucca.cheese.api
 
+import java.time.LocalDateTime
+import java.time.ZoneId
+import kotlin.math.floor
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
@@ -24,9 +27,6 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
-import java.time.LocalDateTime
-import java.time.ZoneId
-import kotlin.math.floor
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -51,12 +51,14 @@ constructor(
     private val taskName = "Test Task ($randomSuffix)"
     private val taskIntro = "This is a test task."
     private val taskDescription = "This is a test task."
-    private val taskDeadline = LocalDateTime.now().plusDays(7).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    private val taskDeadline =
+        LocalDateTime.now().plusDays(7).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-    private val taskSubmissionSchema = listOf(
-        TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT),
-        TaskSubmissionSchemaEntryDTO("Attachment Entry", TaskSubmissionTypeDTO.FILE)
-    )
+    private val taskSubmissionSchema =
+        listOf(
+            TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT),
+            TaskSubmissionSchemaEntryDTO("Attachment Entry", TaskSubmissionTypeDTO.FILE),
+        )
 
     // --- Topics ---
     private val testTopicsCount = 4
@@ -73,23 +75,28 @@ constructor(
         spaceDescription: String,
         spaceAvatarId: IdType,
     ): Pair<IdType, IdType> {
-        val requestDTO = PostSpaceRequestDTO(
-            name = spaceName,
-            intro = spaceIntro,
-            description = spaceDescription,
-            avatarId = spaceAvatarId,
-            announcements = "[]",
-            taskTemplates = "[]"
-        )
-        val response = webTestClient.post().uri("/spaces")
-            .header("Authorization", "Bearer $creatorToken")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestDTO)
-            .exchange()
-            .expectStatus().isOk
-            .expectBody<PatchSpace200ResponseDTO>() // Assuming POST returns Patch DTO
-            .returnResult()
-            .responseBody
+        val requestDTO =
+            PostSpaceRequestDTO(
+                name = spaceName,
+                intro = spaceIntro,
+                description = spaceDescription,
+                avatarId = spaceAvatarId,
+                announcements = "[]",
+                taskTemplates = "[]",
+            )
+        val response =
+            webTestClient
+                .post()
+                .uri("/spaces")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestDTO)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<PatchSpace200ResponseDTO>() // Assuming POST returns Patch DTO
+                .returnResult()
+                .responseBody
 
         assertNotNull(response?.data?.space, "Space data should not be null in response")
         val createdSpace = response!!.data.space
@@ -98,7 +105,9 @@ constructor(
 
         val createdSpaceId = createdSpace.id
         val createdDefaultCategoryId = createdSpace.defaultCategoryId
-        logger.info("Created space: $createdSpaceId with default category ID: $createdDefaultCategoryId")
+        logger.info(
+            "Created space: $createdSpaceId with default category ID: $createdDefaultCategoryId"
+        )
         return Pair(createdSpaceId, createdDefaultCategoryId)
     }
 
@@ -115,31 +124,39 @@ constructor(
         categoryId: IdType?,
         topics: List<IdType>, // List of topic IDs for request
     ): IdType {
-        val requestDTO = PostTaskRequestDTO(
-            name = name,
-            submitterType = submitterType.toDTO(),
-            deadline = deadline,
-            resubmittable = resubmittable,
-            editable = editable,
-            intro = intro,
-            description = description,
-            submissionSchema = submissionSchema,
-            space = space,
-            categoryId = categoryId,
-            topics = topics, // Pass the list of topic IDs
-            rank = null, // Add defaults if needed
-            defaultDeadline = 30L // Add defaults if needed
-        )
+        val requestDTO =
+            PostTaskRequestDTO(
+                name = name,
+                submitterType = submitterType.toDTO(),
+                deadline = deadline,
+                resubmittable = resubmittable,
+                editable = editable,
+                intro = intro,
+                description = description,
+                submissionSchema = submissionSchema,
+                space = space,
+                categoryId = categoryId,
+                topics = topics, // Pass the list of topic IDs
+                rank = null, // Add defaults if needed
+                defaultDeadline = 30L, // Add defaults if needed
+            )
 
-        val response = webTestClient.post().uri("/tasks")
-            .header("Authorization", "Bearer $creatorToken") // Assumes creatorToken always used here
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestDTO)
-            .exchange()
-            .expectStatus().isOk
-            .expectBody<PatchTask200ResponseDTO>() // Assuming POST returns this DTO
-            .returnResult()
-            .responseBody
+        val response =
+            webTestClient
+                .post()
+                .uri("/tasks")
+                .header(
+                    "Authorization",
+                    "Bearer $creatorToken",
+                ) // Assumes creatorToken always used here
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestDTO)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<PatchTask200ResponseDTO>() // Assuming POST returns this DTO
+                .returnResult()
+                .responseBody
 
         assertNotNull(response?.data?.task, "Task data should not be null")
         val task = response!!.data.task
@@ -152,11 +169,14 @@ constructor(
         topics.forEach { expectedTopicId ->
             assertTrue(
                 returnedTopicIds.contains(expectedTopicId),
-                "Expected topic ID $expectedTopicId not found in response"
+                "Expected topic ID $expectedTopicId not found in response",
             )
         }
         // Ensure names are present (basic check)
-        assertTrue(task.topics!!.all { it.name.isNotBlank() }, "All returned topics should have names")
+        assertTrue(
+            task.topics!!.all { it.name.isNotBlank() },
+            "All returned topics should have names",
+        )
 
         val createdTaskId = task.id
         logger.info("Created task: $createdTaskId")
@@ -165,12 +185,15 @@ constructor(
 
     fun approveTask(taskId: IdType, token: String) {
         val requestDTO = PatchTaskRequestDTO(approved = ApproveTypeDTO.APPROVED)
-        webTestClient.patch().uri("/tasks/$taskId")
+        webTestClient
+            .patch()
+            .uri("/tasks/$taskId")
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<PatchTask200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.task)
@@ -194,30 +217,32 @@ constructor(
         logger.info("Created test topics: $testTopics")
 
         // Create space
-        val spaceResult = createSpace(
-            creatorToken = creatorToken,
-            spaceName = "Test Space ($randomSuffix)",
-            spaceIntro = "This is a test space.",
-            spaceDescription = "A lengthy text. ".repeat(100),
-            spaceAvatarId = userCreatorService.testAvatarId(),
-        )
+        val spaceResult =
+            createSpace(
+                creatorToken = creatorToken,
+                spaceName = "Test Space ($randomSuffix)",
+                spaceIntro = "This is a test space.",
+                spaceDescription = "A lengthy text. ".repeat(100),
+                spaceAvatarId = userCreatorService.testAvatarId(),
+            )
         spaceId = spaceResult.first
         defaultCategoryId = spaceResult.second
 
         // Create initial task with first two topics
-        taskId = createTask(
-            name = "$taskName (Initial)", // Adjusted name
-            submitterType = TaskSubmitterType.USER,
-            deadline = taskDeadline,
-            resubmittable = true,
-            editable = true,
-            intro = taskIntro,
-            description = taskDescription,
-            submissionSchema = taskSubmissionSchema,
-            space = spaceId,
-            categoryId = defaultCategoryId,
-            topics = listOf(testTopics[0].first, testTopics[1].first), // Use first two topic IDs
-        )
+        taskId =
+            createTask(
+                name = "$taskName (Initial)", // Adjusted name
+                submitterType = TaskSubmitterType.USER,
+                deadline = taskDeadline,
+                resubmittable = true,
+                editable = true,
+                intro = taskIntro,
+                description = taskDescription,
+                submissionSchema = taskSubmissionSchema,
+                space = spaceId,
+                categoryId = defaultCategoryId,
+                topics = listOf(testTopics[0].first, testTopics[1].first), // Use first two topic IDs
+            )
         assertTrue(taskId > 0)
 
         // Approve the task
@@ -232,20 +257,30 @@ constructor(
         assertEquals(expectedTopics.size, actualTopics.size, "Topic count mismatch")
         val actualTopicMap = actualTopics.associateBy { it.id }
         expectedTopics.forEach { (expectedId, expectedName) ->
-            assertTrue(actualTopicMap.containsKey(expectedId), "Expected topic ID $expectedId not found")
-            assertEquals(expectedName, actualTopicMap[expectedId]?.name, "Name mismatch for topic ID $expectedId")
+            assertTrue(
+                actualTopicMap.containsKey(expectedId),
+                "Expected topic ID $expectedId not found",
+            )
+            assertEquals(
+                expectedName,
+                actualTopicMap[expectedId]?.name,
+                "Name mismatch for topic ID $expectedId",
+            )
         }
     }
 
     @Test
     @Order(10)
     fun `Task - Get task with initial topics`() { // Renamed
-        webTestClient.get().uri { builder ->
-            builder.path("/tasks/$taskId").queryParam("queryTopics", "true").build()
-        }
+        webTestClient
+            .get()
+            .uri { builder ->
+                builder.path("/tasks/$taskId").queryParam("queryTopics", "true").build()
+            }
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.task, "Task data missing")
@@ -258,16 +293,22 @@ constructor(
     @Order(20)
     fun `Task - Update task topics`() { // Renamed
         val updatedTopicIds =
-            listOf(testTopics[1].first, testTopics[2].first) // Keep topic 1, replace topic 0 with topic 2
+            listOf(
+                testTopics[1].first,
+                testTopics[2].first,
+            ) // Keep topic 1, replace topic 0 with topic 2
         // Assuming PatchTaskRequestDTO exists
         val requestDTO = PatchTaskRequestDTO(topics = updatedTopicIds)
 
-        webTestClient.patch().uri("/tasks/$taskId")
+        webTestClient
+            .patch()
+            .uri("/tasks/$taskId")
             .header("Authorization", "Bearer $creatorToken")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<PatchTask200ResponseDTO>() // Assuming patch returns updated task
             .value { response ->
                 assertNotNull(response.data.task, "Task data missing")
@@ -279,12 +320,15 @@ constructor(
     @Test
     @Order(30)
     fun `Task - Get task with updated topics`() { // Renamed
-        webTestClient.get().uri { builder ->
-            builder.path("/tasks/$taskId").queryParam("queryTopics", "true").build()
-        }
+        webTestClient
+            .get()
+            .uri { builder ->
+                builder.path("/tasks/$taskId").queryParam("queryTopics", "true").build()
+            }
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.task, "Task data missing")
@@ -294,18 +338,25 @@ constructor(
     }
 
     // Helper for enumerating tasks by topic
-    private fun assertEnumerateTasksByTopics(expectedTaskIds: Set<IdType>, vararg topicIdsToFilter: IdType) {
-        webTestClient.get().uri { builder ->
-            builder.path("/tasks")
-                .queryParam("space", spaceId)
-                .queryParam("approved", ApproveTypeDTO.APPROVED.name)
-            // Add each topic ID as a separate query parameter
-            topicIdsToFilter.forEach { builder.queryParam("topics", it) }
-            builder.build()
-        }
+    private fun assertEnumerateTasksByTopics(
+        expectedTaskIds: Set<IdType>,
+        vararg topicIdsToFilter: IdType,
+    ) {
+        webTestClient
+            .get()
+            .uri { builder ->
+                builder
+                    .path("/tasks")
+                    .queryParam("space", spaceId)
+                    .queryParam("approved", ApproveTypeDTO.APPROVED.name)
+                // Add each topic ID as a separate query parameter
+                topicIdsToFilter.forEach { builder.queryParam("topics", it) }
+                builder.build()
+            }
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTasks200ResponseDTO>() // Assuming enumeration uses this DTO
             .value { response ->
                 assertNotNull(response.data?.tasks, "Tasks list missing in response")
@@ -313,7 +364,7 @@ constructor(
                 assertEquals(
                     expectedTaskIds,
                     actualTaskIds,
-                    "Filtered task ID set mismatch for topics ${topicIdsToFilter.joinToString()}"
+                    "Filtered task ID set mismatch for topics ${topicIdsToFilter.joinToString()}",
                 )
             }
     }

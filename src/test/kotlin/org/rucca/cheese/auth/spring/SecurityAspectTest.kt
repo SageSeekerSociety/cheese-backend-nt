@@ -241,7 +241,6 @@ class SecurityAspectTest {
 
         @BeforeEach
         fun setUpAuthTest() {
-            // Mock AnnotationUtils
             mockkStatic(AnnotationUtils::class)
             every { AnnotationUtils.findAnnotation(method, Auth::class.java) } returns
                 authAnnotation
@@ -251,6 +250,9 @@ class SecurityAspectTest {
 
             // Setup Auth annotation value
             every { authAnnotation.value } returns "test:view:document"
+
+            // Mock method.name which is used in logging
+            every { method.name } returns "testMethod"
         }
 
         @Test
@@ -304,7 +306,7 @@ class SecurityAspectTest {
 
             // Verify error message
             assertEquals(
-                "Invalid Auth value format: test:view. Expected format: 'domain:action:resource'",
+                "Invalid Auth value format: 'test:view'. Expected format: 'domain:action:resource'",
                 exception.message,
             )
         }

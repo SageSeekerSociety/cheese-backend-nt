@@ -9,9 +9,9 @@
 
 package org.rucca.cheese.api
 
-import org.assertj.core.api.Assertions.assertThat
 import java.time.LocalDateTime
 import kotlin.math.floor
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.Order
@@ -430,7 +430,8 @@ constructor(
                     .isNotNull
 
                 // Assert properties of the found space
-                assertThat(targetSpace!!.id).isEqualTo(spaceId) // Use !! because we asserted not null above
+                assertThat(targetSpace!!.id)
+                    .isEqualTo(spaceId) // Use !! because we asserted not null above
                 assertThat(targetSpace.myRank).isNull() // Expecting rank to be null/absent
             }
     }

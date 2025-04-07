@@ -205,7 +205,7 @@ interface NotificationsApi {
             schema = Schema(defaultValue = "20L"),
         )
         @Valid
-        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20L")
         pageSize: kotlin.Long,
         @Parameter(
             description = "Filter by notification type.",

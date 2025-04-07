@@ -11,6 +11,7 @@ package org.rucca.cheese.api
 // Removed: import org.json.JSONObject
 // Import necessary DTOs
 // Removed: import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import kotlin.math.floor
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
@@ -25,11 +26,12 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
-import kotlin.math.floor
 
 // Removed: MockMvc and related imports
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT) // Use WebTestClient environment
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
+) // Use WebTestClient environment
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 // Removed: @AutoConfigureMockMvc
@@ -45,7 +47,8 @@ constructor(
     // --- User Setup ---
     lateinit var creator: UserCreatorService.CreateUserResponse
     lateinit var creatorToken: String
-    lateinit var newOwnerCandidate: UserCreatorService.CreateUserResponse // Renamed, as direct ownership transfer isn't simple
+    lateinit var newOwnerCandidate:
+        UserCreatorService.CreateUserResponse // Renamed, as direct ownership transfer isn't simple
     lateinit var newOwnerCandidateToken: String
     lateinit var admin: UserCreatorService.CreateUserResponse
     lateinit var adminToken: String
@@ -74,19 +77,20 @@ constructor(
         val name: String? = null,
         val action: String? = null,
         val resourceType: String? = null,
-        val resourceId: IdType? = null
+        val resourceId: IdType? = null,
     )
 
     data class ErrorDetail(val name: String, val data: ErrorData?)
-    data class GenericErrorResponse(val error: ErrorDetail)
 
+    data class GenericErrorResponse(val error: ErrorDetail)
 
     @BeforeAll
     fun prepare() {
         creator = userCreatorService.createUser()
         creatorToken = userCreatorService.login(creator.username, creator.password)
         newOwnerCandidate = userCreatorService.createUser()
-        newOwnerCandidateToken = userCreatorService.login(newOwnerCandidate.username, newOwnerCandidate.password)
+        newOwnerCandidateToken =
+            userCreatorService.login(newOwnerCandidate.username, newOwnerCandidate.password)
         admin = userCreatorService.createUser()
         adminToken = userCreatorService.login(admin.username, admin.password)
         member = userCreatorService.createUser()
@@ -98,47 +102,72 @@ constructor(
     // --- Refactored Helper Methods for Membership ---
 
     /** Invites a user to the team with a specified role. */
-    fun inviteUser(inviterToken: String, teamId: IdType, userIdToInvite: IdType, role: TeamMemberRoleTypeDTO): IdType {
+    fun inviteUser(
+        inviterToken: String,
+        teamId: IdType,
+        userIdToInvite: IdType,
+        role: TeamMemberRoleTypeDTO,
+    ): IdType {
         val requestDTO = TeamInvitationCreateDTO(userId = userIdToInvite, role = role)
-        val response = webTestClient.post().uri("/teams/$teamId/invitations")
-            .header("Authorization", "Bearer $inviterToken")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestDTO)
-            .exchange()
-            .expectStatus().isCreated // Expect 201 Created
-            .expectBody<CreateTeamInvitation201ResponseDTO>()
-            .returnResult()
-            .responseBody
+        val response =
+            webTestClient
+                .post()
+                .uri("/teams/$teamId/invitations")
+                .header("Authorization", "Bearer $inviterToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestDTO)
+                .exchange()
+                .expectStatus()
+                .isCreated // Expect 201 Created
+                .expectBody<CreateTeamInvitation201ResponseDTO>()
+                .returnResult()
+                .responseBody
 
         assertNotNull(response?.data?.invitation?.id, "Invitation ID is null")
-        logger.info("Invited user $userIdToInvite to team $teamId with role $role. Invitation ID: ${response!!.data.invitation.id}")
+        logger.info(
+            "Invited user $userIdToInvite to team $teamId with role $role. Invitation ID: ${response!!.data.invitation.id}"
+        )
         return response.data.invitation.id
     }
 
     /** Accepts a team invitation. */
     fun acceptInvitation(accepterToken: String, invitationId: IdType) {
-        webTestClient.post().uri("/users/me/team-invitations/$invitationId/accept")
+        webTestClient
+            .post()
+            .uri("/users/me/team-invitations/$invitationId/accept")
             .header("Authorization", "Bearer $accepterToken")
             .exchange()
-            .expectStatus().isNoContent // Expect 204 No Content
+            .expectStatus()
+            .isNoContent // Expect 204 No Content
         logger.info("User accepted invitation $invitationId")
     }
 
     /** Changes the role of an existing team member. */
-    fun changeMemberRole(adminToken: String, teamId: IdType, targetUserId: IdType, newRole: TeamMemberRoleTypeDTO) {
+    fun changeMemberRole(
+        adminToken: String,
+        teamId: IdType,
+        targetUserId: IdType,
+        newRole: TeamMemberRoleTypeDTO,
+    ) {
         // Cannot set OWNER via this endpoint
-        require(newRole != TeamMemberRoleTypeDTO.OWNER) { "Cannot set role to OWNER using patchTeamMember" }
+        require(newRole != TeamMemberRoleTypeDTO.OWNER) {
+            "Cannot set role to OWNER using patchTeamMember"
+        }
         val requestDTO = PatchTeamMemberRequestDTO(role = newRole)
-        webTestClient.patch().uri("/teams/$teamId/members/$targetUserId")
+        webTestClient
+            .patch()
+            .uri("/teams/$teamId/members/$targetUserId")
             .header("Authorization", "Bearer $adminToken") // Requires Admin/Owner
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeam200ResponseDTO>() // Assuming PATCH returns updated Team DTO
             .value { response ->
                 assertNotNull(response.data.team)
-                // Could add verification here that the member list reflects the change, but might be complex.
+                // Could add verification here that the member list reflects the change, but might
+                // be complex.
                 // Rely on getTeamMembers test later.
             }
         logger.info("Changed role of user $targetUserId in team $teamId to $newRole")
@@ -149,17 +178,21 @@ constructor(
         removerToken: String,
         teamId: IdType,
         targetUserId: IdType,
-        expectedStatus: HttpStatus = HttpStatus.OK
+        expectedStatus: HttpStatus = HttpStatus.OK,
     ) {
-        webTestClient.delete().uri("/teams/$teamId/members/$targetUserId")
+        webTestClient
+            .delete()
+            .uri("/teams/$teamId/members/$targetUserId")
             .header("Authorization", "Bearer $removerToken")
             .exchange()
-            .expectStatus().isEqualTo(expectedStatus.value()) // Expect OK or specific status
+            .expectStatus()
+            .isEqualTo(expectedStatus.value()) // Expect OK or specific status
             // Optionally check response DTO if not No Content
             .expectBody<GetTeam200ResponseDTO>() // Assuming DELETE returns updated team DTO
-        logger.info("Attempted removal of user $targetUserId from team $teamId by token holder. Expected status: $expectedStatus")
+        logger.info(
+            "Attempted removal of user $targetUserId from team $teamId by token holder. Expected status: $expectedStatus"
+        )
     }
-
 
     // --- Refactored Test Methods ---
 
@@ -167,22 +200,29 @@ constructor(
     @Order(10)
     fun `Team - Create team`() { // Renamed
         // Assuming PostTeamRequestDTO exists
-        val requestDTO = PostTeamRequestDTO(
-            name = teamName,
-            intro = teamIntro,
-            description = teamDescription,
-            avatarId = teamAvatarId
-        )
+        val requestDTO =
+            PostTeamRequestDTO(
+                name = teamName,
+                intro = teamIntro,
+                description = teamDescription,
+                avatarId = teamAvatarId,
+            )
 
-        val response = webTestClient.post().uri("/teams")
-            .header("Authorization", "Bearer $creatorToken")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestDTO)
-            .exchange()
-            .expectStatus().isOk // Original test expects OK, might be Created(201)
-            .expectBody<GetTeam200ResponseDTO>() // Assuming response DTO for get/create/patch is the same
-            .returnResult()
-            .responseBody
+        val response =
+            webTestClient
+                .post()
+                .uri("/teams")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestDTO)
+                .exchange()
+                .expectStatus()
+                .isOk // Original test expects OK, might be Created(201)
+                .expectBody<
+                    GetTeam200ResponseDTO
+                >() // Assuming response DTO for get/create/patch is the same
+                .returnResult()
+                .responseBody
 
         assertNotNull(response?.data?.team, "Team data missing in response")
         val team = response!!.data.team
@@ -199,7 +239,7 @@ constructor(
         assertEquals(
             TeamMemberRoleTypeDTO.OWNER,
             team.role,
-            "Creator's role should be OWNER"
+            "Creator's role should be OWNER",
         ) // Assuming role is returned
 
         assertNotNull(team.id, "Team ID is null")
@@ -210,10 +250,13 @@ constructor(
     @Test
     @Order(20)
     fun `Team - Get team details as owner`() { // Renamed
-        webTestClient.get().uri("/teams/$teamId")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.team, "Team data missing")
@@ -234,7 +277,7 @@ constructor(
     private fun assertTeamEnumeration(
         response: GetTeams200ResponseDTO?,
         expectedSize: Int,
-        expectedFirstTeamId: IdType? = null
+        expectedFirstTeamId: IdType? = null,
     ) {
         assertNotNull(response?.data, "Response data missing")
         assertNotNull(response!!.data.teams, "Teams list missing")
@@ -260,15 +303,19 @@ constructor(
     @Test
     @Order(21)
     fun `Team - Enumerate teams filtered by name`() { // Renamed
-        webTestClient.get().uri { builder ->
-            builder.path("/teams")
-                .queryParam("query", teamName) // Filter by name
-                .queryParam("page_size", 1)
-                .build()
-        }
+        webTestClient
+            .get()
+            .uri { builder ->
+                builder
+                    .path("/teams")
+                    .queryParam("query", teamName) // Filter by name
+                    .queryParam("page_size", 1)
+                    .build()
+            }
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeams200ResponseDTO>()
             .value { response ->
                 assertTeamEnumeration(response, 1, teamId)
@@ -280,15 +327,19 @@ constructor(
     @Test
     @Order(22)
     fun `Team - Enumerate teams filtered by ID`() { // Renamed
-        webTestClient.get().uri { builder ->
-            builder.path("/teams")
-                .queryParam("query", teamId.toString()) // Filter by ID string
-                .queryParam("page_size", 1)
-                .build()
-        }
+        webTestClient
+            .get()
+            .uri { builder ->
+                builder
+                    .path("/teams")
+                    .queryParam("query", teamId.toString()) // Filter by ID string
+                    .queryParam("page_size", 1)
+                    .build()
+            }
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeams200ResponseDTO>()
             .value { response ->
                 assertTeamEnumeration(response, 1, teamId)
@@ -299,22 +350,26 @@ constructor(
     @Test
     @Order(23)
     fun `Team - Enumerate teams filtered by name with pagination`() { // Renamed
-        webTestClient.get().uri { builder ->
-            builder.path("/teams")
-                .queryParam("query", teamName)
-                .queryParam("page_start", teamId) // Start at the team itself
-                .queryParam("page_size", 1)
-                .build()
-        }
+        webTestClient
+            .get()
+            .uri { builder ->
+                builder
+                    .path("/teams")
+                    .queryParam("query", teamName)
+                    .queryParam("page_start", teamId) // Start at the team itself
+                    .queryParam("page_size", 1)
+                    .build()
+            }
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeams200ResponseDTO>()
             .value { response ->
                 assertTeamEnumeration(
                     response,
                     1,
-                    teamId
+                    teamId,
                 ) // Should still find the team if pageStart is inclusive cursor
                 assertEquals(1, response!!.data.page!!.pageSize)
                 assertEquals(teamId, response.data.page!!.pageStart)
@@ -324,24 +379,31 @@ constructor(
     @Test
     @Order(24)
     fun `Team - Enumerate teams default (no filter)`() { // Renamed
-        webTestClient.get().uri("/teams")
+        webTestClient
+            .get()
+            .uri("/teams")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeams200ResponseDTO>() // Just ensure it returns OK and correct DTO type
-//            .value { response ->
-//                assertNotNull(response?.data?.teams)
-//                assertTrue(response!!.data.teams.any { it.id == teamId }) // Check our team is listed
-//            }
+        //            .value { response ->
+        //                assertNotNull(response?.data?.teams)
+        //                assertTrue(response!!.data.teams.any { it.id == teamId }) // Check our
+        // team is listed
+        //            }
     }
 
     @Test
     @Order(25)
     fun `Team - Get my teams`() { // Renamed
-        webTestClient.get().uri("/teams/my-teams")
+        webTestClient
+            .get()
+            .uri("/teams/my-teams")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetMyTeams200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.teams)
@@ -363,19 +425,24 @@ constructor(
 
     @Test
     @Order(30)
-    fun `Membership - Invite and accept ADMIN (simulating ownership transfer prep)`() { // Adapted Test
+    fun `Membership - Invite and accept ADMIN (simulating ownership transfer prep)`() { // Adapted
+        // Test
         // Invite newOwnerCandidate as ADMIN by the current owner (creator)
-        newOwnerInviteId = inviteUser(creatorToken, teamId, newOwnerCandidate.userId, TeamMemberRoleTypeDTO.ADMIN)
+        newOwnerInviteId =
+            inviteUser(creatorToken, teamId, newOwnerCandidate.userId, TeamMemberRoleTypeDTO.ADMIN)
         assertTrue(newOwnerInviteId > 0)
 
         // newOwnerCandidate accepts the invitation
         acceptInvitation(newOwnerCandidateToken, newOwnerInviteId)
 
         // Verify: Get team as original creator, check role and admin list
-        webTestClient.get().uri("/teams/$teamId")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.team)
@@ -384,17 +451,20 @@ constructor(
                 assertEquals(1, team.admins.total) // newOwnerCandidate is now admin
                 assertNotNull(
                     team.admins.examples.find { it.id == newOwnerCandidate.userId },
-                    "New admin not found in examples"
+                    "New admin not found in examples",
                 )
                 assertEquals(true, team.joined) // Creator is still joined
                 assertEquals(TeamMemberRoleTypeDTO.OWNER, team.role) // Creator role is OWNER
             }
 
         // Verify: Get team as the new admin (newOwnerCandidate)
-        webTestClient.get().uri("/teams/$teamId")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $newOwnerCandidateToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.team)
@@ -419,24 +489,28 @@ constructor(
     @Order(40)
     fun `Membership - Try invite MEMBER using newOwnerCandidate (now ADMIN) - should succeed`() { // Adapted Test
         // The new admin (newOwnerCandidate) should be able to invite members.
-        memberInviteId = inviteUser(newOwnerCandidateToken, teamId, member.userId, TeamMemberRoleTypeDTO.MEMBER)
+        memberInviteId =
+            inviteUser(newOwnerCandidateToken, teamId, member.userId, TeamMemberRoleTypeDTO.MEMBER)
         assertTrue(memberInviteId > 0)
         // Let's accept this one immediately for later tests
         acceptInvitation(memberToken, memberInviteId)
     }
 
-
     @Test
     @Order(50)
-    fun `Membership - Accept ADMIN invitation for user 'admin'`() { // Adapted Test (was add admin by new owner)
+    fun `Membership - Accept ADMIN invitation for user 'admin'`() { // Adapted Test (was add admin
+        // by new owner)
         // Accept the invitation sent in Order 35
         acceptInvitation(adminToken, adminInviteId)
 
         // Verify: Get team as owner(creator), check admin count
-        webTestClient.get().uri("/teams/$teamId")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.team)
@@ -445,15 +519,18 @@ constructor(
             }
     }
 
-
     @Test
     @Order(60)
-    fun `Membership - Member user 'member' is already added`() { // Adapted Test (was add member by admin)
+    fun `Membership - Member user 'member' is already added`() { // Adapted Test (was add member by
+        // admin)
         // Member was added and accepted invitation in Order 40. Verify their role.
-        webTestClient.get().uri("/teams/$teamId")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $memberToken") // Get team as the member
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.team)
@@ -471,13 +548,20 @@ constructor(
     @Order(70)
     fun `Membership - Try invite user using MEMBER token fails`() { // Adapted Test
         // Member tries to invite anotherUser
-        val requestDTO = TeamInvitationCreateDTO(userId = anotherUser.userId, role = TeamMemberRoleTypeDTO.MEMBER)
-        webTestClient.post().uri("/teams/$teamId/invitations")
+        val requestDTO =
+            TeamInvitationCreateDTO(
+                userId = anotherUser.userId,
+                role = TeamMemberRoleTypeDTO.MEMBER,
+            )
+        webTestClient
+            .post()
+            .uri("/teams/$teamId/invitations")
             .header("Authorization", "Bearer $memberToken") // Use member token
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isForbidden // Expect 403
+            .expectStatus()
+            .isForbidden // Expect 403
             .expectBody<GenericErrorResponse>()
             .value { error -> assertEquals("AccessDeniedError", error.error.name) }
     }
@@ -488,30 +572,34 @@ constructor(
     @Order(75)
     fun `Team - Update fails for anonymous user`() { // Renamed
         val requestDTO = PatchTeamRequestDTO(intro = "Attempted update")
-        webTestClient.patch().uri("/teams/$teamId")
+        webTestClient
+            .patch()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $anotherUserToken") // Non-member token
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isForbidden
-            .expectBody<GenericErrorResponse>().value { error ->
-                assertEquals("AccessDeniedError", error.error.name)
-            }
+            .expectStatus()
+            .isForbidden
+            .expectBody<GenericErrorResponse>()
+            .value { error -> assertEquals("AccessDeniedError", error.error.name) }
     }
 
     @Test
     @Order(80)
     fun `Team - Update fails for member`() { // Renamed
         val requestDTO = PatchTeamRequestDTO(intro = "Attempted update by member")
-        webTestClient.patch().uri("/teams/$teamId")
+        webTestClient
+            .patch()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $memberToken") // Member token
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isForbidden
-            .expectBody<GenericErrorResponse>().value { error ->
-                assertEquals("AccessDeniedError", error.error.name)
-            }
+            .expectStatus()
+            .isForbidden
+            .expectBody<GenericErrorResponse>()
+            .value { error -> assertEquals("AccessDeniedError", error.error.name) }
     }
 
     @Test
@@ -523,19 +611,23 @@ constructor(
         val updatedTeamDescriptionAdmin = "$teamDescription (Updated by Admin)"
         val updatedTeamAvatarIdAdmin = teamAvatarId + 1
 
-        val requestDTO = PatchTeamRequestDTO(
-            name = updatedTeamNameAdmin,
-            intro = updatedTeamIntroAdmin,
-            description = updatedTeamDescriptionAdmin,
-            avatarId = updatedTeamAvatarIdAdmin
-        )
+        val requestDTO =
+            PatchTeamRequestDTO(
+                name = updatedTeamNameAdmin,
+                intro = updatedTeamIntroAdmin,
+                description = updatedTeamDescriptionAdmin,
+                avatarId = updatedTeamAvatarIdAdmin,
+            )
 
-        webTestClient.patch().uri("/teams/$teamId")
+        webTestClient
+            .patch()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $adminToken") // Use admin token
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.team)
@@ -560,19 +652,23 @@ constructor(
         val updatedTeamIntroOwner = "$teamIntro (Updated by Owner)"
         val updatedTeamAvatarIdOwner = teamAvatarId + 1
 
-        val requestDTO = PatchTeamRequestDTO(
-            name = updatedTeamNameOwner,
-            intro = updatedTeamIntroOwner,
-            avatarId = updatedTeamAvatarIdOwner
-            // Description not updated here as per original test
-        )
+        val requestDTO =
+            PatchTeamRequestDTO(
+                name = updatedTeamNameOwner,
+                intro = updatedTeamIntroOwner,
+                avatarId = updatedTeamAvatarIdOwner,
+                // Description not updated here as per original test
+            )
 
-        webTestClient.patch().uri("/teams/$teamId")
+        webTestClient
+            .patch()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $creatorToken") // Use owner token
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestDTO)
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.team)
@@ -593,10 +689,13 @@ constructor(
     @Test
     @Order(110)
     fun `Membership - Get team members list`() { // Renamed
-        webTestClient.get().uri("/teams/$teamId/members")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId/members")
             .header("Authorization", "Bearer $creatorToken") // Owner requests list
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.members)
@@ -621,15 +720,19 @@ constructor(
 
     @Test
     @Order(120)
-    fun `Membership - Change role ADMIN to MEMBER`() { // Adapted test (was ship ownership via patch)
+    fun `Membership - Change role ADMIN to MEMBER`() { // Adapted test (was ship ownership via
+        // patch)
         // Change user 'admin' from ADMIN to MEMBER using the owner's token
         changeMemberRole(creatorToken, teamId, admin.userId, TeamMemberRoleTypeDTO.MEMBER)
 
         // Verify role change
-        webTestClient.get().uri("/teams/$teamId/members")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId/members")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.members)
@@ -646,10 +749,13 @@ constructor(
         changeMemberRole(creatorToken, teamId, member.userId, TeamMemberRoleTypeDTO.ADMIN)
 
         // Verify role change
-        webTestClient.get().uri("/teams/$teamId/members")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId/members")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.members)
@@ -666,10 +772,13 @@ constructor(
         changeMemberRole(creatorToken, teamId, member.userId, TeamMemberRoleTypeDTO.MEMBER)
 
         // Verify role change
-        webTestClient.get().uri("/teams/$teamId/members")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId/members")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.members)
@@ -684,17 +793,19 @@ constructor(
                 // User 'admin' was changed to MEMBER in test 120
                 val admin2 = response.data.members.find { it.user.id == admin.userId }
                 assertEquals(TeamMemberRoleTypeDTO.MEMBER, admin2?.role)
-
             }
     }
 
     @Test
     @Order(148)
     fun `Team - Get team as member`() { // Renamed
-        webTestClient.get().uri("/teams/$teamId")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $memberToken") // Use member's token
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.team)
@@ -706,10 +817,13 @@ constructor(
     @Test
     @Order(149)
     fun `Team - Get team as non-member`() { // Renamed
-        webTestClient.get().uri("/teams/$teamId")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $anotherUserToken") // Use non-member's token
             .exchange()
-            .expectStatus().isOk // Non-members can likely still view public team info
+            .expectStatus()
+            .isOk // Non-members can likely still view public team info
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.team)
@@ -721,17 +835,28 @@ constructor(
     @Test
     @Order(150)
     fun `Membership - Remove self as member`() { // Renamed
-        removeMember(memberToken, teamId, member.userId, expectedStatus = HttpStatus.OK) // Expect OK based on original
+        removeMember(
+            memberToken,
+            teamId,
+            member.userId,
+            expectedStatus = HttpStatus.OK,
+        ) // Expect OK based on original
 
         // Verify removal
-        webTestClient.get().uri("/teams/$teamId/members")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId/members")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.members)
-                assertNull(response.data.members.find { it.user.id == member.userId }, "Member should be removed")
+                assertNull(
+                    response.data.members.find { it.user.id == member.userId },
+                    "Member should be removed",
+                )
             }
     }
 
@@ -744,10 +869,13 @@ constructor(
         acceptInvitation(memberToken, inviteId)
 
         // Verify member is back
-        webTestClient.get().uri("/teams/$teamId/members")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId/members")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.members)
@@ -763,16 +891,19 @@ constructor(
         removeMember(creatorToken, teamId, member.userId, expectedStatus = HttpStatus.OK)
 
         // Verify removal
-        webTestClient.get().uri("/teams/$teamId/members")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId/members")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.members)
                 assertNull(
                     response.data.members.find { it.user.id == member.userId },
-                    "Member should be removed again"
+                    "Member should be removed again",
                 )
             }
     }
@@ -784,24 +915,32 @@ constructor(
         removeMember(creatorToken, teamId, admin.userId, expectedStatus = HttpStatus.OK)
 
         // Verify removal and remaining admins
-        webTestClient.get().uri("/teams/$teamId/members")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId/members")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.members)
                 assertNull(
                     response.data.members.find { it.user.id == admin.userId },
-                    "User 'admin' should be removed"
+                    "User 'admin' should be removed",
                 )
 
                 // Check owner and remaining admin(s)
                 val owner =
-                    response.data.members.find { it.user.id == creator.userId && it.role == TeamMemberRoleTypeDTO.OWNER }
+                    response.data.members.find {
+                        it.user.id == creator.userId && it.role == TeamMemberRoleTypeDTO.OWNER
+                    }
                 assertNotNull(owner)
                 val admin1 =
-                    response.data.members.find { it.user.id == newOwnerCandidate.userId && it.role == TeamMemberRoleTypeDTO.ADMIN }
+                    response.data.members.find {
+                        it.user.id == newOwnerCandidate.userId &&
+                            it.role == TeamMemberRoleTypeDTO.ADMIN
+                    }
                 assertNotNull(admin1)
 
                 // Verify total count reflects removal
@@ -809,22 +948,26 @@ constructor(
             }
     }
 
-
     @Test
     @Order(170)
     fun `Team - Delete team success by owner`() { // Renamed
-        webTestClient.delete().uri("/teams/$teamId")
+        webTestClient
+            .delete()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $creatorToken") // Owner deletes
             .exchange()
-            .expectStatus().isOk // Assuming 200 OK for delete
+            .expectStatus()
+            .isOk // Assuming 200 OK for delete
             .expectBody<CommonResponseDTO>() // Assuming simple response DTO
             .value { assertEquals(200, it.code) }
 
-
         // Verify deletion
-        webTestClient.get().uri("/teams/$teamId")
+        webTestClient
+            .get()
+            .uri("/teams/$teamId")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
-            .expectStatus().isNotFound // Expect 404 Not Found
+            .expectStatus()
+            .isNotFound // Expect 404 Not Found
     }
 }

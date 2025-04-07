@@ -429,7 +429,7 @@ interface TeamsApi {
             schema = Schema(defaultValue = "20L"),
         )
         @Valid
-        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20L")
         pageSize: kotlin.Long,
     ): ResponseEntity<ListTeamInvitations200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
@@ -490,7 +490,7 @@ interface TeamsApi {
             schema = Schema(defaultValue = "20L"),
         )
         @Valid
-        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20L")
         pageSize: kotlin.Long,
     ): ResponseEntity<ListTeamJoinRequests200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
