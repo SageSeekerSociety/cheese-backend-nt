@@ -466,9 +466,10 @@ interface TeamsApi {
     )
     @RequestMapping(method = [RequestMethod.DELETE], value = ["/users/me/teams/{teamId}"])
     suspend fun leaveTeam(
+        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
         @Parameter(description = "The unique identifier of the team.", required = true)
         @PathVariable("teamId")
-        teamId: kotlin.Long
+        teamId: kotlin.Long,
     ): ResponseEntity<Unit> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }

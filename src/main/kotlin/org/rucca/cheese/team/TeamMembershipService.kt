@@ -1,6 +1,7 @@
 package org.rucca.cheese.team
 
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import org.rucca.cheese.common.error.ForbiddenError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.toEpochMilli
@@ -48,8 +49,8 @@ fun TeamMembershipApplication.toDTO(
         message = this.message,
         processedBy = processedByDto,
         processedAt = this.processedAt?.toEpochMilli(),
-        createdAt = this.createdAt.toEpochMilli(),
-        updatedAt = this.updatedAt.toEpochMilli(),
+        createdAt = this.createdAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+        updatedAt = this.updatedAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
     )
 }
 

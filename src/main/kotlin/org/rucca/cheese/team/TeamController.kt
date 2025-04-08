@@ -371,7 +371,7 @@ class TeamController(
                 userId = userInfo!!.userId,
                 status = status?.toEnum(),
                 cursorId = pageStart,
-                pageSize = pageSize.toInt().coerceIn(1, 100),
+                pageSize = pageSize.coerceIn(1, 100),
             )
         return ResponseEntity.ok(
             ListMyInvitations200ResponseDTO(
@@ -394,7 +394,7 @@ class TeamController(
                 userId = userInfo!!.userId,
                 status = status?.toEnum(),
                 cursorId = pageStart,
-                pageSize = pageSize.toInt().coerceIn(1, 100),
+                pageSize = pageSize.coerceIn(1, 100),
             )
         return ResponseEntity.ok(
             ListMyJoinRequests200ResponseDTO(
@@ -403,5 +403,16 @@ class TeamController(
                 message = "Success",
             )
         )
+    }
+
+    @Auth("team:remove_member:membership")
+    override suspend fun leaveTeam(
+        @AuthUser userInfo: AuthUserInfo?,
+        @ResourceId teamId: Long,
+    ): ResponseEntity<Unit> {
+        withContext(Dispatchers.IO) {
+            teamService.removeTeamMember(teamId, userInfo!!.userId, userInfo.userId)
+        }
+        return ResponseEntity.noContent().build()
     }
 }

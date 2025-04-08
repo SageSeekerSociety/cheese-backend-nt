@@ -145,13 +145,15 @@ paths:
         '204':
           description: Invitation declined successfully.
   /users/me/teams/{teamId}:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
     delete:
       summary: Leave a team
       description: Allows the authenticated user (who is a member) to leave the specified team. Team owners typically cannot leave directly; they might need to transfer ownership or disband the team first.
       operationId: leaveTeam
       tags: [ Teams ]
-      parameters:
-        - $ref: '#/components/parameters/TeamId'
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       responses:
         '204':
           description: Successfully left the team.
@@ -160,6 +162,8 @@ paths:
         '404':
           description: Team not found. The specified teamId does not exist.
   /users/{userId}/identity:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
     get:
       tags: [ Users ]
       operationId: get-user-identity
@@ -167,7 +171,6 @@ paths:
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       parameters:
-        - $ref: '#/components/parameters/UserId'
         - description: Whether to return the precise identity info
           in: query
           name: precise
@@ -205,8 +208,6 @@ paths:
       summary: Update User Real Name Identity Info
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
-      parameters:
-        - $ref: '#/components/parameters/UserId'
       requestBody:
         required: true
         content:
@@ -253,8 +254,6 @@ paths:
       summary: Update User Real Name Identity Info
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
-      parameters:
-        - $ref: '#/components/parameters/UserId'
       requestBody:
         required: true
         content:

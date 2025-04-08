@@ -207,7 +207,7 @@ class TaskMembershipService(
     ): TaskParticipantSummaryDTO {
         return if (!isRealNameInfoQuery) {
             // Regular participant summary
-            when (task.submitterType!!) {
+            when (task.submitterType) {
                 TaskSubmitterType.USER -> {
                     val user = userService.getUserDto(memberId)
                     TaskParticipantSummaryDTO(
@@ -217,6 +217,7 @@ class TaskMembershipService(
                         avatarId = user.avatarId,
                     )
                 }
+
                 TaskSubmitterType.TEAM -> {
                     val team = teamService.getTeamDto(memberId)
                     TaskParticipantSummaryDTO(
@@ -229,7 +230,7 @@ class TaskMembershipService(
             }
         } else {
             // Minimal info when using real name info
-            when (task.submitterType!!) {
+            when (task.submitterType) {
                 TaskSubmitterType.USER -> {
                     TaskParticipantSummaryDTO(
                         id = membership.id!!,
@@ -296,7 +297,7 @@ class TaskMembershipService(
 
         // Process real name information
         if (task.requireRealName == true) {
-            when (task.submitterType!!) {
+            when (task.submitterType) {
                 TaskSubmitterType.USER -> {
                     // For individual users, copy from their user real name info
                     try {
@@ -560,9 +561,10 @@ class TaskMembershipService(
             )
 
         // Ensure member exists
-        when (task.submitterType!!) {
+        when (task.submitterType) {
             TaskSubmitterType.USER ->
                 if (!userService.existsUser(memberId)) return NotFoundError("user", memberId)
+
             TaskSubmitterType.TEAM ->
                 if (!teamService.existsTeam(memberId)) return NotFoundError("team", memberId)
         }
@@ -572,7 +574,7 @@ class TaskMembershipService(
             return AlreadyBeTaskParticipantError(task.id!!, memberId)
 
         // Check if user has real name info if required
-        if (task.requireRealName == true) {
+        if (task.requireRealName) {
             when (task.submitterType) {
                 TaskSubmitterType.USER -> {
                     // For individual participants, check if they have real name info
@@ -599,14 +601,11 @@ class TaskMembershipService(
 
         // Have enough rank
         val needToCheckRank =
-            applicationConfig.rankCheckEnforced &&
-                task.space != null &&
-                task.space.enableRank!! &&
-                task.rank != null
+            applicationConfig.rankCheckEnforced && task.space.enableRank!! && task.rank != null
         if (needToCheckRank) {
             val requiredRank = task.rank!! - applicationConfig.rankJump
             if (task.submitterType == TaskSubmitterType.USER) {
-                val actualRank = spaceUserRankService.getRank(task.space!!.id!!, memberId)
+                val actualRank = spaceUserRankService.getRank(task.space.id!!, memberId)
                 if (actualRank < requiredRank)
                     return YourRankIsNotHighEnoughError(actualRank, requiredRank)
             } else {
@@ -614,7 +613,7 @@ class TaskMembershipService(
                 val (teamMembers, _) = teamService.getTeamMembers(memberId)
                 for (teamMember in teamMembers) {
                     val actualRank =
-                        spaceUserRankService.getRank(task.space!!.id!!, teamMember.user.id)
+                        spaceUserRankService.getRank(task.space.id!!, teamMember.user.id)
                     if (actualRank < requiredRank) {
                         return YourTeamMemberRankIsNotHighEnoughError(
                             teamMember.user.id,
@@ -671,6 +670,7 @@ class TaskMembershipService(
                 val joinReject = isTaskJoinable(task, userId)
                 Triple(joinReject == null, null, joinReject)
             }
+
             TaskSubmitterType.TEAM -> {
                 val teams =
                     teamService.getTeamsThatUserCanUseToJoinTask(task.id!!, userId).filter {
@@ -682,7 +682,7 @@ class TaskMembershipService(
     }
 
     fun getSubmittability(task: Task, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
-        when (task.submitterType!!) {
+        when (task.submitterType) {
             TaskSubmitterType.USER ->
                 return Pair(
                     taskMembershipRepository.existsByTaskIdAndMemberIdAndApproved(
@@ -692,6 +692,7 @@ class TaskMembershipService(
                     ),
                     null,
                 )
+
             TaskSubmitterType.TEAM -> {
                 val teams = teamService.getTeamsThatUserCanUseToSubmitTask(task.id!!, userId)
                 return Pair(teams.isNotEmpty(), teams)
@@ -700,12 +701,13 @@ class TaskMembershipService(
     }
 
     fun getJoined(task: Task, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
-        when (task.submitterType!!) {
+        when (task.submitterType) {
             TaskSubmitterType.USER ->
                 return Pair(
                     taskMembershipRepository.existsByTaskIdAndMemberId(task.id!!, userId),
                     null,
                 )
+
             TaskSubmitterType.TEAM -> {
                 val teams = teamService.getTeamsThatUserJoinedTaskAs(task.id!!, userId)
                 return Pair(teams.isNotEmpty(), teams)
@@ -718,7 +720,7 @@ class TaskMembershipService(
         userId: IdType,
         approveType: ApproveType,
     ): Pair<Boolean, List<TeamSummaryDTO>?> {
-        when (task.submitterType!!) {
+        when (task.submitterType) {
             TaskSubmitterType.USER ->
                 return Pair(
                     taskMembershipRepository.existsByTaskIdAndMemberIdAndApproved(
@@ -728,6 +730,7 @@ class TaskMembershipService(
                     ),
                     null,
                 )
+
             TaskSubmitterType.TEAM -> {
                 val teams =
                     teamService.getTeamsThatUserJoinedTaskAsWithApprovedType(
@@ -748,9 +751,12 @@ class TaskMembershipService(
         // For user tasks, the user is the participant
         val participant = taskMembershipRepository.findByTaskIdAndMemberId(taskId, userId)
         if (participant.isPresent && participant.get().approved == ApproveType.APPROVED) {
-            return participant.get().deadline?.let {
-                it.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            }
+            return participant
+                .get()
+                .deadline
+                ?.atZone(ZoneId.systemDefault())
+                ?.toInstant()
+                ?.toEpochMilli()
         }
 
         // For team tasks, need to find if any team that user belongs to has joined the task
@@ -769,9 +775,12 @@ class TaskMembershipService(
                 val teamParticipation =
                     taskMembershipRepository.findByTaskIdAndMemberId(taskId, teamId)
                 if (teamParticipation.isPresent) {
-                    return teamParticipation.get().deadline?.let {
-                        it.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                    }
+                    return teamParticipation
+                        .get()
+                        .deadline
+                        ?.atZone(ZoneId.systemDefault())
+                        ?.toInstant()
+                        ?.toEpochMilli()
                 }
             }
         }
@@ -797,8 +806,6 @@ class TaskMembershipService(
                 val teams = teamService.getTeamsThatUserJoinedTaskAs(taskId, userId)
                 teams.isNotEmpty()
             }
-
-            else -> false
         }
     }
 
@@ -820,7 +827,7 @@ class TaskMembershipService(
         val task = getTask(taskId)
         val identities = mutableListOf<TaskParticipationIdentityDTO>()
 
-        when (task.submitterType!!) {
+        when (task.submitterType) {
             TaskSubmitterType.USER -> {
                 val membership = taskMembershipRepository.findByTaskIdAndMemberId(taskId, userId)
                 if (membership.isPresent) {
