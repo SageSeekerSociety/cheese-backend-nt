@@ -232,8 +232,8 @@ class TaskSubmissionService(
         return TaskSubmissionDTO(
             id = this.id!!,
             version = this.version!!,
-            createdAt = this.createdAt!!.toEpochMilli(),
-            updatedAt = this.updatedAt!!.toEpochMilli(),
+            createdAt = this.createdAt.toEpochMilli(),
+            updatedAt = this.updatedAt.toEpochMilli(),
             member =
                 taskMembershipService
                     .getTaskMembershipDTO(this.membership!!.task!!.id!!, this.membership.memberId!!)

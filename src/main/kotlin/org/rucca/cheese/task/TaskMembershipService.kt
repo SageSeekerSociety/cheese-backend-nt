@@ -30,7 +30,9 @@ import org.rucca.cheese.user.models.KeyPurpose
 import org.rucca.cheese.user.services.EncryptionService
 import org.rucca.cheese.user.services.UserRealNameService
 import org.rucca.cheese.user.services.UserService
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 val DefaultRealNameInfo =
@@ -77,6 +79,8 @@ class TaskMembershipService(
     private val encryptionService: EncryptionService,
     private val entityPatcher: EntityPatcher,
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     private fun getTask(taskId: IdType): Task {
         return taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
     }
@@ -126,14 +130,18 @@ class TaskMembershipService(
             updatedAt =
                 membership.updatedAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             deadline =
-                membership.deadline?.let {
-                    it.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                },
+                membership.deadline?.atZone(ZoneId.systemDefault())?.toInstant()?.toEpochMilli(),
             approved = membership.approved!!.convert(),
             realNameInfo = realNameInfo,
+            email = membership.email,
+            phone = membership.phone,
             applyReason = membership.applyReason,
             personalAdvantage = membership.personalAdvantage,
             remark = membership.remark,
+            teamMembers =
+                if (task.submitterType == TaskSubmitterType.TEAM) {
+                    getTeamParticipantMemberSummaries(task, membership)
+                } else null,
         )
     }
 
@@ -154,19 +162,235 @@ class TaskMembershipService(
             // For team participants
             task.submitterType == TaskSubmitterType.TEAM &&
                 membership.teamMembersRealNameInfo.isNotEmpty() -> {
-                membership.teamMembersRealNameInfo.firstOrNull()?.let { firstTeamMember ->
-                    membership.encryptionKeyId?.let { key ->
-                        if (firstTeamMember.realNameInfo.encrypted) {
-                            decryptTeamMemberRealNameInfo(firstTeamMember.realNameInfo, key)
-                        } else {
-                            firstTeamMember.realNameInfo.convert()
-                        }
-                    }
-                }
+                return null // No need to return a single real name info for team participants
             }
 
             else -> null
         }
+    }
+
+    private fun getRealNameInfoForTeamMember(
+        membership: TaskMembership,
+        memberId: IdType,
+    ): TaskParticipantRealNameInfoDTO {
+        return membership.teamMembersRealNameInfo
+            .firstOrNull { it.memberId == memberId }
+            ?.let { teamMember ->
+                if (teamMember.realNameInfo.encrypted && membership.encryptionKeyId != null) {
+                    decryptTeamMemberRealNameInfo(
+                        teamMember.realNameInfo,
+                        membership.encryptionKeyId!!,
+                    )
+                } else {
+                    teamMember.realNameInfo.convert()
+                }
+            } ?: DefaultRealNameInfo.convert()
+    }
+
+    private fun encryptRealNameInfo(identity: UserIdentityDTO, taskKeyId: String): RealNameInfo {
+        return RealNameInfo(
+            realName = encryptionService.encryptData(identity.realName, taskKeyId),
+            studentId = encryptionService.encryptData(identity.studentId, taskKeyId),
+            grade = encryptionService.encryptData(identity.grade, taskKeyId),
+            major = encryptionService.encryptData(identity.major, taskKeyId),
+            className = encryptionService.encryptData(identity.className, taskKeyId),
+            encrypted = true, // Mark as encrypted
+        )
+    }
+
+    /**
+     * Fixes missing real name information snapshots in TaskMemberships for a given task. It
+     * retrieves the user's real name identity, encrypts it with the task's key, and saves it to the
+     * membership record. This is an administrative function.
+     *
+     * @param taskId The ID of the task to fix.
+     * @return The number of TaskMembership records updated.
+     * @throws NotFoundError if the task with the given ID is not found.
+     */
+    @Transactional(propagation = Propagation.REQUIRED) // Ensure atomicity for the fix process
+    fun fixRealNameInfoForTask(taskId: IdType): Int {
+        logger.info("Starting real name info fix process for task ID: {}", taskId)
+        val task = getTask(taskId)
+
+        if (!task.requireRealName) {
+            logger.warn("Task ID: {} does not require real name. No fix needed.", taskId)
+            return 0
+        }
+
+        // Get or create the encryption key for this task
+        val taskEncryptionKey = encryptionService.getOrCreateKey(KeyPurpose.TASK_REAL_NAME, taskId)
+        val taskKeyId = taskEncryptionKey.id
+        logger.debug("Using encryption key ID: {} for task ID: {}", taskKeyId, taskId)
+
+        val memberships = taskMembershipRepository.findAllByTaskId(taskId)
+        val updatedMemberships = mutableListOf<TaskMembership>()
+        var updatedCount = 0
+
+        logger.info("Found {} memberships for task ID: {}", memberships.size, taskId)
+
+        for (membership in memberships) {
+            var needsUpdate = false
+            val memberId = membership.memberId ?: continue // Skip if memberId is somehow null
+
+            try {
+                if (!membership.isTeam) {
+                    // --- Individual Participant ---
+                    val userId = memberId
+                    // Check if realNameInfo is missing or not properly set (e.g., not encrypted
+                    // when it should be)
+                    if (
+                        membership.realNameInfo == null ||
+                            membership.realNameInfo?.realName.isNullOrBlank() ||
+                            !membership.realNameInfo!!.encrypted
+                    ) {
+                        logger.debug(
+                            "Processing individual membership ID: {} for user ID: {}",
+                            membership.id,
+                            userId,
+                        )
+                        // Fetch user's real name identity (this decrypts it)
+                        val userIdentity =
+                            try {
+                                userRealNameService.getUserIdentity(userId)
+                            } catch (e: NotFoundError) {
+                                logger.error(
+                                    "User real name identity not found for user ID: {} (Membership ID: {}). Skipping this participant.",
+                                    userId,
+                                    membership.id,
+                                )
+                                null // Skip this participant
+                            }
+
+                        if (userIdentity != null) {
+                            // Encrypt with task key and create the RealNameInfo snapshot
+                            val encryptedInfo = encryptRealNameInfo(userIdentity, taskKeyId)
+                            membership.realNameInfo = encryptedInfo
+                            membership.encryptionKeyId = taskKeyId
+                            needsUpdate = true
+                            logger.info(
+                                "Prepared update for individual membership ID: {} (User ID: {})",
+                                membership.id,
+                                userId,
+                            )
+                        }
+                    } else {
+                        logger.debug(
+                            "Individual membership ID: {} already has valid real name info. Skipping.",
+                            membership.id,
+                        )
+                    }
+                } else {
+                    // --- Team Participant ---
+                    val teamId = memberId
+                    // Check if team real name info is missing or seems incomplete
+                    // A simple check is if it's empty, or if it exists but isn't marked encrypted
+                    // (implies old data or error)
+                    val requiresTeamFix =
+                        membership.teamMembersRealNameInfo.isEmpty() ||
+                            membership.teamMembersRealNameInfo.any { !it.realNameInfo.encrypted }
+
+                    if (requiresTeamFix) {
+                        logger.debug(
+                            "Processing team membership ID: {} for team ID: {}",
+                            membership.id,
+                            teamId,
+                        )
+                        val (teamMembers, _) =
+                            teamService.getTeamMembers(teamId) // Get current team members
+                        if (teamMembers.isEmpty()) {
+                            logger.warn(
+                                "Team ID: {} has no members. Cannot fix real name info for membership ID: {}",
+                                teamId,
+                                membership.id,
+                            )
+                            continue // Skip if team has no members
+                        }
+
+                        val newTeamMembersRealNameInfo = mutableListOf<TeamMemberRealNameInfo>()
+                        var teamFixPossible = true // Flag to track if all members can be processed
+
+                        for (teamMember in teamMembers) {
+                            val teamMemberUserId = teamMember.user.id
+                            // Fetch team member's real name identity
+                            val memberIdentity =
+                                try {
+                                    userRealNameService.getUserIdentity(teamMemberUserId)
+                                } catch (e: NotFoundError) {
+                                    logger.error(
+                                        "User real name identity not found for team member ID: {} (Team ID: {}, Membership ID: {}). Skipping update for the entire team.",
+                                        teamMemberUserId,
+                                        teamId,
+                                        membership.id,
+                                    )
+                                    teamFixPossible = false
+                                    break // Stop processing this team if any member lacks info
+                                }
+
+                            val encryptedInfo = encryptRealNameInfo(memberIdentity, taskKeyId)
+                            newTeamMembersRealNameInfo.add(
+                                TeamMemberRealNameInfo(
+                                    memberId = teamMemberUserId,
+                                    realNameInfo = encryptedInfo,
+                                )
+                            )
+                        }
+
+                        // Only update if all members were processed successfully
+                        if (teamFixPossible && newTeamMembersRealNameInfo.isNotEmpty()) {
+                            // Replace the entire list with the newly generated one
+                            membership.teamMembersRealNameInfo.clear()
+                            membership.teamMembersRealNameInfo.addAll(newTeamMembersRealNameInfo)
+                            membership.encryptionKeyId = taskKeyId
+                            needsUpdate = true
+                            logger.info(
+                                "Prepared update for team membership ID: {} (Team ID: {}) with {} members",
+                                membership.id,
+                                teamId,
+                                newTeamMembersRealNameInfo.size,
+                            )
+                        } else if (!teamFixPossible) {
+                            logger.warn(
+                                "Skipped update for team membership ID: {} due to missing real name info for one or more members.",
+                                membership.id,
+                            )
+                        }
+                    } else {
+                        logger.debug(
+                            "Team membership ID: {} already has valid real name info. Skipping.",
+                            membership.id,
+                        )
+                    }
+                }
+
+                if (needsUpdate) {
+                    updatedMemberships.add(membership)
+                    updatedCount++
+                }
+            } catch (e: Exception) {
+                // Catch unexpected errors during processing of a single membership
+                logger.error(
+                    "Unexpected error processing membership ID: {}: {}. Skipping this membership.",
+                    membership.id,
+                    e.message,
+                    e,
+                )
+                // Continue to the next membership
+            }
+        } // End of loop through memberships
+
+        if (updatedMemberships.isNotEmpty()) {
+            logger.info(
+                "Saving {} updated memberships for task ID: {}",
+                updatedMemberships.size,
+                taskId,
+            )
+            taskMembershipRepository.saveAll(updatedMemberships)
+            logger.info("Successfully saved updated memberships.")
+        } else {
+            logger.info("No memberships required updates for task ID: {}", taskId)
+        }
+
+        return updatedCount
     }
 
     private fun decryptUserRealNameInfo(
@@ -254,6 +478,38 @@ class TaskMembershipService(
         }
     }
 
+    private fun getTeamParticipantMemberSummaries(
+        task: Task,
+        membership: TaskMembership,
+    ): List<TaskTeamParticipantMemberSummaryDTO> {
+        val teamOwnerId = teamService.getTeamOwner(membership.memberId!!)
+        return if (task.requireRealName) {
+            // Return only the real name info for team members
+            membership.teamMembersRealNameInfo.map { teamMember ->
+                TaskTeamParticipantMemberSummaryDTO(
+                    name = "",
+                    intro = "",
+                    avatarId = 1,
+                    realNameInfo = getRealNameInfoForTeamMember(membership, teamMember.memberId),
+                    isLeader = teamMember.memberId == teamOwnerId,
+                )
+            }
+        } else {
+            // Regular participant summary
+            membership.teamMembersRealNameInfo.map { teamMember ->
+                val user = userService.getUserDto(teamMember.memberId)
+                TaskTeamParticipantMemberSummaryDTO(
+                    name = user.username,
+                    intro = user.intro,
+                    avatarId = user.avatarId,
+                    realNameInfo = null,
+                    isLeader = teamMember.memberId == teamOwnerId,
+                )
+            }
+        }
+    }
+
+    @Transactional(readOnly = true)
     fun getTaskMembershipDTOs(
         taskId: IdType,
         approveType: ApproveType?,
@@ -1222,6 +1478,7 @@ class TaskMembershipService(
                 val userStatus = checkUserEligibilityForUserTask(task, userId)
                 ParticipationEligibilityDTO(user = userStatus, teams = null)
             }
+
             TaskSubmitterType.TEAM -> {
                 // Calculate eligibility for each of the user's teams for this TEAM task
                 val userTeams = teamService.getTeamsThatUserCanUseToJoinTask(task.id!!, userId)

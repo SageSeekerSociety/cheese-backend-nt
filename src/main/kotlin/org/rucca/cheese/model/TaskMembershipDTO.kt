@@ -13,9 +13,12 @@ import javax.validation.Valid
  * @param approved
  * @param deadline
  * @param realNameInfo
+ * @param email
+ * @param phone
  * @param applyReason
  * @param personalAdvantage
  * @param remark
+ * @param teamMembers
  */
 data class TaskMembershipDTO(
     @Schema(example = "null", required = true, description = "")
@@ -43,6 +46,12 @@ data class TaskMembershipDTO(
     @get:JsonProperty("realNameInfo")
     val realNameInfo: TaskParticipantRealNameInfoDTO? = null,
     @Schema(example = "null", description = "")
+    @get:JsonProperty("email")
+    val email: kotlin.String? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("phone")
+    val phone: kotlin.String? = null,
+    @Schema(example = "null", description = "")
     @get:JsonProperty("applyReason")
     val applyReason: kotlin.String? = null,
     @Schema(example = "null", description = "")
@@ -51,6 +60,10 @@ data class TaskMembershipDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("remark")
     val remark: kotlin.String? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("teamMembers")
+    val teamMembers: kotlin.collections.List<TaskTeamParticipantMemberSummaryDTO>? = null,
 ) : Serializable {
 
     companion object {

@@ -4509,6 +4509,26 @@ components:
         createdAt:
           type: integer
           format: int64
+    TaskTeamParticipantMemberSummary:
+        title: TaskTeamParticipantMemberSummary
+        type: object
+        required:
+          - name
+          - avatarId
+          - intro
+          - isLeader
+        properties:
+          name:
+            type: string
+          avatarId:
+            type: integer
+            format: int64
+          intro:
+            type: string
+          isLeader:
+            type: boolean
+          realNameInfo:
+            $ref: "#/components/schemas/TaskParticipantRealNameInfo"
     TaskMembership:
       title: TaskMembership
       type: object
@@ -4537,12 +4557,20 @@ components:
           $ref: "#/components/schemas/ApproveType"
         realNameInfo:
           $ref: "#/components/schemas/TaskParticipantRealNameInfo"
+        email:
+          type: string
+        phone:
+          type: string
         applyReason:
           type: string
         personalAdvantage:
           type: string
         remark:
           type: string
+        teamMembers:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskTeamParticipantMemberSummary"
     TaskParticipationIdentity:
       title: TaskParticipationIdentity
       type: object

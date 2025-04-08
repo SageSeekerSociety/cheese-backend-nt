@@ -193,6 +193,11 @@ class TeamService(
                 relationOptional.get().role == TeamMemberRole.OWNER)
     }
 
+    fun isTeamOwner(teamId: IdType, userId: IdType): Boolean {
+        val relationOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId)
+        return relationOptional.isPresent && relationOptional.get().role == TeamMemberRole.OWNER
+    }
+
     fun isTeamMember(teamId: IdType, userId: IdType): Boolean {
         val relationOptional = teamUserRelationRepository.findByTeamIdAndUserId(teamId, userId)
         return relationOptional.isPresent
