@@ -15,7 +15,6 @@ import jakarta.persistence.criteria.*
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.hibernate.query.SortDirection
-import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
@@ -39,7 +38,6 @@ import org.rucca.cheese.task.option.TaskQueryOptions
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.team.TeamUserRelation
-import org.rucca.cheese.team.toTeamSummaryDTO
 import org.rucca.cheese.topic.Topic
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.services.UserService
@@ -53,7 +51,6 @@ import org.springframework.stereotype.Service
 class TaskService(
     private val userService: UserService,
     private val teamService: TeamService,
-    private val jwtService: JwtService,
     private val taskRepository: TaskRepository,
     private val taskMembershipRepository: TaskMembershipRepository,
     private val taskSubmissionRepository: TaskSubmissionRepository,
@@ -142,18 +139,18 @@ class TaskService(
             if (options.querySpace && this.category.id != null)
                 spaceService.getCategoryDTO(this.space.id!!, this.category.id!!)
             else null
-        val joinability =
-            if (options.queryJoinability && currentUserId != null)
-                taskMembershipService.getJoinability(this, currentUserId)
-            else null
+        val participationEligibilityDto =
+            if (options.queryJoinability && currentUserId != null) {
+                taskMembershipService.getParticipationEligibility(this, currentUserId)
+            } else null
         val submittability =
             if (options.querySubmittability && currentUserId != null)
                 taskMembershipService.getSubmittability(this, currentUserId)
-            else Pair(null, null)
+            else null
         val joined =
             if (options.queryJoined && currentUserId != null)
                 taskMembershipService.getJoined(this, currentUserId)
-            else Pair(null, null)
+            else null
         val userDeadline =
             if (options.queryUserDeadline && currentUserId != null)
                 taskMembershipService.getUserDeadline(this.id!!, currentUserId)
@@ -186,16 +183,14 @@ class TaskService(
             submitters = getTaskSubmittersSummary(this.id!!),
             updatedAt = this.updatedAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             createdAt = this.createdAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
-            joinable = joinability?.first,
-            joinableTeams = joinability?.second,
-            joinRejectReason = joinability?.third?.let { it::class.simpleName },
-            submittable = submittability.first,
-            submittableAsTeam = submittability.second,
+            participationEligibility = participationEligibilityDto,
+            submittable = submittability?.first,
+            submittableAsTeam = submittability?.second,
             rank = this.rank,
             approved = this.approved.convert(),
             rejectReason = this.rejectReason,
-            joined = joined.first,
-            joinedTeams = joined.second,
+            joined = joined?.first,
+            joinedTeams = joined?.second,
             topics = topics,
             requireRealName = this.requireRealName,
             userDeadline = userDeadline,
@@ -767,59 +762,43 @@ class TaskService(
      */
     fun getTeamsForTask(userId: IdType, taskId: IdType, filter: String): List<TeamSummaryDTO> {
         val task = getTask(taskId)
+        if (task.submitterType != TaskSubmitterType.TEAM) {
+            throw BadRequestError("Task $taskId does not support team participation.")
+        }
 
-        // Get teams where the user is admin (team leader)
-        val userAdminTeams = teamService.getTeamsWhereUserIsAdmin(userId)
+        val userTeams = teamService.getTeamSummariesOfUser(userId)
 
-        // Process all teams with verification status regardless of filter
-        return userAdminTeams
-            .map { team ->
-                // Get all team members with real name status
-                val (members, allMembersVerified) = teamService.getTeamMembers(team.id!!, true)
+        return userTeams.mapNotNull { team ->
+            val (eligibility, memberDetails, allVerified) =
+                taskMembershipService.checkTeamEligibilityForTeamTask(task, team.id)
 
-                // Convert members to status DTOs
-                val memberStatusList =
-                    members.map { member ->
-                        TeamMemberRealNameStatusDTO(
-                            memberId = member.user.id,
-                            hasRealNameInfo = member.hasRealNameInfo ?: false,
-                            userName = member.user.username,
-                        )
-                    }
+            val addRealNameDetails =
+                filter == "all" ||
+                    (task.requireRealName &&
+                        eligibility.reasons?.any {
+                            it.code == EligibilityRejectReasonCodeDTO.TEAM_MEMBER_MISSING_REAL_NAME
+                        } == true)
 
-                val joinRejectReason =
-                    taskMembershipService.isTaskJoinable(task, team.id!!)?.let {
-                        it::class.simpleName
-                    }
+            val updatedSummary =
+                team.copy(
+                    allMembersVerified = allVerified,
+                    memberRealNameStatus =
+                        if (addRealNameDetails)
+                            memberDetails?.map {
+                                TeamMemberRealNameStatusDTO(
+                                    it.user.id,
+                                    it.hasRealNameInfo == true,
+                                    it.user.nickname,
+                                )
+                            }
+                        else null,
+                )
 
-                // Convert to ExtendedTeamSummaryDTO
-                team
-                    .toTeamSummaryDTO()
-                    .copy(
-                        allMembersVerified = allMembersVerified ?: false,
-                        memberRealNameStatus =
-                            if (filter == "all" || allMembersVerified == false) memberStatusList
-                            else null,
-                        joinRejectReason = joinRejectReason,
-                    )
+            when (filter) {
+                "eligible" -> if (eligibility.eligible) updatedSummary else null
+                "all" -> updatedSummary
+                else -> null
             }
-            .filter { team ->
-                when (filter) {
-                    "eligible" -> {
-                        // Only include teams that are eligible to join the task
-                        team.joinRejectReason != null
-                    }
-
-                    "all" -> {
-                        // Include all teams where the user is admin
-                        true
-                    }
-
-                    else -> {
-                        // Invalid filter, return empty list
-                        false
-                    }
-                }
-            }
+        }
     }
 }

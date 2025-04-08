@@ -1063,9 +1063,12 @@ constructor(
     private fun assertTaskOptionalFields(task: TaskDTO?, participation: TaskParticipationInfoDTO?) {
         assertNotNull(task, "Task DTO is null")
         assertNotNull(participation, "Participation Info DTO is null")
-        assertNotNull(task!!.joinable, "'joinable' field is null")
-        assertNotNull(task.submittable, "'submittable' field is null")
+        assertNotNull(task!!.submittable, "'submittable' field is null")
         assertNotNull(task.joined, "'joined' field is null on participation info")
+        assertNotNull(
+            participation!!.hasParticipation,
+            "'hasParticipation' field is null on participation info",
+        )
     }
 
     @Test
@@ -1101,10 +1104,38 @@ constructor(
 
                 assertTaskOptionalFields(task, participation) // Basic checks
 
-                // Specific logic for TEAM task as Team Creator
-                assertEquals(true, task.joinable) // Can join as a team
-                assertNotNull(task.joinableTeams)
-                assertTrue(task.joinableTeams!!.any { it.id == teamId }) // Can join as this team
+                assertNotNull(
+                    task.participationEligibility,
+                    "Participation eligibility data missing",
+                )
+                assertNull(
+                    task.participationEligibility!!.user,
+                    "User status should be null for TEAM task",
+                )
+                assertNotNull(
+                    task.participationEligibility!!.teams,
+                    "Team status list should not be null for TEAM task",
+                )
+
+                val teamStatuses = task.participationEligibility!!.teams!!
+                // Check eligibility for the specific team 'teamId'
+                val targetTeamStatus = teamStatuses.find { it.team.id == teamId }
+                assertNotNull(targetTeamStatus, "Status for target team ID $teamId not found")
+                assertTrue(
+                    targetTeamStatus!!.eligibility.eligible,
+                    "Team $teamId should be eligible to join",
+                )
+                assertTrue(
+                    targetTeamStatus.eligibility.reasons!!.isEmpty(),
+                    "Eligible team should have no rejection reasons",
+                )
+
+                // Check overall joinability concept: is *any* team eligible?
+                val isAnyTeamEligible = teamStatuses.any { it.eligibility.eligible }
+                assertTrue(
+                    isAnyTeamEligible,
+                    "At least one team should be eligible for team creator",
+                )
                 assertEquals(false, participation.hasParticipation) // Not joined yet
                 assertTrue(task.joinedTeams.isNullOrEmpty()) // Not joined as any team yet
                 assertEquals(false, task.submittable) // Not joined, so cannot submit
@@ -1126,7 +1157,6 @@ constructor(
                     .queryParam("queryJoinability", "true")
                     .queryParam("querySubmittability", "true")
                     .queryParam("queryJoined", "true")
-                    // queryUserDeadline is irrelevant if not joinable/joined
                     .build()
             }
             .header(
@@ -1148,9 +1178,29 @@ constructor(
 
                 assertTaskOptionalFields(task, participation)
 
-                // Specific logic for TEAM task as outsider
-                assertEquals(false, task.joinable) // Cannot join as user
-                assertTrue(task.joinableTeams.isNullOrEmpty()) // Not admin/member of eligible team
+                assertNotNull(
+                    task.participationEligibility,
+                    "Participation eligibility data missing",
+                )
+                assertNull(
+                    task.participationEligibility!!.user,
+                    "User status should be null for TEAM task",
+                )
+                // Team status might be null or empty if the user is not part of ANY team
+                // Or it might list teams, all of which are ineligible because the user isn't part
+                // of them (depends on service logic)
+                // Assuming the service lists teams the user *is* in, and for an outsider, this list
+                // is empty.
+                assertTrue(
+                    task.participationEligibility!!.teams.isNullOrEmpty(),
+                    "Team status list should be null or empty for outsider",
+                )
+
+                // Check overall joinability concept: is *any* team eligible? Should be false.
+                val isAnyTeamEligible =
+                    task.participationEligibility!!.teams?.any { it.eligibility.eligible } ?: false
+                assertFalse(isAnyTeamEligible, "No team should be eligible for an outsider")
+
                 assertEquals(false, task.joined)
                 assertTrue(task.joinedTeams.isNullOrEmpty())
                 assertEquals(false, task.submittable)
@@ -1193,11 +1243,26 @@ constructor(
 
                 assertTaskOptionalFields(task, participation)
 
-                // Specific logic for USER task
-                assertEquals(true, task.joinable) // Can join as user
-                // joinableTeams might not exist or be empty for USER tasks, depending on DTO
-                // definition
-                // assertNull(task.joinableTeams) or assertTrue(task.joinableTeams.isNullOrEmpty())
+                assertNotNull(
+                    task.participationEligibility,
+                    "Participation eligibility data missing",
+                )
+                assertNotNull(
+                    task.participationEligibility!!.user,
+                    "User status should not be null for USER task",
+                )
+                assertNull(
+                    task.participationEligibility!!.teams,
+                    "Team status list should be null for USER task",
+                )
+
+                val userStatus = task.participationEligibility!!.user!!
+                assertTrue(userStatus.eligible, "User should be eligible to join this USER task")
+                assertTrue(
+                    userStatus.reasons!!.isEmpty(),
+                    "Eligible user should have no rejection reasons",
+                )
+
                 assertEquals(false, task.joined) // Not joined yet
                 assertTrue(task.joinedTeams.isNullOrEmpty()) // joinedTeams irrelevant for user join
                 assertEquals(false, task.submittable) // Not joined yet

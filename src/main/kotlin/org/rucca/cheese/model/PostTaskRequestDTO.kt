@@ -15,7 +15,6 @@ import javax.validation.Valid
  * @param submissionSchema
  * @param space
  * @param deadline
- * @param participantLimit
  * @param defaultDeadline
  * @param categoryId The ID of the category to assign this task to. Requires spaceId to be set.
  * @param rank
@@ -25,6 +24,8 @@ import javax.validation.Valid
  *   TEAM. `undefined` if not specified.
  * @param maxTeamSize Maximum team size allowed to submit the task, only valid if submitterType is
  *   TEAM. `undefined` if not specified.
+ * @param participantLimit Maximum number of participants allowed in the task. `undefined` if not
+ *   specified.
  */
 data class PostTaskRequestDTO(
     @Schema(example = "null", required = true, description = "")
@@ -57,9 +58,6 @@ data class PostTaskRequestDTO(
     @get:JsonProperty("deadline")
     val deadline: kotlin.Long? = null,
     @Schema(example = "null", description = "")
-    @get:JsonProperty("participantLimit")
-    val participantLimit: kotlin.Int? = null,
-    @Schema(example = "null", description = "")
     @get:JsonProperty("defaultDeadline")
     val defaultDeadline: kotlin.Long? = 30L,
     @Schema(
@@ -91,6 +89,13 @@ data class PostTaskRequestDTO(
     )
     @get:JsonProperty("maxTeamSize")
     val maxTeamSize: kotlin.Long? = null,
+    @Schema(
+        example = "null",
+        description =
+            "Maximum number of participants allowed in the task. `undefined` if not specified.",
+    )
+    @get:JsonProperty("participantLimit")
+    val participantLimit: kotlin.Int? = null,
 ) : Serializable {
 
     companion object {

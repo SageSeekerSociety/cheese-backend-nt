@@ -25,9 +25,7 @@ import javax.validation.Valid
  * @param space
  * @param category
  * @param team
- * @param joinable Only has value when: 'queryJoinablity' == true
- * @param joinableTeams
- * @param joinRejectReason The reason why the user cannot join the task
+ * @param participationEligibility
  * @param submittable Only has value when: 'querySubmitability' == true
  * @param submittableAsTeam
  * @param rank
@@ -109,16 +107,10 @@ data class TaskDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("team")
     val team: TeamDTO? = null,
-    @Schema(example = "null", description = "Only has value when: 'queryJoinablity' == true")
-    @get:JsonProperty("joinable")
-    val joinable: kotlin.Boolean? = null,
     @field:Valid
     @Schema(example = "null", description = "")
-    @get:JsonProperty("joinableTeams")
-    val joinableTeams: kotlin.collections.List<TeamSummaryDTO>? = null,
-    @Schema(example = "null", description = "The reason why the user cannot join the task")
-    @get:JsonProperty("joinRejectReason")
-    val joinRejectReason: kotlin.String? = null,
+    @get:JsonProperty("participationEligibility")
+    val participationEligibility: ParticipationEligibilityDTO? = null,
     @Schema(example = "null", description = "Only has value when: 'querySubmitability' == true")
     @get:JsonProperty("submittable")
     val submittable: kotlin.Boolean? = null,

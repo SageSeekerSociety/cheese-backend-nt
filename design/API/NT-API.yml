@@ -1448,8 +1448,6 @@ paths:
                 deadline:
                   type: integer
                   format: int64
-                participantLimit:
-                  type: integer
                 defaultDeadline:
                   type: integer
                   format: int64
@@ -1494,6 +1492,9 @@ paths:
                   type: integer
                   format: int64
                   description: Maximum team size allowed to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.
+                participantLimit:
+                  type: integer
+                  description: Maximum number of participants allowed in the task. `undefined` if not specified.
       summary: Create Task
   /tasks/{taskId}/participants:
     parameters:
@@ -4004,6 +4005,87 @@ components:
       enum:
         - OWNER
         - ADMIN
+    EligibilityRejectReasonCode:
+      type: string
+      enum:
+        - ALREADY_PARTICIPATING
+        - PARTICIPANT_LIMIT_REACHED
+        - TASK_NOT_APPROVED
+        - DEADLINE_PASSED
+        - USER_NOT_FOUND
+        - USER_ACCOUNT_ISSUE
+        - USER_MISSING_REAL_NAME
+        - USER_RANK_NOT_HIGH_ENOUGH
+        - TEAM_NOT_FOUND
+        - TEAM_SIZE_MIN_NOT_MET
+        - TEAM_SIZE_MAX_EXCEEDED
+        - TEAM_MISSING_REQUIRED_INFO
+        - TEAM_MEMBER_MISSING_REAL_NAME
+        - TEAM_MEMBERS_NOT_VERIFIED
+        - TEAM_MEMBER_RANK_NOT_HIGH_ENOUGH
+        - INDIVIDUAL_PARTICIPATION_NOT_ALLOWED
+        - TEAM_PARTICIPATION_NOT_ALLOWED
+        - UNKNOWN
+    EligibilityRejectReasonInfo:
+      type: object
+      description: Describes a specific reason for ineligibility.
+      required:
+        - code
+        - message
+      properties:
+        code:
+          $ref: '#/components/schemas/EligibilityRejectReasonCode'
+          description: Machine-readable code for the reason.
+        message:
+          type: string
+          description: User-friendly explanation of the reason.
+          example: "Team size must be at least 3 members."
+        details:
+          type: object
+          nullable: true
+          description: Optional additional details specific to the reason code (e.g., list of user IDs missing real name info).
+          additionalProperties: true
+          example:
+            missingRealNameUserIds: [101, 105]
+    EligibilityStatus:
+      type: object
+      description: Represents the eligibility status (e.g., for joining or submitting) for a user or a team regarding a specific task.
+      required:
+        - eligible
+      properties:
+        eligible:
+          type: boolean
+          description: Indicates whether the user/team is eligible.
+        reasons:
+          type: array
+          description: A list of reasons why the user/team is *not* eligible. Empty if eligible is true.
+          items:
+            $ref: '#/components/schemas/EligibilityRejectReasonInfo'
+    TeamTaskEligibility:
+      type: object
+      description: Provides eligibility details for a specific team in the context of a task.
+      required:
+        - team
+        - eligibility
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+          description: Summary of the team.
+        eligibility:
+          $ref: '#/components/schemas/EligibilityStatus'
+          description: Eligibility status of this team for the task.
+    ParticipationEligibility:
+      type: object
+      description: Provides eligibility details for a user and their teams in the context of a task.
+      properties:
+        user:
+          $ref: '#/components/schemas/EligibilityStatus'
+          description: Eligibility status of the user for the task.
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamTaskEligibility'
+          description: Eligibility status of the user's teams for the task.
     Task:
       title: Task
       type: object
@@ -4082,16 +4164,10 @@ components:
         createdAt:
           type: integer
           format: int64
-        joinable:
-          type: boolean
-          description: "Only has value when: 'queryJoinablity' == true"
-        joinableTeams:
-          type: array
-          items:
-            $ref: "#/components/schemas/TeamSummary"
-        joinRejectReason:
-          type: string
-          description: The reason why the user cannot join the task
+        participationEligibility:
+          $ref: "#/components/schemas/ParticipationEligibility"
+          nullable: true
+          description: Detailed eligibility status for the current user and their teams regarding task participation (joining or submitting, based on query flags).
         submittable:
           type: boolean
           description: "Only has value when: 'querySubmitability' == true"
@@ -4427,9 +4503,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TeamMemberRealNameStatus"
-        joinRejectReason:
-          type: string
-          description: The reason why the team cannot join the team
         updatedAt:
           type: integer
           format: int64

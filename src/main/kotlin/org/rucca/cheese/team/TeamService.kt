@@ -12,7 +12,6 @@ package org.rucca.cheese.team
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Optional
-import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.common.error.ConflictError
 import org.rucca.cheese.common.error.ForbiddenError
 import org.rucca.cheese.common.error.NameAlreadyExistsError
@@ -53,7 +52,6 @@ class TeamService(
     private val teamUserRelationRepository: TeamUserRelationRepository,
     private val userService: UserService,
     private val elasticsearchTemplate: ElasticsearchTemplate,
-    private val authenticateService: JwtService,
     private val userRealNameService: UserRealNameService,
 ) {
     /**
@@ -153,6 +151,11 @@ class TeamService(
     fun getTeamsOfUser(userId: IdType): List<TeamDTO> {
         val relations = teamUserRelationRepository.findAllByUserId(userId)
         return relations.map { getTeamDto(it.team!!.id!!, userId) }
+    }
+
+    fun getTeamSummariesOfUser(userId: IdType): List<TeamSummaryDTO> {
+        val relations = teamUserRelationRepository.findAllByUserId(userId)
+        return relations.map { it.team!!.toTeamSummaryDTO() }
     }
 
     fun getTeamsThatUserCanUseToJoinTask(taskId: IdType, userId: IdType): List<TeamSummaryDTO> {

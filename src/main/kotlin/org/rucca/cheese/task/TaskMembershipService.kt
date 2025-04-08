@@ -288,15 +288,22 @@ class TaskMembershipService(
             throw EmailOrPhoneRequiredError(taskId, memberId)
         }
         val task = getTask(taskId)
-        val errorOpt = isTaskJoinable(task, memberId)
-        if (errorOpt != null) throw errorOpt
+
+        val eligibility: EligibilityStatusDTO =
+            when (task.submitterType) {
+                TaskSubmitterType.USER -> checkUserEligibilityForUserTask(task, memberId)
+                TaskSubmitterType.TEAM -> checkTeamEligibilityForTeamTask(task, memberId).first
+            }
+        if (!eligibility.eligible) {
+            throw mapReasonToError(eligibility.reasons!!.first(), taskId, memberId)
+        }
 
         var memberRealNameInfo: RealNameInfo? = null
         val isTeam = task.submitterType == TaskSubmitterType.TEAM
         val teamMembersRealNameInfo = mutableListOf<TeamMemberRealNameInfo>()
 
         // Process real name information
-        if (task.requireRealName == true) {
+        if (task.requireRealName) {
             when (task.submitterType) {
                 TaskSubmitterType.USER -> {
                     // For individual users, copy from their user real name info
@@ -552,135 +559,6 @@ class TaskMembershipService(
         taskMembershipRepository.save(participant)
     }
 
-    fun isTaskJoinable(task: Task, memberId: IdType): BaseError? {
-        // Task is approved
-        if (task.approved != ApproveType.APPROVED)
-            return ForbiddenError(
-                "Task ${task.id} is not approved yet",
-                mapOf("taskId" to task.id!!),
-            )
-
-        // Ensure member exists
-        when (task.submitterType) {
-            TaskSubmitterType.USER ->
-                if (!userService.existsUser(memberId)) return NotFoundError("user", memberId)
-
-            TaskSubmitterType.TEAM ->
-                if (!teamService.existsTeam(memberId)) return NotFoundError("team", memberId)
-        }
-
-        // Has not joined yet
-        if (taskMembershipRepository.existsByTaskIdAndMemberId(task.id!!, memberId))
-            return AlreadyBeTaskParticipantError(task.id!!, memberId)
-
-        // Check if user has real name info if required
-        if (task.requireRealName) {
-            when (task.submitterType) {
-                TaskSubmitterType.USER -> {
-                    // For individual participants, check if they have real name info
-                    try {
-                        userRealNameService.getUserIdentity(memberId)
-                    } catch (e: NotFoundError) {
-                        return RealNameInfoRequiredError(memberId)
-                    }
-                }
-
-                TaskSubmitterType.TEAM -> {
-                    // For team participants, check if all team members have real name info
-                    val (teamMembers, _) = teamService.getTeamMembers(memberId)
-                    for (teamMember in teamMembers) {
-                        try {
-                            userRealNameService.getUserIdentity(teamMember.user.id)
-                        } catch (e: NotFoundError) {
-                            return RealNameInfoRequiredError(teamMember.user.id)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Have enough rank
-        val needToCheckRank =
-            applicationConfig.rankCheckEnforced && task.space.enableRank!! && task.rank != null
-        if (needToCheckRank) {
-            val requiredRank = task.rank!! - applicationConfig.rankJump
-            if (task.submitterType == TaskSubmitterType.USER) {
-                val actualRank = spaceUserRankService.getRank(task.space.id!!, memberId)
-                if (actualRank < requiredRank)
-                    return YourRankIsNotHighEnoughError(actualRank, requiredRank)
-            } else {
-                // For team tasks, check if all team members have enough rank
-                val (teamMembers, _) = teamService.getTeamMembers(memberId)
-                for (teamMember in teamMembers) {
-                    val actualRank =
-                        spaceUserRankService.getRank(task.space.id!!, teamMember.user.id)
-                    if (actualRank < requiredRank) {
-                        return YourTeamMemberRankIsNotHighEnoughError(
-                            teamMember.user.id,
-                            actualRank,
-                            requiredRank,
-                        )
-                    }
-                }
-            }
-        }
-
-        // Is not full
-        if (applicationConfig.enforceTaskParticipantLimitCheck) {
-            if (task.participantLimit != null) {
-                val actual =
-                    taskMembershipRepository.countByTaskIdAndApproved(
-                        task.id!!,
-                        ApproveType.APPROVED,
-                    )
-                if (actual >= task.participantLimit!!)
-                    return TaskParticipantsReachedLimitError(
-                        task.id!!,
-                        task.participantLimit!!,
-                        actual,
-                    )
-            }
-        }
-
-        // Check team size for team tasks
-        if (task.submitterType == TaskSubmitterType.TEAM) {
-            val teamSize = teamService.getTeamSize(memberId)
-            task.minTeamSize?.let { min ->
-                if (teamSize < min) {
-                    return TeamSizeNotEnoughError(teamSize, min)
-                }
-            }
-
-            task.maxTeamSize?.let { max ->
-                if (teamSize > max) {
-                    return TeamSizeTooLargeError(teamSize, max)
-                }
-            }
-        }
-
-        return null
-    }
-
-    fun getJoinability(
-        task: Task,
-        userId: IdType,
-    ): Triple<Boolean, List<TeamSummaryDTO>?, BaseError?> {
-        return when (task.submitterType) {
-            TaskSubmitterType.USER -> {
-                val joinReject = isTaskJoinable(task, userId)
-                Triple(joinReject == null, null, joinReject)
-            }
-
-            TaskSubmitterType.TEAM -> {
-                val teams =
-                    teamService.getTeamsThatUserCanUseToJoinTask(task.id!!, userId).filter {
-                        isTaskJoinable(task, it.id) == null
-                    }
-                Triple(teams.isNotEmpty(), teams, null)
-            }
-        }
-    }
-
     fun getSubmittability(task: Task, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
         when (task.submitterType) {
             TaskSubmitterType.USER ->
@@ -872,5 +750,503 @@ class TaskMembershipService(
             identities = identities,
             hasParticipation = identities.isNotEmpty(),
         )
+    }
+
+    /**
+     * Safely extracts a value of the expected type from the details map. Returns a default value if
+     * the key is not found or the type does not match.
+     */
+    private inline fun <reified T> getDetail(
+        details: Map<String, Any>?,
+        key: String,
+        default: T,
+    ): T {
+        return details?.get(key) as? T ?: default
+    }
+
+    /**
+     * Safely extracts a nullable value of the expected type from the details map. Returns null if
+     * the key is not found or the type does not match.
+     */
+    private inline fun <reified T> getDetailNullable(details: Map<String, Any>?, key: String): T? {
+        return details?.get(key) as? T
+    }
+
+    /**
+     * Maps an EligibilityRejectReasonInfoDTO back to a specific BaseError subclass for
+     * compatibility. This mapping is inherently lossy as BaseError constructors often require more
+     * context than available solely within the reason DTO. It relies on conventions for keys within
+     * the `reason.details` map.
+     *
+     * Assumed keys in `reason.details`:
+     * - "userId": Long
+     * - "teamId": Long
+     * - "taskId": Long (Optional, can be passed as argument)
+     * - "limit": Int
+     * - "actual": Int
+     * - "actualRank": Int
+     * - "requiredRank": Int
+     * - "actualSize": Int
+     * - "requiredSize": Int
+     * - "missingUserIds": List<Long>
+     *
+     * @param reason The eligibility rejection reason DTO.
+     * @param contextTaskId Optional task ID from the calling context.
+     * @param contextMemberId Optional member ID (user or team) from the calling context.
+     * @return A specific BaseError subclass if possible, otherwise a ForbiddenError.
+     */
+    fun mapReasonToError(
+        reason: EligibilityRejectReasonInfoDTO,
+        contextTaskId: IdType? = null,
+        contextMemberId: IdType? = null,
+    ): BaseError {
+        // Prioritize context IDs if available
+        val taskId = contextTaskId ?: getDetail(reason.details, "taskId", 0L)
+        val memberId =
+            contextMemberId
+                ?: getDetail(
+                    reason.details,
+                    "memberId",
+                    0L,
+                ) // Decide if memberId should be in details
+
+        return when (reason.code) {
+            EligibilityRejectReasonCodeDTO.ALREADY_PARTICIPATING ->
+                // AlreadyBeTaskParticipantError requires taskId and memberId.
+                // If contextMemberId is not passed, it might be ambiguous (user vs team).
+                // Using ForbiddenError might be safer if context is missing.
+                if (taskId != 0L && memberId != 0L) {
+                    AlreadyBeTaskParticipantError(taskId, memberId)
+                } else {
+                    ForbiddenError(
+                        reason.message,
+                        reason.details ?: emptyMap(),
+                    ) // Fallback if context insufficient
+                }
+
+            EligibilityRejectReasonCodeDTO.PARTICIPANT_LIMIT_REACHED -> {
+                val limit = getDetail(reason.details, "limit", 0)
+                val actual = getDetail(reason.details, "actual", 0)
+                // TaskParticipantsReachedLimitError needs taskId too.
+                if (taskId != 0L) {
+                    TaskParticipantsReachedLimitError(taskId, limit, actual)
+                } else {
+                    ForbiddenError(reason.message, reason.details ?: emptyMap())
+                }
+            }
+
+            EligibilityRejectReasonCodeDTO.TASK_NOT_APPROVED,
+            EligibilityRejectReasonCodeDTO.DEADLINE_PASSED,
+            EligibilityRejectReasonCodeDTO.USER_ACCOUNT_ISSUE,
+            EligibilityRejectReasonCodeDTO.INDIVIDUAL_PARTICIPATION_NOT_ALLOWED,
+            EligibilityRejectReasonCodeDTO.TEAM_PARTICIPATION_NOT_ALLOWED ->
+                // These map well to a general ForbiddenError
+                ForbiddenError(reason.message, reason.details ?: emptyMap())
+
+            EligibilityRejectReasonCodeDTO.USER_NOT_FOUND -> {
+                val userId =
+                    getDetail(
+                        reason.details,
+                        "userId",
+                        memberId,
+                    ) // Use memberId from context if detail missing
+                NotFoundError("user", userId)
+            }
+
+            EligibilityRejectReasonCodeDTO.TEAM_NOT_FOUND -> {
+                val teamId =
+                    getDetail(
+                        reason.details,
+                        "teamId",
+                        memberId,
+                    ) // Use memberId from context if detail missing
+                NotFoundError("team", teamId)
+            }
+
+            EligibilityRejectReasonCodeDTO.USER_RANK_NOT_HIGH_ENOUGH -> {
+                val actual = getDetail(reason.details, "actualRank", 0)
+                val required = getDetail(reason.details, "requiredRank", 0)
+                YourRankIsNotHighEnoughError(actual, required)
+            }
+
+            EligibilityRejectReasonCodeDTO.USER_MISSING_REAL_NAME -> {
+                val userId = getDetail(reason.details, "userId", memberId)
+                RealNameInfoRequiredError(userId)
+            }
+
+            EligibilityRejectReasonCodeDTO.TEAM_SIZE_MIN_NOT_MET -> {
+                val actual = getDetail(reason.details, "actualSize", 0)
+                val required = getDetail(reason.details, "requiredSize", 0)
+                TeamSizeNotEnoughError(actual, required)
+            }
+
+            EligibilityRejectReasonCodeDTO.TEAM_SIZE_MAX_EXCEEDED -> {
+                val actual = getDetail(reason.details, "actualSize", 0)
+                val required = getDetail(reason.details, "requiredSize", 0)
+                TeamSizeTooLargeError(actual, required)
+            }
+
+            EligibilityRejectReasonCodeDTO.TEAM_MEMBER_MISSING_REAL_NAME -> {
+                val missingIds = getDetailNullable<List<Long>>(reason.details, "missingUserIds")
+                val firstMissingId = missingIds?.firstOrNull() ?: 0L
+
+                RealNameInfoRequiredError(firstMissingId)
+            }
+
+            EligibilityRejectReasonCodeDTO.TEAM_MEMBER_RANK_NOT_HIGH_ENOUGH -> {
+                val userId = getDetail(reason.details, "userId", 0L)
+                val actual = getDetail(reason.details, "actualRank", 0)
+                val required = getDetail(reason.details, "requiredRank", 0)
+                YourTeamMemberRankIsNotHighEnoughError(userId, actual, required)
+            }
+
+            else -> ForbiddenError(reason.message, reason.details ?: emptyMap())
+        }
+    }
+
+    // Helper to create reason DTO
+    private fun createRejectReason(
+        code: EligibilityRejectReasonCodeDTO,
+        message: String,
+        details: Map<String, Any>? = null,
+    ): EligibilityRejectReasonInfoDTO {
+        // You might want to fetch localized messages here in a real application
+        return EligibilityRejectReasonInfoDTO(code = code, message = message, details = details)
+    }
+
+    // Helper to check rank (extracted logic)
+    private fun checkRankEligibility(
+        task: Task,
+        userId: IdType,
+        isUserTask: Boolean,
+        reasons: MutableList<EligibilityRejectReasonInfoDTO>,
+    ) {
+        val needToCheckRank =
+            applicationConfig.rankCheckEnforced && task.space.enableRank!! && task.rank != null
+        if (needToCheckRank) {
+            val requiredRank = task.rank!! - applicationConfig.rankJump
+            val actualRank = spaceUserRankService.getRank(task.space.id!!, userId)
+            if (actualRank < requiredRank) {
+                if (isUserTask) {
+                    reasons.add(
+                        createRejectReason(
+                            EligibilityRejectReasonCodeDTO.USER_RANK_NOT_HIGH_ENOUGH,
+                            "Your rank ($actualRank) is not high enough. Required: $requiredRank.",
+                            mapOf(
+                                "userId" to userId,
+                                "actualRank" to actualRank,
+                                "requiredRank" to requiredRank,
+                            ),
+                        )
+                    )
+                } else {
+                    val user = userService.getUserDto(userId) // Get user for message
+                    reasons.add(
+                        createRejectReason(
+                            EligibilityRejectReasonCodeDTO.TEAM_MEMBER_RANK_NOT_HIGH_ENOUGH,
+                            "Team member ${user.username}'s rank ($actualRank) is not high enough. Required: $requiredRank.",
+                            mapOf(
+                                "userId" to userId,
+                                "actualRank" to actualRank,
+                                "requiredRank" to requiredRank,
+                            ),
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    /** Checks basic user status (exists, not banned, etc.). Returns an EligibilityStatusDTO. */
+    private fun checkUserBasicEligibility(userId: IdType): EligibilityStatusDTO {
+        val reasons = mutableListOf<EligibilityRejectReasonInfoDTO>()
+        try {
+            // userService.getUser(userId) // Or a simpler check like
+            // userService.checkUserActive(userId)
+            if (!userService.existsUser(userId)) { // Assuming existsUser checks basic validity
+                reasons.add(
+                    createRejectReason(
+                        EligibilityRejectReasonCodeDTO.USER_NOT_FOUND,
+                        "User not found.",
+                        mapOf("userId" to userId),
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            reasons.add(
+                createRejectReason(
+                    EligibilityRejectReasonCodeDTO.USER_ACCOUNT_ISSUE,
+                    "User account status check failed: ${e.message}",
+                    mapOf<String, Any>(
+                        "userId" to userId,
+                        "error" to (e.message ?: "Unknown error"),
+                    ),
+                )
+            )
+        }
+        return EligibilityStatusDTO(eligible = reasons.isEmpty(), reasons = reasons)
+    }
+
+    /**
+     * Checks eligibility for a specific USER to join a specific USER type task. Includes basic user
+     * checks and task-specific constraints.
+     */
+    fun checkUserEligibilityForUserTask(task: Task, userId: IdType): EligibilityStatusDTO {
+        // Start with basic user checks
+        val basicEligibility = checkUserBasicEligibility(userId)
+        if (!basicEligibility.eligible) {
+            return basicEligibility // Return early if basic checks fail
+        }
+
+        val reasons =
+            mutableListOf<EligibilityRejectReasonInfoDTO>() // Start fresh for task-specific reasons
+        val taskId = task.id!!
+
+        // --- Task-Specific Checks for USER joining USER task ---
+        // 1. Task Approved
+        if (task.approved != ApproveType.APPROVED) {
+            reasons.add(
+                createRejectReason(
+                    EligibilityRejectReasonCodeDTO.TASK_NOT_APPROVED,
+                    "Task is not approved yet.",
+                    mapOf("taskId" to taskId, "userId" to userId),
+                )
+            )
+        }
+
+        // 2. Participant Limit (check against approved count)
+        if (applicationConfig.enforceTaskParticipantLimitCheck && task.participantLimit != null) {
+            val currentApprovedCount =
+                taskMembershipRepository.countByTaskIdAndApproved(taskId, ApproveType.APPROVED)
+            if (currentApprovedCount >= task.participantLimit!!) {
+                reasons.add(
+                    createRejectReason(
+                        EligibilityRejectReasonCodeDTO.PARTICIPANT_LIMIT_REACHED,
+                        "Task participant limit (${task.participantLimit}) has been reached.",
+                        mapOf(
+                            "taskId" to taskId,
+                            "userId" to userId,
+                            "limit" to task.participantLimit!!,
+                            "actual" to currentApprovedCount,
+                        ),
+                    )
+                )
+            }
+        }
+
+        // 3. Already Joined?
+        if (taskMembershipRepository.existsByTaskIdAndMemberId(taskId, userId)) {
+            reasons.add(
+                createRejectReason(
+                    EligibilityRejectReasonCodeDTO.ALREADY_PARTICIPATING,
+                    "You are already participating in this task.",
+                    mapOf("taskId" to taskId, "userId" to userId),
+                )
+            )
+        }
+
+        // 4. Real Name Required?
+        if (task.requireRealName) {
+            try {
+                userRealNameService.getUserIdentity(userId)
+            } catch (e: NotFoundError) {
+                reasons.add(
+                    createRejectReason(
+                        EligibilityRejectReasonCodeDTO.USER_MISSING_REAL_NAME,
+                        "Your real name information is required for this task but is missing.",
+                        mapOf("taskId" to taskId, "userId" to userId, "error" to e.message),
+                    )
+                )
+            }
+        }
+
+        // 5. Rank Required?
+        checkRankEligibility(task, userId, true, reasons) // isUserTask = true
+
+        return EligibilityStatusDTO(eligible = reasons.isEmpty(), reasons = reasons)
+    }
+
+    /**
+     * Checks eligibility for a specific TEAM to join a specific TEAM type task. Includes team
+     * checks (size, members' real names, members' ranks) and task constraints.
+     */
+    fun checkTeamEligibilityForTeamTask(
+        task: Task,
+        teamId: IdType,
+    ): Triple<EligibilityStatusDTO, List<TeamMemberDTO>?, Boolean?> {
+        val reasons = mutableListOf<EligibilityRejectReasonInfoDTO>()
+        val taskId = task.id!!
+
+        // --- Basic Team and Task Checks ---
+        // 0. Task Approved?
+        if (task.approved != ApproveType.APPROVED) {
+            reasons.add(
+                createRejectReason(
+                    EligibilityRejectReasonCodeDTO.TASK_NOT_APPROVED,
+                    "Task is not approved yet.",
+                    mapOf("taskId" to taskId, "teamId" to teamId),
+                )
+            )
+        }
+
+        // 1. Team Exists?
+        if (!teamService.existsTeam(teamId)) {
+            reasons.add(
+                createRejectReason(
+                    EligibilityRejectReasonCodeDTO.TEAM_NOT_FOUND,
+                    "Team not found.",
+                    mapOf("taskId" to taskId, "teamId" to teamId),
+                )
+            )
+            return Triple(
+                EligibilityStatusDTO(eligible = false, reasons = reasons),
+                null,
+                null,
+            ) // Stop if team doesn't exist
+        }
+
+        // 2. Participant Limit (check against approved count)
+        if (applicationConfig.enforceTaskParticipantLimitCheck && task.participantLimit != null) {
+            val currentApprovedCount =
+                taskMembershipRepository.countByTaskIdAndApproved(taskId, ApproveType.APPROVED)
+            if (currentApprovedCount >= task.participantLimit!!) {
+                reasons.add(
+                    createRejectReason(
+                        EligibilityRejectReasonCodeDTO.PARTICIPANT_LIMIT_REACHED,
+                        "Task participant limit (${task.participantLimit}) has been reached.",
+                        mapOf(
+                            "taskId" to taskId,
+                            "teamId" to teamId,
+                            "limit" to task.participantLimit!!,
+                            "actual" to currentApprovedCount,
+                        ),
+                    )
+                )
+            }
+        }
+
+        // 3. Team Already Joined?
+        if (taskMembershipRepository.existsByTaskIdAndMemberId(taskId, teamId)) {
+            reasons.add(
+                createRejectReason(
+                    EligibilityRejectReasonCodeDTO.ALREADY_PARTICIPATING,
+                    "This team is already participating in this task.",
+                    mapOf("taskId" to taskId, "teamId" to teamId),
+                )
+            )
+        }
+
+        // --- Team-Specific Checks ---
+        // 4. Team Size
+        val teamSize = teamService.getTeamSize(teamId) // Assumes team exists
+        task.minTeamSize?.let { min ->
+            if (teamSize < min) {
+                reasons.add(
+                    createRejectReason(
+                        EligibilityRejectReasonCodeDTO.TEAM_SIZE_MIN_NOT_MET,
+                        "Team size ($teamSize) is less than the required minimum ($min).",
+                        mapOf(
+                            "taskId" to taskId,
+                            "teamId" to teamId,
+                            "actualSize" to teamSize,
+                            "requiredSize" to min,
+                        ),
+                    )
+                )
+            }
+        }
+        task.maxTeamSize?.let { max ->
+            if (teamSize > max) {
+                reasons.add(
+                    createRejectReason(
+                        EligibilityRejectReasonCodeDTO.TEAM_SIZE_MAX_EXCEEDED,
+                        "Team size ($teamSize) exceeds the allowed maximum ($max).",
+                        mapOf(
+                            "taskId" to taskId,
+                            "teamId" to teamId,
+                            "actualSize" to teamSize,
+                            "requiredSize" to max,
+                        ),
+                    )
+                )
+            }
+        }
+
+        val (memberDetails, allVerified) =
+            teamService.getTeamMembers(teamId, queryRealNameStatus = task.requireRealName)
+
+        // 5. Team Members' Real Name (if required)
+        if (task.requireRealName) {
+            if (allVerified != true) {
+                val missingMembers =
+                    memberDetails.filter { it.hasRealNameInfo != true }.map { it.user.id }
+                reasons.add(
+                    createRejectReason(
+                        EligibilityRejectReasonCodeDTO.TEAM_MEMBER_MISSING_REAL_NAME,
+                        "One or more team members are missing required real name information.",
+                        mapOf(
+                            "missingUserIds" to missingMembers,
+                            "taskId" to taskId,
+                            "teamId" to teamId,
+                        ),
+                    )
+                )
+            }
+        }
+
+        // 6. Team Members' Rank (if required)
+        memberDetails.forEach { teamMember ->
+            checkRankEligibility(task, teamMember.user.id, false, reasons) // isUserTask = false
+        }
+
+        return Triple(
+            EligibilityStatusDTO(eligible = reasons.isEmpty(), reasons = reasons),
+            memberDetails,
+            allVerified,
+        )
+    }
+
+    /**
+     * Calculates the detailed participation eligibility for the given user regarding the specified
+     * task. Populates *either* userTaskStatus *or* teamTaskStatus in ParticipationEligibilityDTO
+     * based strictly on the task's submitterType.
+     *
+     * @param task The task entity.
+     * @param userId The ID of the user whose eligibility is being checked.
+     * @return ParticipationEligibilityDTO containing detailed status for the relevant type.
+     */
+    fun getParticipationEligibility(task: Task, userId: IdType): ParticipationEligibilityDTO {
+        return when (task.submitterType) {
+            TaskSubmitterType.USER -> {
+                // Calculate detailed user eligibility for this specific USER task
+                val userStatus = checkUserEligibilityForUserTask(task, userId)
+                ParticipationEligibilityDTO(user = userStatus, teams = null)
+            }
+            TaskSubmitterType.TEAM -> {
+                // Calculate eligibility for each of the user's teams for this TEAM task
+                val userTeams = teamService.getTeamsThatUserCanUseToJoinTask(task.id!!, userId)
+                val teamsStatus =
+                    userTeams.map { team ->
+                        val (specificTeamEligibility, memberDetails, allVerified) =
+                            checkTeamEligibilityForTeamTask(task, team.id)
+                        TeamTaskEligibilityDTO(
+                            team =
+                                team.copy(
+                                    allMembersVerified = allVerified,
+                                    memberRealNameStatus =
+                                        memberDetails?.map {
+                                            TeamMemberRealNameStatusDTO(
+                                                it.user.id,
+                                                it.hasRealNameInfo == true,
+                                                it.user.nickname,
+                                            )
+                                        },
+                                ),
+                            eligibility = specificTeamEligibility,
+                        )
+                    }
+                ParticipationEligibilityDTO(user = null, teams = teamsStatus)
+            }
+        }
     }
 }

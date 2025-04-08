@@ -633,7 +633,7 @@ constructor(
 
     @Test
     @Order(106)
-    fun `test get task 1 join or submit status for participant 1 before approval`() { // Renamed
+    fun `test get task 1 eligibility for participant 1 before approval`() { // Renamed
         webTestClient
             .get()
             .uri { builder ->
@@ -651,8 +651,40 @@ constructor(
             .value { response ->
                 assertNotNull(response.data.task)
                 val task = response.data.task
-                // User has joined (added in 85) but not approved yet
-                assertEquals(false, task.joinable, "Should not be joinable again")
+                assertEquals(
+                    TaskSubmitterTypeDTO.USER,
+                    task.submitterType,
+                    "Task type should be USER",
+                )
+
+                assertNotNull(
+                    task.participationEligibility,
+                    "Participation eligibility data should be present",
+                )
+                val eligibility = task.participationEligibility!!
+
+                assertNull(eligibility.teams, "Team status should be null for USER task")
+                assertNotNull(eligibility.user, "User status should be present for USER task")
+
+                val userStatus = eligibility.user!!
+                // User has joined (added in 85) but not approved yet.
+                // Therefore, they are NOT eligible to join again.
+                assertEquals(
+                    false,
+                    userStatus.eligible,
+                    "User should not be eligible (already joined/pending)",
+                )
+                assertFalse(
+                    userStatus.reasons!!.isEmpty(),
+                    "Reasons for ineligibility should be present",
+                )
+                // Check for the specific reason code
+                assertTrue(
+                    userStatus.reasons!!.any {
+                        it.code == EligibilityRejectReasonCodeDTO.ALREADY_PARTICIPATING
+                    },
+                    "Reason should include ALREADY_PARTICIPATING",
+                )
                 assertEquals(
                     false,
                     task.submittable,
@@ -663,7 +695,7 @@ constructor(
 
     @Test
     @Order(111)
-    fun `test get task 2 join or submit status for team creator before approval`() { // Renamed
+    fun `test get task 2 eligibility for team creator before approval`() { // Renamed
         webTestClient
             .get()
             .uri { builder ->
@@ -681,13 +713,47 @@ constructor(
             .value { response ->
                 assertNotNull(response.data.task)
                 val task = response.data.task
-                // Team creator cannot join individually, team is already added
-                assertEquals(false, task.joinable, "Team creator cannot join individually")
+                assertEquals(
+                    TaskSubmitterTypeDTO.TEAM,
+                    task.submitterType,
+                    "Task type should be TEAM",
+                )
+
+                assertNotNull(
+                    task.participationEligibility,
+                    "Participation eligibility data should be present",
+                )
+                val eligibility = task.participationEligibility!!
+
+                assertNull(eligibility.user, "User status should be null for TEAM task")
+                assertNotNull(eligibility.teams, "Team status should be present for TEAM task")
+
+                val teamStatusList = eligibility.teams!!
+                // Find the status for the specific team
+                val relevantTeamStatus = teamStatusList.find { it.team.id == teamId }
+                assertNotNull(relevantTeamStatus, "Status for team $teamId not found")
+
+                // The team has been added (Order 95) but not approved yet.
+                // Therefore, the team is NOT eligible to join again.
+                assertEquals(
+                    false,
+                    relevantTeamStatus!!.eligibility.eligible,
+                    "Team should not be eligible (already joined/pending)",
+                )
+                assertFalse(
+                    relevantTeamStatus.eligibility.reasons!!.isEmpty(),
+                    "Reasons for team ineligibility should be present",
+                )
+                // Check for the specific reason code
+                assertTrue(
+                    relevantTeamStatus.eligibility.reasons!!.any {
+                        it.code == EligibilityRejectReasonCodeDTO.ALREADY_PARTICIPATING
+                    },
+                    "Reason should include ALREADY_PARTICIPATING for the team",
+                )
+
                 // Team creator cannot submit individually, team not approved yet
                 assertEquals(false, task.submittable, "Team creator cannot submit individually")
-                // Team submittability status might be complex, depends on DTO structure
-                // Original test checked `submittableAsTeam` was empty. Let's check for null or
-                // empty list.
                 assertTrue(
                     task.submittableAsTeam.isNullOrEmpty(),
                     "submittableAsTeam should be null or empty before team approval",
@@ -746,8 +812,6 @@ constructor(
             .exchange()
             .expectStatus()
             .isOk
-            // Assuming the response DTO is PatchTaskMembershipByMember200ResponseDTO containing a
-            // list
             .expectBody<PatchTaskMembershipByMember200ResponseDTO>()
             .value { response ->
                 assertNotNull(response.data.participants)
@@ -767,7 +831,7 @@ constructor(
 
     @Test
     @Order(121)
-    fun `test get task 1 join or submit status for participant 1 after approval`() { // Renamed
+    fun `test get task 1 eligibility for participant 1 after approval`() { // Renamed
         webTestClient
             .get()
             .uri { builder ->
@@ -785,7 +849,31 @@ constructor(
             .value { response ->
                 assertNotNull(response.data.task)
                 val task = response.data.task
-                assertEquals(false, task.joinable, "Should still not be joinable again")
+                assertEquals(TaskSubmitterTypeDTO.USER, task.submitterType)
+
+                assertNotNull(task.participationEligibility)
+                val eligibility = task.participationEligibility!!
+
+                assertNull(eligibility.teams)
+                assertNotNull(eligibility.user)
+
+                val userStatus = eligibility.user!!
+                // Still not eligible to *join* again because already participating
+                assertEquals(
+                    false,
+                    userStatus.eligible,
+                    "User should still not be eligible to join again",
+                )
+                assertFalse(
+                    userStatus.reasons!!.isEmpty(),
+                    "Reasons for ineligibility should be present",
+                )
+                assertTrue(
+                    userStatus.reasons!!.any {
+                        it.code == EligibilityRejectReasonCodeDTO.ALREADY_PARTICIPATING
+                    },
+                    "Reason should include ALREADY_PARTICIPATING",
+                )
                 assertEquals(
                     true,
                     task.submittable,
@@ -865,7 +953,7 @@ constructor(
 
     @Test
     @Order(129)
-    fun `test get task 2 join or submit status for team creator after approval`() { // Renamed
+    fun `test get task 2 eligibility for team creator after approval`() { // Renamed
         webTestClient
             .get()
             .uri { builder ->
@@ -883,11 +971,33 @@ constructor(
             .value { response ->
                 assertNotNull(response.data.task)
                 val task = response.data.task
-                assertEquals(false, task.joinable, "Team creator still cannot join individually")
+                assertEquals(TaskSubmitterTypeDTO.TEAM, task.submitterType)
+
+                assertNotNull(task.participationEligibility)
+                val eligibility = task.participationEligibility!!
+
+                assertNull(eligibility.user) // User status null for TEAM task
+                assertNotNull(eligibility.teams) // Team status present
+
+                val teamStatusList = eligibility.teams!!
+                val relevantTeamStatus = teamStatusList.find { it.team.id == teamId }
+                assertNotNull(relevantTeamStatus, "Status for team $teamId should be present")
+
+                // Team is approved, so not eligible to *join* again.
                 assertEquals(
-                    true,
-                    task.submittable,
-                    "Team creator CAN submit individually (as part of approved team)",
+                    false,
+                    relevantTeamStatus!!.eligibility.eligible,
+                    "Team should not be eligible to join again",
+                )
+                assertFalse(
+                    relevantTeamStatus.eligibility.reasons!!.isEmpty(),
+                    "Reasons should be present",
+                )
+                assertTrue(
+                    relevantTeamStatus.eligibility.reasons!!.any {
+                        it.code == EligibilityRejectReasonCodeDTO.ALREADY_PARTICIPATING
+                    },
+                    "Reason should include ALREADY_PARTICIPATING for the team",
                 )
 
                 assertNotNull(task.submittableAsTeam)
