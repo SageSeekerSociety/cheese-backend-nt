@@ -239,7 +239,7 @@ interface UsersApi {
             schema = Schema(defaultValue = "20L"),
         )
         @Valid
-        @RequestParam(value = "pageSize", required = false, defaultValue = "20L")
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
         pageSize: kotlin.Long,
     ): ResponseEntity<ListMyInvitations200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
@@ -295,7 +295,7 @@ interface UsersApi {
             schema = Schema(defaultValue = "20L"),
         )
         @Valid
-        @RequestParam(value = "pageSize", required = false, defaultValue = "20L")
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
         pageSize: kotlin.Long,
     ): ResponseEntity<ListMyJoinRequests200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)

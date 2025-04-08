@@ -8,9 +8,6 @@
 
 package org.rucca.cheese.api
 
-// Removed: import org.json.JSONObject
-// Import necessary DTOs
-// Removed: import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import kotlin.math.floor
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
@@ -27,19 +24,14 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
 
-// Removed: MockMvc and related imports
-
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-) // Use WebTestClient environment
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-// Removed: @AutoConfigureMockMvc
 @TestMethodOrder(OrderAnnotation::class)
 class TeamTest
 @Autowired
 constructor(
-    private val webTestClient: WebTestClient, // Inject WebTestClient
+    private val webTestClient: WebTestClient,
     private val userCreatorService: UserCreatorService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
