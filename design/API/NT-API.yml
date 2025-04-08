@@ -4998,21 +4998,20 @@ components:
       type: object
       description: 分页信息
       required:
-        - page_start
-        - page_size
-        - has_prev
-        - has_more
+        - pageStart
+        - pageSize
+        - hasMore
       properties:
-        page_start:
+        pageStart:
           type: string
           description: 该页第一个 item 的 cursor
-        page_size:
+        pageSize:
           type: integer
           description: 每页 item 数量
-        has_more:
+        hasMore:
           type: boolean
           description: 是否有下一页
-        next_start:
+        nextStart:
           type: string
           description: 下一页第一个 item 的 cursor
         total:
@@ -5022,22 +5021,21 @@ components:
       type: object
       description: 分页信息
       required:
-        - page_start
-        - page_size
-        - has_prev
-        - has_more
+        - pageStart
+        - pageSize
+        - hasMore
       properties:
-        page_start:
+        pageStart:
           type: integer
           format: int64
           description: 该页第一个 item 的 ID
-        page_size:
+        pageSize:
           type: integer
           description: 每页 item 数量
-        has_more:
+        hasMore:
           type: boolean
           description: 是否有下一页
-        next_start:
+        nextStart:
           type: integer
           format: int64
           description: 下一页第一个 item 的 ID

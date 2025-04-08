@@ -15,16 +15,16 @@ import java.io.Serializable
  */
 data class PageDTO(
     @Schema(example = "null", required = true, description = "该页第一个 item 的 ID")
-    @get:JsonProperty("page_start", required = true)
+    @get:JsonProperty("pageStart", required = true)
     val pageStart: kotlin.Long,
     @Schema(example = "null", required = true, description = "每页 item 数量")
-    @get:JsonProperty("page_size", required = true)
+    @get:JsonProperty("pageSize", required = true)
     val pageSize: kotlin.Int,
     @Schema(example = "null", required = true, description = "是否有下一页")
-    @get:JsonProperty("has_more", required = true)
+    @get:JsonProperty("hasMore", required = true)
     val hasMore: kotlin.Boolean,
     @Schema(example = "null", description = "下一页第一个 item 的 ID")
-    @get:JsonProperty("next_start")
+    @get:JsonProperty("nextStart")
     val nextStart: kotlin.Long? = null,
     @Schema(example = "null", description = "总 item 数量")
     @get:JsonProperty("total")
