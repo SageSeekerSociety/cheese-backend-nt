@@ -8,9 +8,9 @@ import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.model.KnowledgeGet200ResponseDTO
+import org.rucca.cheese.model.CreateKnowledge200ResponseDTO
 import org.rucca.cheese.model.KnowledgeGetById200ResponseDTO
-import org.rucca.cheese.model.KnowledgePost200ResponseDTO
+import org.rucca.cheese.model.ListKnowledge200ResponseDTO
 import org.rucca.cheese.model.UpdateKnowledge200ResponseDTO
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamMemberRole
@@ -125,7 +125,7 @@ constructor(
         val response =
             webTestClient
                 .post()
-                .uri("/knowledges")
+                .uri("/knowledge")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer $creatorToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
@@ -133,7 +133,7 @@ constructor(
                 .exchange()
                 .expectStatus()
                 .isOk // Check status first
-                .expectBody<KnowledgePost200ResponseDTO>() // Expect specific DTO
+                .expectBody<CreateKnowledge200ResponseDTO>() // Expect specific DTO
                 .returnResult()
                 .responseBody // Get the deserialized DTO
 
@@ -162,7 +162,7 @@ constructor(
 
         webTestClient
             .get()
-            .uri("/knowledges/$knowledgeId")
+            .uri("/knowledge/$knowledgeId")
             .header(HttpHeaders.AUTHORIZATION, "Bearer $creatorToken")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -185,7 +185,7 @@ constructor(
     fun `test get knowledge not found`() {
         webTestClient
             .get()
-            .uri("/knowledges/99999999") // Use a clearly non-existent ID
+            .uri("/knowledge/99999999") // Use a clearly non-existent ID
             .header(HttpHeaders.AUTHORIZATION, "Bearer $creatorToken")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -200,7 +200,7 @@ constructor(
             .get()
             .uri { builder -> // Use UriBuilder for query params
                 builder
-                    .path("/knowledges")
+                    .path("/knowledge")
                     .queryParam("teamId", teamId.toString())
                     // Add other params like page, size if applicable
                     .queryParam("page", 0)
@@ -212,7 +212,7 @@ constructor(
             .exchange()
             .expectStatus()
             .isOk
-            .expectBody<KnowledgeGet200ResponseDTO>() // Expect list response DTO
+            .expectBody<ListKnowledge200ResponseDTO>() // Expect list response DTO
             .value { response ->
                 assertThat(response.code).isEqualTo(200)
                 val knowledgeList = response.data.knowledges
@@ -251,7 +251,7 @@ constructor(
 
         webTestClient
             .patch() // Assuming PATCH for updates
-            .uri("/knowledges/$knowledgeId")
+            .uri("/knowledge/$knowledgeId")
             .header(HttpHeaders.AUTHORIZATION, "Bearer $creatorToken")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
@@ -289,7 +289,7 @@ constructor(
 
         webTestClient
             .delete()
-            .uri("/knowledges/$knowledgeId")
+            .uri("/knowledge/$knowledgeId")
             .header(HttpHeaders.AUTHORIZATION, "Bearer $creatorToken")
             .exchange()
             // Check the expected status code for successful deletion
@@ -306,7 +306,7 @@ constructor(
         // Optional: Verify deletion by trying to GET it again
         webTestClient
             .get()
-            .uri("/knowledges/$knowledgeId")
+            .uri("/knowledge/$knowledgeId")
             .header(HttpHeaders.AUTHORIZATION, "Bearer $creatorToken")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
@@ -334,7 +334,7 @@ constructor(
     //                logger.warn("Knowledge ID {} was not deleted during tests, attempting
     // cleanup.", knowledgeId)
     //                webTestClient.delete()
-    //                    .uri("/knowledges/$knowledgeId")
+    //                    .uri("/knowledge/$knowledgeId")
     //                    .header(HttpHeaders.AUTHORIZATION, "Bearer $creatorToken")
     //                    .exchange()
     //                    .expectStatus().isOk // Or isNoContent or isNotFound (if already gone)

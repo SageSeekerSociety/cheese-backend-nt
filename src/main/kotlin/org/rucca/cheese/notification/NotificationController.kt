@@ -95,10 +95,10 @@ class NotificationController(
 
     @Auth("notification:list:notification")
     override suspend fun listNotifications(
-        @Valid pageStart: String?,
-        @Valid pageSize: Long,
-        @Valid type: NotificationTypeDTO?,
-        @Valid read: Boolean?,
+        pageStart: String?,
+        pageSize: Int,
+        type: NotificationTypeDTO?,
+        read: Boolean?,
     ): ResponseEntity<ListNotifications200ResponseDTO> {
         val notificationType = type?.toEnum()
 

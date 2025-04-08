@@ -59,9 +59,9 @@ class TaskController(
 ) : TasksApi {
 
     @Auth("task:delete:task")
-    override suspend fun deleteTask(@ResourceId taskId: Long): ResponseEntity<CommonResponseDTO> {
+    override suspend fun deleteTask(@ResourceId taskId: Long): ResponseEntity<Unit> {
         taskService.deleteTask(taskId)
-        return ResponseEntity.ok(CommonResponseDTO(200, "OK"))
+        return ResponseEntity.noContent().build()
     }
 
     @Auth("task:delete:participant")
@@ -146,8 +146,8 @@ class TaskController(
         allVersions: Boolean,
         queryReview: Boolean,
         reviewed: Boolean?,
-        pageSize: Int,
         pageStart: Long?,
+        pageSize: Int,
         sortBy: String,
         sortOrder: String,
     ): ResponseEntity<GetTaskSubmissions200ResponseDTO> {
@@ -192,8 +192,8 @@ class TaskController(
         @AuthContext("queryOwner") owner: Long?,
         @AuthContext("queryJoined") joined: Boolean?,
         topics: List<Long>?,
-        pageSize: Int,
         pageStart: Long?,
+        pageSize: Int,
         sortBy: String,
         sortOrder: String,
         querySpace: Boolean,

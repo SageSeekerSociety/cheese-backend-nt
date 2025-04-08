@@ -10,9 +10,10 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
+import javax.validation.constraints.Max
+import javax.validation.constraints.Min
 import org.rucca.cheese.model.CreateSpaceCategory201ResponseDTO
 import org.rucca.cheese.model.CreateSpaceCategoryRequestDTO
-import org.rucca.cheese.model.DeleteSpace200ResponseDTO
 import org.rucca.cheese.model.GetSpace200ResponseDTO
 import org.rucca.cheese.model.GetSpaces200ResponseDTO
 import org.rucca.cheese.model.ListSpaceCategories200ResponseDTO
@@ -32,7 +33,7 @@ import org.springframework.web.bind.annotation.*
 interface SpacesApi {
 
     @Operation(
-        tags = ["Space Categories"],
+        tags = ["Spaces"],
         summary = "Archive a category",
         operationId = "archiveSpaceCategory",
         description =
@@ -62,7 +63,9 @@ interface SpacesApi {
         produces = ["application/json"],
     )
     suspend fun archiveSpaceCategory(
-        @Parameter(description = "", required = true) @PathVariable("spaceId") spaceId: kotlin.Long,
+        @Parameter(description = "The unique identifier of the space.", required = true)
+        @PathVariable("spaceId")
+        spaceId: kotlin.Long,
         @Parameter(description = "", required = true)
         @PathVariable("categoryId")
         categoryId: kotlin.Long,
@@ -71,7 +74,7 @@ interface SpacesApi {
     }
 
     @Operation(
-        tags = ["Space Categories"],
+        tags = ["Spaces"],
         summary = "Create a category in a space",
         operationId = "createSpaceCategory",
         description =
@@ -101,7 +104,7 @@ interface SpacesApi {
         consumes = ["application/json"],
     )
     suspend fun createSpaceCategory(
-        @Parameter(description = "ID of the space to manage categories for.", required = true)
+        @Parameter(description = "The unique identifier of the space.", required = true)
         @PathVariable("spaceId")
         spaceId: kotlin.Long,
         @Parameter(description = "", required = true)
@@ -113,76 +116,47 @@ interface SpacesApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Spaces"],
         summary = "Delete Space",
         operationId = "deleteSpace",
         description = """""",
-        responses =
-            [
-                ApiResponse(
-                    responseCode = "200",
-                    description = "OK",
-                    content =
-                        [
-                            Content(
-                                schema = Schema(implementation = DeleteSpace200ResponseDTO::class)
-                            )
-                        ],
-                )
-            ],
+        responses = [ApiResponse(responseCode = "204", description = "Deleted successfully.")],
         security = [SecurityRequirement(name = "BearerAuth")],
     )
-    @RequestMapping(
-        method = [RequestMethod.DELETE],
-        value = ["/spaces/{spaceId}"],
-        produces = ["application/json"],
-    )
+    @RequestMapping(method = [RequestMethod.DELETE], value = ["/spaces/{spaceId}"])
     suspend fun deleteSpace(
-        @Parameter(description = "Space ID", required = true)
+        @Parameter(description = "The unique identifier of the space.", required = true)
         @PathVariable("spaceId")
         spaceId: kotlin.Long
-    ): ResponseEntity<DeleteSpace200ResponseDTO> {
+    ): ResponseEntity<Unit> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Spaces"],
         summary = "Disqualify Space Admin",
         operationId = "deleteSpaceAdmin",
         description = """""",
-        responses =
-            [
-                ApiResponse(
-                    responseCode = "200",
-                    description = "OK",
-                    content =
-                        [
-                            Content(
-                                schema = Schema(implementation = DeleteSpace200ResponseDTO::class)
-                            )
-                        ],
-                )
-            ],
+        responses = [ApiResponse(responseCode = "204", description = "Deleted successfully.")],
         security = [SecurityRequirement(name = "BearerAuth")],
     )
     @RequestMapping(
         method = [RequestMethod.DELETE],
         value = ["/spaces/{spaceId}/managers/{userId}"],
-        produces = ["application/json"],
     )
     suspend fun deleteSpaceAdmin(
-        @Parameter(description = "Space ID", required = true)
+        @Parameter(description = "The unique identifier of the space.", required = true)
         @PathVariable("spaceId")
         spaceId: kotlin.Long,
         @Parameter(description = "Admin User ID", required = true)
         @PathVariable("userId")
         userId: kotlin.Long,
-    ): ResponseEntity<DeleteSpace200ResponseDTO> {
+    ): ResponseEntity<Unit> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags = ["Space Categories"],
+        tags = ["Spaces"],
         summary = "Delete a category",
         operationId = "deleteSpaceCategory",
         description =
@@ -196,7 +170,7 @@ interface SpacesApi {
         value = ["/spaces/{spaceId}/categories/{categoryId}"],
     )
     suspend fun deleteSpaceCategory(
-        @Parameter(description = "ID of the space the category belongs to.", required = true)
+        @Parameter(description = "The unique identifier of the space.", required = true)
         @PathVariable("spaceId")
         spaceId: kotlin.Long,
         @Parameter(
@@ -210,7 +184,7 @@ interface SpacesApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Spaces"],
         summary = "Query Space",
         operationId = "getSpace",
         description = """""",
@@ -231,7 +205,7 @@ interface SpacesApi {
         produces = ["application/json"],
     )
     suspend fun getSpace(
-        @Parameter(description = "Space ID", required = true)
+        @Parameter(description = "The unique identifier of the space.", required = true)
         @PathVariable("spaceId")
         spaceId: kotlin.Long,
         @Parameter(
@@ -253,7 +227,7 @@ interface SpacesApi {
     }
 
     @Operation(
-        tags = ["Space Categories"],
+        tags = ["Spaces"],
         summary = "Get a specific category",
         operationId = "getSpaceCategory",
         description = """Retrieves details of a specific category within a space.""",
@@ -281,7 +255,7 @@ interface SpacesApi {
         produces = ["application/json"],
     )
     suspend fun getSpaceCategory(
-        @Parameter(description = "ID of the space the category belongs to.", required = true)
+        @Parameter(description = "The unique identifier of the space.", required = true)
         @PathVariable("spaceId")
         spaceId: kotlin.Long,
         @Parameter(
@@ -295,7 +269,7 @@ interface SpacesApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Spaces"],
         summary = "Enumerate Spaces",
         operationId = "getSpaces",
         description = """""",
@@ -323,14 +297,19 @@ interface SpacesApi {
         @Valid
         @RequestParam(value = "queryMyRank", required = false, defaultValue = "false")
         queryMyRank: kotlin.Boolean,
-        @Parameter(description = "Page Size")
+        @Parameter(description = "The ID of the first item in the page.")
         @Valid
-        @RequestParam(value = "page_size", required = false)
-        pageSize: kotlin.Int?,
-        @Parameter(description = "ID of First Element")
-        @Valid
-        @RequestParam(value = "page_start", required = false)
+        @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.Long?,
+        @Min(1)
+        @Max(100)
+        @Parameter(
+            description = "The number of items per page.",
+            schema = Schema(defaultValue = "20"),
+        )
+        @Valid
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
+        pageSize: kotlin.Int,
         @Parameter(
             description = "\"createdAt\" or \"updatedAt\"",
             schema = Schema(defaultValue = "createdAt"),
@@ -347,7 +326,7 @@ interface SpacesApi {
     }
 
     @Operation(
-        tags = ["Space Categories"],
+        tags = ["Spaces"],
         summary = "List categories in a space",
         operationId = "listSpaceCategories",
         description =
@@ -376,7 +355,7 @@ interface SpacesApi {
         produces = ["application/json"],
     )
     suspend fun listSpaceCategories(
-        @Parameter(description = "ID of the space to manage categories for.", required = true)
+        @Parameter(description = "The unique identifier of the space.", required = true)
         @PathVariable("spaceId")
         spaceId: kotlin.Long,
         @Parameter(
@@ -392,7 +371,7 @@ interface SpacesApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Spaces"],
         summary = "Update Space",
         operationId = "patchSpace",
         description = """""",
@@ -414,7 +393,7 @@ interface SpacesApi {
         consumes = ["application/json"],
     )
     suspend fun patchSpace(
-        @Parameter(description = "Space ID", required = true)
+        @Parameter(description = "The unique identifier of the space.", required = true)
         @PathVariable("spaceId")
         spaceId: kotlin.Long,
         @Parameter(description = "", required = true)
@@ -426,7 +405,7 @@ interface SpacesApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Spaces"],
         summary = "Update Space Admin Info",
         operationId = "patchSpaceAdmin",
         description = """""",
@@ -448,7 +427,7 @@ interface SpacesApi {
         consumes = ["application/json"],
     )
     suspend fun patchSpaceAdmin(
-        @Parameter(description = "Space ID", required = true)
+        @Parameter(description = "The unique identifier of the space.", required = true)
         @PathVariable("spaceId")
         spaceId: kotlin.Long,
         @Parameter(description = "Admin User ID", required = true)
@@ -463,7 +442,7 @@ interface SpacesApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Spaces"],
         summary = "Create Space",
         operationId = "postSpace",
         description = """""",
@@ -494,7 +473,7 @@ interface SpacesApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Spaces"],
         summary = "Add Space Admin",
         operationId = "postSpaceAdmin",
         description = """""",
@@ -516,7 +495,7 @@ interface SpacesApi {
         consumes = ["application/json"],
     )
     suspend fun postSpaceAdmin(
-        @Parameter(description = "Space ID", required = true)
+        @Parameter(description = "The unique identifier of the space.", required = true)
         @PathVariable("spaceId")
         spaceId: kotlin.Long,
         @Parameter(description = "", required = true)
@@ -528,7 +507,7 @@ interface SpacesApi {
     }
 
     @Operation(
-        tags = ["Space Categories"],
+        tags = ["Spaces"],
         summary = "Unarchive a category",
         operationId = "unarchiveSpaceCategory",
         description = """Removes the archived status from a category, making it active again.""",
@@ -557,7 +536,9 @@ interface SpacesApi {
         produces = ["application/json"],
     )
     suspend fun unarchiveSpaceCategory(
-        @Parameter(description = "", required = true) @PathVariable("spaceId") spaceId: kotlin.Long,
+        @Parameter(description = "The unique identifier of the space.", required = true)
+        @PathVariable("spaceId")
+        spaceId: kotlin.Long,
         @Parameter(description = "", required = true)
         @PathVariable("categoryId")
         categoryId: kotlin.Long,
@@ -566,7 +547,7 @@ interface SpacesApi {
     }
 
     @Operation(
-        tags = ["Space Categories"],
+        tags = ["Spaces"],
         summary = "Update a category",
         operationId = "updateSpaceCategory",
         description =
@@ -596,7 +577,7 @@ interface SpacesApi {
         consumes = ["application/json"],
     )
     suspend fun updateSpaceCategory(
-        @Parameter(description = "ID of the space the category belongs to.", required = true)
+        @Parameter(description = "The unique identifier of the space.", required = true)
         @PathVariable("spaceId")
         spaceId: kotlin.Long,
         @Parameter(

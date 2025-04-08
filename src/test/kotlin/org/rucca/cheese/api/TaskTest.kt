@@ -1429,7 +1429,7 @@ constructor(
                 builder
                     .path("/tasks")
                     .queryParam("space", spaceId)
-                    .queryParam("page_size", 2)
+                    .queryParam("pageSize", 2)
                     .queryParam("approved", ApproveTypeDTO.APPROVED.name)
                     // Default sort is likely createdAt DESC
                     .build()
@@ -1465,8 +1465,8 @@ constructor(
                 builder
                     .path("/tasks")
                     .queryParam("space", spaceId)
-                    .queryParam("page_size", 2)
-                    .queryParam("page_start", startId) // Start from Task 1
+                    .queryParam("pageSize", 2)
+                    .queryParam("pageStart", startId) // Start from Task 1
                     .queryParam("approved", ApproveTypeDTO.APPROVED.name)
                     .build()
             }
@@ -2222,10 +2222,7 @@ constructor(
             .header("Authorization", "Bearer $creatorToken") // Creator deletes
             .exchange()
             .expectStatus()
-            .isOk // Original test expected OK (assuming 200)
-            // Optionally check response body if API returns one (e.g., CommonResponseDTO)
-            .expectBody<CommonResponseDTO>()
-            .value { assertEquals(200, it.code) }
+            .isNoContent
 
         taskIds.remove(taskIdToDelete) // Remove from local list
 

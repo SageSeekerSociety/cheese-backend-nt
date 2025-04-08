@@ -12,7 +12,6 @@ import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.model.*
 import org.rucca.cheese.team.TeamMembershipService
-import org.rucca.cheese.team.models.toEnum
 import org.rucca.cheese.user.models.AccessType
 import org.rucca.cheese.user.services.UserRealNameService
 import org.springframework.http.ResponseEntity
@@ -24,85 +23,6 @@ class UserController(
     private val userRealNameService: UserRealNameService,
     private val teamMembershipService: TeamMembershipService,
 ) : UsersApi {
-    @Auth
-    override suspend fun acceptTeamInvitation(
-        @AuthUser userInfo: AuthUserInfo?,
-        invitationId: Long,
-    ): ResponseEntity<Unit> {
-        withContext(Dispatchers.IO) {
-            teamMembershipService.acceptTeamInvitation(userInfo!!.userId, invitationId)
-        }
-        return ResponseEntity.noContent().build()
-    }
-
-    @Auth
-    override suspend fun cancelMyJoinRequest(
-        @AuthUser userInfo: AuthUserInfo?,
-        requestId: Long,
-    ): ResponseEntity<Unit> {
-        withContext(Dispatchers.IO) {
-            teamMembershipService.cancelMyJoinRequest(userInfo!!.userId, requestId)
-        }
-        return ResponseEntity.noContent().build()
-    }
-
-    @Auth
-    override suspend fun declineTeamInvitation(
-        @AuthUser userInfo: AuthUserInfo?,
-        invitationId: Long,
-    ): ResponseEntity<Unit> {
-        withContext(Dispatchers.IO) {
-            teamMembershipService.declineTeamInvitation(userInfo!!.userId, invitationId)
-        }
-        return ResponseEntity.noContent().build()
-    }
-
-    @Auth
-    override suspend fun listMyInvitations(
-        @AuthUser userInfo: AuthUserInfo?,
-        status: ApplicationStatusDTO?,
-        pageStart: Long?,
-        pageSize: Long,
-    ): ResponseEntity<ListMyInvitations200ResponseDTO> {
-        val (invitations, pageDto) =
-            teamMembershipService.listMyInvitations(
-                userId = userInfo!!.userId,
-                status = status?.toEnum(),
-                cursorId = pageStart,
-                pageSize = pageSize.toInt().coerceIn(1, 100),
-            )
-        return ResponseEntity.ok(
-            ListMyInvitations200ResponseDTO(
-                code = 200,
-                data = ListMyInvitations200ResponseDataDTO(invitations, pageDto),
-                message = "Success",
-            )
-        )
-    }
-
-    @Auth
-    override suspend fun listMyJoinRequests(
-        @AuthUser userInfo: AuthUserInfo?,
-        status: ApplicationStatusDTO?,
-        pageStart: Long?,
-        pageSize: Long,
-    ): ResponseEntity<ListMyJoinRequests200ResponseDTO> {
-        val (requests, pageDto) =
-            teamMembershipService.listMyJoinRequests(
-                userId = userInfo!!.userId,
-                status = status?.toEnum(),
-                cursorId = pageStart,
-                pageSize = pageSize.toInt().coerceIn(1, 100),
-            )
-        return ResponseEntity.ok(
-            ListMyJoinRequests200ResponseDTO(
-                code = 200,
-                data = ListMyJoinRequests200ResponseDataDTO(requests, pageDto),
-                message = "Success",
-            )
-        )
-    }
-
     /** Implementation for getUserIdentity endpoint GET /users/{userId}/identity */
     @Auth("user:view:identity")
     override suspend fun getUserIdentity(
@@ -157,15 +77,12 @@ class UserController(
     override suspend fun getUserIdentityAccessLogs(
         @AuthUser userInfo: AuthUserInfo?,
         @ResourceId userId: Long,
-        pageSize: Long?,
         pageStart: Long?,
+        pageSize: Int,
     ): ResponseEntity<GetUserIdentityAccessLogs200ResponseDTO> {
-        // Get paginated access logs
-        val size = pageSize?.toInt() ?: 20
-
         val (logDTOs, pageDTO) =
             withContext(Dispatchers.IO) {
-                userRealNameService.getAccessLogs(userId, size, pageStart)
+                userRealNameService.getAccessLogs(userId, pageSize, pageStart)
             }
 
         // Create response DTO

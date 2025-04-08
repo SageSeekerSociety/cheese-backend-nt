@@ -3,7 +3,7 @@ package org.rucca.cheese.knowledge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.hibernate.query.SortDirection
-import org.rucca.cheese.api.KnowledgesApi
+import org.rucca.cheese.api.KnowledgeApi
 import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.UseNewAuth
 import org.rucca.cheese.auth.spring.Auth
@@ -18,34 +18,39 @@ import org.springframework.web.bind.annotation.RestController
 class KnowledgeController(
     private val knowledgeService: KnowledgeService,
     private val jwtService: JwtService,
-) : KnowledgesApi {
+) : KnowledgeApi {
     @Auth("knowledge:create:knowledge")
-    override suspend fun knowledgePost(
-        @AuthContext("teamId", field = "teamId") knowledgePostRequestDTO: KnowledgePostRequestDTO
-    ): ResponseEntity<KnowledgePost200ResponseDTO> {
+    override suspend fun createKnowledge(
+        @AuthContext("teamId", field = "teamId")
+        createKnowledgeRequestDTO: CreateKnowledgeRequestDTO
+    ): ResponseEntity<CreateKnowledge200ResponseDTO> {
         val userId = jwtService.getCurrentUserId()
         val knowledgeDTO =
             withContext(Dispatchers.IO) {
                 knowledgeService.createKnowledge(
-                    name = knowledgePostRequestDTO.name,
-                    type = knowledgePostRequestDTO.type,
-                    content = knowledgePostRequestDTO.content,
-                    description = knowledgePostRequestDTO.description,
-                    teamId = knowledgePostRequestDTO.teamId,
-                    materialId = knowledgePostRequestDTO.materialId,
-                    projectId = knowledgePostRequestDTO.projectId,
-                    labels = knowledgePostRequestDTO.labels,
-                    discussionId = knowledgePostRequestDTO.discussionId,
+                    name = createKnowledgeRequestDTO.name,
+                    type = createKnowledgeRequestDTO.type,
+                    content = createKnowledgeRequestDTO.content,
+                    description = createKnowledgeRequestDTO.description,
+                    teamId = createKnowledgeRequestDTO.teamId,
+                    materialId = createKnowledgeRequestDTO.materialId,
+                    projectId = createKnowledgeRequestDTO.projectId,
+                    labels = createKnowledgeRequestDTO.labels,
+                    discussionId = createKnowledgeRequestDTO.discussionId,
                     userId = userId,
                 )
             }
         return ResponseEntity.ok(
-            KnowledgePost200ResponseDTO(200, "ok", KnowledgePost200ResponseDataDTO(knowledgeDTO))
+            CreateKnowledge200ResponseDTO(
+                200,
+                "ok",
+                CreateKnowledge200ResponseDataDTO(knowledgeDTO),
+            )
         )
     }
 
     @Auth("knowledge:list:knowledge")
-    override suspend fun knowledgeGet(
+    override suspend fun listKnowledge(
         @AuthContext("teamId") teamId: Long,
         projectId: Long?,
         type: String?,
@@ -55,7 +60,7 @@ class KnowledgeController(
         pageSize: Int,
         sortBy: String,
         sortOrder: String,
-    ): ResponseEntity<KnowledgeGet200ResponseDTO> {
+    ): ResponseEntity<ListKnowledge200ResponseDTO> {
         // 解析排序字段
         val sortByEnum =
             when (sortBy) {
@@ -95,10 +100,10 @@ class KnowledgeController(
             )
 
         return ResponseEntity.ok(
-            KnowledgeGet200ResponseDTO(
+            ListKnowledge200ResponseDTO(
                 code = 200,
                 message = "success",
-                data = KnowledgeGet200ResponseDataDTO(knowledges = knowledgeDTOs, page = page),
+                data = ListKnowledge200ResponseDataDTO(knowledges = knowledgeDTOs, page = page),
             )
         )
     }

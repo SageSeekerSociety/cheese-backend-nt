@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.*
 interface NotificationsApi {
 
     @Operation(
-        tags = ["default"],
+        tags = ["Notifications"],
         summary = "Bulk Update Notification Status (e.g., Mark Multiple as Read)",
         operationId = "bulkUpdateNotifications",
         description =
@@ -76,7 +76,7 @@ interface NotificationsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Notifications"],
         summary = "Delete a Notification",
         operationId = "deleteNotification",
         description =
@@ -95,7 +95,7 @@ interface NotificationsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Notifications"],
         summary = "Get a Single Notification",
         operationId = "getNotificationById",
         description =
@@ -132,7 +132,7 @@ interface NotificationsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Notifications"],
         summary = "Get Unread Notification Count",
         operationId = "getUnreadNotificationsCount",
         description =
@@ -167,7 +167,7 @@ interface NotificationsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Notifications"],
         summary = "List Notifications for Current User",
         operationId = "listNotifications",
         description =
@@ -198,15 +198,15 @@ interface NotificationsApi {
         @Valid
         @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.String?,
-        @Min(1L)
-        @Max(100L)
+        @Min(1)
+        @Max(100)
         @Parameter(
             description = "The number of items per page.",
-            schema = Schema(defaultValue = "20L"),
+            schema = Schema(defaultValue = "20"),
         )
         @Valid
         @RequestParam(value = "pageSize", required = false, defaultValue = "20")
-        pageSize: kotlin.Long,
+        pageSize: kotlin.Int,
         @Parameter(
             description = "Filter by notification type.",
             schema =
@@ -241,7 +241,7 @@ interface NotificationsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Notifications"],
         summary = "Set Collective Notification Status (e.g., Mark All as Read)",
         operationId = "setCollectiveNotificationStatus",
         description =
@@ -281,7 +281,7 @@ interface NotificationsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Notifications"],
         summary = "Update Notification Status (e.g., Mark as Read/Unread)",
         operationId = "updateNotificationStatus",
         description =

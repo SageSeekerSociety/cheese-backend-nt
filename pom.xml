@@ -319,6 +319,7 @@
                                 <exceptionHandler>false</exceptionHandler>
                                 <serializableModel>true</serializableModel>
                                 <reactive>true</reactive>
+                                <useTags>true</useTags>
                             </configOptions>
                             <importMappings>
                                 <importMapping>AuthUserInfo=org.rucca.cheese.auth.model.AuthUserInfo</importMapping>

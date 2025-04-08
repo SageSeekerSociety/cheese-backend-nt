@@ -5,12 +5,19 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.io.Serializable
 import javax.validation.Valid
 
-/** @param knowledge */
-data class KnowledgePost200ResponseDataDTO(
+/**
+ * @param knowledges
+ * @param page
+ */
+data class ListKnowledge200ResponseDataDTO(
     @field:Valid
     @Schema(example = "null", description = "")
-    @get:JsonProperty("knowledge")
-    val knowledge: KnowledgeDTO? = null
+    @get:JsonProperty("knowledges")
+    val knowledges: kotlin.collections.List<KnowledgeDTO>? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("page")
+    val page: PageDTO? = null,
 ) : Serializable {
 
     companion object {

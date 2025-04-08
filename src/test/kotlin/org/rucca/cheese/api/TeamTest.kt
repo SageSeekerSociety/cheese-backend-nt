@@ -301,7 +301,7 @@ constructor(
                 builder
                     .path("/teams")
                     .queryParam("query", teamName) // Filter by name
-                    .queryParam("page_size", 1)
+                    .queryParam("pageSize", 1)
                     .build()
             }
             .header("Authorization", "Bearer $creatorToken")
@@ -325,7 +325,7 @@ constructor(
                 builder
                     .path("/teams")
                     .queryParam("query", teamId.toString()) // Filter by ID string
-                    .queryParam("page_size", 1)
+                    .queryParam("pageSize", 1)
                     .build()
             }
             .header("Authorization", "Bearer $creatorToken")
@@ -348,8 +348,8 @@ constructor(
                 builder
                     .path("/teams")
                     .queryParam("query", teamName)
-                    .queryParam("page_start", teamId) // Start at the team itself
-                    .queryParam("page_size", 1)
+                    .queryParam("pageStart", teamId) // Start at the team itself
+                    .queryParam("pageSize", 1)
                     .build()
             }
             .header("Authorization", "Bearer $creatorToken")
@@ -949,9 +949,7 @@ constructor(
             .header("Authorization", "Bearer $creatorToken") // Owner deletes
             .exchange()
             .expectStatus()
-            .isOk // Assuming 200 OK for delete
-            .expectBody<CommonResponseDTO>() // Assuming simple response DTO
-            .value { assertEquals(200, it.code) }
+            .isNoContent
 
         // Verify deletion
         webTestClient

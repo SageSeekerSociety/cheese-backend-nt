@@ -1471,10 +1471,7 @@ constructor(
             .header("Authorization", "Bearer $spaceCreatorToken") // Owner deletes
             .exchange()
             .expectStatus()
-            .isOk // Assuming 200 OK based on original test
-        // Check response DTO if applicable (e.g., DeleteTask200ResponseDTO)
-        // .expectBody<DeleteTask200ResponseDTO>()
-        // .value { response -> assertEquals(200, response.code) }
+            .isNoContent
 
         // Verify deletion
         webTestClient

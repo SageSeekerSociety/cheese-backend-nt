@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @Validated
-interface AiApi {
+interface AIApi {
 
     @Operation(
-        tags = ["default"],
+        tags = ["AI"],
         summary = "Get Current User's AI Quota",
         operationId = "getUserAiQuota",
         description = """""",

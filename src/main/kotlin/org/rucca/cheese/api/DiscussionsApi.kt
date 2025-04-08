@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
+import javax.validation.constraints.Max
+import javax.validation.constraints.Min
 import org.rucca.cheese.model.CreateDiscussion200ResponseDTO
 import org.rucca.cheese.model.CreateDiscussionRequestDTO
 import org.rucca.cheese.model.DiscussableModelTypeDTO
@@ -30,7 +32,7 @@ import org.springframework.web.bind.annotation.*
 interface DiscussionsApi {
 
     @Operation(
-        tags = ["default"],
+        tags = ["Discussions"],
         summary = "Create Discussion",
         operationId = "createDiscussion",
         description = """""",
@@ -66,7 +68,7 @@ interface DiscussionsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Discussions"],
         summary = "Delete Discussion",
         operationId = "deleteDiscussion",
         description = """""",
@@ -75,7 +77,7 @@ interface DiscussionsApi {
     )
     @RequestMapping(method = [RequestMethod.DELETE], value = ["/discussions/{discussionId}"])
     suspend fun deleteDiscussion(
-        @Parameter(description = "讨论ID", required = true)
+        @Parameter(description = "The unique identifier of the discussion.", required = true)
         @PathVariable("discussionId")
         discussionId: kotlin.Long
     ): ResponseEntity<Unit> {
@@ -83,7 +85,7 @@ interface DiscussionsApi {
     }
 
     @Operation(
-        tags = ["Reaction Types"],
+        tags = ["Discussions"],
         summary = "Get all reaction types",
         operationId = "getAllReactionTypes",
         description = """""",
@@ -115,7 +117,7 @@ interface DiscussionsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Discussions"],
         summary = "Query Discussion",
         operationId = "getDiscussion",
         description = """""",
@@ -141,16 +143,21 @@ interface DiscussionsApi {
     )
     suspend fun getDiscussion(
         userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
-        @Parameter(description = "讨论ID", required = true)
+        @Parameter(description = "The unique identifier of the discussion.", required = true)
         @PathVariable("discussionId")
         discussionId: kotlin.Long,
-        @Parameter(description = "起始ID")
+        @Parameter(description = "The ID of the first item in the page.")
         @Valid
-        @RequestParam(value = "page_start", required = false)
+        @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.Long?,
-        @Parameter(description = "每页数量 (默认20)", schema = Schema(defaultValue = "20"))
+        @Min(1)
+        @Max(100)
+        @Parameter(
+            description = "The number of items per page.",
+            schema = Schema(defaultValue = "20"),
+        )
         @Valid
-        @RequestParam(value = "page_size", required = false, defaultValue = "20")
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
         pageSize: kotlin.Int,
         @Parameter(
             description = "\"createdAt\" or \"updatedAt\"",
@@ -168,7 +175,7 @@ interface DiscussionsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Discussions"],
         summary = "List Discussions",
         operationId = "listDiscussions",
         description = """""",
@@ -207,13 +214,18 @@ interface DiscussionsApi {
         @Valid
         @RequestParam(value = "parent_id", required = false)
         parentId: kotlin.Long?,
-        @Parameter(description = "起始ID")
+        @Parameter(description = "The ID of the first item in the page.")
         @Valid
-        @RequestParam(value = "page_start", required = false)
+        @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.Long?,
-        @Parameter(description = "每页数量 (默认20)", schema = Schema(defaultValue = "20"))
+        @Min(1)
+        @Max(100)
+        @Parameter(
+            description = "The number of items per page.",
+            schema = Schema(defaultValue = "20"),
+        )
         @Valid
-        @RequestParam(value = "page_size", required = false, defaultValue = "20")
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
         pageSize: kotlin.Int,
         @Parameter(
             description = "\"createdAt\" or \"updatedAt\"",
@@ -231,7 +243,7 @@ interface DiscussionsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Discussions"],
         summary = "List Sub-Discussions",
         operationId = "listSubDiscussions",
         description = """""",
@@ -258,16 +270,21 @@ interface DiscussionsApi {
     )
     suspend fun listSubDiscussions(
         userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
-        @Parameter(description = "讨论ID", required = true)
+        @Parameter(description = "The unique identifier of the discussion.", required = true)
         @PathVariable("discussionId")
         discussionId: kotlin.Long,
-        @Parameter(description = "起始ID")
+        @Parameter(description = "The ID of the first item in the page.")
         @Valid
-        @RequestParam(value = "page_start", required = false)
+        @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.Long?,
-        @Parameter(description = "每页数量 (默认20)", schema = Schema(defaultValue = "20"))
+        @Min(1)
+        @Max(100)
+        @Parameter(
+            description = "The number of items per page.",
+            schema = Schema(defaultValue = "20"),
+        )
         @Valid
-        @RequestParam(value = "page_size", required = false, defaultValue = "20")
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
         pageSize: kotlin.Int,
         @Parameter(
             description = "\"createdAt\" or \"updatedAt\"",
@@ -285,7 +302,7 @@ interface DiscussionsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Discussions"],
         summary = "Update Discussion",
         operationId = "patchDiscussion",
         description = """""",
@@ -312,7 +329,7 @@ interface DiscussionsApi {
         consumes = ["application/json"],
     )
     suspend fun patchDiscussion(
-        @Parameter(description = "讨论ID", required = true)
+        @Parameter(description = "The unique identifier of the discussion.", required = true)
         @PathVariable("discussionId")
         discussionId: kotlin.Long,
         @Parameter(description = "", required = true)
@@ -324,7 +341,7 @@ interface DiscussionsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Discussions"],
         summary = "React to Discussion",
         operationId = "reactToDiscussion",
         description = """""",
@@ -350,7 +367,7 @@ interface DiscussionsApi {
         produces = ["application/json"],
     )
     suspend fun reactToDiscussion(
-        @Parameter(description = "讨论ID", required = true)
+        @Parameter(description = "The unique identifier of the discussion.", required = true)
         @PathVariable("discussionId")
         discussionId: kotlin.Long,
         @Parameter(description = "", required = true)

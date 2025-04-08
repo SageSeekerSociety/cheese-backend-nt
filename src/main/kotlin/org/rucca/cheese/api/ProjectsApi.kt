@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
+import javax.validation.constraints.Max
+import javax.validation.constraints.Min
 import javax.validation.constraints.NotNull
 import org.rucca.cheese.model.CreateProject201ResponseDTO
 import org.rucca.cheese.model.CreateProjectRequestDTO
@@ -29,7 +31,7 @@ import org.springframework.web.bind.annotation.*
 interface ProjectsApi {
 
     @Operation(
-        tags = ["default"],
+        tags = ["Projects"],
         summary = "Create Project",
         operationId = "createProject",
         description = """""",
@@ -64,7 +66,7 @@ interface ProjectsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Projects"],
         summary = "Delete Project",
         operationId = "deleteProject",
         description = """""",
@@ -73,7 +75,7 @@ interface ProjectsApi {
     )
     @RequestMapping(method = [RequestMethod.DELETE], value = ["/projects/{projectId}"])
     suspend fun deleteProject(
-        @Parameter(description = "项目ID", required = true)
+        @Parameter(description = "The unique identifier of the project.", required = true)
         @PathVariable("projectId")
         projectId: kotlin.Long
     ): ResponseEntity<Unit> {
@@ -81,7 +83,7 @@ interface ProjectsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Projects"],
         summary = "Remove Project Member",
         operationId = "deleteProjectMember",
         description = """""",
@@ -93,7 +95,7 @@ interface ProjectsApi {
         value = ["/projects/{projectId}/members/{userId}"],
     )
     suspend fun deleteProjectMember(
-        @Parameter(description = "项目ID", required = true)
+        @Parameter(description = "The unique identifier of the project.", required = true)
         @PathVariable("projectId")
         projectId: kotlin.Long,
         @Parameter(description = "用户ID", required = true)
@@ -104,7 +106,7 @@ interface ProjectsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Projects"],
         summary = "Query Project",
         operationId = "getProject",
         description = """""",
@@ -125,7 +127,7 @@ interface ProjectsApi {
         produces = ["application/json"],
     )
     suspend fun getProject(
-        @Parameter(description = "项目ID", required = true)
+        @Parameter(description = "The unique identifier of the project.", required = true)
         @PathVariable("projectId")
         projectId: kotlin.Long
     ): ResponseEntity<GetProject200ResponseDTO> {
@@ -133,7 +135,7 @@ interface ProjectsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Projects"],
         summary = "Enumerate Project Members",
         operationId = "getProjectMembers",
         description = """""",
@@ -159,23 +161,28 @@ interface ProjectsApi {
         produces = ["application/json"],
     )
     suspend fun getProjectMembers(
-        @Parameter(description = "项目ID", required = true)
+        @Parameter(description = "The unique identifier of the project.", required = true)
         @PathVariable("projectId")
         projectId: kotlin.Long,
-        @Parameter(description = "起始ID")
+        @Parameter(description = "The ID of the first item in the page.")
         @Valid
-        @RequestParam(value = "page_start", required = false)
+        @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.Long?,
-        @Parameter(description = "每页数量 (默认20)", schema = Schema(defaultValue = "20"))
+        @Min(1)
+        @Max(100)
+        @Parameter(
+            description = "The number of items per page.",
+            schema = Schema(defaultValue = "20"),
+        )
         @Valid
-        @RequestParam(value = "page_size", required = false, defaultValue = "20")
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
         pageSize: kotlin.Int,
     ): ResponseEntity<GetProjectMembers200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Projects"],
         summary = "List Projects",
         operationId = "getProjects",
         description = """""",
@@ -226,7 +233,7 @@ interface ProjectsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Projects"],
         summary = "Update Project",
         operationId = "patchProject",
         description = """""",
@@ -248,7 +255,7 @@ interface ProjectsApi {
         consumes = ["application/json"],
     )
     suspend fun patchProject(
-        @Parameter(description = "项目ID", required = true)
+        @Parameter(description = "The unique identifier of the project.", required = true)
         @PathVariable("projectId")
         projectId: kotlin.Long,
         @Parameter(description = "", required = true)
@@ -260,7 +267,7 @@ interface ProjectsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Projects"],
         summary = "Add Project Member",
         operationId = "postProjectMember",
         description = """""",
@@ -287,7 +294,7 @@ interface ProjectsApi {
         consumes = ["application/json"],
     )
     suspend fun postProjectMember(
-        @Parameter(description = "项目ID", required = true)
+        @Parameter(description = "The unique identifier of the project.", required = true)
         @PathVariable("projectId")
         projectId: kotlin.Long,
         @Parameter(description = "", required = true)

@@ -12,11 +12,8 @@ import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
-import org.rucca.cheese.model.ApplicationStatusDTO
 import org.rucca.cheese.model.GetUserIdentity200ResponseDTO
 import org.rucca.cheese.model.GetUserIdentityAccessLogs200ResponseDTO
-import org.rucca.cheese.model.ListMyInvitations200ResponseDTO
-import org.rucca.cheese.model.ListMyJoinRequests200ResponseDTO
 import org.rucca.cheese.model.PutUserIdentity200ResponseDTO
 import org.rucca.cheese.model.PutUserIdentityRequestDTO
 import org.springframework.http.HttpStatus
@@ -29,80 +26,7 @@ import org.springframework.web.bind.annotation.*
 interface UsersApi {
 
     @Operation(
-        tags = ["default"],
-        summary = "Accept a team invitation",
-        operationId = "acceptTeamInvitation",
-        description =
-            """Allows the authenticated user to accept a pending team invitation. Creates the team membership upon success.""",
-        responses =
-            [
-                ApiResponse(
-                    responseCode = "204",
-                    description = "Invitation accepted successfully and membership created.",
-                )
-            ],
-        security = [SecurityRequirement(name = "BearerAuth")],
-    )
-    @RequestMapping(
-        method = [RequestMethod.POST],
-        value = ["/users/me/team-invitations/{invitationId}/accept"],
-    )
-    suspend fun acceptTeamInvitation(
-        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
-        @Parameter(description = "The unique identifier of the invitation.", required = true)
-        @PathVariable("invitationId")
-        invitationId: kotlin.Long,
-    ): ResponseEntity<Unit> {
-        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
-    }
-
-    @Operation(
-        tags = ["default"],
-        summary = "Cancel my pending join request",
-        operationId = "cancelMyJoinRequest",
-        description =
-            """Allows the authenticated user to cancel a join request they initiated, provided it's still pending.""",
-        responses =
-            [ApiResponse(responseCode = "204", description = "Request cancelled successfully.")],
-        security = [SecurityRequirement(name = "BearerAuth")],
-    )
-    @RequestMapping(
-        method = [RequestMethod.DELETE],
-        value = ["/users/me/team-requests/{requestId}"],
-    )
-    suspend fun cancelMyJoinRequest(
-        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
-        @Parameter(description = "The unique identifier of the join request.", required = true)
-        @PathVariable("requestId")
-        requestId: kotlin.Long,
-    ): ResponseEntity<Unit> {
-        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
-    }
-
-    @Operation(
-        tags = ["default"],
-        summary = "Decline a team invitation",
-        operationId = "declineTeamInvitation",
-        description = """Allows the authenticated user to decline a pending team invitation.""",
-        responses =
-            [ApiResponse(responseCode = "204", description = "Invitation declined successfully.")],
-        security = [SecurityRequirement(name = "BearerAuth")],
-    )
-    @RequestMapping(
-        method = [RequestMethod.POST],
-        value = ["/users/me/team-invitations/{invitationId}/decline"],
-    )
-    suspend fun declineTeamInvitation(
-        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
-        @Parameter(description = "The unique identifier of the invitation.", required = true)
-        @PathVariable("invitationId")
-        invitationId: kotlin.Long,
-    ): ResponseEntity<Unit> {
-        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
-    }
-
-    @Operation(
-        tags = ["default"],
+        tags = ["Users"],
         summary = "Get User Real Name Identity Info",
         operationId = "getUserIdentity",
         description = """""",
@@ -144,7 +68,7 @@ interface UsersApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Users"],
         summary = "Get User Real Name Identity Access Logs",
         operationId = "getUserIdentityAccessLogs",
         description = """""",
@@ -177,132 +101,25 @@ interface UsersApi {
         @Parameter(description = "The unique identifier of the user.", required = true)
         @PathVariable("userId")
         userId: kotlin.Long,
-        @Parameter(description = "Page Size")
+        @Parameter(description = "The ID of the first item in the page.")
         @Valid
-        @RequestParam(value = "page_size", required = false)
-        pageSize: kotlin.Long?,
-        @Parameter(description = "ID of First Element")
-        @Valid
-        @RequestParam(value = "page_start", required = false)
+        @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.Long?,
+        @Min(1)
+        @Max(100)
+        @Parameter(
+            description = "The number of items per page.",
+            schema = Schema(defaultValue = "20"),
+        )
+        @Valid
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
+        pageSize: kotlin.Int,
     ): ResponseEntity<GetUserIdentityAccessLogs200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags = ["default"],
-        summary = "List invitations received",
-        operationId = "listMyInvitations",
-        description = """Retrieves a list of invitations received by the authenticated user.""",
-        responses =
-            [
-                ApiResponse(
-                    responseCode = "200",
-                    description = "A list of invitations received by the user.",
-                    content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(implementation = ListMyInvitations200ResponseDTO::class)
-                            )
-                        ],
-                )
-            ],
-        security = [SecurityRequirement(name = "BearerAuth")],
-    )
-    @RequestMapping(
-        method = [RequestMethod.GET],
-        value = ["/users/me/team-invitations"],
-        produces = ["application/json"],
-    )
-    suspend fun listMyInvitations(
-        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
-        @Parameter(
-            description = "Filter invitations by status (e.g., PENDING).",
-            schema =
-                Schema(
-                    allowableValues =
-                        ["PENDING", "APPROVED", "REJECTED", "ACCEPTED", "DECLINED", "CANCELED"]
-                ),
-        )
-        @Valid
-        @RequestParam(value = "status", required = false)
-        status: ApplicationStatusDTO?,
-        @Parameter(description = "The ID of the first item in the page.")
-        @Valid
-        @RequestParam(value = "pageStart", required = false)
-        pageStart: kotlin.Long?,
-        @Min(1L)
-        @Max(100L)
-        @Parameter(
-            description = "The number of items per page.",
-            schema = Schema(defaultValue = "20L"),
-        )
-        @Valid
-        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
-        pageSize: kotlin.Long,
-    ): ResponseEntity<ListMyInvitations200ResponseDTO> {
-        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
-    }
-
-    @Operation(
-        tags = ["default"],
-        summary = "List my join requests",
-        operationId = "listMyJoinRequests",
-        description = """Retrieves a list of join requests initiated by the authenticated user.""",
-        responses =
-            [
-                ApiResponse(
-                    responseCode = "200",
-                    description = "A list of the user's join requests.",
-                    content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(implementation = ListMyJoinRequests200ResponseDTO::class)
-                            )
-                        ],
-                )
-            ],
-        security = [SecurityRequirement(name = "BearerAuth")],
-    )
-    @RequestMapping(
-        method = [RequestMethod.GET],
-        value = ["/users/me/team-requests"],
-        produces = ["application/json"],
-    )
-    suspend fun listMyJoinRequests(
-        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
-        @Parameter(
-            description = "Filter requests by status.",
-            schema =
-                Schema(
-                    allowableValues =
-                        ["PENDING", "APPROVED", "REJECTED", "ACCEPTED", "DECLINED", "CANCELED"]
-                ),
-        )
-        @Valid
-        @RequestParam(value = "status", required = false)
-        status: ApplicationStatusDTO?,
-        @Parameter(description = "The ID of the first item in the page.")
-        @Valid
-        @RequestParam(value = "pageStart", required = false)
-        pageStart: kotlin.Long?,
-        @Min(1L)
-        @Max(100L)
-        @Parameter(
-            description = "The number of items per page.",
-            schema = Schema(defaultValue = "20L"),
-        )
-        @Valid
-        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
-        pageSize: kotlin.Long,
-    ): ResponseEntity<ListMyJoinRequests200ResponseDTO> {
-        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
-    }
-
-    @Operation(
-        tags = ["default"],
+        tags = ["Users"],
         summary = "Update User Real Name Identity Info",
         operationId = "patchUserIdentity",
         description = """""",
@@ -342,7 +159,7 @@ interface UsersApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Users"],
         summary = "Update User Real Name Identity Info",
         operationId = "putUserIdentity",
         description = """""",

@@ -38,9 +38,9 @@ class TeamController(
     private val logger = LoggerFactory.getLogger(TeamController::class.java)
 
     @Auth("team:delete:team") // Requires OWNER role
-    override suspend fun deleteTeam(@ResourceId teamId: Long): ResponseEntity<CommonResponseDTO> {
+    override suspend fun deleteTeam(@ResourceId teamId: Long): ResponseEntity<Unit> {
         teamService.deleteTeam(teamId)
-        return ResponseEntity.ok(CommonResponseDTO(200, "OK"))
+        return ResponseEntity.noContent().build()
     }
 
     @Auth(
@@ -52,7 +52,7 @@ class TeamController(
     ): ResponseEntity<GetTeam200ResponseDTO> {
         // Service needs to internally get the initiator ID via authenticateService
         teamService.removeTeamMember(teamId, userId /* initiatorId resolved in service */)
-        val teamDTO = teamService.`getTeamDto`(teamId, jwtService.getCurrentUserId())
+        val teamDTO = teamService.getTeamDto(teamId, jwtService.getCurrentUserId())
         return ResponseEntity.ok(
             GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK")
         )
@@ -264,7 +264,7 @@ class TeamController(
         @AuthContext("teamId") teamId: Long,
         status: ApplicationStatusDTO?,
         pageStart: Long?,
-        pageSize: Long,
+        pageSize: Int,
     ): ResponseEntity<ListTeamInvitations200ResponseDTO> {
         val currentUserId = jwtService.getCurrentUserId()
         val (invitations, pageDto) =
@@ -273,7 +273,7 @@ class TeamController(
                 teamId = teamId,
                 status = status?.toEnum(),
                 cursorId = pageStart,
-                pageSize = pageSize.toInt(),
+                pageSize = pageSize,
             )
         return ResponseEntity.ok(
             ListTeamInvitations200ResponseDTO(
@@ -290,7 +290,7 @@ class TeamController(
         @AuthContext("teamId") teamId: Long,
         status: ApplicationStatusDTO?,
         pageStart: Long?,
-        pageSize: Long,
+        pageSize: Int,
     ): ResponseEntity<ListTeamJoinRequests200ResponseDTO> {
         val currentUserId = jwtService.getCurrentUserId()
         val (applications, pageDto) =
@@ -299,7 +299,7 @@ class TeamController(
                 teamId = teamId,
                 status = status?.toEnum(),
                 cursorId = pageStart,
-                pageSize = pageSize.toInt(),
+                pageSize = pageSize,
             )
         return ResponseEntity.ok(
             ListTeamJoinRequests200ResponseDTO(
@@ -324,5 +324,84 @@ class TeamController(
             teamMembershipService.rejectTeamJoinRequest(currentUserId, teamId, requestId)
         }
         return ResponseEntity.noContent().build()
+    }
+
+    @Auth
+    override suspend fun acceptTeamInvitation(
+        @AuthUser userInfo: AuthUserInfo?,
+        invitationId: Long,
+    ): ResponseEntity<Unit> {
+        withContext(Dispatchers.IO) {
+            teamMembershipService.acceptTeamInvitation(userInfo!!.userId, invitationId)
+        }
+        return ResponseEntity.noContent().build()
+    }
+
+    @Auth
+    override suspend fun cancelMyJoinRequest(
+        @AuthUser userInfo: AuthUserInfo?,
+        requestId: Long,
+    ): ResponseEntity<Unit> {
+        withContext(Dispatchers.IO) {
+            teamMembershipService.cancelMyJoinRequest(userInfo!!.userId, requestId)
+        }
+        return ResponseEntity.noContent().build()
+    }
+
+    @Auth
+    override suspend fun declineTeamInvitation(
+        @AuthUser userInfo: AuthUserInfo?,
+        invitationId: Long,
+    ): ResponseEntity<Unit> {
+        withContext(Dispatchers.IO) {
+            teamMembershipService.declineTeamInvitation(userInfo!!.userId, invitationId)
+        }
+        return ResponseEntity.noContent().build()
+    }
+
+    @Auth
+    override suspend fun listMyInvitations(
+        @AuthUser userInfo: AuthUserInfo?,
+        status: ApplicationStatusDTO?,
+        pageStart: Long?,
+        pageSize: Int,
+    ): ResponseEntity<ListMyInvitations200ResponseDTO> {
+        val (invitations, pageDto) =
+            teamMembershipService.listMyInvitations(
+                userId = userInfo!!.userId,
+                status = status?.toEnum(),
+                cursorId = pageStart,
+                pageSize = pageSize.toInt().coerceIn(1, 100),
+            )
+        return ResponseEntity.ok(
+            ListMyInvitations200ResponseDTO(
+                code = 200,
+                data = ListMyInvitations200ResponseDataDTO(invitations, pageDto),
+                message = "Success",
+            )
+        )
+    }
+
+    @Auth
+    override suspend fun listMyJoinRequests(
+        @AuthUser userInfo: AuthUserInfo?,
+        status: ApplicationStatusDTO?,
+        pageStart: Long?,
+        pageSize: Int,
+    ): ResponseEntity<ListMyJoinRequests200ResponseDTO> {
+        val (requests, pageDto) =
+            teamMembershipService.listMyJoinRequests(
+                userId = userInfo!!.userId,
+                status = status?.toEnum(),
+                cursorId = pageStart,
+                pageSize = pageSize.toInt().coerceIn(1, 100),
+            )
+        return ResponseEntity.ok(
+            ListMyJoinRequests200ResponseDTO(
+                code = 200,
+                data = ListMyJoinRequests200ResponseDataDTO(requests, pageDto),
+                message = "Success",
+            )
+        )
     }
 }

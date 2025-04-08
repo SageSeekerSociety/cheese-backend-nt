@@ -55,20 +55,18 @@ class SpaceController(
     }
 
     @Guard("delete", "space")
-    override suspend fun deleteSpace(
-        @ResourceId spaceId: Long
-    ): ResponseEntity<DeleteSpace200ResponseDTO> {
+    override suspend fun deleteSpace(@ResourceId spaceId: Long): ResponseEntity<Unit> {
         withContext(Dispatchers.IO) { spaceService.deleteSpace(spaceId) }
-        return ResponseEntity.ok(DeleteSpace200ResponseDTO(200, "OK"))
+        return ResponseEntity.noContent().build()
     }
 
     @Guard("remove-admin", "space")
     override suspend fun deleteSpaceAdmin(
         @ResourceId spaceId: Long,
         userId: Long,
-    ): ResponseEntity<DeleteSpace200ResponseDTO> {
+    ): ResponseEntity<Unit> {
         withContext(Dispatchers.IO) { spaceService.removeSpaceAdmin(spaceId, userId) }
-        return ResponseEntity.ok(DeleteSpace200ResponseDTO(200, "OK"))
+        return ResponseEntity.noContent().build()
     }
 
     @Guard("query", "space")
@@ -100,8 +98,8 @@ class SpaceController(
     @Guard("enumerate", "space")
     override suspend fun getSpaces(
         queryMyRank: Boolean,
-        pageSize: Int?,
         pageStart: Long?,
+        pageSize: Int,
         sortBy: String,
         sortOrder: String,
     ): ResponseEntity<GetSpaces200ResponseDTO> {

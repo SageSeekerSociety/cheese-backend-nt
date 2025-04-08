@@ -870,7 +870,7 @@ constructor(
     fun `test enumerate spaces default pagination and sorting`() { // Renamed
         webTestClient
             .get()
-            .uri { builder -> builder.path("/spaces").queryParam("page_size", 5).build() }
+            .uri { builder -> builder.path("/spaces").queryParam("pageSize", 5).build() }
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
             .expectStatus()
@@ -920,7 +920,7 @@ constructor(
                     .path("/spaces")
                     .queryParam("sort_by", "updatedAt")
                     .queryParam("sort_order", "desc")
-                    .queryParam("page_size", 4)
+                    .queryParam("pageSize", 4)
                     .build()
             }
             .header("Authorization", "Bearer $creatorToken")
@@ -970,12 +970,12 @@ constructor(
                 builder
                     .path("/spaces")
                     .queryParam(
-                        "page_start",
+                        "pageStart",
                         spaceIdOfLast,
                     ) // Start after this ID (exclusive) if cursor based
                     .queryParam("sort_by", "updatedAt")
                     .queryParam("sort_order", "desc") // Keep same sort
-                    .queryParam("page_size", 1)
+                    .queryParam("pageSize", 1)
                     .build()
             }
             .header("Authorization", "Bearer $creatorToken")
@@ -1187,9 +1187,7 @@ constructor(
             ) // Creator is owner again after test 110
             .exchange()
             .expectStatus()
-            .isOk // Assuming OK is returned on successful deletion
-        // Check response body if the API returns one, otherwise just check status
-        // .expectBody<DeleteSpace200ResponseDTO>() // Or whatever the API returns
+            .isNoContent
 
         // Verify removal by getting the space again
         webTestClient
@@ -1237,13 +1235,7 @@ constructor(
             .exchange()
             // Check status - Delete might return 200 OK, 204 No Content, or 202 Accepted
             .expectStatus()
-            .isOk // Assuming 200 OK based on original DTO name DeleteSpace200ResponseDTO
-            // Optionally check response body if API returns one
-            .expectBody<DeleteSpace200ResponseDTO>()
-            .value { response ->
-                assertEquals(200, response.code) // Assuming DTO has code/message
-                assertEquals("OK", response.message)
-            }
+            .isNoContent
 
         // Verify deletion by trying to get the space again
         webTestClient

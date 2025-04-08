@@ -10,14 +10,15 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
+import javax.validation.constraints.Max
+import javax.validation.constraints.Min
 import javax.validation.constraints.NotNull
 import kotlin.collections.List
+import org.rucca.cheese.model.CreateKnowledge200ResponseDTO
+import org.rucca.cheese.model.CreateKnowledgeRequestDTO
 import org.rucca.cheese.model.KnowledgeDelete200ResponseDTO
-import org.rucca.cheese.model.KnowledgeGet200ResponseDTO
 import org.rucca.cheese.model.KnowledgeGetById200ResponseDTO
-import org.rucca.cheese.model.KnowledgeGetById404ResponseDTO
-import org.rucca.cheese.model.KnowledgePost200ResponseDTO
-import org.rucca.cheese.model.KnowledgePostRequestDTO
+import org.rucca.cheese.model.ListKnowledge200ResponseDTO
 import org.rucca.cheese.model.UpdateKnowledge200ResponseDTO
 import org.rucca.cheese.model.UpdateKnowledgeRequestDTO
 import org.springframework.http.HttpStatus
@@ -27,10 +28,46 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @Validated
-interface KnowledgesApi {
+interface KnowledgeApi {
 
     @Operation(
-        tags = ["default"],
+        tags = ["Knowledge"],
+        summary = "Create Knowledge Item",
+        operationId = "createKnowledge",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "OK",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(implementation = CreateKnowledge200ResponseDTO::class)
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "BearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.POST],
+        value = ["/knowledge"],
+        produces = ["application/json"],
+        consumes = ["application/json"],
+    )
+    suspend fun createKnowledge(
+        @Parameter(description = "", required = true)
+        @Valid
+        @RequestBody
+        createKnowledgeRequestDTO: CreateKnowledgeRequestDTO
+    ): ResponseEntity<CreateKnowledge200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Knowledge"],
         summary = "Delete Knowledge Item",
         operationId = "knowledgeDelete",
         description = """""",
@@ -52,7 +89,7 @@ interface KnowledgesApi {
     )
     @RequestMapping(
         method = [RequestMethod.DELETE],
-        value = ["/knowledges/{knowledgeId}"],
+        value = ["/knowledge/{knowledgeId}"],
         produces = ["application/json"],
     )
     suspend fun knowledgeDelete(
@@ -64,9 +101,43 @@ interface KnowledgesApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Knowledge"],
+        summary = "Get Single Knowledge Item",
+        operationId = "knowledgeGetById",
+        description = """""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "Successful retrieval of a knowledge item",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(implementation = KnowledgeGetById200ResponseDTO::class)
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "BearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/knowledge/{knowledgeId}"],
+        produces = ["application/json"],
+    )
+    suspend fun knowledgeGetById(
+        @Parameter(description = "Knowledge Item ID", required = true)
+        @PathVariable("knowledgeId")
+        knowledgeId: kotlin.Long
+    ): ResponseEntity<KnowledgeGetById200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Knowledge"],
         summary = "List Knowledge Items",
-        operationId = "knowledgeGet",
+        operationId = "listKnowledge",
         description = """""",
         responses =
             [
@@ -76,7 +147,7 @@ interface KnowledgesApi {
                     content =
                         [
                             Content(
-                                schema = Schema(implementation = KnowledgeGet200ResponseDTO::class)
+                                schema = Schema(implementation = ListKnowledge200ResponseDTO::class)
                             )
                         ],
                 )
@@ -85,10 +156,10 @@ interface KnowledgesApi {
     )
     @RequestMapping(
         method = [RequestMethod.GET],
-        value = ["/knowledges"],
+        value = ["/knowledge"],
         produces = ["application/json"],
     )
-    suspend fun knowledgeGet(
+    suspend fun listKnowledge(
         @NotNull
         @Parameter(description = "", required = true)
         @Valid
@@ -110,13 +181,18 @@ interface KnowledgesApi {
         @Valid
         @RequestParam(value = "query", required = false)
         query: kotlin.String?,
-        @Parameter(description = "Start ID (optional)")
+        @Parameter(description = "The ID of the first item in the page.")
         @Valid
-        @RequestParam(value = "page_start", required = false)
+        @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.Long?,
-        @Parameter(description = "Page size (default 20)", schema = Schema(defaultValue = "20"))
+        @Min(1)
+        @Max(100)
+        @Parameter(
+            description = "The number of items per page.",
+            schema = Schema(defaultValue = "20"),
+        )
         @Valid
-        @RequestParam(value = "page_size", required = false, defaultValue = "20")
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
         pageSize: kotlin.Int,
         @Parameter(description = "Sort by (optional)", schema = Schema(defaultValue = "createdAt"))
         @Valid
@@ -126,92 +202,12 @@ interface KnowledgesApi {
         @Valid
         @RequestParam(value = "sort_order", required = false, defaultValue = "desc")
         sortOrder: kotlin.String,
-    ): ResponseEntity<KnowledgeGet200ResponseDTO> {
+    ): ResponseEntity<ListKnowledge200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags = ["default"],
-        summary = "Get Single Knowledge Item",
-        operationId = "knowledgeGetById",
-        description = """""",
-        responses =
-            [
-                ApiResponse(
-                    responseCode = "200",
-                    description = "Successful retrieval of a knowledge item",
-                    content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(implementation = KnowledgeGetById200ResponseDTO::class)
-                            )
-                        ],
-                ),
-                ApiResponse(
-                    responseCode = "404",
-                    description = "Knowledge item not found",
-                    content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(implementation = KnowledgeGetById404ResponseDTO::class)
-                            )
-                        ],
-                ),
-            ],
-        security = [SecurityRequirement(name = "BearerAuth")],
-    )
-    @RequestMapping(
-        method = [RequestMethod.GET],
-        value = ["/knowledges/{knowledgeId}"],
-        produces = ["application/json"],
-    )
-    suspend fun knowledgeGetById(
-        @Parameter(description = "Knowledge item ID", required = true)
-        @PathVariable("knowledgeId")
-        knowledgeId: kotlin.Long
-    ): ResponseEntity<KnowledgeGetById200ResponseDTO> {
-        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
-    }
-
-    @Operation(
-        tags = ["default"],
-        summary = "Create Knowledge Item",
-        operationId = "knowledgePost",
-        description = """""",
-        responses =
-            [
-                ApiResponse(
-                    responseCode = "200",
-                    description = "OK",
-                    content =
-                        [
-                            Content(
-                                schema = Schema(implementation = KnowledgePost200ResponseDTO::class)
-                            )
-                        ],
-                )
-            ],
-        security = [SecurityRequirement(name = "BearerAuth")],
-    )
-    @RequestMapping(
-        method = [RequestMethod.POST],
-        value = ["/knowledges"],
-        produces = ["application/json"],
-        consumes = ["application/json"],
-    )
-    suspend fun knowledgePost(
-        @Parameter(description = "", required = true)
-        @Valid
-        @RequestBody
-        knowledgePostRequestDTO: KnowledgePostRequestDTO
-    ): ResponseEntity<KnowledgePost200ResponseDTO> {
-        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
-    }
-
-    @Operation(
-        tags = ["default"],
+        tags = ["Knowledge"],
         summary = "Remove Upvote from Knowledge Item",
         operationId = "removeUpvoteKnowledge",
         description = """""",
@@ -233,7 +229,7 @@ interface KnowledgesApi {
     )
     @RequestMapping(
         method = [RequestMethod.DELETE],
-        value = ["/knowledges/{knowledgeId}/upvote"],
+        value = ["/knowledge/{knowledgeId}/upvote"],
         produces = ["application/json"],
     )
     suspend fun removeUpvoteKnowledge(
@@ -245,7 +241,7 @@ interface KnowledgesApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Knowledge"],
         summary = "Update Knowledge Item",
         operationId = "updateKnowledge",
         description = """""",
@@ -267,7 +263,7 @@ interface KnowledgesApi {
     )
     @RequestMapping(
         method = [RequestMethod.PATCH],
-        value = ["/knowledges/{knowledgeId}"],
+        value = ["/knowledge/{knowledgeId}"],
         produces = ["application/json"],
         consumes = ["application/json"],
     )
@@ -284,7 +280,7 @@ interface KnowledgesApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Knowledge"],
         summary = "Upvote Knowledge Item",
         operationId = "upvoteKnowledge",
         description = """""",
@@ -306,7 +302,7 @@ interface KnowledgesApi {
     )
     @RequestMapping(
         method = [RequestMethod.POST],
-        value = ["/knowledges/{knowledgeId}/upvote"],
+        value = ["/knowledge/{knowledgeId}/upvote"],
         produces = ["application/json"],
     )
     suspend fun upvoteKnowledge(

@@ -10,15 +10,15 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
+import javax.validation.constraints.Max
+import javax.validation.constraints.Min
 import javax.validation.constraints.NotNull
 import kotlin.collections.List
 import org.rucca.cheese.model.ApproveTypeDTO
-import org.rucca.cheese.model.CommonResponseDTO
 import org.rucca.cheese.model.CreateTaskAIAdviceConversationRequestDTO
 import org.rucca.cheese.model.CreateTaskAiAdviceConversation200ResponseDTO
 import org.rucca.cheese.model.GetTask200ResponseDTO
 import org.rucca.cheese.model.GetTaskAiAdvice200ResponseDTO
-import org.rucca.cheese.model.GetTaskAiAdvice400ResponseDTO
 import org.rucca.cheese.model.GetTaskAiAdviceConversation200ResponseDTO
 import org.rucca.cheese.model.GetTaskAiAdviceConversationsGrouped200ResponseDTO
 import org.rucca.cheese.model.GetTaskAiAdviceStatus200ResponseDTO
@@ -50,7 +50,7 @@ import org.springframework.web.bind.annotation.*
 interface TasksApi {
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Create AI Advice Conversation",
         operationId = "createTaskAiAdviceConversation",
         description = """""",
@@ -80,7 +80,9 @@ interface TasksApi {
         consumes = ["application/json"],
     )
     suspend fun createTaskAiAdviceConversation(
-        @Parameter(description = "", required = true) @PathVariable("taskId") taskId: kotlin.Long,
+        @Parameter(description = "The unique identifier of the task.", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
         @Parameter(description = "", required = true)
         @Valid
         @RequestBody
@@ -90,35 +92,24 @@ interface TasksApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Delete Task",
         operationId = "deleteTask",
         description = """""",
-        responses =
-            [
-                ApiResponse(
-                    responseCode = "200",
-                    description = "OK",
-                    content = [Content(schema = Schema(implementation = CommonResponseDTO::class))],
-                )
-            ],
+        responses = [ApiResponse(responseCode = "204", description = "Deleted successfully.")],
         security = [SecurityRequirement(name = "BearerAuth")],
     )
-    @RequestMapping(
-        method = [RequestMethod.DELETE],
-        value = ["/tasks/{taskId}"],
-        produces = ["application/json"],
-    )
+    @RequestMapping(method = [RequestMethod.DELETE], value = ["/tasks/{taskId}"])
     suspend fun deleteTask(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long
-    ): ResponseEntity<CommonResponseDTO> {
+    ): ResponseEntity<Unit> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Delete AI Advice Conversation",
         operationId = "deleteTaskAiAdviceConversation",
         description = """""",
@@ -130,7 +121,9 @@ interface TasksApi {
         value = ["/tasks/{taskId}/ai-advice/conversations/{conversationId}"],
     )
     suspend fun deleteTaskAiAdviceConversation(
-        @Parameter(description = "", required = true) @PathVariable("taskId") taskId: kotlin.Long,
+        @Parameter(description = "The unique identifier of the task.", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
         @Parameter(description = "", required = true)
         @PathVariable("conversationId")
         conversationId: kotlin.String,
@@ -139,7 +132,7 @@ interface TasksApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Delete TaskMembership",
         operationId = "deleteTaskParticipant",
         description = """""",
@@ -151,10 +144,10 @@ interface TasksApi {
         value = ["/tasks/{taskId}/participants/{participantId}"],
     )
     suspend fun deleteTaskParticipant(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
-        @Parameter(description = "Member ID", required = true)
+        @Parameter(description = "Participant ID", required = true)
         @PathVariable("participantId")
         participantId: kotlin.Long,
     ): ResponseEntity<Unit> {
@@ -162,7 +155,7 @@ interface TasksApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Leave Task By Member ID",
         operationId = "deleteTaskParticipantByMember",
         description = """""",
@@ -171,7 +164,7 @@ interface TasksApi {
     )
     @RequestMapping(method = [RequestMethod.DELETE], value = ["/tasks/{taskId}/participants"])
     suspend fun deleteTaskParticipantByMember(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @NotNull
@@ -184,7 +177,7 @@ interface TasksApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Revert Review Submission",
         operationId = "deleteTaskSubmissionReview",
         description = """""",
@@ -196,7 +189,7 @@ interface TasksApi {
         value = ["/tasks/{taskId}/participants/{participantId}/submissions/{submissionId}/review"],
     )
     suspend fun deleteTaskSubmissionReview(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @Parameter(description = "Submitters' TaskMembership ID", required = true)
@@ -210,7 +203,7 @@ interface TasksApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Query Task",
         operationId = "getTask",
         description = """""",
@@ -231,7 +224,7 @@ interface TasksApi {
         produces = ["application/json"],
     )
     suspend fun getTask(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @Parameter(
@@ -287,7 +280,7 @@ interface TasksApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Get AI Advice",
         operationId = "getTaskAiAdvice",
         description = """""",
@@ -303,18 +296,7 @@ interface TasksApi {
                                     Schema(implementation = GetTaskAiAdvice200ResponseDTO::class)
                             )
                         ],
-                ),
-                ApiResponse(
-                    responseCode = "400",
-                    description = "Bad Request",
-                    content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(implementation = GetTaskAiAdvice400ResponseDTO::class)
-                            )
-                        ],
-                ),
+                )
             ],
         security = [SecurityRequirement(name = "BearerAuth")],
     )
@@ -324,7 +306,7 @@ interface TasksApi {
         produces = ["application/json"],
     )
     suspend fun getTaskAiAdvice(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long
     ): ResponseEntity<GetTaskAiAdvice200ResponseDTO> {
@@ -332,10 +314,10 @@ interface TasksApi {
     }
 
     @Operation(
-        tags = ["Task AI Advice"],
-        summary = "获取指定会话ID的所有对话",
+        tags = ["Tasks"],
+        summary = "Get AI Advice Conversation",
         operationId = "getTaskAiAdviceConversation",
-        description = """获取特定会话ID下的所有对话记录""",
+        description = """Get AI Advice Conversation""",
         responses =
             [
                 ApiResponse(
@@ -361,7 +343,9 @@ interface TasksApi {
         produces = ["application/json"],
     )
     suspend fun getTaskAiAdviceConversation(
-        @Parameter(description = "", required = true) @PathVariable("taskId") taskId: kotlin.Long,
+        @Parameter(description = "The unique identifier of the task.", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long,
         @Parameter(description = "", required = true)
         @PathVariable("conversationId")
         conversationId: kotlin.String,
@@ -370,10 +354,11 @@ interface TasksApi {
     }
 
     @Operation(
-        tags = ["Task AI Advice"],
-        summary = "获取按会话ID分组的对话历史",
+        tags = ["Tasks"],
+        summary = "Get AI Advice Conversations Grouped by Conversation ID",
         operationId = "getTaskAiAdviceConversationsGrouped",
-        description = """获取指定任务的所有对话，按会话ID分组""",
+        description =
+            """Retrieves AI advice conversations grouped by conversation ID for a specific task.""",
         responses =
             [
                 ApiResponse(
@@ -399,13 +384,15 @@ interface TasksApi {
         produces = ["application/json"],
     )
     suspend fun getTaskAiAdviceConversationsGrouped(
-        @Parameter(description = "", required = true) @PathVariable("taskId") taskId: kotlin.Long
+        @Parameter(description = "The unique identifier of the task.", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long
     ): ResponseEntity<GetTaskAiAdviceConversationsGrouped200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Get AI Advice Generation Status",
         operationId = "getTaskAiAdviceStatus",
         description = """""",
@@ -433,7 +420,7 @@ interface TasksApi {
         produces = ["application/json"],
     )
     suspend fun getTaskAiAdviceStatus(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long
     ): ResponseEntity<GetTaskAiAdviceStatus200ResponseDTO> {
@@ -441,7 +428,7 @@ interface TasksApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Get TaskMembership",
         operationId = "getTaskParticipant",
         description = """""",
@@ -467,7 +454,7 @@ interface TasksApi {
         produces = ["application/json"],
     )
     suspend fun getTaskParticipant(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @Parameter(description = "Participant ID", required = true)
@@ -478,7 +465,7 @@ interface TasksApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Get Participants",
         operationId = "getTaskParticipants",
         description = """""",
@@ -506,7 +493,7 @@ interface TasksApi {
         produces = ["application/json"],
     )
     suspend fun getTaskParticipants(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @Parameter(
@@ -525,7 +512,7 @@ interface TasksApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Enumerate Submissions",
         operationId = "getTaskSubmissions",
         description = """""",
@@ -551,7 +538,7 @@ interface TasksApi {
         produces = ["application/json"],
     )
     suspend fun getTaskSubmissions(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @Parameter(description = "Submitters' TaskMembership ID", required = true)
@@ -572,14 +559,19 @@ interface TasksApi {
         @Valid
         @RequestParam(value = "reviewed", required = false)
         reviewed: kotlin.Boolean?,
-        @Parameter(description = "Page Size", schema = Schema(defaultValue = "9"))
+        @Parameter(description = "The ID of the first item in the page.")
         @Valid
-        @RequestParam(value = "page_size", required = false, defaultValue = "9")
-        pageSize: kotlin.Int,
-        @Parameter(description = "ID of First Element")
-        @Valid
-        @RequestParam(value = "page_start", required = false)
+        @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.Long?,
+        @Min(1)
+        @Max(100)
+        @Parameter(
+            description = "The number of items per page.",
+            schema = Schema(defaultValue = "20"),
+        )
+        @Valid
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
+        pageSize: kotlin.Int,
         @Parameter(
             description = "\"updatedAt\" or \"createdAt\"",
             schema = Schema(defaultValue = "updatedAt"),
@@ -624,7 +616,7 @@ The teams can be filtered based on eligibility criteria.
         produces = ["application/json"],
     )
     suspend fun getTaskTeams(
-        @Parameter(description = "The ID of the task", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @Parameter(
@@ -640,7 +632,7 @@ The teams can be filtered based on eligibility criteria.
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Enumerate Tasks",
         operationId = "getTasks",
         description = """""",
@@ -689,14 +681,19 @@ The teams can be filtered based on eligibility criteria.
         @Valid
         @RequestParam(value = "topics", required = false)
         topics: kotlin.collections.List<kotlin.Long>?,
-        @Parameter(description = "Page Size", schema = Schema(defaultValue = "9"))
+        @Parameter(description = "The ID of the first item in the page.")
         @Valid
-        @RequestParam(value = "page_size", required = false, defaultValue = "9")
-        pageSize: kotlin.Int,
-        @Parameter(description = "ID of First Element")
-        @Valid
-        @RequestParam(value = "page_start", required = false)
+        @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.Long?,
+        @Min(1)
+        @Max(100)
+        @Parameter(
+            description = "The number of items per page.",
+            schema = Schema(defaultValue = "20"),
+        )
+        @Valid
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
+        pageSize: kotlin.Int,
         @Parameter(
             description = "\"updatedAt\", \"deadline\" or \"createdAt\"",
             schema = Schema(defaultValue = "updatedAt"),
@@ -765,7 +762,7 @@ The teams can be filtered based on eligibility criteria.
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Update Task",
         operationId = "patchTask",
         description = """""",
@@ -787,7 +784,7 @@ The teams can be filtered based on eligibility criteria.
         consumes = ["application/json"],
     )
     suspend fun patchTask(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @Parameter(description = "", required = true)
@@ -799,7 +796,7 @@ The teams can be filtered based on eligibility criteria.
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Update TaskMembership By Member ID",
         operationId = "patchTaskMembershipByMember",
         description = """""",
@@ -829,7 +826,7 @@ The teams can be filtered based on eligibility criteria.
         consumes = ["application/json"],
     )
     suspend fun patchTaskMembershipByMember(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @NotNull
@@ -846,7 +843,7 @@ The teams can be filtered based on eligibility criteria.
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Update TaskMembership",
         operationId = "patchTaskParticipant",
         description = """""",
@@ -873,10 +870,10 @@ The teams can be filtered based on eligibility criteria.
         consumes = ["application/json"],
     )
     suspend fun patchTaskParticipant(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
-        @Parameter(description = "Member ID", required = true)
+        @Parameter(description = "Participant ID", required = true)
         @PathVariable("participantId")
         participantId: kotlin.Long,
         @Parameter(description = "", required = true)
@@ -888,7 +885,7 @@ The teams can be filtered based on eligibility criteria.
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Update Submission",
         operationId = "patchTaskSubmission",
         description = """""",
@@ -915,7 +912,7 @@ The teams can be filtered based on eligibility criteria.
         consumes = ["application/json"],
     )
     suspend fun patchTaskSubmission(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @Parameter(description = "Submitters' TaskMembership ID", required = true)
@@ -933,7 +930,7 @@ The teams can be filtered based on eligibility criteria.
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Re-Review Submission",
         operationId = "patchTaskSubmissionReview",
         description = """""",
@@ -963,7 +960,7 @@ The teams can be filtered based on eligibility criteria.
         consumes = ["application/json"],
     )
     suspend fun patchTaskSubmissionReview(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @Parameter(description = "Submitters' TaskMembership ID", required = true)
@@ -981,7 +978,7 @@ The teams can be filtered based on eligibility criteria.
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Create Task",
         operationId = "postTask",
         description = """""",
@@ -1012,7 +1009,7 @@ The teams can be filtered based on eligibility criteria.
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Apply for Task",
         operationId = "postTaskParticipant",
         description = """""",
@@ -1041,7 +1038,7 @@ The teams can be filtered based on eligibility criteria.
         consumes = ["application/json"],
     )
     suspend fun postTaskParticipant(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @NotNull
@@ -1058,7 +1055,7 @@ The teams can be filtered based on eligibility criteria.
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Create Submission",
         operationId = "postTaskSubmission",
         description = """""",
@@ -1085,7 +1082,7 @@ The teams can be filtered based on eligibility criteria.
         consumes = ["application/json"],
     )
     suspend fun postTaskSubmission(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @Parameter(description = "Submitters' TaskMembership ID", required = true)
@@ -1100,7 +1097,7 @@ The teams can be filtered based on eligibility criteria.
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Review Submission",
         operationId = "postTaskSubmissionReview",
         description = """""",
@@ -1130,7 +1127,7 @@ The teams can be filtered based on eligibility criteria.
         consumes = ["application/json"],
     )
     suspend fun postTaskSubmissionReview(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,
         @Parameter(description = "Submitters' TaskMembership ID", required = true)
@@ -1148,7 +1145,7 @@ The teams can be filtered based on eligibility criteria.
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Tasks"],
         summary = "Request AI Advice Generation",
         operationId = "requestTaskAiAdvice",
         description = """""",
@@ -1176,7 +1173,7 @@ The teams can be filtered based on eligibility criteria.
         produces = ["application/json"],
     )
     suspend fun requestTaskAiAdvice(
-        @Parameter(description = "Task ID", required = true)
+        @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long
     ): ResponseEntity<RequestTaskAiAdvice200ResponseDTO> {

@@ -16,7 +16,7 @@ import javax.validation.Valid
  * @param discussionId 来源讨论ID（可选）
  * @param labels
  */
-data class KnowledgePostRequestDTO(
+data class CreateKnowledgeRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("name", required = true)
     val name: kotlin.String,

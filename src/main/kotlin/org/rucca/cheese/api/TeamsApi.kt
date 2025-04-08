@@ -13,13 +13,14 @@ import javax.validation.Valid
 import javax.validation.constraints.Max
 import javax.validation.constraints.Min
 import org.rucca.cheese.model.ApplicationStatusDTO
-import org.rucca.cheese.model.CommonResponseDTO
 import org.rucca.cheese.model.CreateTeamInvitation201ResponseDTO
 import org.rucca.cheese.model.CreateTeamJoinRequest201ResponseDTO
 import org.rucca.cheese.model.GetMyTeams200ResponseDTO
 import org.rucca.cheese.model.GetTeam200ResponseDTO
 import org.rucca.cheese.model.GetTeamMembers200ResponseDTO
 import org.rucca.cheese.model.GetTeams200ResponseDTO
+import org.rucca.cheese.model.ListMyInvitations200ResponseDTO
+import org.rucca.cheese.model.ListMyJoinRequests200ResponseDTO
 import org.rucca.cheese.model.ListTeamInvitations200ResponseDTO
 import org.rucca.cheese.model.ListTeamJoinRequests200ResponseDTO
 import org.rucca.cheese.model.PatchTeamMemberRequestDTO
@@ -38,7 +39,35 @@ import org.springframework.web.bind.annotation.*
 interface TeamsApi {
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
+        summary = "Accept a team invitation",
+        operationId = "acceptTeamInvitation",
+        description =
+            """Allows the authenticated user to accept a pending team invitation. Creates the team membership upon success.""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "204",
+                    description = "Invitation accepted successfully and membership created.",
+                )
+            ],
+        security = [SecurityRequirement(name = "BearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.POST],
+        value = ["/users/me/team-invitations/{invitationId}/accept"],
+    )
+    suspend fun acceptTeamInvitation(
+        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
+        @Parameter(description = "The unique identifier of the invitation.", required = true)
+        @PathVariable("invitationId")
+        invitationId: kotlin.Long,
+    ): ResponseEntity<Unit> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Teams"],
         summary = "Approve a join request",
         operationId = "approveTeamJoinRequest",
         description =
@@ -68,7 +97,30 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags = ["Team Invitations"],
+        tags = ["Teams"],
+        summary = "Cancel my pending join request",
+        operationId = "cancelMyJoinRequest",
+        description =
+            """Allows the authenticated user to cancel a join request they initiated, provided it's still pending.""",
+        responses =
+            [ApiResponse(responseCode = "204", description = "Request cancelled successfully.")],
+        security = [SecurityRequirement(name = "BearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.DELETE],
+        value = ["/users/me/team-requests/{requestId}"],
+    )
+    suspend fun cancelMyJoinRequest(
+        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
+        @Parameter(description = "The unique identifier of the join request.", required = true)
+        @PathVariable("requestId")
+        requestId: kotlin.Long,
+    ): ResponseEntity<Unit> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Teams"],
         summary = "Cancel a pending invitation",
         operationId = "cancelTeamInvitation",
         description =
@@ -93,7 +145,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
         summary = "Invite a user to the team",
         operationId = "createTeamInvitation",
         description = """Allows a team admin/owner to invite a user to join the specified team.""",
@@ -138,7 +190,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
         summary = "Request to join a team",
         operationId = "createTeamJoinRequest",
         description =
@@ -182,35 +234,47 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags = ["default"],
-        summary = "Delete Team",
-        operationId = "deleteTeam",
-        description = """""",
+        tags = ["Teams"],
+        summary = "Decline a team invitation",
+        operationId = "declineTeamInvitation",
+        description = """Allows the authenticated user to decline a pending team invitation.""",
         responses =
-            [
-                ApiResponse(
-                    responseCode = "200",
-                    description = "OK",
-                    content = [Content(schema = Schema(implementation = CommonResponseDTO::class))],
-                )
-            ],
+            [ApiResponse(responseCode = "204", description = "Invitation declined successfully.")],
         security = [SecurityRequirement(name = "BearerAuth")],
     )
     @RequestMapping(
-        method = [RequestMethod.DELETE],
-        value = ["/teams/{teamId}"],
-        produces = ["application/json"],
+        method = [RequestMethod.POST],
+        value = ["/users/me/team-invitations/{invitationId}/decline"],
     )
-    suspend fun deleteTeam(
-        @Parameter(description = "Team ID", required = true)
-        @PathVariable("teamId")
-        teamId: kotlin.Long
-    ): ResponseEntity<CommonResponseDTO> {
+    suspend fun declineTeamInvitation(
+        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
+        @Parameter(description = "The unique identifier of the invitation.", required = true)
+        @PathVariable("invitationId")
+        invitationId: kotlin.Long,
+    ): ResponseEntity<Unit> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
+        summary = "Delete Team",
+        operationId = "deleteTeam",
+        description =
+            """Deletes the specified team. This action typically requires **Team Owner** privileges and is irreversible. All memberships will be removed, and associated data might be deleted or archived depending on system policy.""",
+        responses = [ApiResponse(responseCode = "204", description = "Team deleted successfully.")],
+        security = [SecurityRequirement(name = "BearerAuth")],
+    )
+    @RequestMapping(method = [RequestMethod.DELETE], value = ["/teams/{teamId}"])
+    suspend fun deleteTeam(
+        @Parameter(description = "The unique identifier of the team.", required = true)
+        @PathVariable("teamId")
+        teamId: kotlin.Long
+    ): ResponseEntity<Unit> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Teams"],
         summary = "Kick Out Team Member",
         operationId = "deleteTeamMember",
         description = """""",
@@ -231,7 +295,7 @@ interface TeamsApi {
         produces = ["application/json"],
     )
     suspend fun deleteTeamMember(
-        @Parameter(description = "Team ID", required = true)
+        @Parameter(description = "The unique identifier of the team.", required = true)
         @PathVariable("teamId")
         teamId: kotlin.Long,
         @Parameter(description = "Member User ID", required = true)
@@ -242,7 +306,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
         summary = "Query My Teams",
         operationId = "getMyTeams",
         description = """""",
@@ -267,7 +331,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
         summary = "Query Team",
         operationId = "getTeam",
         description = """""",
@@ -288,7 +352,7 @@ interface TeamsApi {
         produces = ["application/json"],
     )
     suspend fun getTeam(
-        @Parameter(description = "Team ID", required = true)
+        @Parameter(description = "The unique identifier of the team.", required = true)
         @PathVariable("teamId")
         teamId: kotlin.Long
     ): ResponseEntity<GetTeam200ResponseDTO> {
@@ -296,7 +360,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
         summary = "Enumerate Team Members",
         operationId = "getTeamMembers",
         description = """""",
@@ -322,7 +386,7 @@ interface TeamsApi {
         produces = ["application/json"],
     )
     suspend fun getTeamMembers(
-        @Parameter(description = "Team ID", required = true)
+        @Parameter(description = "The unique identifier of the team.", required = true)
         @PathVariable("teamId")
         teamId: kotlin.Long,
         @Parameter(
@@ -337,7 +401,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
         summary = "Get Teams",
         operationId = "getTeams",
         description = """""",
@@ -362,20 +426,167 @@ interface TeamsApi {
         @Valid
         @RequestParam(value = "query", required = false, defaultValue = "")
         query: kotlin.String,
-        @Parameter(description = "")
+        @Parameter(description = "The ID of the first item in the page.")
         @Valid
-        @RequestParam(value = "page_start", required = false)
+        @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.Long?,
-        @Parameter(description = "", schema = Schema(defaultValue = "20"))
+        @Min(1)
+        @Max(100)
+        @Parameter(
+            description = "The number of items per page.",
+            schema = Schema(defaultValue = "20"),
+        )
         @Valid
-        @RequestParam(value = "page_size", required = false, defaultValue = "20")
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
         pageSize: kotlin.Int,
     ): ResponseEntity<GetTeams200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
+        summary = "Leave a team",
+        operationId = "leaveTeam",
+        description =
+            """Allows the authenticated user (who is a member) to leave the specified team. Team owners typically cannot leave directly; they might need to transfer ownership or disband the team first.""",
+        responses =
+            [
+                ApiResponse(responseCode = "204", description = "Successfully left the team."),
+                ApiResponse(
+                    responseCode = "403",
+                    description =
+                        "Forbidden. The user might not be a member of the team, or is the owner and cannot leave directly.",
+                ),
+                ApiResponse(
+                    responseCode = "404",
+                    description = "Team not found. The specified teamId does not exist.",
+                ),
+            ],
+        security = [SecurityRequirement(name = "BearerAuth")],
+    )
+    @RequestMapping(method = [RequestMethod.DELETE], value = ["/users/me/teams/{teamId}"])
+    suspend fun leaveTeam(
+        @Parameter(description = "The unique identifier of the team.", required = true)
+        @PathVariable("teamId")
+        teamId: kotlin.Long
+    ): ResponseEntity<Unit> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Teams"],
+        summary = "List invitations received",
+        operationId = "listMyInvitations",
+        description = """Retrieves a list of invitations received by the authenticated user.""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "A list of invitations received by the user.",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(implementation = ListMyInvitations200ResponseDTO::class)
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "BearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/users/me/team-invitations"],
+        produces = ["application/json"],
+    )
+    suspend fun listMyInvitations(
+        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
+        @Parameter(
+            description = "Filter invitations by status (e.g., PENDING).",
+            schema =
+                Schema(
+                    allowableValues =
+                        ["PENDING", "APPROVED", "REJECTED", "ACCEPTED", "DECLINED", "CANCELED"]
+                ),
+        )
+        @Valid
+        @RequestParam(value = "status", required = false)
+        status: ApplicationStatusDTO?,
+        @Parameter(description = "The ID of the first item in the page.")
+        @Valid
+        @RequestParam(value = "pageStart", required = false)
+        pageStart: kotlin.Long?,
+        @Min(1)
+        @Max(100)
+        @Parameter(
+            description = "The number of items per page.",
+            schema = Schema(defaultValue = "20"),
+        )
+        @Valid
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
+        pageSize: kotlin.Int,
+    ): ResponseEntity<ListMyInvitations200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Teams"],
+        summary = "List my join requests",
+        operationId = "listMyJoinRequests",
+        description = """Retrieves a list of join requests initiated by the authenticated user.""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description = "A list of the user's join requests.",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(implementation = ListMyJoinRequests200ResponseDTO::class)
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "BearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.GET],
+        value = ["/users/me/team-requests"],
+        produces = ["application/json"],
+    )
+    suspend fun listMyJoinRequests(
+        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
+        @Parameter(
+            description = "Filter requests by status.",
+            schema =
+                Schema(
+                    allowableValues =
+                        ["PENDING", "APPROVED", "REJECTED", "ACCEPTED", "DECLINED", "CANCELED"]
+                ),
+        )
+        @Valid
+        @RequestParam(value = "status", required = false)
+        status: ApplicationStatusDTO?,
+        @Parameter(description = "The ID of the first item in the page.")
+        @Valid
+        @RequestParam(value = "pageStart", required = false)
+        pageStart: kotlin.Long?,
+        @Min(1)
+        @Max(100)
+        @Parameter(
+            description = "The number of items per page.",
+            schema = Schema(defaultValue = "20"),
+        )
+        @Valid
+        @RequestParam(value = "pageSize", required = false, defaultValue = "20")
+        pageSize: kotlin.Int,
+    ): ResponseEntity<ListMyJoinRequests200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Teams"],
         summary = "List invitations sent by a team",
         operationId = "listTeamInvitations",
         description =
@@ -422,21 +633,21 @@ interface TeamsApi {
         @Valid
         @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.Long?,
-        @Min(1L)
-        @Max(100L)
+        @Min(1)
+        @Max(100)
         @Parameter(
             description = "The number of items per page.",
-            schema = Schema(defaultValue = "20L"),
+            schema = Schema(defaultValue = "20"),
         )
         @Valid
         @RequestParam(value = "pageSize", required = false, defaultValue = "20")
-        pageSize: kotlin.Long,
+        pageSize: kotlin.Int,
     ): ResponseEntity<ListTeamInvitations200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
         summary = "List join requests for a team",
         operationId = "listTeamJoinRequests",
         description =
@@ -483,21 +694,21 @@ interface TeamsApi {
         @Valid
         @RequestParam(value = "pageStart", required = false)
         pageStart: kotlin.Long?,
-        @Min(1L)
-        @Max(100L)
+        @Min(1)
+        @Max(100)
         @Parameter(
             description = "The number of items per page.",
-            schema = Schema(defaultValue = "20L"),
+            schema = Schema(defaultValue = "20"),
         )
         @Valid
         @RequestParam(value = "pageSize", required = false, defaultValue = "20")
-        pageSize: kotlin.Long,
+        pageSize: kotlin.Int,
     ): ResponseEntity<ListTeamJoinRequests200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
         summary = "Update Team",
         operationId = "patchTeam",
         description = """""",
@@ -519,7 +730,7 @@ interface TeamsApi {
         consumes = ["application/json"],
     )
     suspend fun patchTeam(
-        @Parameter(description = "Team ID", required = true)
+        @Parameter(description = "The unique identifier of the team.", required = true)
         @PathVariable("teamId")
         teamId: kotlin.Long,
         @Parameter(description = "", required = true)
@@ -531,7 +742,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
         summary = "Update Team Membership Info",
         operationId = "patchTeamMember",
         description = """""",
@@ -553,7 +764,7 @@ interface TeamsApi {
         consumes = ["application/json"],
     )
     suspend fun patchTeamMember(
-        @Parameter(description = "Team ID", required = true)
+        @Parameter(description = "The unique identifier of the team.", required = true)
         @PathVariable("teamId")
         teamId: kotlin.Long,
         @Parameter(description = "Member User ID", required = true)
@@ -568,7 +779,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
         summary = "Create Team",
         operationId = "postTeam",
         description = """""",
@@ -599,7 +810,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags = ["default"],
+        tags = ["Teams"],
         summary = "Add Team Member",
         operationId = "postTeamMember",
         description = """""",
@@ -621,7 +832,7 @@ interface TeamsApi {
         consumes = ["application/json"],
     )
     suspend fun postTeamMember(
-        @Parameter(description = "Team ID", required = true)
+        @Parameter(description = "The unique identifier of the team.", required = true)
         @PathVariable("teamId")
         teamId: kotlin.Long,
         @Parameter(description = "", required = true)
@@ -633,7 +844,7 @@ interface TeamsApi {
     }
 
     @Operation(
-        tags = ["Team Requests"],
+        tags = ["Teams"],
         summary = "Reject a join request",
         operationId = "rejectTeamJoinRequest",
         description =
