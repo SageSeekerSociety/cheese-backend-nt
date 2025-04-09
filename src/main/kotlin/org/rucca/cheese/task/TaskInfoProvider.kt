@@ -4,8 +4,8 @@ import org.rucca.cheese.common.persistent.IdType
 import org.springframework.stereotype.Service
 
 /**
- * Interface providing minimal Task information needed by other services,
- * avoiding full TaskService dependency.
+ * Interface providing minimal Task information needed by other services, avoiding full TaskService
+ * dependency.
  */
 interface TaskInfoProvider {
     fun getTaskNameById(taskId: IdType): String? // Returns null if not found or name not available

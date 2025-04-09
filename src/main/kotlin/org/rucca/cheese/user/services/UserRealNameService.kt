@@ -11,9 +11,7 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.getProperty
 import org.rucca.cheese.model.*
 import org.rucca.cheese.task.TaskInfoProvider
-import org.rucca.cheese.task.TaskService
 import org.rucca.cheese.user.models.*
-import org.springframework.context.annotation.Lazy
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

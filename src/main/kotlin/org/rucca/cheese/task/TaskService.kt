@@ -810,56 +810,71 @@ class TaskService(
     }
 
     /**
-     * Enables the 'requireRealName' flag for a specific task.
-     * Pre-checks: Verifies that all current participants (if any approved) have real name info.
+     * Enables the 'requireRealName' flag for a specific task. Pre-checks: Verifies that all current
+     * participants (if any approved) have real name info.
      *
      * @param taskId The ID of the task to modify.
      * @throws NotFoundError if the task doesn't exist.
-     * @throws PreconditionFailedError if the task is already set to require real name,
-     *         or if enabling it would violate constraints (e.g., participants missing real name info).
+     * @throws PreconditionFailedError if the task is already set to require real name, or if
+     *   enabling it would violate constraints (e.g., participants missing real name info).
      */
     @Transactional // Ensure atomicity of checks and update
     fun enableRealNameRequirement(taskId: IdType) {
         val task = getTask(taskId) // Fetches task or throws NotFoundError
 
         if (task.requireRealName) {
-            throw PreconditionFailedError("Task $taskId already requires real name.", mapOf("taskId" to taskId))
+            throw PreconditionFailedError(
+                "Task $taskId already requires real name.",
+                mapOf("taskId" to taskId),
+            )
         }
 
         // --- Pre-check: Ensure all *current approved* participants can satisfy the requirement ---
         // This check prevents enabling the flag if data is missing, which would break things later.
-        val approvedMemberships = taskMembershipRepository.findAllByTaskIdAndApproved(taskId, ApproveType.APPROVED)
+        val approvedMemberships =
+            taskMembershipRepository.findAllByTaskIdAndApproved(taskId, ApproveType.APPROVED)
         if (approvedMemberships.isNotEmpty()) {
             // Check depends on submitter type
             when (task.submitterType) {
                 TaskSubmitterType.USER -> {
-                    val missingUsers = approvedMemberships
-                        .mapNotNull { it.memberId }
-                        .filter { userId -> !userRealNameService.hasUserIdentity(userId) } // Check if user has real name registered
+                    val missingUsers =
+                        approvedMemberships
+                            .mapNotNull { it.memberId }
+                            .filter { userId ->
+                                !userRealNameService.hasUserIdentity(userId)
+                            } // Check if user has real name registered
                     if (missingUsers.isNotEmpty()) {
                         throw PreconditionFailedError(
                             "Cannot enable real name requirement: The following approved users are missing real name info: ${missingUsers.joinToString()}",
-                            mapOf("taskId" to taskId, "missingUserIds" to missingUsers)
+                            mapOf("taskId" to taskId, "missingUserIds" to missingUsers),
                         )
                     }
                 }
                 TaskSubmitterType.TEAM -> {
-                    val teamsWithMissingMembers = approvedMemberships
-                        .mapNotNull { it.memberId } // Get team IDs
-                        .mapNotNull { teamId ->
-                            val (_, allVerified) = teamService.getTeamMembers(teamId, queryRealNameStatus = true) // Check current members' status
-                            if (allVerified != true) teamId else null // Return teamId if any member is unverified
-                        }
+                    val teamsWithMissingMembers =
+                        approvedMemberships
+                            .mapNotNull { it.memberId } // Get team IDs
+                            .mapNotNull { teamId ->
+                                val (_, allVerified) =
+                                    teamService.getTeamMembers(
+                                        teamId,
+                                        queryRealNameStatus = true,
+                                    ) // Check current members' status
+                                if (allVerified != true) teamId
+                                else null // Return teamId if any member is unverified
+                            }
                     if (teamsWithMissingMembers.isNotEmpty()) {
                         throw PreconditionFailedError(
                             "Cannot enable real name requirement: One or more members in the following approved teams are missing real name info: ${teamsWithMissingMembers.joinToString()}",
-                            mapOf("taskId" to taskId, "teamsWithMissingMembers" to teamsWithMissingMembers)
+                            mapOf(
+                                "taskId" to taskId,
+                                "teamsWithMissingMembers" to teamsWithMissingMembers,
+                            ),
                         )
                     }
                 }
             }
         }
-
 
         // --- Update the flag ---
         task.requireRealName = true
@@ -871,8 +886,8 @@ class TaskService(
     }
 
     /**
-     * Disables the 'requireRealName' flag for a specific task.
-     * This simply changes the flag; it does not remove existing encrypted real name data.
+     * Disables the 'requireRealName' flag for a specific task. This simply changes the flag; it
+     * does not remove existing encrypted real name data.
      *
      * @param taskId The ID of the task to modify.
      * @throws NotFoundError if the task doesn't exist.
@@ -883,13 +898,17 @@ class TaskService(
         val task = getTask(taskId) // Fetches task or throws NotFoundError
 
         if (!task.requireRealName) {
-            throw PreconditionFailedError("Task $taskId does not require real name.", mapOf("taskId" to taskId))
+            throw PreconditionFailedError(
+                "Task $taskId does not require real name.",
+                mapOf("taskId" to taskId),
+            )
         }
 
         // --- Update the flag ---
         task.requireRealName = false
         // Consider if encryptionKeyId should be nulled? Safer to leave it.
-        // Existing snapshots with encrypted data remain, but are no longer strictly required by the flag.
+        // Existing snapshots with encrypted data remain, but are no longer strictly required by the
+        // flag.
         taskRepository.save(task)
         logger.info("Disabled 'requireRealName' for Task ID: {}", taskId)
     }
