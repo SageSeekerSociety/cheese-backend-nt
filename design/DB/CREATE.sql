@@ -665,6 +665,7 @@ CREATE
             encrypted BOOLEAN DEFAULT FALSE,
             member_id BIGINT NOT NULL,
             task_membership_id BIGINT NOT NULL,
+            participant_member_uuid uuid NOT NULL,
             class_name VARCHAR(255),
             grade VARCHAR(255),
             major VARCHAR(255),
@@ -698,6 +699,7 @@ CREATE
             member_id BIGINT NOT NULL,
             task_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
+            participant_uuid uuid NOT NULL UNIQUE,
             apply_reason VARCHAR(255) NOT NULL,
             class_name VARCHAR(255),
             email VARCHAR(255) NOT NULL,
@@ -707,6 +709,7 @@ CREATE
             personal_advantage VARCHAR(255) NOT NULL,
             phone VARCHAR(255) NOT NULL,
             real_name VARCHAR(255),
+            reject_reason VARCHAR(255),
             remark VARCHAR(255) NOT NULL,
             student_id VARCHAR(255),
             PRIMARY KEY(id)
@@ -1085,6 +1088,10 @@ CREATE
 CREATE
     INDEX IDX4poyg61j8nhdhsryne7s8snmr ON
     space_user_rank(user_id);
+
+CREATE
+    INDEX IDXcyt0gef24ijcf8oqq5b0ub6cc ON
+    task_membership_team_members(participant_member_uuid);
 
 CREATE
     INDEX IDX70x5oq6omtraaie2fttiv25rd ON

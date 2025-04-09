@@ -1,4 +1,16 @@
 # Base configuration (applies to all profiles unless overridden)
+management:
+  security:
+    actuator:
+      username: ${ACTUATOR_USERNAME:admin} # Default username for actuator endpoints
+      password: ${ACTUATOR_PASSWORD:admin} # Default password for actuator endpoints
+  endpoint:
+    health:
+      show-details: when_authorized
+
+server:
+  forward-headers-strategy: native
+
 spring:
   application:
     name: cheese
