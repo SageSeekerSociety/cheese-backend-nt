@@ -50,9 +50,10 @@ class TeamController(
         @AuthContext("teamId") teamId: Long,
         @AuthContext("targetUserId") userId: Long,
     ): ResponseEntity<GetTeam200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
         // Service needs to internally get the initiator ID via authenticateService
-        teamService.removeTeamMember(teamId, userId /* initiatorId resolved in service */)
-        val teamDTO = teamService.getTeamDto(teamId, jwtService.getCurrentUserId())
+        withContext(Dispatchers.IO) { teamService.removeTeamMember(teamId, userId, currentUserId) }
+        val teamDTO = teamService.getTeamDto(teamId, currentUserId)
         return ResponseEntity.ok(
             GetTeam200ResponseDTO(200, GetTeam200ResponseDataDTO(teamDTO), "OK")
         )

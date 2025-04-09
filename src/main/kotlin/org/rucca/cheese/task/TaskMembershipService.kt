@@ -14,6 +14,7 @@ import jakarta.persistence.criteria.Predicate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.rucca.cheese.common.config.ApplicationConfig
+import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.error.BaseError
 import org.rucca.cheese.common.error.ForbiddenError
 import org.rucca.cheese.common.error.NotFoundError
@@ -232,7 +233,6 @@ class TaskMembershipService(
 
             try {
                 if (!membership.isTeam) {
-                    // --- Individual Participant ---
                     val userId = memberId
                     // Check if realNameInfo is missing OR present but NOT marked as encrypted
                     if (membership.realNameInfo == null || !membership.realNameInfo!!.encrypted) {
@@ -271,7 +271,6 @@ class TaskMembershipService(
                         )
                     }
                 } else {
-                    // --- Team Participant ---
                     val teamId = memberId
                     // Check if snapshot is empty OR if ANY member's info is NOT marked as encrypted
                     val requiresTeamFix =
@@ -735,14 +734,13 @@ class TaskMembershipService(
             throw mapReasonToError(eligibility.reasons!!.first(), taskId, memberId)
         }
 
-        // --- Prepare Snapshot Information ---
         var individualRealNameSnapshot: RealNameInfo? = null // For USER task
         val teamMemberSnapshotList = mutableListOf<TeamMemberRealNameInfo>() // For TEAM task
         var actualEncryptionHappened = false // Track if any data was actually encrypted
         var encryptionKeyIdToSave: String? = null // Store key ID only if encryption happened
 
         if (isTeam) {
-            // --- TEAM: Always create snapshot ---
+            // Always create snapshot
             individualRealNameSnapshot = null // Not used for team's main RealNameInfo field
 
             // Get encryption key ONLY if needed
@@ -814,7 +812,6 @@ class TaskMembershipService(
                 }
             }
         } else {
-            // --- INDIVIDUAL ---
             if (task.requireRealName) {
                 // Requirement: Fetch, encrypt, and store real name info
                 try {
@@ -835,7 +832,6 @@ class TaskMembershipService(
             }
         }
 
-        // --- Create and Save TaskMembership ---
         val membership =
             TaskMembership(
                 task = task,
@@ -870,52 +866,162 @@ class TaskMembershipService(
         return getTaskMembershipDTO(taskId, savedMembership.memberId!!)
     }
 
-    @Transactional
-    fun updateTaskMembership(
-        taskId: IdType,
-        memberId: IdType,
-        patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO,
-    ): TaskMembershipDTO {
-        val participant = getTaskMembership(taskId, memberId)
-        val task = participant.task!! // Assume task is loaded or fetch if needed
+    /**
+     * Performs final compliance checks just before approving a membership. Throws exceptions if
+     * constraints are violated.
+     */
+    private fun performPreApprovalChecks(task: Task, memberId: IdType, isTeam: Boolean) {
+        if (isTeam) {
+            // Check current team state against THIS task's requirements
+            val (currentMembers, allVerified) =
+                teamService.getTeamMembers(
+                    teamId = memberId,
+                    queryRealNameStatus = task.requireRealName,
+                )
+            val currentSize = currentMembers.size
 
-        // Check participant limit before approving
-        if (
-            patchTaskMembershipRequestDTO.approved == ApproveTypeDTO.APPROVED &&
-                participant.approved != ApproveType.APPROVED
-        ) {
+            // Size checks
+            task.minTeamSize?.let { min ->
+                if (currentSize < min) {
+                    throw BadRequestError(
+                        "Cannot approve: Team size ($currentSize) is below minimum ($min) at time of approval."
+                    )
+                }
+            }
+            task.maxTeamSize?.let { max ->
+                if (currentSize > max) {
+                    throw BadRequestError(
+                        "Cannot approve: Team size ($currentSize) exceeds maximum ($max) at time of approval."
+                    )
+                }
+            }
+
+            if (task.requireRealName && allVerified != true) {
+                val missingMembers =
+                    currentMembers.filter { it.hasRealNameInfo != true }.map { it.user.id }
+                throw BadRequestError(
+                    "Cannot approve: Following team members lack real name info: ${missingMembers.joinToString()}"
+                )
+            }
+        } else {
+            if (task.requireRealName && !userRealNameService.hasUserIdentity(memberId)) {
+                throw BadRequestError(
+                    "Cannot approve: User $memberId is missing required real name information."
+                )
+            }
+        }
+        logger.debug("Pre-approval checks passed for task {} and member {}", task.id, memberId)
+    }
+
+    private fun getTaskMembershipInternal(
+        participantId: IdType? = null,
+        taskId: IdType? = null,
+        memberId: IdType? = null,
+    ): TaskMembership {
+        return when {
+            // Priority to participantId if provided
+            participantId != null -> {
+                taskMembershipRepository.findById(participantId).orElseThrow {
+                    NotFoundError("task participant", participantId)
+                }
+            }
+            // Fallback to taskId and memberId
+            taskId != null && memberId != null -> {
+                taskMembershipRepository.findByTaskIdAndMemberId(taskId, memberId).orElseThrow {
+                    NotTaskParticipantYetError(taskId, memberId)
+                }
+            }
+            // Invalid arguments
+            else ->
+                throw IllegalArgumentException(
+                    "Either participantId or both taskId and memberId must be provided."
+                )
+        }
+    }
+
+    @Transactional
+    protected fun performMembershipUpdateInternal(
+        participant: TaskMembership,
+        patchDto: PatchTaskMembershipRequestDTO,
+    ): TaskMembership { // Return the updated entity for further processing if needed
+
+        val task =
+            participant.task
+                ?: throw IllegalStateException(
+                    "Task cannot be null for participant ${participant.id}"
+                )
+        val taskId = task.id!!
+        val memberId = participant.memberId!!
+        val isTeam = participant.isTeam
+
+        val previousApprovedStatus = participant.approved
+        // Determine if this patch intends to approve the membership
+        val isApproving =
+            patchDto.approved == ApproveTypeDTO.APPROVED &&
+                previousApprovedStatus != ApproveType.APPROVED
+
+        val newDeadline: LocalDateTime? = patchDto.deadline?.toLocalDateTime()
+        val newApproveStatus: ApproveType? = patchDto.approved?.convert()
+
+        if (isApproving) {
             ensureTaskParticipantNotReachedLimit(taskId)
-            // Add final pre-approval checks here if needed (see previous discussion)
-            // e.g., re-validate team size, member real names if task has LOCK_ON_APPROVAL policy
+            performPreApprovalChecks(task, memberId, isTeam)
         }
 
-        // Prevent setting deadline unless approved (or becoming approved in this patch)
         if (
-            patchTaskMembershipRequestDTO.deadline != null &&
+            newDeadline != null &&
                 participant.approved != ApproveType.APPROVED &&
-                patchTaskMembershipRequestDTO.approved != ApproveTypeDTO.APPROVED
+                newApproveStatus != ApproveType.APPROVED
         ) {
             throw ForbiddenError(
                 "Cannot set deadline for non-approved task membership",
-                mapOf("taskId" to task.id!!, "participantId" to participant.id!!),
+                mapOf("taskId" to taskId, "participantId" to participant.id!!),
             )
         }
 
-        val previousApprovedStatus = participant.approved
+        var snapshotData: Pair<List<TeamMemberRealNameInfo>, String?>? = null
+        if (isApproving && isTeam) {
+            logger.info(
+                "Preparing team snapshot update for membership ID {} during approval.",
+                participant.id,
+            )
+            try {
+                snapshotData = buildTeamSnapshot(task, memberId)
+            } catch (e: Exception) {
+                logger.error(
+                    "Failed to build snapshot for membership ID {} during pre-patch phase: {}",
+                    participant.id,
+                    e.message,
+                    e,
+                )
+                throw BadRequestError(
+                    "Failed to prepare team snapshot during approval: ${e.message}"
+                )
+            }
+        }
 
-        entityPatcher.patch(participant, patchTaskMembershipRequestDTO) {
+        entityPatcher.patch(participant, patchDto) {
             handle(PatchTaskMembershipRequestDTO::deadline) { entity, value ->
                 entity.deadline = value.toLocalDateTime()
             }
             handle(PatchTaskMembershipRequestDTO::approved) { entity, value ->
                 entity.approved = value.convert()
             }
-            // Add handlers for other patchable fields like rejectReason if applicable
+        }
+
+        if (snapshotData != null) {
+            participant.teamMembersRealNameInfo.clear()
+            participant.teamMembersRealNameInfo.addAll(snapshotData.first)
+            participant.encryptionKeyId = snapshotData.second
+            logger.info(
+                "Applying updated snapshot for membership ID {} with {} members.",
+                participant.id,
+                snapshotData.first.size,
+            )
         }
 
         val savedParticipant = taskMembershipRepository.save(participant)
 
-        // Auto-reject others ONLY if the status changed TO approved in this update
         if (
             savedParticipant.approved == ApproveType.APPROVED &&
                 previousApprovedStatus != ApproveType.APPROVED
@@ -923,64 +1029,34 @@ class TaskMembershipService(
             autoRejectParticipantAfterReachesLimit(taskId)
         }
 
-        // Return DTO, respecting task's real name requirement for display
-        return getTaskMembershipDTO(taskId, memberId)
+        return savedParticipant
     }
 
+    /** Updates a task membership identified by Task ID and Member ID. */
+    @Transactional
+    fun updateTaskMembership(
+        taskId: IdType,
+        memberId: IdType,
+        patchDto: PatchTaskMembershipRequestDTO,
+    ): TaskMembershipDTO {
+        val participant = getTaskMembershipInternal(taskId = taskId, memberId = memberId)
+
+        val updatedParticipant = performMembershipUpdateInternal(participant, patchDto)
+
+        return getTaskMembershipDTO(updatedParticipant.task!!.id!!, updatedParticipant.memberId!!)
+    }
+
+    /** Updates a task membership identified by its primary Participant ID. */
     @Transactional
     fun updateTaskMembership(
         participantId: IdType,
-        patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO,
+        patchDto: PatchTaskMembershipRequestDTO,
     ): TaskMembershipDTO {
-        val participant = getTaskMembership(participantId)
-        val task = participant.task!! // Assume task is loaded
-        val memberId = participant.memberId!!
+        val participant = getTaskMembershipInternal(participantId = participantId)
 
-        // Check participant limit before approving
-        if (
-            patchTaskMembershipRequestDTO.approved == ApproveTypeDTO.APPROVED &&
-                participant.approved != ApproveType.APPROVED
-        ) {
-            ensureTaskParticipantNotReachedLimit(task.id!!)
-            // Add final pre-approval checks here if needed
-        }
+        val updatedParticipant = performMembershipUpdateInternal(participant, patchDto)
 
-        // Prevent setting deadline unless approved
-        if (
-            patchTaskMembershipRequestDTO.deadline != null &&
-                participant.approved != ApproveType.APPROVED &&
-                patchTaskMembershipRequestDTO.approved != ApproveTypeDTO.APPROVED
-        ) {
-            throw ForbiddenError(
-                "Cannot set deadline for non-approved task membership",
-                mapOf("taskId" to task.id!!, "participantId" to participantId),
-            )
-        }
-
-        val previousApprovedStatus = participant.approved
-
-        entityPatcher.patch(participant, patchTaskMembershipRequestDTO) {
-            handle(PatchTaskMembershipRequestDTO::deadline) { entity, value ->
-                entity.deadline = value.toLocalDateTime()
-            }
-            handle(PatchTaskMembershipRequestDTO::approved) { entity, value ->
-                entity.approved = value.convert()
-            }
-            // Add handlers for other patchable fields
-        }
-
-        val savedParticipant = taskMembershipRepository.save(participant)
-
-        // Auto-reject others ONLY if the status changed TO approved
-        if (
-            savedParticipant.approved == ApproveType.APPROVED &&
-                previousApprovedStatus != ApproveType.APPROVED
-        ) {
-            autoRejectParticipantAfterReachesLimit(task.id!!)
-        }
-
-        // Return DTO, respecting task's real name requirement for display
-        return getTaskMembershipDTO(task.id!!, memberId)
+        return getTaskMembershipDTO(updatedParticipant.task!!.id!!, updatedParticipant.memberId!!)
     }
 
     // Ensures approving a participant won't exceed the limit
@@ -1035,30 +1111,27 @@ class TaskMembershipService(
 
     // Soft delete a task participant by their membership ID
     @Transactional
-    fun removeTaskParticipant(
-        taskId: IdType,
-        participantId: IdType,
-    ) { // taskId might be redundant if participantId is unique
+    fun removeTaskParticipant(taskId: IdType, participantId: IdType) {
         val participant = getTaskMembership(participantId)
-        // Optional: Check if participant belongs to the given taskId if needed for authorization
-        // if (participant.task?.id != taskId) { throw SomePermissionError }
+        if (participant.task?.id != taskId) {
+            throw BadRequestError("Task ID $taskId mismatch for participant ID: $participantId")
+        }
         participant.deletedAt = LocalDateTime.now()
         taskMembershipRepository.save(participant)
         logger.info("Soft deleted TaskMembership ID: {}", participantId)
-        // Consider soft-deleting related submissions? Depends on requirements.
     }
 
     // Soft delete a task participant by member ID (User or Team)
     @Transactional
     fun removeTaskParticipantByMemberId(taskId: IdType, memberId: IdType) {
-        val participant = getTaskMembership(taskId, memberId) // Finds the specific membership
+        val participant = getTaskMembership(taskId, memberId)
+        if (participant.task?.id != taskId) {
+            throw BadRequestError("Task ID $taskId mismatch for member ID: $memberId")
+        }
         participant.deletedAt = LocalDateTime.now()
         taskMembershipRepository.save(participant)
         logger.info("Soft deleted TaskMembership for task {} and member {}", taskId, memberId)
     }
-
-    // --- Eligibility, Submittability, Joined Checks ---
-    // These methods seem okay, but ensure they correctly handle team logic vs user logic
 
     @Transactional(readOnly = true)
     fun getSubmittability(task: Task, userId: IdType): Pair<Boolean, List<TeamSummaryDTO>?> {
@@ -1092,35 +1165,6 @@ class TaskMembershipService(
                 // User has joined IF they are a member of ANY team participating (regardless of
                 // approval status)
                 val teams = teamService.getTeamsThatUserJoinedTaskAs(task.id!!, userId)
-                Pair(teams.isNotEmpty(), teams)
-            }
-        }
-    }
-
-    @Transactional(readOnly = true)
-    fun getJoinedWithApproveType(
-        task: Task,
-        userId: IdType,
-        approveType: ApproveType,
-    ): Pair<Boolean, List<TeamSummaryDTO>?> {
-        return when (task.submitterType) {
-            TaskSubmitterType.USER ->
-                Pair(
-                    taskMembershipRepository.existsByTaskIdAndMemberIdAndApproved(
-                        task.id!!,
-                        userId,
-                        approveType,
-                    ),
-                    null,
-                )
-
-            TaskSubmitterType.TEAM -> {
-                val teams =
-                    teamService.getTeamsThatUserJoinedTaskAsWithApprovedType(
-                        task.id!!,
-                        userId,
-                        approveType,
-                    )
                 Pair(teams.isNotEmpty(), teams)
             }
         }
@@ -1225,6 +1269,7 @@ class TaskMembershipService(
                     )
                 }
             }
+
             TaskSubmitterType.TEAM -> {
                 // Find all teams the user is part of
                 val userTeams =
@@ -1259,9 +1304,6 @@ class TaskMembershipService(
             hasParticipation = identities.isNotEmpty(),
         )
     }
-
-    // --- Eligibility Check Logic ---
-    // (Keeping the existing eligibility check logic, assuming it's functional)
 
     // Helper to map reason DTO back to specific errors (potentially lossy)
     fun mapReasonToError(
@@ -1871,5 +1913,87 @@ class TaskMembershipService(
     ) // Run each batch save in a new transaction
     fun saveMembershipBatchInternal(memberships: List<TaskMembership>) {
         taskMembershipRepository.saveAll(memberships)
+    }
+
+    private fun buildTeamSnapshot(
+        task: Task,
+        teamId: IdType,
+    ): Pair<List<TeamMemberRealNameInfo>, String?> { // Returns snapshot list and optional keyId
+        // Fetch current team members AND real name status if required by the task
+        val (currentTeamMembers, _) =
+            teamService.getTeamMembers(
+                teamId = teamId,
+                queryRealNameStatus = task.requireRealName, // Only query status if needed
+            )
+
+        if (currentTeamMembers.isEmpty() && task.minTeamSize != null && task.minTeamSize!! > 0) {
+            // This should ideally be caught by pre-approval checks, but double-check
+            throw TeamSizeNotEnoughError(0, task.minTeamSize!!)
+        }
+
+        val snapshotList = mutableListOf<TeamMemberRealNameInfo>()
+        var encryptionKeyIdToSave: String? = null
+        var actualEncryptionHappened = false
+
+        // Get encryption key ONLY if real name is required
+        if (task.requireRealName) {
+            val taskKey = encryptionService.getOrCreateKey(KeyPurpose.TASK_REAL_NAME, task.id!!)
+            encryptionKeyIdToSave = taskKey.id
+        }
+
+        for (teamMember in currentTeamMembers) {
+            val currentMemberUserId = teamMember.user.id
+            val memberRealNameInfoForSnapshot: RealNameInfo
+
+            if (task.requireRealName) {
+                val userIdentity: UserIdentityDTO =
+                    try {
+                        userRealNameService.getUserIdentity(currentMemberUserId)
+                    } catch (e: NotFoundError) {
+                        // If somehow verification passed but identity not found now, fail approval
+                        logger.error(
+                            "CRITICAL: Real name identity for user {} not found during snapshot creation for task {}.",
+                            currentMemberUserId,
+                            task.id,
+                        )
+                        throw RealNameInfoRequiredError(currentMemberUserId)
+                    }
+
+                if (encryptionKeyIdToSave == null) { // Should not happen if requireRealName is true
+                    throw IllegalStateException(
+                        "Encryption key ID is null despite task requiring real name."
+                    )
+                }
+
+                memberRealNameInfoForSnapshot =
+                    encryptRealNameInfo(userIdentity, encryptionKeyIdToSave)
+                actualEncryptionHappened = true
+            } else {
+                memberRealNameInfoForSnapshot = DefaultRealNameInfo // Use default non-encrypted
+            }
+
+            snapshotList.add(
+                TeamMemberRealNameInfo(
+                    memberId = currentMemberUserId,
+                    realNameInfo = memberRealNameInfoForSnapshot,
+                )
+            )
+        } // End loop through team members
+
+        // Final check on snapshot size against task constraints at time of approval
+        val snapshotSize = snapshotList.size
+        task.minTeamSize?.let { min ->
+            if (snapshotSize < min) {
+                throw TeamSizeNotEnoughError(snapshotSize, min)
+            }
+        }
+        task.maxTeamSize?.let { max ->
+            if (snapshotSize > max) {
+                throw TeamSizeTooLargeError(snapshotSize, max)
+            }
+        }
+
+        // Return the list and the key ID (only non-null if encryption happened)
+        return Pair(snapshotList, if (actualEncryptionHappened) encryptionKeyIdToSave else null)
     }
 }

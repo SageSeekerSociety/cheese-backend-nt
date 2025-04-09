@@ -609,6 +609,12 @@ CREATE
             intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
             reject_reason VARCHAR(255),
+            team_locking_policy VARCHAR(50) DEFAULT 'NO_LOCK' NOT NULL CHECK(
+                team_locking_policy IN(
+                    'NO_LOCK',
+                    'LOCK_ON_APPROVAL'
+                )
+            ),
             PRIMARY KEY(id)
         );
 

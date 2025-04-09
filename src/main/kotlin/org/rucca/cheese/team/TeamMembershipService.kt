@@ -14,6 +14,7 @@ import org.rucca.cheese.model.TeamMembershipApplicationDTO
 import org.rucca.cheese.notification.event.NotificationTriggerEvent
 import org.rucca.cheese.notification.models.NotificationType
 import org.rucca.cheese.team.error.PendingApplicationExistsError
+import org.rucca.cheese.team.error.TeamLockedError
 import org.rucca.cheese.team.error.UserAlreadyMemberError
 import org.rucca.cheese.team.models.ApplicationStatus
 import org.rucca.cheese.team.models.ApplicationType
@@ -263,6 +264,14 @@ class TeamMembershipService(
                 )
                 .orElseThrow { NotFoundError("Pending invitation for user", invitationId) }
 
+        val teamId = application.team.id!! // Get team ID
+
+        try {
+            teamService.checkTeamLockingStatus(teamId)
+        } catch (e: TeamLockedError) {
+            throw ForbiddenError("Cannot accept invitation: ${e.message}", e.details)
+        }
+
         if (teamService.isTeamMember(application.team.id!!, userId)) {
             throw UserAlreadyMemberError(
                 application.team.id!!,
@@ -272,7 +281,6 @@ class TeamMembershipService(
         }
 
         val initiatorId = application.initiator.id!!.toLong()
-        val teamId = application.team.id!!
 
         updateApplicationStatus(application, ApplicationStatus.ACCEPTED, userId)
         teamService.createMembershipFromApplication(application)
@@ -377,6 +385,12 @@ class TeamMembershipService(
                     status = ApplicationStatus.PENDING,
                 )
                 .orElseThrow { NotFoundError("Pending request for team", requestId) }
+
+        try {
+            teamService.checkTeamLockingStatus(teamId)
+        } catch (e: TeamLockedError) {
+            throw ForbiddenError("Cannot approve join request: ${e.message}", e.details)
+        }
 
         val requesterId = application.user.id!!.toLong()
 

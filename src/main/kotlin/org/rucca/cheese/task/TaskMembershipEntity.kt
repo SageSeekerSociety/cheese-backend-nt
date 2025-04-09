@@ -108,4 +108,36 @@ interface TaskMembershipRepository : JpaRepository<TaskMembership, IdType> {
     fun findByTaskIdWhereMemberHasSubmitted(taskId: IdType): List<TaskMembership>
 
     fun findAllByIsTeam(isTeam: Boolean, pageable: Pageable): Page<TaskMembership>
+
+    /**
+     * Finds active TaskMemberships for a specific team that belong to tasks with a locking policy
+     * indicating that changes are forbidden.
+     *
+     * @param teamId The ID of the team.
+     * @param approvedStatus The status indicating active participation (e.g., APPROVED).
+     * @param lockingPolicies The list of Task locking policies that trigger a lock.
+     * @param currentTime The current time, used for checking task deadlines if applicable
+     *   (optional).
+     * @return A list of TaskMemberships indicating a lock is active.
+     */
+    @Query(
+        """
+        SELECT tm
+        FROM TaskMembership tm
+        JOIN FETCH tm.task t
+        WHERE tm.memberId = :teamId
+          AND tm.isTeam = true
+          AND tm.approved = :approvedStatus
+          AND (t.deadline IS NULL OR t.deadline > :currentTime)
+          AND t.teamLockingPolicy IN :lockingPolicies
+          AND tm.deletedAt IS NULL
+          AND t.deletedAt IS NULL
+    """
+    )
+    fun findActiveMembershipsWithLockingPolicy(
+        teamId: IdType,
+        approvedStatus: ApproveType,
+        lockingPolicies: List<TeamMembershipLockPolicy>,
+        currentTime: LocalDateTime,
+    ): List<TaskMembership>
 }
