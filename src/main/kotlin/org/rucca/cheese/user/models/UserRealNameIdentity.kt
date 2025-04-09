@@ -31,4 +31,6 @@ class UserRealNameIdentity(
 
 interface UserRealNameIdentityRepository : JpaRepository<UserRealNameIdentity, IdType> {
     fun findByUserId(userId: IdType): UserRealNameIdentity?
+
+    fun existsByUserId(userId: Long): Boolean
 }

@@ -10,6 +10,8 @@ import javax.validation.Valid
  * @param avatarId
  * @param intro
  * @param isLeader
+ * @param userId
+ * @param participantMemberId
  * @param realNameInfo
  */
 data class TaskTeamParticipantMemberSummaryDTO(
@@ -25,6 +27,12 @@ data class TaskTeamParticipantMemberSummaryDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("isLeader", required = true)
     val isLeader: kotlin.Boolean,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("userId")
+    val userId: kotlin.Long? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("participantMemberId")
+    val participantMemberId: java.util.UUID? = null,
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("realNameInfo")

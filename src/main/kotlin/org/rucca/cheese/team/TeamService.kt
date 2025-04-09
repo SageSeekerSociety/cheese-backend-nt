@@ -107,6 +107,16 @@ class TeamService(
         )
     }
 
+    fun getTeamDtos(teamIds: List<IdType>, currentUserId: IdType? = null): Map<IdType, TeamDTO> {
+        val teams = getTeams(teamIds)
+        val myRoles =
+            if (currentUserId != null) {
+                teamUserRelationRepository.findAllByTeamIdInAndUserId(teamIds, currentUserId)
+            } else emptyList()
+        val myRolesMap = myRoles.associate { it.team!!.id!! to it.role!! }
+        return teams.associate { it.id!! to getTeamDto(it.id!!, currentUserId) }
+    }
+
     fun getTeamAvatarId(teamId: IdType): IdType {
         val team = getTeam(teamId)
         return team.avatar!!.id!!.toLong()

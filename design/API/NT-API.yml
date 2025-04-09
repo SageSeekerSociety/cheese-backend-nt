@@ -4518,6 +4518,9 @@ components:
           - intro
           - isLeader
         properties:
+          userId:
+            type: integer
+            format: int64
           name:
             type: string
           avatarId:
@@ -4527,6 +4530,9 @@ components:
             type: string
           isLeader:
             type: boolean
+          participantMemberId:
+            type: string
+            format: uuid
           realNameInfo:
             $ref: "#/components/schemas/TaskParticipantRealNameInfo"
     TaskMembership:
@@ -4647,6 +4653,9 @@ components:
         avatarId:
           type: integer
           format: int64
+        participantId:
+          type: string
+          format: uuid
     TeamMember:
       properties:
         role:

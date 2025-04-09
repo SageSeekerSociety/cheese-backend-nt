@@ -75,4 +75,6 @@ interface TeamUserRelationRepository : JpaRepository<TeamUserRelation, IdType> {
         teamId: Long,
         roles: Collection<TeamMemberRole>,
     ): List<TeamUserRelation>
+
+    fun findAllByTeamIdInAndUserId(teamIds: Collection<Long>, userId: Long): List<TeamUserRelation>
 }
