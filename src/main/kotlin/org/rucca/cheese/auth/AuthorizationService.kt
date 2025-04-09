@@ -9,7 +9,7 @@
 
 package org.rucca.cheese.auth
 
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 import org.rucca.cheese.auth.error.PermissionDeniedError
 import org.rucca.cheese.common.config.ApplicationConfig
 import org.rucca.cheese.common.persistent.IdGetter

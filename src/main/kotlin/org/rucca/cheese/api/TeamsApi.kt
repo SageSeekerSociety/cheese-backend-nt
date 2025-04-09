@@ -9,9 +9,9 @@ import io.swagger.v3.oas.annotations.enums.*
 import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
-import javax.validation.Valid
-import javax.validation.constraints.Max
-import javax.validation.constraints.Min
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import org.rucca.cheese.model.ApplicationStatusDTO
 import org.rucca.cheese.model.CreateTeamInvitation201ResponseDTO
 import org.rucca.cheese.model.CreateTeamJoinRequest201ResponseDTO

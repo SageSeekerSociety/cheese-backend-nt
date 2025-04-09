@@ -1,6 +1,6 @@
 package org.rucca.cheese.auth.domain
 
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component

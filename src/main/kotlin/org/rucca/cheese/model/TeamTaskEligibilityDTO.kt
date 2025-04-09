@@ -2,8 +2,8 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.Valid
 import java.io.Serializable
-import javax.validation.Valid
 
 /**
  * Provides eligibility details for a specific team in the context of a task.

@@ -1,6 +1,6 @@
 package org.rucca.cheese.notification
 
-import javax.validation.Valid
+import jakarta.validation.Valid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.rucca.cheese.api.NotificationsApi

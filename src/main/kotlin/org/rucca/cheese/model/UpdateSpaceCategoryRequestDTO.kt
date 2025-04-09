@@ -2,8 +2,8 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.constraints.Size
 import java.io.Serializable
-import javax.validation.constraints.Size
 
 /**
  * @param name New name for the category. Must be unique within the space if changed.
