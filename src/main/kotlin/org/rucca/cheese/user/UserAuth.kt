@@ -14,7 +14,6 @@ import org.rucca.cheese.auth.dsl.defineRoleHierarchy
 import org.rucca.cheese.auth.hierarchy.GraphRoleHierarchy
 import org.rucca.cheese.auth.registry.RegistrationService
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.user.services.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -79,7 +78,7 @@ class UserIdentityContextProvider : PermissionContextProvider {
 }
 
 @Component
-class UserRoleProvider(private val userService: UserService) : DomainRoleProvider {
+class UserRoleProvider : DomainRoleProvider {
     private val logger = LoggerFactory.getLogger(UserRoleProvider::class.java)
 
     override val domain: Domain = UserDomain
@@ -93,7 +92,6 @@ class UserRoleProvider(private val userService: UserService) : DomainRoleProvide
                 val targetUserId =
                     UserIdentityContextKeys.TARGET_USER_ID.get(context) ?: return roles
 
-                // Self-access - user can view their own identity information
                 if (userId == targetUserId) {
                     roles.add(UserDomainRole.SELF)
                 }
@@ -101,7 +99,6 @@ class UserRoleProvider(private val userService: UserService) : DomainRoleProvide
             null -> {}
         }
 
-        logger.debug("Roles for user {} on identity resource: {}", userId, roles)
         return roles.toSet()
     }
 }

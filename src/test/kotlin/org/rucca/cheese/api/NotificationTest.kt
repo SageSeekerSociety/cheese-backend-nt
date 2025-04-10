@@ -9,7 +9,6 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
-import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.core.Action
 import org.rucca.cheese.auth.core.PermissionEvaluator
 import org.rucca.cheese.auth.core.ResourceType
@@ -19,39 +18,40 @@ import org.rucca.cheese.notification.models.NotificationType
 import org.rucca.cheese.notification.models.toDTO
 import org.rucca.cheese.notification.models.toEnum
 import org.rucca.cheese.notification.services.NotificationQueryService
+import org.rucca.cheese.utils.UserCreatorService
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.BodyInserters
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@AutoConfigureMockMvc
 @TestMethodOrder(OrderAnnotation::class)
 class NotificationTest {
-
     @Autowired private lateinit var webTestClient: WebTestClient
+    @Autowired private lateinit var userCreatorService: UserCreatorService
 
     @MockkBean private lateinit var notificationQueryService: NotificationQueryService
 
-    @MockkBean private lateinit var jwtService: JwtService
-
     @MockkBean private lateinit var permissionEvaluator: PermissionEvaluator
 
-    private val currentUserId = 1L
+    private var currentUserId = 1L
     private val baseUri = "/notifications"
+    private lateinit var userToken: String
 
     @BeforeEach
     fun setUp() {
-        every { jwtService.getCurrentUserId() } returns currentUserId
-
         every {
             permissionEvaluator.evaluate<Action, ResourceType>(any(), any(), any(), any())
         } returns true
+
+        val userDetails = userCreatorService.createUser()
+        userToken = userCreatorService.login(userDetails.username, userDetails.password)
+        currentUserId = userDetails.userId
     }
 
     private fun createSampleNotificationDTO(
@@ -114,6 +114,7 @@ class NotificationTest {
                     .build()
             }
             .accept(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .exchange()
             .expectStatus()
             .isOk
@@ -186,6 +187,7 @@ class NotificationTest {
                     .build()
             }
             .accept(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .exchange()
             .expectStatus()
             .isOk
@@ -225,6 +227,7 @@ class NotificationTest {
             .get()
             .uri("$baseUri/$notificationId") // Path variable
             .accept(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .exchange()
             .expectStatus()
             .isOk
@@ -261,6 +264,7 @@ class NotificationTest {
             .get()
             .uri("$baseUri/$notificationId")
             .accept(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .exchange()
             .expectStatus()
             .isNotFound // Expect 404 based on default Spring Boot exception handling or custom
@@ -287,6 +291,7 @@ class NotificationTest {
             .get()
             .uri("$baseUri/unread-count") // Path from API definition
             .accept(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .exchange()
             .expectStatus()
             .isOk
@@ -319,6 +324,7 @@ class NotificationTest {
             .uri("$baseUri/$notificationId") // Path from API definition
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .body(BodyInserters.fromValue(requestDto))
             .exchange()
             .expectStatus()
@@ -350,6 +356,7 @@ class NotificationTest {
         webTestClient
             .patch() // Method from API definition
             .uri("$baseUri/$notificationId") // Path from API definition
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .contentType(MediaType.APPLICATION_JSON)
             .body(BodyInserters.fromValue(requestDto))
             .exchange()
@@ -378,6 +385,7 @@ class NotificationTest {
             .uri(baseUri) // Path from API definition
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .body(BodyInserters.fromValue(requestDto))
             .exchange()
             .expectStatus()
@@ -405,6 +413,7 @@ class NotificationTest {
             .uri("$baseUri/status") // Path from API definition
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .body(BodyInserters.fromValue(requestDto))
             .exchange()
             .expectStatus()
@@ -430,6 +439,7 @@ class NotificationTest {
             .uri("$baseUri/status") // Path from API definition
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .body(BodyInserters.fromValue(requestDto))
             .exchange()
             .expectStatus()
@@ -449,6 +459,7 @@ class NotificationTest {
         webTestClient
             .delete() // Method from API definition
             .uri("$baseUri/$notificationId") // Path from API definition
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .exchange()
             .expectStatus()
             .isNoContent // Expect 204
@@ -469,6 +480,7 @@ class NotificationTest {
         webTestClient
             .delete() // Method from API definition
             .uri("$baseUri/$notificationId") // Path from API definition
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .exchange()
             .expectStatus()
             .isNotFound // Expect 404

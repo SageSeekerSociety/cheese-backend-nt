@@ -176,8 +176,12 @@ application:
 # Logging level overrides for dev
 logging:
   level:
-    org.rucca.cheese.auth: DEBUG # Enable DEBUG logging for auth module in dev
-    org.rucca.cheese.notification: DEBUG # Enable TRACE logging for notification module in dev
+    org:
+      rucca:
+        cheese:
+          auth: DEBUG
+#          task: DEBUG
+#          notification: DEBUG
 
 ---
 

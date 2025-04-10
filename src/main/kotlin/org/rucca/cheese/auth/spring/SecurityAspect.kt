@@ -16,9 +16,8 @@ import org.rucca.cheese.auth.registry.ResourceRegistry
 import org.rucca.cheese.common.persistent.IdType
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.AnnotationUtils
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
 
 /**
  * Aspect that intercepts method calls and performs permission checks. Works with @Secure and @Auth
@@ -36,6 +35,14 @@ class SecurityAspect(
     private val contextProviderFactory: PermissionContextProviderFactory,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityAspect::class.java)
+
+    private fun getCurrentUserPrincipalAuthentication(): UserPrincipalAuthenticationToken {
+        val authentication = SecurityContextHolder.getContext().authentication
+        return authentication as? UserPrincipalAuthenticationToken
+            ?: throw IllegalStateException(
+                "Authentication object in SecurityContextHolder is not UserPrincipalAuthenticationToken or is null. Found: ${authentication?.javaClass?.name}"
+            )
+    }
 
     /** Intercepts methods annotated with @Secure and performs permission checks. */
     @Around("@annotation(org.rucca.cheese.auth.spring.Secure)")
@@ -256,30 +263,12 @@ class SecurityAspect(
     }
 
     /** Gets the current user ID from the security context. */
-    @Suppress("UNCHECKED_CAST")
     private fun getCurrentUserInfo(): AuthUserInfo {
-        val request =
-            try {
-                (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes).request
-            } catch (e: Exception) {
-                logger.error("Failed to get request attributes", e)
-                throw IllegalStateException(
-                    "Could not retrieve request attributes. Ensure code is run within a request context.",
-                    e,
-                )
-            }
+        val currentAuth = getCurrentUserPrincipalAuthentication()
 
-        // Retrieve user ID and roles set by an earlier authentication filter/mechanism
-        val userId = request.getAttribute("userId") as? IdType
-        val userRole = request.getAttribute("userRole") as? Set<Role> ?: emptySet()
+        val userId: IdType = currentAuth.userId
+        val systemRoles: Set<Role> = currentAuth.systemRoles
 
-        // If userId is null, authentication information is missing
-        if (userId == null) {
-            logger.warn("Authentication required: User ID not found in request attributes.")
-            // Throwing exception signifies failed authentication check
-            throw IllegalStateException("Authentication required: User ID not found in request.")
-        }
-
-        return AuthUserInfo(userId, userRole)
+        return AuthUserInfo(userId, systemRoles)
     }
 }

@@ -69,9 +69,20 @@ class DefaultPermissionEvaluator(
 
         val domainName = permission.action.domain.name
         val domainProvider = roleProviderRegistry.getProvider(domainName)
+        logger.debug(
+            "Domain role provider for domain {}: {}",
+            domainName,
+            domainProvider?.javaClass?.name,
+        )
 
         if (domainProvider != null) {
             val domainRoles = domainProvider.getRoles(userId, context)
+            logger.debug(
+                "Domain roles for user {} in domain {}: {}",
+                userId,
+                domainName,
+                domainRoles,
+            )
 
             // Check each domain role and its parent roles
             for (role in domainRoles) {

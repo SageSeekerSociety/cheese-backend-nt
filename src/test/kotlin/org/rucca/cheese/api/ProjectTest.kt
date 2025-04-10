@@ -8,10 +8,6 @@
 
 package org.rucca.cheese.api
 
-// Keep necessary imports from the original code if they are still used
-// Import necessary DTOs for response validation if needed, e.g.:
-// import org.rucca.cheese.model.CreateProject201ResponseDTO
-// import org.rucca.cheese.model.GetProjects200ResponseDTO
 import kotlin.math.floor
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
@@ -29,12 +25,9 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient // Import WebTestClient
 import org.springframework.test.web.reactive.server.expectBody // For expectBody extensions
 
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-) // Use WebTestClient environment
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-// @AutoConfigureMockMvc // Remove this annotation
 @TestMethodOrder(OrderAnnotation::class)
 class ProjectTest
 @Autowired
