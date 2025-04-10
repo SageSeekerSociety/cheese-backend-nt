@@ -40,13 +40,7 @@ interface TeamRepository : JpaRepository<Team, IdType> {
             JOIN TeamUserRelation teamUserRelation ON team.id = teamUserRelation.team.id
             WHERE teamUserRelation.user.id = :userId
             AND (teamUserRelation.role = :ownerRole OR teamUserRelation.role = :adminRole)
-            AND NOT EXISTS (
-                SELECT 1
-                FROM TaskMembership taskMembership
-                WHERE taskMembership.task.id = :taskId
-                AND taskMembership.memberId = team.id
-            )
-            """
+        """
     )
     fun getTeamsThatUserCanUseToJoinTask(
         taskId: IdType,

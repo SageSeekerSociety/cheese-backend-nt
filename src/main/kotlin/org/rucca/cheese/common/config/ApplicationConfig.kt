@@ -1,6 +1,6 @@
 /*
  *  Description: This file defines the application configuration properties.
- *               It is used to read the properties from src/main/resources/application.properties
+ *               It is used to read the properties from src/main/resources/application.yml
  *
  *  Author(s):
  *      Nictheboy Li    <nictheboy@outlook.com>

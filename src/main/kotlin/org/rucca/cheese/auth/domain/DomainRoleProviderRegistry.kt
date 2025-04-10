@@ -1,7 +1,7 @@
 package org.rucca.cheese.auth.domain
 
-import javax.annotation.PostConstruct
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 
@@ -10,13 +10,13 @@ import org.springframework.stereotype.Component
  * implementations.
  */
 @Component
-class DomainRoleProviderRegistry(private val applicationContext: ApplicationContext) {
+class DomainRoleProviderRegistry(private val applicationContext: ApplicationContext) :
+    SmartInitializingSingleton {
     private val logger = LoggerFactory.getLogger(DomainRoleProviderRegistry::class.java)
     private val providers = mutableMapOf<String, DomainRoleProvider>()
 
     /** Initializes the registry by discovering all domain role providers. */
-    @PostConstruct
-    fun initialize() {
+    override fun afterSingletonsInstantiated() {
         logger.info("Initializing domain role provider registry")
 
         // Get all domain role providers

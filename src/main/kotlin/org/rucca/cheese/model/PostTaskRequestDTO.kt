@@ -2,8 +2,8 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.Valid
 import java.io.Serializable
-import javax.validation.Valid
 
 /**
  * @param name
@@ -15,7 +15,6 @@ import javax.validation.Valid
  * @param submissionSchema
  * @param space
  * @param deadline
- * @param participantLimit
  * @param defaultDeadline
  * @param categoryId The ID of the category to assign this task to. Requires spaceId to be set.
  * @param rank
@@ -25,6 +24,9 @@ import javax.validation.Valid
  *   TEAM. `undefined` if not specified.
  * @param maxTeamSize Maximum team size allowed to submit the task, only valid if submitterType is
  *   TEAM. `undefined` if not specified.
+ * @param participantLimit Maximum number of participants allowed in the task. `undefined` if not
+ *   specified.
+ * @param teamLockingPolicy
  */
 data class PostTaskRequestDTO(
     @Schema(example = "null", required = true, description = "")
@@ -57,9 +59,6 @@ data class PostTaskRequestDTO(
     @get:JsonProperty("deadline")
     val deadline: kotlin.Long? = null,
     @Schema(example = "null", description = "")
-    @get:JsonProperty("participantLimit")
-    val participantLimit: kotlin.Int? = null,
-    @Schema(example = "null", description = "")
     @get:JsonProperty("defaultDeadline")
     val defaultDeadline: kotlin.Long? = 30L,
     @Schema(
@@ -83,14 +82,25 @@ data class PostTaskRequestDTO(
             "Minimum team size required to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.",
     )
     @get:JsonProperty("minTeamSize")
-    val minTeamSize: kotlin.Long? = null,
+    val minTeamSize: kotlin.Int? = null,
     @Schema(
         example = "null",
         description =
             "Maximum team size allowed to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.",
     )
     @get:JsonProperty("maxTeamSize")
-    val maxTeamSize: kotlin.Long? = null,
+    val maxTeamSize: kotlin.Int? = null,
+    @Schema(
+        example = "null",
+        description =
+            "Maximum number of participants allowed in the task. `undefined` if not specified.",
+    )
+    @get:JsonProperty("participantLimit")
+    val participantLimit: kotlin.Int? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("teamLockingPolicy")
+    val teamLockingPolicy: TeamMembershipLockPolicyDTO? = null,
 ) : Serializable {
 
     companion object {

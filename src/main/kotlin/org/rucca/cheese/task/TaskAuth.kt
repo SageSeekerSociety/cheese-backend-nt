@@ -215,6 +215,12 @@ class TaskPermissionConfig(
 ) : DomainPermissionService {
     private val logger = LoggerFactory.getLogger(TaskPermissionConfig::class.java)
 
+    private fun isAttemptingToModifySensitiveFields(context: Map<String, Any>): Boolean {
+        val approved = TaskContextKeys.APPROVED.get(context)
+        val rejectReason = TaskContextKeys.REJECT_REASON.get(context)
+        return approved != null || rejectReason != null
+    }
+
     override val domain: Domain = TaskDomain
 
     @PostConstruct
@@ -285,44 +291,13 @@ class TaskPermissionConfig(
                     .on(TaskResource.TASK, TaskResource.PARTICIPANT)
                     .all()
 
-                can(TaskAction.DELETE).on(TaskResource.TASK).where {
-                    withCondition { userInfo, action, resourceType, resourceId, context ->
-                        val hasAnyParticipant =
-                            TaskContextKeys.GET_HAS_ANY_PARTICIPANT.get(context)
-                                ?: return@withCondition false
-                        val hasAnySubmission =
-                            TaskContextKeys.GET_HAS_ANY_SUBMISSION.get(context)
-                                ?: return@withCondition false
-
-                        // Only allow deletion if there are no participants or submissions
-                        if (hasAnyParticipant(resourceId!!) || hasAnySubmission(resourceId)) {
-                            return@withCondition false
-                        }
-
-                        true
-                    }
-                }
+                can(TaskAction.DELETE).on(TaskResource.TASK).all()
 
                 can(TaskAction.MODIFY, TaskAction.DELETE).on(TaskResource.PARTICIPANT).all()
 
                 can(TaskAction.MODIFY).on(TaskResource.TASK).where {
-                    withCondition { _, _, _, resourceId, context ->
-                        val taskId = resourceId ?: return@withCondition false
-                        val getHasAnyParticipant =
-                            TaskContextKeys.GET_HAS_ANY_PARTICIPANT.get(context)
-                                ?: return@withCondition false
-                        val getHasAnySubmission =
-                            TaskContextKeys.GET_HAS_ANY_SUBMISSION.get(context)
-                                ?: return@withCondition false
-
-                        val approved = TaskContextKeys.APPROVED.get(context)
-                        val rejectReason = TaskContextKeys.REJECT_REASON.get(context)
-
-                        if ((approved != null || rejectReason != null)) {
-                            return@withCondition false
-                        }
-
-                        !getHasAnyParticipant(taskId) && !getHasAnySubmission(taskId)
+                    withCondition { _, _, _, _, context ->
+                        !isAttemptingToModifySensitiveFields(context)
                     }
                 }
 

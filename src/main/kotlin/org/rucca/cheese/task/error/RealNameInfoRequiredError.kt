@@ -12,7 +12,7 @@ import org.rucca.cheese.common.error.BaseError
 import org.rucca.cheese.common.persistent.IdType
 import org.springframework.http.HttpStatus
 
-class RealNameInfoRequiredError(val entityId: IdType) :
+class RealNameInfoRequiredError(entityId: IdType) :
     BaseError(
         status = HttpStatus.BAD_REQUEST,
         message = "Real name information is required for entity with ID $entityId",

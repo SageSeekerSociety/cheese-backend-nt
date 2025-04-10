@@ -2,8 +2,8 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.constraints.Min
 import java.io.Serializable
-import javax.validation.constraints.Min
 
 /**
  * @param avatarId 头像 id

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.common.helper.RichTextHelper
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.llm.*
@@ -40,6 +41,7 @@ class TaskAIAdviceService(
     private val properties: LLMProperties,
     private val userQuotaService: UserQuotaService,
 ) {
+    @Autowired private lateinit var jwtService: JwtService
     private val logger = LoggerFactory.getLogger(TaskAIAdviceService::class.java)
     private val coroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
@@ -272,7 +274,7 @@ $taskContext
         try {
             val transactionalService = applicationContext.getBean(TransactionalService::class.java)
 
-            val task = taskService.getTaskDto(taskId)
+            val task = taskService.getTaskDto(taskId, currentUserId = jwtService.getCurrentUserId())
             val advice = getTaskAIAdvice(taskId)
 
             val systemPrompt =
@@ -369,7 +371,7 @@ $taskContext
         try {
             val transactionalService = applicationContext.getBean(TransactionalService::class.java)
 
-            val task = taskService.getTaskDto(taskId)
+            val task = taskService.getTaskDto(taskId, currentUserId = jwtService.getCurrentUserId())
             val advice = getTaskAIAdvice(taskId)
 
             val systemPrompt =
@@ -535,7 +537,7 @@ $taskContext
     }
 
     fun getTaskAIAdvice(taskId: IdType): TaskAIAdviceDTO? {
-        val task = taskService.getTaskDto(taskId)
+        val task = taskService.getTaskDto(taskId, currentUserId = jwtService.getCurrentUserId())
         val modelHash = calculateModelHash(task)
         val advice =
             taskAIAdviceRepository.findByTaskIdAndModelHash(taskId, modelHash)?.takeIf {
@@ -770,7 +772,7 @@ $description
         taskId: IdType,
         modelType: String? = null,
     ): GetTaskAiAdviceStatus200ResponseDataDTO {
-        val task = taskService.getTaskDto(taskId)
+        val task = taskService.getTaskDto(taskId, currentUserId = jwtService.getCurrentUserId())
         val modelHash = calculateModelHash(task, modelType)
         val advice = taskAIAdviceRepository.findByTaskIdAndModelHash(taskId, modelHash)
         return GetTaskAiAdviceStatus200ResponseDataDTO(
@@ -787,7 +789,7 @@ $description
         modelType: String? = null,
     ): RequestTaskAiAdvice200ResponseDataDTO {
         // 在协程外获取所有需要的信息
-        val task = taskService.getTaskDto(taskId)
+        val task = taskService.getTaskDto(taskId, currentUserId = jwtService.getCurrentUserId())
         // 将模型类型添加到模型哈希计算中，使不同模型生成不同的建议缓存
         val modelHash = calculateModelHash(task, modelType)
         val prompt = buildPrompt(task)

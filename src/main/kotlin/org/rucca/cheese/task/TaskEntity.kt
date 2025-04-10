@@ -15,15 +15,38 @@ package org.rucca.cheese.task
 import jakarta.persistence.*
 import java.time.LocalDateTime
 import org.hibernate.annotations.SQLRestriction
+import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.BaseEntity
+import org.rucca.cheese.model.TaskSubmitterTypeDTO
+import org.rucca.cheese.model.TeamMembershipLockPolicyDTO
 import org.rucca.cheese.space.models.Space
 import org.rucca.cheese.space.models.SpaceCategory
 import org.rucca.cheese.user.User
 
+enum class TeamMembershipLockPolicy {
+    NO_LOCK, // Team members can be changed freely (with warnings/checks if applicable)
+    LOCK_ON_APPROVAL, // Team members are locked once the TaskMembership is approved
+}
+
+fun TeamMembershipLockPolicy.toDTO(): TeamMembershipLockPolicyDTO {
+    return TeamMembershipLockPolicyDTO.forValue(this.name)
+}
+
+fun TeamMembershipLockPolicyDTO.toEntity(): TeamMembershipLockPolicy {
+    return TeamMembershipLockPolicy.valueOf(this.value)
+}
+
 enum class TaskSubmitterType {
     USER,
     TEAM,
+}
+
+fun TaskSubmitterType.toDTO(): TaskSubmitterTypeDTO {
+    return when (this) {
+        TaskSubmitterType.USER -> TaskSubmitterTypeDTO.USER
+        TaskSubmitterType.TEAM -> TaskSubmitterTypeDTO.TEAM
+    }
 }
 
 enum class TaskSubmissionEntryType {
@@ -76,12 +99,20 @@ class Task(
      * submitterType is TEAM.
      */
     @Column(nullable = true) var maxTeamSize: Int? = null,
+    /**
+     * Defines the policy for locking team membership changes after participation starts. Only
+     * applicable when submitterType is TEAM.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "VARCHAR(50) default 'NO_LOCK'")
+    var teamLockingPolicy: TeamMembershipLockPolicy = TeamMembershipLockPolicy.NO_LOCK,
 ) : BaseEntity() {
     @PrePersist
     @PreUpdate
     fun validateEntityState() {
         checkCategorySpaceConsistency()
         validateTeamSizeConstraints()
+        validateLockingPolicy()
     }
 
     /** Validates team size constraints based on the submitter type. */
@@ -118,6 +149,21 @@ class Task(
             throw IllegalStateException(
                 "Task's category must belong to the same space as the task."
             )
+        }
+    }
+
+    /** Validates the teamLockingPolicy based on the submitter type. */
+    private fun validateLockingPolicy() {
+        if (
+            submitterType == TaskSubmitterType.USER &&
+                teamLockingPolicy != TeamMembershipLockPolicy.NO_LOCK
+        ) {
+            // Locking policies only make sense for TEAM tasks. Reset to NO_LOCK for USER tasks.
+            // Alternatively, throw an exception if it shouldn't be set via API for USER tasks.
+            throw BadRequestError(
+                "Team locking policy (${teamLockingPolicy}) is only applicable for tasks with submitterType TEAM."
+            )
+            // Or silently reset: this.teamLockingPolicy = TeamMembershipLockPolicy.NO_LOCK
         }
     }
 }

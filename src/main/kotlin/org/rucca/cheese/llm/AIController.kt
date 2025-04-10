@@ -1,7 +1,7 @@
 package org.rucca.cheese.llm
 
 import java.math.RoundingMode
-import org.rucca.cheese.api.AiApi
+import org.rucca.cheese.api.AIApi
 import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.spring.UseOldAuth
@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.RestController
 class AIController(
     private val userQuotaService: UserQuotaService,
     private val jwtService: JwtService,
-) : AiApi {
+) : AIApi {
     @Guard("query", "ai:quota")
-    override fun getUserAiQuota(): ResponseEntity<GetUserAiQuota200ResponseDTO> {
+    override suspend fun getUserAiQuota(): ResponseEntity<GetUserAiQuota200ResponseDTO> {
         val userId = jwtService.getCurrentUserId()
         val quota = userQuotaService.getUserQuota(userId)
 

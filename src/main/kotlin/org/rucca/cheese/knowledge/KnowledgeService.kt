@@ -20,7 +20,7 @@ import org.rucca.cheese.model.UpdateKnowledgeRequestDTO
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamRepository
 import org.rucca.cheese.user.UserRepository
-import org.rucca.cheese.user.UserService
+import org.rucca.cheese.user.services.UserService
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -109,12 +109,13 @@ class KnowledgeService(
                     sourceType = sourceType,
                     createdBy = userRepository.getReferenceById(userId.toInt()),
                 )
+                .apply {
+                    labels?.forEach { label ->
+                        this.knowledgeLabels.add(KnowledgeLabelEntity(this, label))
+                    }
+                }
                 .let { knowledgeRepository.save(it) }
 
-        labels?.forEach {
-            val knowledgeLabel = KnowledgeLabelEntity(knowledge = knowledge, label = it)
-            knowledgeLabelRepository.save(knowledgeLabel)
-        }
         return knowledge.toKnowledgeDTO()
     }
 

@@ -32,7 +32,7 @@ import org.rucca.cheese.task.error.TaskSubmissionNotEditableError
 import org.rucca.cheese.task.error.TaskSubmissionNotMatchSchemaError
 import org.rucca.cheese.task.error.TaskVersionNotSubmittedYetError
 import org.rucca.cheese.user.User
-import org.rucca.cheese.user.UserService
+import org.rucca.cheese.user.services.UserService
 import org.springframework.stereotype.Service
 
 @Service
@@ -232,8 +232,8 @@ class TaskSubmissionService(
         return TaskSubmissionDTO(
             id = this.id!!,
             version = this.version!!,
-            createdAt = this.createdAt!!.toEpochMilli(),
-            updatedAt = this.updatedAt!!.toEpochMilli(),
+            createdAt = this.createdAt.toEpochMilli(),
+            updatedAt = this.updatedAt.toEpochMilli(),
             member =
                 taskMembershipService
                     .getTaskMembershipDTO(this.membership!!.task!!.id!!, this.membership.memberId!!)

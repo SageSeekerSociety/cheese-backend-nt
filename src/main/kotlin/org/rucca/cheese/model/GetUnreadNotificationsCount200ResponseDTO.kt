@@ -2,8 +2,8 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.Valid
 import java.io.Serializable
-import javax.validation.Valid
 
 /**
  * @param code
@@ -11,12 +11,12 @@ import javax.validation.Valid
  * @param &#x60;data&#x60;
  */
 data class GetUnreadNotificationsCount200ResponseDTO(
-    @Schema(example = "null", required = true, description = "")
+    @Schema(example = "200", required = true, description = "")
     @get:JsonProperty("code", required = true)
-    val code: kotlin.Int = 200,
-    @Schema(example = "null", required = true, description = "")
+    val code: kotlin.Int,
+    @Schema(example = "Success", required = true, description = "")
     @get:JsonProperty("message", required = true)
-    val message: kotlin.String = "success",
+    val message: kotlin.String,
     @field:Valid
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("data", required = true)

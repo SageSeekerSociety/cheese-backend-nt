@@ -15,16 +15,24 @@ package org.rucca.cheese.task
 import jakarta.persistence.*
 import java.time.LocalDateTime
 import java.util.*
+import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.SQLRestriction
+import org.hibernate.type.SqlTypes
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
 @Embeddable
-class TeamMemberRealNameInfo(
+data class TeamMemberRealNameInfo(
     @Column(name = "member_id", nullable = false) val memberId: IdType,
+    // Unique identifier for this specific member *slot* within *this* team's participation snapshot
+    @Column(name = "participant_member_uuid", nullable = false)
+    @JdbcTypeCode(SqlTypes.UUID)
+    val participantMemberUuid: UUID = UUID.randomUUID(),
     @Embedded val realNameInfo: RealNameInfo,
 )
 
@@ -47,7 +55,14 @@ class TaskMembership(
     @Column(nullable = false) val memberId: IdType? = null,
     @Column(nullable = true) var deadline: LocalDateTime? = null,
     @Column(nullable = false) var approved: ApproveType? = null,
+    @Column(nullable = true) var rejectReason: String? = null,
     @Column(name = "is_team", nullable = false) val isTeam: Boolean = false,
+
+    // Unique anonymous identifier for this participation record (individual or team)
+    // Generated once when the record is created.
+    @Column(name = "participant_uuid", nullable = false, unique = true, updatable = false)
+    @JdbcTypeCode(SqlTypes.UUID)
+    val participantUuid: UUID = UUID.randomUUID(),
 
     // For individual members
     @Embedded var realNameInfo: RealNameInfo? = null,
@@ -57,6 +72,7 @@ class TaskMembership(
     @CollectionTable(
         name = "task_membership_team_members",
         joinColumns = [JoinColumn(name = "task_membership_id")],
+        indexes = [Index(columnList = "participant_member_uuid")],
     )
     val teamMembersRealNameInfo: MutableList<TeamMemberRealNameInfo> = mutableListOf(),
     @Column(name = "email", nullable = false) val email: String? = null,
@@ -90,4 +106,38 @@ interface TaskMembershipRepository : JpaRepository<TaskMembership, IdType> {
         "SELECT tm FROM TaskMembership tm WHERE tm.task.id = :taskId AND EXISTS (SELECT 1 FROM TaskSubmission ts WHERE ts.membership.id = tm.id)"
     )
     fun findByTaskIdWhereMemberHasSubmitted(taskId: IdType): List<TaskMembership>
+
+    fun findAllByIsTeam(isTeam: Boolean, pageable: Pageable): Page<TaskMembership>
+
+    /**
+     * Finds active TaskMemberships for a specific team that belong to tasks with a locking policy
+     * indicating that changes are forbidden.
+     *
+     * @param teamId The ID of the team.
+     * @param approvedStatus The status indicating active participation (e.g., APPROVED).
+     * @param lockingPolicies The list of Task locking policies that trigger a lock.
+     * @param currentTime The current time, used for checking task deadlines if applicable
+     *   (optional).
+     * @return A list of TaskMemberships indicating a lock is active.
+     */
+    @Query(
+        """
+        SELECT tm
+        FROM TaskMembership tm
+        JOIN FETCH tm.task t
+        WHERE tm.memberId = :teamId
+          AND tm.isTeam = true
+          AND tm.approved = :approvedStatus
+          AND (t.deadline IS NULL OR t.deadline > :currentTime)
+          AND t.teamLockingPolicy IN :lockingPolicies
+          AND tm.deletedAt IS NULL
+          AND t.deletedAt IS NULL
+    """
+    )
+    fun findActiveMembershipsWithLockingPolicy(
+        teamId: IdType,
+        approvedStatus: ApproveType,
+        lockingPolicies: List<TeamMembershipLockPolicy>,
+        currentTime: LocalDateTime,
+    ): List<TaskMembership>
 }
