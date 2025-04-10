@@ -889,6 +889,8 @@ paths:
       summary: Delete Task
       operationId: delete-task
       tags: [ Tasks ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       responses:
         "204":
           description: Deleted successfully.
@@ -969,6 +971,8 @@ paths:
       summary: Update Task
       operationId: patch-task
       tags: [ Tasks ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       responses:
         "200":
           content:
@@ -1045,6 +1049,16 @@ paths:
                   format: int64
                   description: ID of the category to which the task belongs.
                   example: 1
+                minTeamSize:
+                  type: integer
+                  description: Minimum team size required for the task.
+                  example: 1
+                maxTeamSize:
+                  type: integer
+                  description: Maximum team size allowed for the task.
+                  example: 10
+                teamLockingPolicy:
+                  $ref: "#/components/schemas/TeamMembershipLockPolicy"
   /tasks/{taskId}/teams:
     parameters:
       - $ref: '#/components/parameters/TaskId'
@@ -1486,15 +1500,16 @@ paths:
                   default: false
                 minTeamSize:
                   type: integer
-                  format: int64
                   description: Minimum team size required to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.
                 maxTeamSize:
                   type: integer
-                  format: int64
                   description: Maximum team size allowed to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.
                 participantLimit:
                   type: integer
                   description: Maximum number of participants allowed in the task. `undefined` if not specified.
+                teamLockingPolicy:
+                  $ref: "#/components/schemas/TeamMembershipLockPolicy"
+                  default: NO_LOCK
       summary: Create Task
   /tasks/{taskId}/participants:
     parameters:
@@ -4046,7 +4061,7 @@ components:
           description: Optional additional details specific to the reason code (e.g., list of user IDs missing real name info).
           additionalProperties: true
           example:
-            missingRealNameUserIds: [101, 105]
+            missingRealNameUserIds: [ 101, 105 ]
     EligibilityStatus:
       type: object
       description: Represents the eligibility status (e.g., for joining or submitting) for a user or a team regarding a specific task.
@@ -4203,11 +4218,21 @@ components:
         maxTeamSize:
           type: integer
           description: Maximum size of team that can join this task
+        teamLockingPolicy:
+          $ref: "#/components/schemas/TeamMembershipLockPolicy"
+          description: Team locking policy for this task, only valid when 'submitterType' is TEAM
     TaskSubmitterType:
       title: TaskSubmitterType
+      type: string
       enum:
         - USER
         - TEAM
+    TeamMembershipLockPolicy:
+      title: TeamMembershipLockPolicy
+      type: string
+      enum:
+        - NO_LOCK
+        - LOCK_ON_APPROVAL
     TaskSubmissionSchemaEntry:
       title: TaskSubmissionSchemaEntry
       type: object
@@ -4510,31 +4535,31 @@ components:
           type: integer
           format: int64
     TaskTeamParticipantMemberSummary:
-        title: TaskTeamParticipantMemberSummary
-        type: object
-        required:
-          - name
-          - avatarId
-          - intro
-          - isLeader
-        properties:
-          userId:
-            type: integer
-            format: int64
-          name:
-            type: string
-          avatarId:
-            type: integer
-            format: int64
-          intro:
-            type: string
-          isLeader:
-            type: boolean
-          participantMemberId:
-            type: string
-            format: uuid
-          realNameInfo:
-            $ref: "#/components/schemas/TaskParticipantRealNameInfo"
+      title: TaskTeamParticipantMemberSummary
+      type: object
+      required:
+        - name
+        - avatarId
+        - intro
+        - isLeader
+      properties:
+        userId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        avatarId:
+          type: integer
+          format: int64
+        intro:
+          type: string
+        isLeader:
+          type: boolean
+        participantMemberId:
+          type: string
+          format: uuid
+        realNameInfo:
+          $ref: "#/components/schemas/TaskParticipantRealNameInfo"
     TaskMembership:
       title: TaskMembership
       type: object

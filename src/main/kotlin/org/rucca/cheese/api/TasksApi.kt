@@ -101,9 +101,10 @@ interface TasksApi {
     )
     @RequestMapping(method = [RequestMethod.DELETE], value = ["/tasks/{taskId}"])
     suspend fun deleteTask(
+        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
         @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
-        taskId: kotlin.Long
+        taskId: kotlin.Long,
     ): ResponseEntity<Unit> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
@@ -784,6 +785,7 @@ The teams can be filtered based on eligibility criteria.
         consumes = ["application/json"],
     )
     suspend fun patchTask(
+        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
         @Parameter(description = "The unique identifier of the task.", required = true)
         @PathVariable("taskId")
         taskId: kotlin.Long,

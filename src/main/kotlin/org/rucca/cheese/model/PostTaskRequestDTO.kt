@@ -26,6 +26,7 @@ import java.io.Serializable
  *   TEAM. `undefined` if not specified.
  * @param participantLimit Maximum number of participants allowed in the task. `undefined` if not
  *   specified.
+ * @param teamLockingPolicy
  */
 data class PostTaskRequestDTO(
     @Schema(example = "null", required = true, description = "")
@@ -81,14 +82,14 @@ data class PostTaskRequestDTO(
             "Minimum team size required to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.",
     )
     @get:JsonProperty("minTeamSize")
-    val minTeamSize: kotlin.Long? = null,
+    val minTeamSize: kotlin.Int? = null,
     @Schema(
         example = "null",
         description =
             "Maximum team size allowed to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.",
     )
     @get:JsonProperty("maxTeamSize")
-    val maxTeamSize: kotlin.Long? = null,
+    val maxTeamSize: kotlin.Int? = null,
     @Schema(
         example = "null",
         description =
@@ -96,6 +97,10 @@ data class PostTaskRequestDTO(
     )
     @get:JsonProperty("participantLimit")
     val participantLimit: kotlin.Int? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("teamLockingPolicy")
+    val teamLockingPolicy: TeamMembershipLockPolicyDTO? = null,
 ) : Serializable {
 
     companion object {

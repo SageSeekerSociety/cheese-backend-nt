@@ -19,6 +19,7 @@ import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.model.TaskSubmitterTypeDTO
+import org.rucca.cheese.model.TeamMembershipLockPolicyDTO
 import org.rucca.cheese.space.models.Space
 import org.rucca.cheese.space.models.SpaceCategory
 import org.rucca.cheese.user.User
@@ -26,6 +27,14 @@ import org.rucca.cheese.user.User
 enum class TeamMembershipLockPolicy {
     NO_LOCK, // Team members can be changed freely (with warnings/checks if applicable)
     LOCK_ON_APPROVAL, // Team members are locked once the TaskMembership is approved
+}
+
+fun TeamMembershipLockPolicy.toDTO(): TeamMembershipLockPolicyDTO {
+    return TeamMembershipLockPolicyDTO.forValue(this.name)
+}
+
+fun TeamMembershipLockPolicyDTO.toEntity(): TeamMembershipLockPolicy {
+    return TeamMembershipLockPolicy.valueOf(this.value)
 }
 
 enum class TaskSubmitterType {

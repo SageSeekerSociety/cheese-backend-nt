@@ -37,6 +37,7 @@ import java.io.Serializable
  * @param topics
  * @param minTeamSize Minimum size of team that can join this task
  * @param maxTeamSize Maximum size of team that can join this task
+ * @param teamLockingPolicy
  */
 data class TaskDTO(
     @Schema(example = "null", required = true, description = "")
@@ -148,6 +149,10 @@ data class TaskDTO(
     @Schema(example = "null", description = "Maximum size of team that can join this task")
     @get:JsonProperty("maxTeamSize")
     val maxTeamSize: kotlin.Int? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("teamLockingPolicy")
+    val teamLockingPolicy: TeamMembershipLockPolicyDTO? = null,
 ) : Serializable {
 
     companion object {

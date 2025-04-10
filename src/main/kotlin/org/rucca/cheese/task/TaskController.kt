@@ -19,8 +19,10 @@ import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.TasksApi
 import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.UseNewAuth
+import org.rucca.cheese.auth.model.AuthUserInfo
 import org.rucca.cheese.auth.spring.Auth
 import org.rucca.cheese.auth.spring.AuthContext
+import org.rucca.cheese.auth.spring.AuthUser
 import org.rucca.cheese.auth.spring.ResourceId
 import org.rucca.cheese.common.helper.toLocalDateTime
 import org.rucca.cheese.common.persistent.ApproveType
@@ -59,8 +61,11 @@ class TaskController(
 ) : TasksApi {
 
     @Auth("task:delete:task")
-    override suspend fun deleteTask(@ResourceId taskId: Long): ResponseEntity<Unit> {
-        taskService.deleteTask(taskId)
+    override suspend fun deleteTask(
+        @AuthUser userInfo: AuthUserInfo?,
+        @ResourceId taskId: Long,
+    ): ResponseEntity<Unit> {
+        taskService.deleteTask(taskId, userInfo!!.userId)
         return ResponseEntity.noContent().build()
     }
 
@@ -97,6 +102,7 @@ class TaskController(
         queryUserDeadline: Boolean,
         queryTopics: Boolean,
     ): ResponseEntity<GetTask200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
         val queryOptions =
             TaskQueryOptions(
                 querySpace = querySpace,
@@ -106,12 +112,14 @@ class TaskController(
                 queryTopics = queryTopics,
                 queryUserDeadline = queryUserDeadline,
             )
-        val taskDTO = taskService.getTaskDto(taskId, queryOptions, jwtService.getCurrentUserId())
+        val taskDTO = taskService.getTaskDto(taskId, queryOptions, currentUserId)
         val participationInfoDTO =
-            taskMembershipService.getUserParticipationInfo(
-                taskId = taskId,
-                userId = jwtService.getCurrentUserId(),
-            )
+            withContext(Dispatchers.IO) {
+                taskMembershipService.getUserParticipationInfo(
+                    taskId = taskId,
+                    userId = currentUserId,
+                )
+            }
         return ResponseEntity.ok(
             GetTask200ResponseDTO(
                 code = 200,
@@ -129,7 +137,9 @@ class TaskController(
     ): ResponseEntity<GetTaskParticipants200ResponseDTO> {
         val approveType = approved?.convert()
         val participants =
-            taskMembershipService.getTaskMembershipDTOs(taskId, approveType, queryRealNameInfo)
+            withContext(Dispatchers.IO) {
+                taskMembershipService.getTaskMembershipDTOs(taskId, approveType, queryRealNameInfo)
+            }
         return ResponseEntity.ok(
             GetTaskParticipants200ResponseDTO(
                 200,
@@ -254,76 +264,28 @@ class TaskController(
 
     @Auth("task:modify:task")
     override suspend fun patchTask(
+        @AuthUser userInfo: AuthUserInfo?,
         @ResourceId taskId: Long,
         @AuthContext("approved", field = "approved")
         @AuthContext("rejectReason", field = "rejectReason")
         patchTaskRequestDTO: PatchTaskRequestDTO,
     ): ResponseEntity<PatchTask200ResponseDTO> {
-        if (patchTaskRequestDTO.approved != null) {
-            taskService.updateApproved(taskId, patchTaskRequestDTO.approved.convert())
-        }
-        if (patchTaskRequestDTO.rejectReason != null) {
-            taskService.updateRejectReason(taskId, patchTaskRequestDTO.rejectReason)
-        }
-        if (patchTaskRequestDTO.name != null) {
-            taskService.updateTaskName(taskId, patchTaskRequestDTO.name)
-        }
-        if (patchTaskRequestDTO.hasDeadline == false) {
-            taskService.updateTaskDeadline(taskId, null)
-        }
-        if (patchTaskRequestDTO.deadline != null) {
-            taskService.updateTaskDeadline(taskId, patchTaskRequestDTO.deadline.toLocalDateTime())
-        }
-        if (patchTaskRequestDTO.hasParticipantLimit == false) {
-            taskService.updateTaskParticipantLimit(taskId, null)
-        }
-        if (patchTaskRequestDTO.participantLimit != null) {
-            taskService.updateTaskParticipantLimit(taskId, patchTaskRequestDTO.participantLimit)
-        }
-        if (patchTaskRequestDTO.defaultDeadline != null) {
-            taskService.updateTaskDefaultDeadline(taskId, patchTaskRequestDTO.defaultDeadline)
-        }
-        if (patchTaskRequestDTO.resubmittable != null) {
-            taskService.updateTaskResubmittable(taskId, patchTaskRequestDTO.resubmittable)
-        }
-        if (patchTaskRequestDTO.editable != null) {
-            taskService.updateTaskEditable(taskId, patchTaskRequestDTO.editable)
-        }
-        if (patchTaskRequestDTO.intro != null) {
-            taskService.updateTaskIntro(taskId, patchTaskRequestDTO.intro)
-        }
-        if (patchTaskRequestDTO.description != null) {
-            taskService.updateTaskDescription(taskId, patchTaskRequestDTO.description)
-        }
-        if (patchTaskRequestDTO.submissionSchema != null) {
-            taskService.updateTaskSubmissionSchema(
-                taskId,
-                patchTaskRequestDTO.submissionSchema.withIndex().map {
-                    TaskSubmissionSchema(
-                        it.index,
-                        it.value.prompt,
-                        taskSubmissionService.convertTaskSubmissionEntryType(it.value.type),
-                    )
-                },
+        val currentUserId = jwtService.getCurrentUserId()
+
+        val updatedTaskDTO =
+            withContext(Dispatchers.IO) {
+                taskService.patchTask(taskId, patchTaskRequestDTO, currentUserId)
+            }
+
+        val responseData = PatchTask200ResponseDataDTO(updatedTaskDTO)
+        val response =
+            PatchTask200ResponseDTO(
+                code = 200,
+                data = responseData,
+                message = "Task updated successfully.",
             )
-        }
-        if (patchTaskRequestDTO.rank != null) {
-            taskService.updateTaskRank(taskId, patchTaskRequestDTO.rank)
-        }
-        if (patchTaskRequestDTO.topics != null) {
-            taskTopicsService.updateTaskTopics(taskId, patchTaskRequestDTO.topics)
-        }
-        if (patchTaskRequestDTO.requireRealName != null) {
-            taskService.updateTaskRequireRealName(taskId, patchTaskRequestDTO.requireRealName)
-        }
-        if (patchTaskRequestDTO.categoryId != null) {
-            taskService.updateTaskCategory(taskId, patchTaskRequestDTO.categoryId)
-        }
-        val taskDTO =
-            taskService.getTaskDto(taskId, TaskQueryOptions.MAXIMUM, jwtService.getCurrentUserId())
-        return ResponseEntity.ok(
-            PatchTask200ResponseDTO(200, PatchTask200ResponseDataDTO(taskDTO), "OK")
-        )
+
+        return ResponseEntity.ok(response)
     }
 
     @Auth("task:modify:participant")
@@ -365,7 +327,10 @@ class TaskController(
                 patchTaskMembershipRequestDTO,
             )
         }
-        val participants = taskMembershipService.getTaskMembershipDTOs(taskId, null)
+        val participants =
+            withContext(Dispatchers.IO) {
+                taskMembershipService.getTaskMembershipDTOs(taskId, null)
+            }
         return ResponseEntity.ok(
             PatchTaskMembershipByMember200ResponseDTO(
                 200,
@@ -429,6 +394,11 @@ class TaskController(
                 categoryId = postTaskRequestDTO.categoryId,
                 rank = postTaskRequestDTO.rank,
                 requireRealName = postTaskRequestDTO.requireRealName ?: false,
+                minTeamSize = postTaskRequestDTO.minTeamSize,
+                maxTeamSize = postTaskRequestDTO.maxTeamSize,
+                teamMembershipLockPolicy =
+                    postTaskRequestDTO.teamLockingPolicy?.toEntity()
+                        ?: TeamMembershipLockPolicy.NO_LOCK,
             )
         taskTopicsService.updateTaskTopics(taskId, postTaskRequestDTO.topics ?: emptyList())
         val taskDTO =
@@ -449,17 +419,19 @@ class TaskController(
             if (postTaskParticipantRequestDTO.deadline != null) ApproveType.APPROVED
             else ApproveType.NONE
         val participant =
-            taskMembershipService.addTaskParticipant(
-                taskId,
-                member,
-                postTaskParticipantRequestDTO.deadline?.toLocalDateTime(),
-                approved,
-                postTaskParticipantRequestDTO.email,
-                postTaskParticipantRequestDTO.phone,
-                postTaskParticipantRequestDTO.applyReason,
-                postTaskParticipantRequestDTO.personalAdvantage,
-                postTaskParticipantRequestDTO.remark,
-            )
+            withContext(Dispatchers.IO) {
+                taskMembershipService.addTaskParticipant(
+                    taskId,
+                    member,
+                    postTaskParticipantRequestDTO.deadline?.toLocalDateTime(),
+                    approved,
+                    postTaskParticipantRequestDTO.email,
+                    postTaskParticipantRequestDTO.phone,
+                    postTaskParticipantRequestDTO.applyReason,
+                    postTaskParticipantRequestDTO.personalAdvantage,
+                    postTaskParticipantRequestDTO.remark,
+                )
+            }
         return ResponseEntity.ok(
             PostTaskParticipant200ResponseDTO(
                 200,

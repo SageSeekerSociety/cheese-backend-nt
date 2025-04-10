@@ -15,10 +15,13 @@ import jakarta.persistence.criteria.*
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.hibernate.query.SortDirection
+import org.rucca.cheese.auth.services.AuthorizationQueryService
 import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.error.PreconditionFailedError
+import org.rucca.cheese.common.helper.EntityPatcher
 import org.rucca.cheese.common.helper.PageHelper
+import org.rucca.cheese.common.helper.toLocalDateTime
 import org.rucca.cheese.common.pagination.model.toPageDTO
 import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
 import org.rucca.cheese.common.pagination.repository.idSeekSpec
@@ -40,6 +43,7 @@ import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.team.TeamUserRelation
 import org.rucca.cheese.topic.Topic
+import org.rucca.cheese.topic.TopicService
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.services.UserRealNameService
 import org.rucca.cheese.user.services.UserService
@@ -57,6 +61,7 @@ class TaskService(
     private val teamService: TeamService,
     private val taskRepository: TaskRepository,
     private val taskMembershipRepository: TaskMembershipRepository,
+    private val taskSubmissionService: TaskSubmissionService,
     private val taskSubmissionRepository: TaskSubmissionRepository,
     private val elasticsearchTemplate: ElasticsearchTemplate,
     private val spaceRepository: SpaceRepository,
@@ -65,8 +70,85 @@ class TaskService(
     private val taskTopicsService: TaskTopicsService,
     private val taskMembershipService: TaskMembershipService,
     private val userRealNameService: UserRealNameService,
+    private val entityPatcher: EntityPatcher,
+    private val topicService: TopicService,
+    private val authorizationQueryService: AuthorizationQueryService,
 ) {
     private val logger = LoggerFactory.getLogger(TaskService::class.java)
+
+    private enum class TaskOperationType(val presentTense: String, val pastTense: String) {
+        MODIFY("modify", "modified"),
+        DELETE("delete", "deleted"),
+    }
+
+    /**
+     * Ensures that the task's current state allows the requested operation (Modify or Delete).
+     * Based on the rule: If a task has participants or submissions, only Space Admins can modify or
+     * delete it. Throws PreconditionFailedError if the operation is blocked by the state and user
+     * role.
+     *
+     * @param taskId The ID of the task being operated on.
+     * @param userId The ID of the user attempting the operation.
+     * @param operationType The type of operation being attempted (MODIFY or DELETE).
+     * @throws PreconditionFailedError if the task state prohibits the operation for the given user
+     *   roles.
+     */
+    private fun ensureTaskStateAllowsOperation(
+        taskId: IdType,
+        userId: IdType,
+        operationType: TaskOperationType,
+    ) {
+        // 1. Check the task's state (same as before)
+        val hasParticipants = taskMembershipRepository.existsByTaskId(taskId)
+        val hasSubmissions = taskSubmissionService.taskHasAnySubmission(taskId)
+        val isOperationRestrictedByState = hasParticipants || hasSubmissions
+
+        // 2. Apply the business rule using the AuthorizationQueryService
+        if (isOperationRestrictedByState) {
+            // Check if the user has the specific role needed to bypass the restriction
+            val canBypassStateRestriction =
+                authorizationQueryService.hasEffectiveRole(
+                    userId,
+                    TaskRole.SPACE_ADMIN, // The specific role needed
+                    TaskDomain, // Domain
+                    TaskResource.TASK, // Resource Type
+                    taskId, // Resource ID
+                )
+
+            if (!canBypassStateRestriction) {
+                val allUserRoles =
+                    authorizationQueryService.getEffectiveRoles(
+                        userId,
+                        TaskDomain,
+                        TaskResource.TASK,
+                        taskId,
+                    ) // Get roles for logging if needed
+                val reasonCode = "TASK_STATE_RESTRICTS_${operationType.name}"
+                val message =
+                    "Task cannot be ${operationType.pastTense} because it has active participants or submissions. " +
+                        "Only specific roles (e.g., Space Administrator) can perform this operation in the current state."
+                logger.warn(
+                    "User {} attempted to {} task {} but was blocked due to task state and effective roles {}.",
+                    userId,
+                    operationType.presentTense,
+                    taskId,
+                    allUserRoles.joinToString { it.roleId },
+                )
+                throw PreconditionFailedError(
+                    message,
+                    mapOf("taskId" to taskId, "reason" to reasonCode),
+                )
+            } else {
+                logger.info(
+                    "User {} (effectively has {}) is performing '{}}' on task {} which has participants/submissions. Bypassing state restriction.",
+                    userId,
+                    TaskRole.SPACE_ADMIN.roleId,
+                    operationType.presentTense,
+                    taskId,
+                )
+            }
+        }
+    }
 
     fun getTaskDto(
         taskId: IdType,
@@ -201,6 +283,9 @@ class TaskService(
             topics = topics,
             requireRealName = this.requireRealName,
             userDeadline = userDeadline,
+            minTeamSize = this.minTeamSize,
+            maxTeamSize = this.maxTeamSize,
+            teamLockingPolicy = this.teamLockingPolicy.toDTO(),
         )
     }
 
@@ -238,6 +323,7 @@ class TaskService(
         requireRealName: Boolean = false,
         minTeamSize: Int? = null,
         maxTeamSize: Int? = null,
+        teamMembershipLockPolicy: TeamMembershipLockPolicy = TeamMembershipLockPolicy.NO_LOCK,
     ): IdType {
         if (
             submitterType != TaskSubmitterType.TEAM && (minTeamSize != null || maxTeamSize != null)
@@ -280,103 +366,131 @@ class TaskService(
                     requireRealName = requireRealName,
                     minTeamSize = minTeamSize,
                     maxTeamSize = maxTeamSize,
+                    teamLockingPolicy = teamMembershipLockPolicy,
                 )
             )
         return task.id!!
-    }
-
-    fun updateTaskCategory(taskId: IdType, newCategoryId: IdType) {
-        val task = getTask(taskId)
-        val spaceId = task.space.id!!
-
-        val newCategory = validateAndGetCategory(newCategoryId, spaceId)
-
-        if (task.category.id != newCategory.id) {
-            task.category = newCategory
-            taskRepository.save(task)
-        }
     }
 
     private fun getTask(taskId: IdType): Task {
         return taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
     }
 
-    fun updateTaskName(taskId: IdType, name: String) {
-        val task = getTask(taskId)
-        task.name = name
-        taskRepository.save(task)
-    }
+    /**
+     * Patches a Task entity with non-null values from the request DTO. Follows the pattern:
+     * Validate/Pre-fetch -> Patch -> Save. This ensures efficiency and atomicity within the
+     * transaction.
+     *
+     * @param taskId The ID of the Task to update.
+     * @param patchDto The DTO containing fields to update.
+     * @param currentUserId The ID of the user performing the update (for context/permission checks
+     *   if needed later).
+     * @return The updated TaskDTO.
+     * @throws NotFoundError If the task or related entities (like category) are not found.
+     * @throws BadRequestError If validation fails (e.g., invalid category).
+     */
+    @Transactional
+    fun patchTask(taskId: IdType, patchDto: PatchTaskRequestDTO, currentUserId: IdType): TaskDTO {
+        ensureTaskStateAllowsOperation(
+            taskId = taskId,
+            userId = currentUserId,
+            operationType = TaskOperationType.MODIFY,
+        )
 
-    fun updateTaskDeadline(taskId: IdType, deadline: LocalDateTime?) {
         val task = getTask(taskId)
-        task.deadline = deadline
-        taskRepository.save(task)
-    }
 
-    fun updateTaskParticipantLimit(taskId: IdType, participantLimit: Int?) {
-        val task = getTask(taskId)
-        task.participantLimit = participantLimit
-        taskRepository.save(task)
-    }
+        // Validate and fetch the new category if provided
+        val newCategory =
+            patchDto.categoryId?.let { newCatId ->
+                validateAndGetCategory(
+                    newCatId,
+                    task.space.id!!,
+                ) // Ensure category is valid for the task's space
+            }
 
-    fun updateTaskDefaultDeadline(taskId: IdType, defaultDeadline: Long) {
-        val task = getTask(taskId)
-        task.defaultDeadline = defaultDeadline
-        taskRepository.save(task)
-    }
+        // Pre-validate topics if necessary (assuming taskTopicsService handles this)
+        patchDto.topics?.forEach { topicId -> topicService.ensureTopicExists(topicId) }
 
-    fun updateTaskResubmittable(taskId: IdType, resubmittable: Boolean) {
-        val task = getTask(taskId)
-        task.resubmittable = resubmittable
-        taskRepository.save(task)
-    }
+        // --- Patch the entity ---
+        // Use EntityPatcher to apply changes from DTO to the entity.
+        // Handlers are used for fields requiring special logic (e.g., type conversion, related
+        // entity updates).
+        // Fields with matching names/types and no handler are patched automatically by default.
+        val updatedTask =
+            entityPatcher.patch(task, patchDto) {
+                // Handle conversion from DTO enum to entity enum
+                handle(PatchTaskRequestDTO::approved) { entity, value ->
+                    entity.approved = value.convert()
+                }
 
-    fun updateTaskEditable(taskId: IdType, editable: Boolean) {
-        val task = getTask(taskId)
-        task.editable = editable
-        taskRepository.save(task)
-    }
+                // Handle conversion from Long timestamp to LocalDateTime for deadline
+                handle(PatchTaskRequestDTO::deadline) { entity, value ->
+                    // Note: This handler only runs if patchDto.deadline is NOT null.
+                    // The case for setting deadline to null is handled *after* this block.
+                    entity.deadline = value.toLocalDateTime()
+                }
 
-    fun updateTaskIntro(taskId: IdType, intro: String) {
-        val task = getTask(taskId)
-        task.intro = intro
-        taskRepository.save(task)
-    }
+                // Handle TaskSubmissionSchema update (includes conversion)
+                handle(PatchTaskRequestDTO::submissionSchema) { entity, schemaEntries ->
+                    entity.submissionSchema =
+                        schemaEntries.withIndex().map { (index, entryDto) ->
+                            TaskSubmissionSchema(
+                                index = index,
+                                description =
+                                    entryDto.prompt, // Assuming DTO field name is 'prompt'
+                                // Requires TaskSubmissionService or a local conversion method
+                                type =
+                                    taskSubmissionService.convertTaskSubmissionEntryType(
+                                        entryDto.type
+                                    ),
+                            )
+                        }
+                }
 
-    fun updateTaskDescription(taskId: IdType, description: String) {
-        val task = getTask(taskId)
-        task.description = description
-        taskRepository.save(task)
-    }
+                // Handle category update using the pre-fetched category
+                handle(PatchTaskRequestDTO::categoryId) { entity, _
+                    -> // The value (newCatId) was already used
+                    if (
+                        newCategory != null
+                    ) { // Only update if categoryId was actually provided in the DTO
+                        entity.category = newCategory
+                    }
+                }
 
-    fun updateTaskSubmissionSchema(taskId: IdType, submissionSchema: List<TaskSubmissionSchema>) {
-        val task = getTask(taskId)
-        task.submissionSchema = submissionSchema
-        taskRepository.save(task)
-    }
+                // Handle updating topics relation (potential flush point - keep handler simple)
+                handle(PatchTaskRequestDTO::topics) { entity, topicIds ->
+                    // This directly calls another service. Be mindful of potential side effects or
+                    // flushes.
+                    // Ideally, taskTopicsService.updateTaskTopics should be safe to call within
+                    // this transaction phase.
+                    taskTopicsService.updateTaskTopics(entity.id!!, topicIds)
+                }
 
-    fun updateTaskRank(taskId: IdType, rank: Int?) {
-        val task = getTask(taskId)
-        task.rank = rank
-        taskRepository.save(task)
-    }
+                // handle(PatchTaskRequestDTO::requireRealName) { entity, value -> ... }
+                // Simple boolean toggle might be handled automatically if names match.
+                // If complex logic (like calling enable/disableRealNameRequirement) was intended,
+                // that should be a separate endpoint, not part of a generic patch.
+            }
 
-    fun updateApproved(taskId: IdType, approved: ApproveType) {
-        val task = getTask(taskId)
-        task.approved = approved
-        taskRepository.save(task)
-    }
+        // --- Post-Patch Adjustments ---
+        // Handle specific cases like setting fields to null based on flags,
+        // which might be complex for the generic patcher handlers.
 
-    fun updateRejectReason(taskId: IdType, rejectReason: String) {
-        val task = getTask(taskId)
-        task.rejectReason = rejectReason
-        taskRepository.save(task)
-    }
+        if (patchDto.hasDeadline == false) {
+            updatedTask.deadline = null // Explicitly set deadline to null
+        }
 
-    fun updateTaskRequireRealName(taskId: IdType, requireRealName: Boolean) {
-        val task = getTask(taskId)
-        task.requireRealName = requireRealName
-        taskRepository.save(task)
+        if (patchDto.hasParticipantLimit == false) {
+            updatedTask.participantLimit = null // Explicitly set participant limit to null
+        }
+
+        // --- Save the entity ---
+        // Persist all accumulated changes with a single save operation.
+        val savedTask = taskRepository.save(updatedTask)
+
+        // --- Return Result ---
+        // Fetch the comprehensive DTO based on the final saved state.
+        return savedTask.toTaskDTO(TaskQueryOptions.MAXIMUM, currentUserId)
     }
 
     enum class TasksSortBy {
@@ -743,7 +857,13 @@ class TaskService(
         return Pair(dtos, page)
     }
 
-    fun deleteTask(taskId: IdType) {
+    fun deleteTask(taskId: IdType, currentUserId: IdType) {
+        ensureTaskStateAllowsOperation(
+            taskId = taskId,
+            userId = currentUserId,
+            operationType = TaskOperationType.DELETE,
+        )
+
         val task = getTask(taskId)
         task.deletedAt = LocalDateTime.now()
         val participants = taskMembershipRepository.findAllByTaskId(taskId)
