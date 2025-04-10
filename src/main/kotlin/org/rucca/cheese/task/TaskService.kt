@@ -466,10 +466,9 @@ class TaskService(
                     taskTopicsService.updateTaskTopics(entity.id!!, topicIds)
                 }
 
-                // handle(PatchTaskRequestDTO::requireRealName) { entity, value -> ... }
-                // Simple boolean toggle might be handled automatically if names match.
-                // If complex logic (like calling enable/disableRealNameRequirement) was intended,
-                // that should be a separate endpoint, not part of a generic patch.
+                handle(PatchTaskRequestDTO::teamLockingPolicy) { entity, value ->
+                    entity.teamLockingPolicy = value.toEntity()
+                }
             }
 
         // --- Post-Patch Adjustments ---
