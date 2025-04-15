@@ -158,6 +158,11 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
+    SEQUENCE team_membership_application_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE team_seq
 START WITH
     1 INCREMENT BY 50;
@@ -350,13 +355,6 @@ CREATE
 
 CREATE
     TABLE
-        knowledge_knowledge_labels(
-            knowledge_id BIGINT NOT NULL,
-            knowledge_labels_id BIGINT NOT NULL UNIQUE
-        );
-
-CREATE
-    TABLE
         knowledge_label(
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
@@ -412,22 +410,35 @@ CREATE
 CREATE
     TABLE
         notification(
+            finalized BOOLEAN NOT NULL,
+            is_aggregatable BOOLEAN NOT NULL,
             READ BOOLEAN NOT NULL,
-            receiver_id INTEGER NOT NULL,
+            aggregate_until TIMESTAMP(6) WITH TIME ZONE,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
+            receiver_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
+            version BIGINT NOT NULL,
+            aggregation_key VARCHAR(255),
             TYPE VARCHAR(255) NOT NULL CHECK(
                 TYPE IN(
                     'MENTION',
                     'REPLY',
                     'REACTION',
                     'PROJECT_INVITE',
-                    'DEADLINE_REMIND'
+                    'DEADLINE_REMIND',
+                    'TEAM_JOIN_REQUEST',
+                    'TEAM_INVITATION',
+                    'TEAM_REQUEST_APPROVED',
+                    'TEAM_REQUEST_REJECTED',
+                    'TEAM_INVITATION_ACCEPTED',
+                    'TEAM_INVITATION_DECLINED',
+                    'TEAM_INVITATION_CANCELED',
+                    'TEAM_REQUEST_CANCELED'
                 )
             ),
-            content JSONB,
+            metadata JSONB,
             PRIMARY KEY(id)
         );
 
@@ -597,7 +608,13 @@ CREATE
             description TEXT NOT NULL,
             intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
-            reject_reason VARCHAR(255),
+            reject_reason VARCHAR(255) NOT NULL,
+            team_locking_policy VARCHAR(50) DEFAULT 'NO_LOCK' NOT NULL CHECK(
+                team_locking_policy IN(
+                    'NO_LOCK',
+                    'LOCK_ON_APPROVAL'
+                )
+            ),
             PRIMARY KEY(id)
         );
 
@@ -654,6 +671,7 @@ CREATE
             encrypted BOOLEAN DEFAULT FALSE,
             member_id BIGINT NOT NULL,
             task_membership_id BIGINT NOT NULL,
+            participant_member_uuid uuid NOT NULL,
             class_name VARCHAR(255),
             grade VARCHAR(255),
             major VARCHAR(255),
@@ -687,8 +705,18 @@ CREATE
             member_id BIGINT NOT NULL,
             task_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
+            participant_uuid uuid NOT NULL UNIQUE,
             apply_reason VARCHAR(255) NOT NULL,
             class_name VARCHAR(255),
+            completion_status VARCHAR(50) DEFAULT 'NOT_SUBMITTED' NOT NULL CHECK(
+                completion_status IN(
+                    'NOT_SUBMITTED',
+                    'PENDING_REVIEW',
+                    'REJECTED_RESUBMITTABLE',
+                    'SUCCESS',
+                    'FAILED'
+                )
+            ),
             email VARCHAR(255) NOT NULL,
             encryption_key_id VARCHAR(255),
             grade VARCHAR(255),
@@ -696,6 +724,7 @@ CREATE
             personal_advantage VARCHAR(255) NOT NULL,
             phone VARCHAR(255) NOT NULL,
             real_name VARCHAR(255),
+            reject_reason VARCHAR(255),
             remark VARCHAR(255) NOT NULL,
             student_id VARCHAR(255),
             PRIMARY KEY(id)
@@ -765,6 +794,45 @@ CREATE
             description TEXT NOT NULL,
             intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        team_membership_application(
+            "initiator_id" INTEGER NOT NULL,
+            "processed_by_id" INTEGER,
+            "user_id" INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            processed_at TIMESTAMP(6) WITH TIME ZONE,
+            team_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            message TEXT,
+            ROLE VARCHAR(255) NOT NULL CHECK(
+                ROLE IN(
+                    'OWNER',
+                    'ADMIN',
+                    'MEMBER'
+                )
+            ),
+            status VARCHAR(255) NOT NULL CHECK(
+                status IN(
+                    'PENDING',
+                    'APPROVED',
+                    'REJECTED',
+                    'ACCEPTED',
+                    'DECLINED',
+                    'CANCELED'
+                )
+            ),
+            TYPE VARCHAR(255) NOT NULL CHECK(
+                TYPE IN(
+                    'REQUEST',
+                    'INVITATION'
+                )
+            ),
             PRIMARY KEY(id)
         );
 
@@ -961,6 +1029,22 @@ CREATE
     knowledge_label(label);
 
 CREATE
+    INDEX idx_notification_receiver_read_created ON
+    notification(
+        receiver_id,
+        READ,
+        created_at DESC
+    );
+
+CREATE
+    INDEX idx_notification_aggregation ON
+    notification(
+        receiver_id,
+        aggregation_key,
+        aggregate_until
+    );
+
+CREATE
     INDEX IDX3k75vvu7mevyvvb5may5lj8k7 ON
     project(name);
 
@@ -1021,12 +1105,20 @@ CREATE
     space_user_rank(user_id);
 
 CREATE
+    INDEX IDXcyt0gef24ijcf8oqq5b0ub6cc ON
+    task_membership_team_members(participant_member_uuid);
+
+CREATE
     INDEX IDX70x5oq6omtraaie2fttiv25rd ON
     task_membership(task_id);
 
 CREATE
     INDEX IDXh685vv2ufp7ohjnfw6hw231tv ON
     task_membership(member_id);
+
+CREATE
+    INDEX IDXa4hyq6o5cfj6f91k5ljpk805v ON
+    task_membership(completion_status);
 
 CREATE
     INDEX IDXglmpyfy44ju9tr2tm5h6j8u3t ON
@@ -1051,6 +1143,30 @@ CREATE
 CREATE
     INDEX IDXg2l9qqsoeuynt4r5ofdt1x2td ON
     team(name);
+
+CREATE
+    INDEX idx_team_membership_application_team_user_status ON
+    team_membership_application(
+        team_id,
+        user_id,
+        status
+    );
+
+CREATE
+    INDEX idx_team_membership_application_user_type_status ON
+    team_membership_application(
+        user_id,
+        TYPE,
+        status
+    );
+
+CREATE
+    INDEX idx_team_membership_application_team_type_status ON
+    team_membership_application(
+        team_id,
+        TYPE,
+        status
+    );
 
 CREATE
     INDEX IDXd45hsmkordpydcytq25ahcnby ON
@@ -1104,12 +1220,6 @@ ALTER TABLE
     IF EXISTS knowledge ADD CONSTRAINT FKs854y5ajesie1jja4thskulsc FOREIGN KEY(team_id) REFERENCES team;
 
 ALTER TABLE
-    IF EXISTS knowledge_knowledge_labels ADD CONSTRAINT FKd9dp2f3c65b8d2gdc9oeql6ja FOREIGN KEY(knowledge_labels_id) REFERENCES knowledge_label;
-
-ALTER TABLE
-    IF EXISTS knowledge_knowledge_labels ADD CONSTRAINT FKbdxbbpetfqn7y3cuq50tgcuoq FOREIGN KEY(knowledge_id) REFERENCES knowledge;
-
-ALTER TABLE
     IF EXISTS knowledge_label ADD CONSTRAINT FK43k38w4y2j691mb6nhyijhq96 FOREIGN KEY(knowledge_id) REFERENCES knowledge;
 
 ALTER TABLE
@@ -1131,9 +1241,6 @@ ALTER TABLE
     IF EXISTS materialbundles_relation ADD CONSTRAINT FK62blmnwrqevg0whwwv5231b5g FOREIGN KEY(material_id) REFERENCES material ON
     DELETE
         RESTRICT;
-
-ALTER TABLE
-    IF EXISTS notification ADD CONSTRAINT FKs951ba5cqr6ibbu6w295b3ljg FOREIGN KEY(receiver_id) REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS project ADD CONSTRAINT FKt0just6g3205u402vn88i0fhy FOREIGN KEY(parent_id) REFERENCES project;
@@ -1209,6 +1316,18 @@ ALTER TABLE
 
 ALTER TABLE
     IF EXISTS team ADD CONSTRAINT FKjv1k745e89swu3gj896pxcq3y FOREIGN KEY(avatar_id) REFERENCES avatar;
+
+ALTER TABLE
+    IF EXISTS team_membership_application ADD CONSTRAINT FKay6hci2s5lr7gnsovihu9gee3 FOREIGN KEY("initiator_id") REFERENCES public."user";
+
+ALTER TABLE
+    IF EXISTS team_membership_application ADD CONSTRAINT FKs432s8om9nppuikdnqrb8ia00 FOREIGN KEY("processed_by_id") REFERENCES public."user";
+
+ALTER TABLE
+    IF EXISTS team_membership_application ADD CONSTRAINT FK3sukrjxhfkabvc8aj8o5drpi8 FOREIGN KEY(team_id) REFERENCES team;
+
+ALTER TABLE
+    IF EXISTS team_membership_application ADD CONSTRAINT FKn7chx3pd6yinsj0b8b9uww6mv FOREIGN KEY("user_id") REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS team_user_relation ADD CONSTRAINT FKtf9y6q1stv6vpqtlclj1okjxs FOREIGN KEY(team_id) REFERENCES team;

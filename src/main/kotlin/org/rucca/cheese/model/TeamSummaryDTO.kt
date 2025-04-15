@@ -2,8 +2,8 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.Valid
 import java.io.Serializable
-import javax.validation.Valid
 
 /**
  * @param id
@@ -12,7 +12,6 @@ import javax.validation.Valid
  * @param avatarId
  * @param allMembersVerified
  * @param memberRealNameStatus
- * @param joinRejectReason The reason why the team cannot join the team
  * @param updatedAt
  * @param createdAt
  */
@@ -36,9 +35,6 @@ data class TeamSummaryDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("memberRealNameStatus")
     val memberRealNameStatus: kotlin.collections.List<TeamMemberRealNameStatusDTO>? = null,
-    @Schema(example = "null", description = "The reason why the team cannot join the team")
-    @get:JsonProperty("joinRejectReason")
-    val joinRejectReason: kotlin.String? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("updatedAt")
     val updatedAt: kotlin.Long? = null,

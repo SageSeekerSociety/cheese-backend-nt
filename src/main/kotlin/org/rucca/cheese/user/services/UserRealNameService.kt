@@ -10,10 +10,8 @@ import org.rucca.cheese.common.pagination.util.desc
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.getProperty
 import org.rucca.cheese.model.*
-import org.rucca.cheese.task.TaskService
-import org.rucca.cheese.user.UserService
+import org.rucca.cheese.task.support.TaskInfoProvider
 import org.rucca.cheese.user.models.*
-import org.springframework.context.annotation.Lazy
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -26,7 +24,7 @@ class UserRealNameService(
     private val userRealNameAccessLogRepository: UserRealNameAccessLogRepository,
     private val encryptionService: EncryptionService,
     private val userService: UserService,
-    @Lazy private val taskService: TaskService,
+    private val taskInfoProvider: TaskInfoProvider,
 ) {
     /** Get user real name identity information */
     @Transactional
@@ -310,7 +308,7 @@ class UserRealNameService(
             return null
         }
         return when (moduleType) {
-            AccessModuleType.TASK -> taskService.getTaskDto(moduleEntityId).name
+            AccessModuleType.TASK -> taskInfoProvider.getTaskNameById(moduleEntityId)
         }
     }
 
@@ -336,5 +334,9 @@ class UserRealNameService(
             accessType = accessTypeDto,
             ipAddress = log.ipAddress,
         )
+    }
+
+    fun hasUserIdentity(userId: IdType): Boolean {
+        return userRealNameIdentityRepository.existsByUserId(userId)
     }
 }

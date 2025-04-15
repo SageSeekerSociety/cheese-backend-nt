@@ -4,22 +4,173 @@ info:
   version: "1.0"
 servers:
   - url: "http://localhost:8080"
+tags:
+  - name: Users
+    description: Operations related to user profiles, settings, etc.
+  - name: Teams
+    description: Core operations for managing teams, team memberships, join requests, invitations, and recruitment openings. (涵盖了原先分散的团队相关功能)
+  - name: Spaces
+    description: Operations for managing spaces, space settings, and space administrators.
+  - name: Tasks
+    description: Operations related to tasks, including creation, management, participation, submissions, etc.
+  - name: AI
+    description: General AI-related operations, such as quota management.
+  - name: Notifications
+    description: Managing and retrieving user notifications.
+  - name: Projects
+    description: Operations for managing projects and project memberships.
+  - name: Discussions
+    description: Creating, retrieving, and managing discussions and their reactions on various models (like Projects).
+  - name: Knowledge
+    description: Operations for creating, managing, and interacting with knowledge items.
 paths:
-  /users/{userId}/identity:
+  /users/me/team-requests:
     get:
-      tags: [ ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      summary: List my join requests
+      description: Retrieves a list of join requests initiated by the authenticated user.
+      operationId: listMyJoinRequests
+      tags: [ Teams ]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter requests by status.
+          schema:
+            $ref: '#/components/schemas/ApplicationStatus'
+        - $ref: '#/components/parameters/PageStart'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: A list of the user's join requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      requests:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TeamMembershipApplication'
+                      page:
+                        $ref: '#/components/schemas/Page'
+                    required:
+                      - requests
+                  message:
+                    type: string
+  /users/me/team-requests/{requestId}:
+    delete:
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      summary: Cancel my pending join request
+      description: Allows the authenticated user to cancel a join request they initiated, provided it's still pending.
+      operationId: cancelMyJoinRequest
+      tags: [ Teams ]
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '204':
+          description: Request cancelled successfully.
+  /users/me/team-invitations:
+    get:
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      summary: List invitations received
+      description: Retrieves a list of invitations received by the authenticated user.
+      operationId: listMyInvitations
+      tags: [ Teams ]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter invitations by status (e.g., PENDING).
+          schema:
+            $ref: '#/components/schemas/ApplicationStatus'
+        - $ref: '#/components/parameters/PageStart'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: A list of invitations received by the user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      invitations:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TeamMembershipApplication'
+                      page:
+                        $ref: '#/components/schemas/Page'
+                    required:
+                      - invitations
+                      - page
+                  message:
+                    type: string
+  /users/me/team-invitations/{invitationId}/accept:
+    post:
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      summary: Accept a team invitation
+      description: Allows the authenticated user to accept a pending team invitation. Creates the team membership upon success.
+      operationId: acceptTeamInvitation
+      tags: [ Teams ]
+      parameters:
+        - $ref: '#/components/parameters/InvitationId'
+      responses:
+        '204':
+          description: Invitation accepted successfully and membership created.
+  /users/me/team-invitations/{invitationId}/decline:
+    post:
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      summary: Decline a team invitation
+      description: Allows the authenticated user to decline a pending team invitation.
+      operationId: declineTeamInvitation
+      tags: [ Teams ]
+      parameters:
+        - $ref: '#/components/parameters/InvitationId'
+      responses:
+        '204':
+          description: Invitation declined successfully.
+  /users/me/teams/{teamId}:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    delete:
+      summary: Leave a team
+      description: Allows the authenticated user (who is a member) to leave the specified team. Team owners typically cannot leave directly; they might need to transfer ownership or disband the team first.
+      operationId: leaveTeam
+      tags: [ Teams ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      responses:
+        '204':
+          description: Successfully left the team.
+        '403':
+          description: Forbidden. The user might not be a member of the team, or is the owner and cannot leave directly.
+        '404':
+          description: Team not found. The specified teamId does not exist.
+  /users/{userId}/identity:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [ Users ]
       operationId: get-user-identity
       summary: Get User Real Name Identity Info
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       parameters:
-        - description: User ID
-          in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-            format: int64
         - description: Whether to return the precise identity info
           in: query
           name: precise
@@ -52,19 +203,11 @@ paths:
                 type: object
           description: OK
     put:
-      tags: [ ]
+      tags: [ Users ]
       operationId: put-user-identity
       summary: Update User Real Name Identity Info
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
-      parameters:
-        - description: User ID
-          in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-            format: int64
       requestBody:
         required: true
         content:
@@ -106,19 +249,11 @@ paths:
                 type: object
           description: OK
     patch:
-      tags: [ ]
+      tags: [ Users ]
       operationId: patch-user-identity
       summary: Update User Real Name Identity Info
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
-      parameters:
-        - description: User ID
-          in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-            format: int64
       requestBody:
         required: true
         content:
@@ -160,32 +295,17 @@ paths:
                 type: object
           description: OK
   /users/{userId}/identity/access-logs:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
     get:
-      tags: [ ]
+      tags: [ Users ]
       operationId: get-user-identity-access-logs
       summary: Get User Real Name Identity Access Logs
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       parameters:
-        - description: User ID
-          in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - schema:
-            type: integer
-            format: int64
-          in: query
-          name: page_size
-          description: Page Size
-        - schema:
-            type: integer
-            format: int64
-          in: query
-          name: page_start
-          description: ID of First Element
+        - $ref: "#/components/parameters/PageStart"
+        - $ref: "#/components/parameters/PageSize"
       responses:
         "200":
           content:
@@ -212,45 +332,30 @@ paths:
                 type: object
           description: OK
   /spaces/{spaceId}:
+    parameters:
+      - $ref: '#/components/parameters/SpaceId'
     delete:
-      parameters:
-        - description: Space ID
-          in: path
-          name: spaceId
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    type: integer
-                  message:
-                    type: string
-                required:
-                  - code
-                  - message
-                type: object
-          description: OK
-      tags: [ ]
-      operationId: delete-space
       summary: Delete Space
+      operationId: delete-space
+      tags: [ Spaces ]
+      responses:
+        "204":
+          description: Deleted successfully.
     get:
+      summary: Query Space
+      operationId: get-space
+      tags: [ Spaces ]
       parameters:
-        - description: Space ID
-          in: path
-          name: spaceId
-          required: true
-          schema:
-            type: integer
-            format: int64
         - description: Query your rank in this space
           in: query
           name: queryMyRank
+          schema:
+            type: boolean
+            default: false
+        - name: queryCategories
+          in: query
+          required: false
+          description: Set to true to include categories in the response.
           schema:
             type: boolean
             default: false
@@ -266,6 +371,10 @@ paths:
                     properties:
                       space:
                         $ref: "#/components/schemas/Space"
+                      categories:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SpaceCategory"
                     required:
                       - space
                     type: object
@@ -277,18 +386,10 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
-      operationId: get-space
-      summary: Query Space
     patch:
-      parameters:
-        - description: Space ID
-          in: path
-          name: spaceId
-          required: true
-          schema:
-            type: integer
-            format: int64
+      summary: Update Space
+      operationId: patch-space
+      tags: [ Spaces ]
       responses:
         "200":
           content:
@@ -312,8 +413,6 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
-      operationId: patch-space
       requestBody:
         required: true
         content:
@@ -346,24 +445,14 @@ paths:
                   format: int64
                   description: ID of the default category for tasks in this space.
                   example: 1
-      summary: Update Space
   /spaces/{spaceId}/categories:
     parameters:
-      - name: spaceId
-        in: path
-        required: true
-        description: ID of the space to manage categories for.
-        schema:
-          type: integer
-          format: int64
+      - $ref: '#/components/parameters/SpaceId'
     get:
-      tags:
-        - Space Categories
+      tags: [ Spaces ]
       summary: List categories in a space
       description: Retrieves a list of all categories belonging to the specified space, ordered by displayOrder and name.
       operationId: listSpaceCategories
-      security:
-        - BearerAuth: [ ]
       responses:
         '200':
           description: A list of categories.
@@ -386,13 +475,6 @@ paths:
                   message:
                     type: string
       parameters:
-        - name: spaceId
-          in: path
-          required: true
-          description: ID of the space to manage categories for.
-          schema:
-            type: integer
-            format: int64
         - name: includeArchived
           in: query
           required: false
@@ -401,13 +483,10 @@ paths:
             type: boolean
             default: false
     post:
-      tags:
-        - Space Categories
       summary: Create a category in a space
       description: Creates a new category within the specified space. Requires admin privileges for the space.
       operationId: createSpaceCategory
-      security:
-        - BearerAuth: [ ]
+      tags: [ Spaces ]
       requestBody:
         required: true
         content:
@@ -451,13 +530,7 @@ paths:
                     type: string
   /spaces/{spaceId}/categories/{categoryId}:
     parameters:
-      - name: spaceId
-        in: path
-        required: true
-        description: ID of the space the category belongs to.
-        schema:
-          type: integer
-          format: int64
+      - $ref: '#/components/parameters/SpaceId'
       - name: categoryId
         in: path
         required: true
@@ -466,13 +539,10 @@ paths:
           type: integer
           format: int64
     get:
-      tags:
-        - Space Categories
       summary: Get a specific category
       description: Retrieves details of a specific category within a space.
       operationId: getSpaceCategory
-      security:
-        - BearerAuth: [ ]
+      tags: [ Spaces ]
       responses:
         '200':
           description: Category details.
@@ -492,13 +562,10 @@ paths:
                   message:
                     type: string
     patch:
-      tags:
-        - Space Categories
       summary: Update a category
       description: Updates specific fields of a category. Requires admin privileges for the space.
       operationId: updateSpaceCategory
-      security:
-        - BearerAuth: [ ]
+      tags: [ Spaces ]
       requestBody:
         required: true
         content:
@@ -539,38 +606,27 @@ paths:
                   message:
                     type: string
     delete:
-      tags:
-        - Space Categories
       summary: Delete a category
       description: Soft-deletes a category ONLY if it contains no tasks. For categories with tasks, use the archive endpoint. Cannot delete the default category.
       operationId: deleteSpaceCategory
-      security:
-        - BearerAuth: [ ]
+      tags: [ Spaces ]
       responses:
         '204':
           description: Category deleted successfully.
   /spaces/{spaceId}/categories/{categoryId}/archive:
+    parameters:
+      - $ref: '#/components/parameters/SpaceId'
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
     post:
-      tags:
-        - Space Categories
       summary: Archive a category
       description: Marks a category as archived. Tasks within it remain associated. Cannot archive the default category.
       operationId: archiveSpaceCategory
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: spaceId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - name: categoryId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Spaces ]
       responses:
         '200':
           description: Category archived successfully. Returns updated category details.
@@ -590,26 +646,10 @@ paths:
                   message:
                     type: string
     delete:
-      tags:
-        - Space Categories
       summary: Unarchive a category
       description: Removes the archived status from a category, making it active again.
       operationId: unarchiveSpaceCategory
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: spaceId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - name: categoryId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Spaces ]
       responses:
         '200':
           description: Category unarchived successfully. Returns updated category details.
@@ -631,7 +671,8 @@ paths:
   /spaces:
     get:
       summary: Enumerate Spaces
-      tags: [ ]
+      operationId: get-spaces
+      tags: [ Spaces ]
       responses:
         "200":
           description: OK
@@ -653,7 +694,6 @@ paths:
                         $ref: "#/components/schemas/Page"
                   message:
                     type: string
-      operationId: get-spaces
       parameters:
         - description: Query your rank in this space
           in: query
@@ -661,17 +701,8 @@ paths:
           schema:
             type: boolean
             default: false
-        - schema:
-            type: integer
-          in: query
-          name: page_size
-          description: Page Size
-        - schema:
-            type: integer
-            format: int64
-          in: query
-          name: page_start
-          description: ID of First Element
+        - $ref: '#/components/parameters/PageStart'
+        - $ref: '#/components/parameters/PageSize'
         - schema:
             type: string
             default: createdAt
@@ -685,6 +716,9 @@ paths:
           name: sort_order
           description: '"asc" or "desc"'
     post:
+      summary: Create Space
+      operationId: post-space
+      tags: [ Spaces ]
       responses:
         "200":
           content:
@@ -708,8 +742,6 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
-      operationId: post-space
       requestBody:
         required: true
         content:
@@ -752,45 +784,27 @@ paths:
                     format: int64
                   default: [ ]
                   example: [ ]
-      summary: Create Space
   /spaces/{spaceId}/managers/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+      - schema:
+          type: integer
+          format: int64
+        in: path
+        name: userId
+        description: Admin User ID
+        required: true
     delete:
       summary: Disqualify Space Admin
-      tags: [ ]
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    type: integer
-                  message:
-                    type: string
-                required:
-                  - code
-                  - message
-                type: object
-          description: OK
       operationId: delete-space-admin
-      parameters:
-        - schema:
-            type: integer
-            format: int64
-          in: path
-          name: spaceId
-          description: Space ID
-          required: true
-        - schema:
-            type: integer
-            format: int64
-          in: path
-          name: userId
-          description: Admin User ID
-          required: true
+      tags: [ Spaces ]
+      responses:
+        "204":
+          description: Deleted successfully.
     patch:
       summary: Update Space Admin Info
-      tags: [ ]
+      operationId: patch-space-admin
+      tags: [ Spaces ]
       responses:
         "200":
           content:
@@ -814,22 +828,6 @@ paths:
                   - message
                 type: object
           description: OK
-      operationId: patch-space-admin
-      parameters:
-        - schema:
-            type: integer
-            format: int64
-          in: path
-          name: spaceId
-          description: Space ID
-          required: true
-        - schema:
-            type: integer
-            format: int64
-          in: path
-          name: userId
-          description: Admin User ID
-          required: true
       requestBody:
         required: true
         content:
@@ -840,9 +838,12 @@ paths:
                 role:
                   $ref: "#/components/schemas/SpaceAdminRoleType"
   /spaces/{spaceId}/managers:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
     post:
       summary: Add Space Admin
-      tags: [ ]
+      operationId: post-space-admin
+      tags: [ Spaces ]
       responses:
         "200":
           content:
@@ -866,15 +867,6 @@ paths:
                   - message
                 type: object
           description: OK
-      operationId: post-space-admin
-      parameters:
-        - schema:
-            type: integer
-            format: int64
-          in: path
-          name: spaceId
-          description: Space ID
-          required: true
       requestBody:
         required: true
         content:
@@ -891,34 +883,22 @@ paths:
                   type: integer
                   format: int64
   /tasks/{taskId}:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
     delete:
-      parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CommonResponse"
-          description: OK
-      tags: [ ]
-      operationId: delete-task
       summary: Delete Task
+      operationId: delete-task
+      tags: [ Tasks ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      responses:
+        "204":
+          description: Deleted successfully.
     get:
+      summary: Query Task
+      operationId: get-task
+      tags: [ Tasks ]
       parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
         - schema:
             type: boolean
             default: false
@@ -987,18 +967,12 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
-      operationId: get-task
-      summary: Query Task
     patch:
-      parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
+      summary: Update Task
+      operationId: patch-task
+      tags: [ Tasks ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       responses:
         "200":
           content:
@@ -1022,8 +996,6 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
-      operationId: patch-task
       requestBody:
         required: true
         content:
@@ -1077,24 +1049,57 @@ paths:
                   format: int64
                   description: ID of the category to which the task belongs.
                   example: 1
-      summary: Update Task
+                minTeamSize:
+                  type: integer
+                  description: Minimum team size required for the task.
+                  example: 1
+                maxTeamSize:
+                  type: integer
+                  description: Maximum team size allowed for the task.
+                  example: 10
+                teamLockingPolicy:
+                  $ref: "#/components/schemas/TeamMembershipLockPolicy"
+  /tasks/{taskId}/resubmit:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
+    post:
+      summary: Resubmit a rejected task for approval
+      description: >
+        Allows the creator or an authorized user to resubmit a task that was previously
+        rejected (`REJECTED` status). This action changes the task's approval status
+        to `PENDING` and clears the `rejectReason`. The task must currently be in
+        the `REJECTED` state for this operation to succeed.
+      operationId: resubmit-task
+      tags: [ Tasks ]
+      responses:
+        "200":
+          description: Task successfully resubmitted for approval. The updated task details are returned.
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      task:
+                        $ref: "#/components/schemas/Task"
+                    required:
+                      - task
+                    type: object
+                  message:
+                    type: string
   /tasks/{taskId}/teams:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
     get:
       summary: Get teams associated with a task
       description: |
         Retrieves a list of teams associated with a specific task. 
         The teams can be filtered based on eligibility criteria.
       operationId: getTaskTeams
-      tags:
-        - Tasks
+      tags: [ Tasks ]
       parameters:
-        - in: path
-          name: taskId
-          schema:
-            type: integer
-            format: int64
-          required: true
-          description: The ID of the task
         - in: query
           name: filter
           schema:
@@ -1130,16 +1135,12 @@ paths:
                     description: Response message
                     example: OK
   /tasks/{taskId}/ai-advice/conversations:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
     post:
       summary: Create AI Advice Conversation
       operationId: create-task-ai-advice-conversation
-      parameters:
-        - name: taskId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Tasks ]
       requestBody:
         required: true
         content:
@@ -1160,19 +1161,13 @@ paths:
                   data:
                     $ref: "#/components/schemas/TaskAIAdviceConversationResponse"
   /tasks/{taskId}/ai-advice/conversations/grouped:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
     get:
-      summary: 获取按会话ID分组的对话历史
+      summary: Get AI Advice Conversations Grouped by Conversation ID
       operationId: get-task-ai-advice-conversations-grouped
-      description: 获取指定任务的所有对话，按会话ID分组
-      tags:
-        - Task AI Advice
-      parameters:
-        - name: taskId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      description: Retrieves AI advice conversations grouped by conversation ID for a specific task.
+      tags: [ Tasks ]
       responses:
         "200":
           description: OK
@@ -1193,19 +1188,14 @@ paths:
                   message:
                     type: string
   /tasks/{taskId}/ai-advice/conversations/{conversationId}:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
     get:
-      summary: 获取指定会话ID的所有对话
+      summary: Get AI Advice Conversation
       operationId: get-task-ai-advice-conversation
-      description: 获取特定会话ID下的所有对话记录
-      tags:
-        - Task AI Advice
+      description: Get AI Advice Conversation
+      tags: [ Tasks ]
       parameters:
-        - name: taskId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
         - name: conversationId
           in: path
           required: true
@@ -1232,15 +1222,9 @@ paths:
                     type: string
     delete:
       summary: Delete AI Advice Conversation
-      tags: [ ]
       operationId: delete-task-ai-advice-conversation
+      tags: [ Tasks ]
       parameters:
-        - name: taskId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
         - name: conversationId
           in: path
           required: true
@@ -1250,18 +1234,12 @@ paths:
         "204":
           description: No Content
   /tasks/{taskId}/ai-advice:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
     get:
       summary: Get AI Advice
-      tags: [ ]
       operationId: get-task-ai-advice
-      parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Tasks ]
       responses:
         "200":
           description: OK
@@ -1275,29 +1253,10 @@ paths:
                     $ref: "#/components/schemas/TaskAIAdvice"
                   message:
                     type: string
-        "400":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    type: integer
-                  message:
-                    type: string
-                    example: "Task AI advice is not ready yet. Current status: PROCESSING"
     post:
       summary: Request AI Advice Generation
-      tags: [ ]
       operationId: request-task-ai-advice
-      parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Tasks ]
       responses:
         "200":
           description: OK
@@ -1317,18 +1276,12 @@ paths:
                   message:
                     type: string
   /tasks/{taskId}/ai-advice/status:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
     get:
       summary: Get AI Advice Generation Status
-      tags: [ ]
       operationId: get-task-ai-advice-status
-      parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Tasks ]
       responses:
         "200":
           description: OK
@@ -1349,8 +1302,8 @@ paths:
   /ai/quota:
     get:
       summary: Get Current User's AI Quota
-      tags: [ ]
       operationId: get-user-ai-quota
+      tags: [ AI ]
       responses:
         "200":
           description: OK
@@ -1367,7 +1320,8 @@ paths:
   /tasks:
     get:
       summary: Enumerate Tasks
-      tags: [ ]
+      operationId: get-tasks
+      tags: [ Tasks ]
       responses:
         "200":
           description: OK
@@ -1389,7 +1343,6 @@ paths:
                         $ref: "#/components/schemas/Page"
                   message:
                     type: string
-      operationId: get-tasks
       parameters:
         - schema:
             type: integer
@@ -1429,18 +1382,8 @@ paths:
           in: query
           name: topics
           description: Only show tasks with at least one of these topics
-        - schema:
-            type: integer
-            default: 9
-          in: query
-          name: page_size
-          description: Page Size
-        - schema:
-            type: integer
-            format: int64
-          in: query
-          name: page_start
-          description: ID of First Element
+        - $ref: "#/components/parameters/PageStart"
+        - $ref: "#/components/parameters/PageSize"
         - schema:
             type: string
             default: updatedAt
@@ -1524,7 +1467,7 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
+      tags: [ Tasks ]
       operationId: post-task
       requestBody:
         required: true
@@ -1549,8 +1492,6 @@ paths:
                 deadline:
                   type: integer
                   format: int64
-                participantLimit:
-                  type: integer
                 defaultDeadline:
                   type: integer
                   format: int64
@@ -1589,26 +1530,25 @@ paths:
                   default: false
                 minTeamSize:
                   type: integer
-                  format: int64
                   description: Minimum team size required to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.
                 maxTeamSize:
                   type: integer
-                  format: int64
                   description: Maximum team size allowed to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.
+                participantLimit:
+                  type: integer
+                  description: Maximum number of participants allowed in the task. `undefined` if not specified.
+                teamLockingPolicy:
+                  $ref: "#/components/schemas/TeamMembershipLockPolicy"
+                  default: NO_LOCK
       summary: Create Task
   /tasks/{taskId}/participants:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
     get:
       summary: Get Participants
-      tags: [ ]
+      tags: [ Tasks ]
       operationId: get-task-participants
       parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
         - schema:
             $ref: "#/components/schemas/ApproveType"
           in: query
@@ -1648,13 +1588,6 @@ paths:
     patch:
       summary: Update TaskMembership By Member ID
       parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
         - description: Member ID
           in: query
           name: member
@@ -1687,7 +1620,7 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
+      tags: [ Tasks ]
       operationId: patch-task-membership-by-member
       requestBody:
         required: true
@@ -1697,13 +1630,6 @@ paths:
               $ref: "#/components/schemas/PatchTaskMembershipRequest"
     delete:
       parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
         - description: Member ID
           in: query
           name: member
@@ -1714,18 +1640,11 @@ paths:
       responses:
         "204":
           description: No Content
-      tags: [ ]
+      tags: [ Tasks ]
       operationId: delete-task-participant-by-member
       summary: Leave Task By Member ID
     post:
       parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
         - description: Member ID
           in: query
           name: member
@@ -1776,22 +1695,17 @@ paths:
                   type: string
                 remark:
                   type: string
-      tags: [ ]
+      tags: [ Tasks ]
       operationId: post-task-participant
       summary: Apply for Task
   /tasks/{taskId}/participants/{participantId}:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
     get:
       summary: Get TaskMembership
-      tags: [ ]
+      tags: [ Tasks ]
       operationId: get-task-participant
       parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
         - description: Participant ID
           in: path
           name: participantId
@@ -1824,17 +1738,10 @@ paths:
           description: OK
     patch:
       summary: Update TaskMembership
-      tags: [ ]
+      tags: [ Tasks ]
       operationId: patch-task-participant
       parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - description: Member ID
+        - description: Participant ID
           in: path
           name: participantId
           required: true
@@ -1872,17 +1779,10 @@ paths:
           description: OK
     delete:
       summary: Delete TaskMembership
-      tags: [ ]
+      tags: [ Tasks ]
       operationId: delete-task-participant
       parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - description: Member ID
+        - description: Participant ID
           in: path
           name: participantId
           required: true
@@ -1893,9 +1793,11 @@ paths:
         "204":
           description: No Content
   /tasks/{taskId}/participants/{participantId}/submissions:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
     get:
       summary: Enumerate Submissions
-      tags: [ ]
+      tags: [ Tasks ]
       responses:
         "200":
           description: OK
@@ -1926,13 +1828,6 @@ paths:
                     type: string
       operationId: get-task-submissions
       parameters:
-        - description: Task ID
-          in: path
-          name: taskId
-          schema:
-            type: integer
-            format: int64
-          required: true
         - schema:
             type: integer
             format: int64
@@ -1957,18 +1852,8 @@ paths:
           in: query
           name: reviewed
           description: Only return reviewed or unreviewed submissions
-        - schema:
-            type: integer
-            default: 9
-          in: query
-          name: page_size
-          description: Page Size
-        - schema:
-            type: integer
-            format: int64
-          in: query
-          name: page_start
-          description: ID of First Element
+        - $ref: "#/components/parameters/PageStart"
+        - $ref: "#/components/parameters/PageSize"
         - schema:
             type: string
             default: updatedAt
@@ -1983,7 +1868,7 @@ paths:
           description: '"asc" or "desc"'
     post:
       summary: Create Submission
-      tags: [ ]
+      tags: [ Tasks ]
       responses:
         "200":
           description: OK
@@ -2013,13 +1898,6 @@ paths:
             type: integer
             format: int64
           in: path
-          name: taskId
-          description: Task ID
-          required: true
-        - schema:
-            type: integer
-            format: int64
-          in: path
           name: participantId
           description: Submitters' TaskMembership ID
           required: true
@@ -2032,9 +1910,11 @@ paths:
               items:
                 $ref: "#/components/schemas/TaskSubmissionContent"
   /tasks/{taskId}/participants/{participantId}/submissions/{version}:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
     patch:
       summary: Update Submission
-      tags: [ ]
+      tags: [ Tasks ]
       responses:
         "200":
           description: OK
@@ -2064,13 +1944,6 @@ paths:
             type: integer
             format: int64
           in: path
-          name: taskId
-          description: Task ID
-          required: true
-        - schema:
-            type: integer
-            format: int64
-          in: path
           name: participantId
           description: Submitters' TaskMembership ID
           required: true
@@ -2089,9 +1962,11 @@ paths:
               items:
                 $ref: "#/components/schemas/TaskSubmissionContent"
   /tasks/{taskId}/participants/{participantId}/submissions/{submissionId}/review:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
     post:
       summary: Review Submission
-      tags: [ ]
+      tags: [ Tasks ]
       responses:
         "200":
           description: OK
@@ -2120,13 +1995,6 @@ paths:
                     type: string
       operationId: post-task-submission-review
       parameters:
-        - schema:
-            type: integer
-            format: int64
-          in: path
-          name: taskId
-          description: Task ID
-          required: true
         - schema:
             type: integer
             format: int64
@@ -2160,7 +2028,7 @@ paths:
                   type: string
     patch:
       summary: Re-Review Submission
-      tags: [ ]
+      tags: [ Tasks ]
       responses:
         "200":
           description: OK
@@ -2193,13 +2061,6 @@ paths:
             type: integer
             format: int64
           in: path
-          name: taskId
-          description: Task ID
-          required: true
-        - schema:
-            type: integer
-            format: int64
-          in: path
           name: participantId
           description: Submitters' TaskMembership ID
           required: true
@@ -2225,19 +2086,12 @@ paths:
                   type: string
     delete:
       summary: Revert Review Submission
-      tags: [ ]
+      tags: [ Tasks ]
       responses:
         "200":
           description: OK
       operationId: delete-task-submission-review
       parameters:
-        - schema:
-            type: integer
-            format: int64
-          in: path
-          name: taskId
-          description: Task ID
-          required: true
         - schema:
             type: integer
             format: int64
@@ -2253,34 +2107,17 @@ paths:
           description: Task Submission ID
           required: true
   /teams/{teamId}:
+    parameters:
+      - $ref: "#/components/parameters/TeamId"
     delete:
-      parameters:
-        - description: Team ID
-          in: path
-          name: teamId
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CommonResponse"
-          description: OK
-      tags: [ ]
-      operationId: delete-team
       summary: Delete Team
+      description: Deletes the specified team. This action typically requires **Team Owner** privileges and is irreversible. All memberships will be removed, and associated data might be deleted or archived depending on system policy.
+      operationId: delete-team
+      responses:
+        "204":
+          description: Team deleted successfully.
+      tags: [ Teams ]
     get:
-      parameters:
-        - description: Team ID
-          in: path
-          name: teamId
-          required: true
-          schema:
-            type: integer
-            format: int64
       responses:
         "200":
           content:
@@ -2304,18 +2141,10 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
+      tags: [ Teams ]
       operationId: get-team
       summary: Query Team
     patch:
-      parameters:
-        - description: Team ID
-          in: path
-          name: teamId
-          required: true
-          schema:
-            type: integer
-            format: int64
       responses:
         "200":
           content:
@@ -2339,7 +2168,7 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
+      tags: [ Teams ]
       operationId: patch-team
       requestBody:
         required: true
@@ -2358,8 +2187,199 @@ paths:
                   type: integer
                   format: int64
       summary: Update Team
+  /teams/{teamId}/requests:
+    parameters:
+      - $ref: "#/components/parameters/TeamId"
+    post:
+      summary: Request to join a team
+      description: Allows the authenticated user to submit a request to join the specified team.
+      operationId: createTeamJoinRequest
+      tags: [ Teams ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      requestBody:
+        description: Optional message for the join request.
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamJoinRequestCreate'
+      responses:
+        '201':
+          description: Join request submitted successfully. Returns the created application details.
+          headers:
+            Location:
+              description: URL of the newly created request resource (e.g., /users/me/requests/{requestId})
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      application:
+                        $ref: '#/components/schemas/TeamMembershipApplication'
+                  message:
+                    type: string
+    get:
+      summary: List join requests for a team
+      description: Retrieves a list of join requests directed to the specified team. Requires team admin/owner privileges.
+      operationId: listTeamJoinRequests
+      tags: [ Teams ]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter requests by status (e.g., PENDING).
+          schema:
+            $ref: '#/components/schemas/ApplicationStatus'
+        - $ref: '#/components/parameters/PageStart'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: A list of join requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      applications:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TeamMembershipApplication'
+                      page:
+                        $ref: '#/components/schemas/Page'
+                  message:
+                    type: string
+  /teams/{teamId}/requests/{requestId}/approve:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+      - $ref: '#/components/parameters/RequestId'
+    post:
+      summary: Approve a join request
+      description: Approves a pending join request for the team. Requires team admin/owner privileges. Creates the team membership upon success.
+      operationId: approveTeamJoinRequest
+      tags: [ Teams ]
+      responses:
+        '204':
+          description: Request approved successfully and membership created.
+  /teams/{teamId}/requests/{requestId}/reject:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+      - $ref: '#/components/parameters/RequestId'
+    post:
+      tags: [ Teams ]
+      summary: Reject a join request
+      description: Rejects a pending join request for the team. Requires team admin/owner privileges.
+      operationId: rejectTeamJoinRequest
+      responses:
+        '204':
+          description: Request rejected successfully.
+  /teams/{teamId}/invitations:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+    post:
+      summary: Invite a user to the team
+      description: Allows a team admin/owner to invite a user to join the specified team.
+      operationId: createTeamInvitation
+      tags: [ Teams ]
+      requestBody:
+        description: Details of the user to invite and optional role/message.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamInvitationCreate'
+      responses:
+        '201':
+          description: Invitation sent successfully. Returns the created application details.
+          headers:
+            Location:
+              description: URL of the newly created invitation resource (e.g., /users/me/invitations/{invitationId})
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      invitation:
+                        $ref: '#/components/schemas/TeamMembershipApplication'
+                    required: [ invitation ]
+                  message:
+                    type: string
+                required: [ code, data, message ]
+    get:
+      summary: List invitations sent by a team
+      description: Retrieves a list of invitations sent by the specified team. Requires team admin/owner privileges.
+      operationId: listTeamInvitations
+      tags: [ Teams ]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter invitations by status (e.g., PENDING).
+          schema:
+            $ref: '#/components/schemas/ApplicationStatus'
+        - $ref: '#/components/parameters/PageStart'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: A list of invitations.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      invitations:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TeamMembershipApplication'
+                      page:
+                        $ref: '#/components/schemas/Page'
+                    required: [ invitations, page ]
+                  message:
+                    type: string
+                required: [ code, data, message ]
+  /teams/{teamId}/invitations/{invitationId}:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+      - $ref: '#/components/parameters/InvitationId'
+    delete:
+      tags: [ Teams ]
+      summary: Cancel a pending invitation
+      description: Allows the initiator (team admin/owner) to cancel a pending invitation they sent.
+      operationId: cancelTeamInvitation
+      responses:
+        '204':
+          description: Invitation cancelled successfully.
   /teams/my-teams:
     get:
+      tags: [ Teams ]
       responses:
         "200":
           content:
@@ -2385,12 +2405,11 @@ paths:
                   message:
                     type: string
           description: OK
-      tags: [ ]
       operationId: get-my-teams
       summary: Query My Teams
-      parameters: [ ]
   /teams:
     post:
+      tags: [ Teams ]
       responses:
         "200":
           content:
@@ -2414,7 +2433,6 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
       operationId: post-team
       requestBody:
         required: true
@@ -2440,7 +2458,7 @@ paths:
       summary: Create Team
     get:
       summary: Get Teams
-      tags: [ ]
+      tags: [ Teams ]
       responses:
         "200":
           content:
@@ -2477,20 +2495,14 @@ paths:
           name: query
           description: ID or Search Term
           allowEmptyValue: true
-        - schema:
-            type: integer
-            format: int64
-          in: query
-          name: page_start
-        - schema:
-            type: integer
-            default: 20
-          in: query
-          name: page_size
+        - $ref: "#/components/parameters/PageStart"
+        - $ref: "#/components/parameters/PageSize"
   /teams/{teamId}/members:
+    parameters:
+      - $ref: "#/components/parameters/TeamId"
     get:
       summary: Enumerate Team Members
-      tags: [ ]
+      tags: [ Teams ]
       responses:
         "200":
           description: OK
@@ -2521,13 +2533,6 @@ paths:
       operationId: get-team-members
       parameters:
         - schema:
-            type: integer
-            format: int64
-          in: path
-          name: teamId
-          description: Team ID
-          required: true
-        - schema:
             type: boolean
             default: false
           in: query
@@ -2535,14 +2540,6 @@ paths:
           description: Whether to query real name verification status of members
           required: false
     post:
-      parameters:
-        - description: Team ID
-          in: path
-          name: teamId
-          required: true
-          schema:
-            type: integer
-            format: int64
       responses:
         "200":
           content:
@@ -2566,7 +2563,7 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
+      tags: [ Teams ]
       operationId: post-team-member
       requestBody:
         required: true
@@ -2585,22 +2582,16 @@ paths:
               type: object
       summary: Add Team Member
   /teams/{teamId}/members/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/TeamId"
+      - description: Member User ID
+        in: path
+        name: userId
+        required: true
+        schema:
+          type: integer
+          format: int64
     delete:
-      parameters:
-        - description: Team ID
-          in: path
-          name: teamId
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - description: Member User ID
-          in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-            format: int64
       responses:
         "200":
           content:
@@ -2624,25 +2615,10 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
+      tags: [ Teams ]
       operationId: delete-team-member
       summary: Kick Out Team Member
     patch:
-      parameters:
-        - description: Team ID
-          in: path
-          name: teamId
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - description: Member User ID
-          in: path
-          name: userId
-          required: true
-          schema:
-            type: integer
-            format: int64
       responses:
         "200":
           content:
@@ -2666,7 +2642,7 @@ paths:
                   - message
                 type: object
           description: OK
-      tags: [ ]
+      tags: [ Teams ]
       operationId: patch-team-member
       requestBody:
         required: true
@@ -2678,180 +2654,231 @@ paths:
                   $ref: "#/components/schemas/TeamMemberRoleType"
               type: object
       summary: Update Team Membership Info
-  /notifications/{notificationId}:
-    delete:
-      parameters:
-        - description: Notification ID
-          in: path
-          name: notificationId
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CommonResponse"
-          description: OK
-      tags: [ ]
-      operationId: delete-notification
-      summary: Delete Notification
   /notifications:
     get:
-      summary: List Notifications
-      tags: [ ]
-      parameters:
-        - schema:
-            type: string
-            enum:
-              - mention
-              - reply
-              - reaction
-              - project_invite
-              - deadline_remind
-          in: query
-          name: type
-          description: Notification Type
-          required: false
-        - schema:
-            type: boolean
-          in: query
-          name: read
-          description: Whether to filter read or unread notifications
-          required: false
-        - schema:
-            type: integer
-            format: int64
-          in: query
-          name: page_start
-          description: Page Start Index
-          required: true
-        - schema:
-            type: integer
-            format: int32
-          in: query
-          name: page_size
-          description: Page Size
-          required: true
+      summary: List Notifications for Current User
+      description: Retrieves a paginated list of notifications for the currently authenticated user, sorted by creation date descending. Uses cursor-based pagination.
       operationId: list-notifications
+      tags: [ Notifications ]
+      parameters:
+        - $ref: '#/components/parameters/EncodedCursorPageStart'
+        - $ref: '#/components/parameters/PageSize'
+        - name: type
+          in: query
+          description: Filter by notification type.
+          required: false
+          schema: { $ref: '#/components/schemas/NotificationType' }
+        - name: read
+          in: query
+          description: Filter by read status.
+          required: false
+          schema: { type: boolean, nullable: true }
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Paginated list of notifications.
           content:
             application/json:
               schema:
                 type: object
-                required:
-                  - code
-                  - message
-                  - data
                 properties:
                   code:
                     type: integer
-                    default: 200
-                  message:
-                    type: string
-                    default: "success"
+                    example: 200
                   data:
-                    required:
-                      - notifications
-                      - page
+                    type: object
                     properties:
                       notifications:
                         type: array
                         items:
-                          $ref: "#/components/schemas/Notification"
+                          $ref: '#/components/schemas/Notification'
                       page:
-                        $ref: "#/components/schemas/Page"
-  /notifications/read:
-    post:
-      summary: Mark Notifications as Read
-      tags: [ ]
+                        $ref: '#/components/schemas/EncodedCursorPage'
+                    required: [ notifications, cursor, hasMore ]
+                  message:
+                    type: string
+                required: [ code, data, message ]
+    patch:
+      summary: Bulk Update Notification Status (e.g., Mark Multiple as Read)
+      description: Updates the status (e.g., read state) of multiple notifications belonging to the current user in a single request.
+      operationId: bulk-update-notifications
+      tags: [ Notifications ]
       requestBody:
+        description: An array of notification updates. Currently only supports updating the 'read' status.
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - notificationIds
+              required: [ updates ]
               properties:
-                notificationIds:
+                updates:
                   type: array
+                  minItems: 1
                   items:
-                    type: integer
-                    format: int64
-      operationId: mark-notifications-as-read
+                    type: object
+                    required: [ id, read ]
+                    properties:
+                      id:
+                        type: integer
+                        format: int64
+                        description: The ID of the notification to update.
+                      read:
+                        type: boolean
+                        description: The desired read status.
+                  example: [ { "id": 123, "read": true }, { "id": 456, "read": true } ]
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Bulk update successful. Returns the IDs that were successfully updated.
           content:
             application/json:
               schema:
                 type: object
-                required:
-                  - code
-                  - message
-                  - data
+                required: [ code, message, data ]
                 properties:
-                  code:
-                    type: integer
-                    default: 200
-                  message:
-                    type: string
-                    default: "success"
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: "Success" }
                   data:
                     type: object
                     properties:
-                      notificationIds:
+                      updatedIds:
                         type: array
-                        items:
-                          type: integer
-                          format: int64
-  /notifications/unread/count:
+                        items: { type: integer, format: int64 }
+                        description: List of notification IDs successfully updated.
+  /notifications/{notificationId}:
+    parameters:
+      - $ref: '#/components/parameters/NotificationId'
     get:
-      summary: Get Unread Notifications Count
-      tags: [ ]
-      parameters:
-        - name: receiverId
-          in: query
-          required: true
-          schema:
-            type: integer
-            format: int64
-      operationId: get-unread-notifications-count
+      summary: Get a Single Notification
+      description: Retrieves details of a specific notification belonging to the current user.
+      operationId: get-notification-by-id
+      tags: [ Notifications ]
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Notification details.
           content:
             application/json:
               schema:
                 type: object
-                required:
-                  - code
-                  - message
-                  - data
+                required: [ code, message, data ]
                 properties:
-                  code:
-                    type: integer
-                    default: 200
-                  message:
-                    type: string
-                    default: "success"
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: "Success" }
+                  data:
+                    type: object
+                    properties:
+                      notification:
+                        $ref: '#/components/schemas/Notification'
+                    required: [ notification ]
+    patch:
+      summary: Update Notification Status (e.g., Mark as Read/Unread)
+      description: Updates the status (e.g., read state) of a specific notification belonging to the current user.
+      operationId: update-notification-status
+      tags: [ Notifications ]
+      requestBody:
+        description: The update to apply. Currently only supports changing the 'read' status.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ read ]
+              properties:
+                read:
+                  type: boolean
+                  description: The desired read status.
+              example: { "read": true }
+      responses:
+        '200':
+          description: Notification updated successfully. Returns the updated notification.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ code, message, data ]
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: "Success" }
+                  data:
+                    type: object
+                    properties:
+                      notification:
+                        $ref: '#/components/schemas/Notification'
+                    required: [ notification ]
+    delete:
+      summary: Delete a Notification
+      description: Deletes a specific notification belonging to the currently authenticated user.
+      operationId: delete-notification
+      tags: [ Notifications ]
+      responses:
+        '204': { description: Notification successfully deleted. }
+  /notifications/status:
+    put:
+      summary: Set Collective Notification Status (e.g., Mark All as Read)
+      description: Sets a specific status for all applicable notifications of the current user. Currently only supports setting 'read' to true for all unread notifications.
+      operationId: set-collective-notification-status
+      tags: [ Notifications ]
+      requestBody:
+        description: The status to apply to the collection.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ read ]
+              properties:
+                read:
+                  type: boolean
+                  description: Must be 'true' to mark all as read. Setting to 'false' is not supported via this endpoint.
+                  enum: [ true ] # Enforce only true can be sent
+              example: { "read": true }
+      responses:
+        '200':
+          description: Collective status updated (all marked as read).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ code, message, data ]
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: "Success" }
                   data:
                     type: object
                     properties:
                       count:
                         type: integer
-                        nullable: false
-                        default: 0
+                        format: int32
+                        description: The number of notifications marked as read.
+  /notifications/unread-count:
+    get:
+      summary: Get Unread Notification Count
+      description: Retrieves the count of unread notifications for the currently authenticated user. (Pragmatic endpoint).
+      operationId: get-unread-notifications-count
+      tags: [ Notifications ]
+      responses:
+        '200':
+          description: Unread count retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ code, message, data ]
+                properties:
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: "Success" }
+                  data:
+                    type: object
+                    required: [ count ]
+                    properties:
+                      count:
+                        type: integer
+                        format: int64
+                        description: Total number of unread notifications.
   /projects:
     post:
       operationId: create-project
       summary: Create Project
-      tags: [ ]
+      tags: [ Projects ]
       requestBody:
         required: true
         content:
@@ -2935,7 +2962,7 @@ paths:
     get:
       operationId: get-projects
       summary: List Projects
-      tags: [ ]
+      tags: [ Projects ]
       parameters:
         - name: team_id
           in: query
@@ -2993,18 +3020,12 @@ paths:
                         items:
                           $ref: "#/components/schemas/Project"
   /projects/{projectId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
     get:
       operationId: get-project
       summary: Query Project
-      tags: [ ]
-      parameters:
-        - name: projectId
-          in: path
-          description: 项目ID
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Projects ]
       responses:
         "200":
           description: OK
@@ -3031,15 +3052,7 @@ paths:
     patch:
       operationId: patch-project
       summary: Update Project
-      tags: [ ]
-      parameters:
-        - name: projectId
-          in: path
-          description: 项目ID
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Projects ]
       requestBody:
         required: true
         content:
@@ -3093,43 +3106,20 @@ paths:
     delete:
       operationId: delete-project
       summary: Delete Project
-      tags: [ ]
-      parameters:
-        - name: projectId
-          in: path
-          description: 项目ID
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Projects ]
       responses:
         "204":
           description: No Content
   /projects/{projectId}/members:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
     get:
       operationId: get-project-members
       summary: Enumerate Project Members
-      tags: [ ]
+      tags: [ Projects ]
       parameters:
-        - name: projectId
-          in: path
-          description: 项目ID
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - name: page_start
-          in: query
-          description: 起始ID
-          schema:
-            type: integer
-            format: int64
-        - name: page_size
-          in: query
-          description: 每页数量 (默认20)
-          schema:
-            type: integer
-            default: 20
+        - $ref: "#/components/parameters/PageStart"
+        - $ref: "#/components/parameters/PageSize"
       responses:
         "200":
           description: OK
@@ -3160,15 +3150,7 @@ paths:
     post:
       operationId: post-project-member
       summary: Add Project Member
-      tags: [ ]
-      parameters:
-        - name: projectId
-          in: path
-          description: 项目ID
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Projects ]
       requestBody:
         required: true
         content:
@@ -3212,25 +3194,19 @@ paths:
                       member:
                         $ref: "#/components/schemas/ProjectMembership"
   /projects/{projectId}/members/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - name: userId
+        in: path
+        description: 用户ID
+        required: true
+        schema:
+          type: integer
+          format: int64
     delete:
       operationId: delete-project-member
       summary: Remove Project Member
-      tags: [ ]
-      parameters:
-        - name: projectId
-          in: path
-          description: 项目ID
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - name: userId
-          in: path
-          description: 用户ID
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Projects ]
       responses:
         "204":
           description: No Content
@@ -3238,7 +3214,7 @@ paths:
     post:
       operationId: create-discussion
       summary: Create Discussion
-      tags: [ ]
+      tags: [ Discussions ]
       requestBody:
         required: true
         content:
@@ -3295,7 +3271,7 @@ paths:
     get:
       operationId: list-discussions
       summary: List Discussions
-      tags: [ ]
+      tags: [ Discussions ]
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       parameters:
@@ -3316,18 +3292,8 @@ paths:
           schema:
             type: integer
             format: int64
-        - name: page_start
-          in: query
-          description: 起始ID
-          schema:
-            type: integer
-            format: int64
-        - name: page_size
-          in: query
-          description: 每页数量 (默认20)
-          schema:
-            type: integer
-            default: 20
+        - $ref: "#/components/parameters/PageStart"
+        - $ref: "#/components/parameters/PageSize"
         - name: sort_by
           in: query
           description: '"createdAt" or "updatedAt"'
@@ -3368,32 +3334,17 @@ paths:
                       page:
                         $ref: "#/components/schemas/Page"
   /discussions/{discussionId}:
+    parameters:
+      - $ref: "#/components/parameters/DiscussionId"
     get:
       operationId: get-discussion
       summary: Query Discussion
-      tags: [ ]
+      tags: [ Discussions ]
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       parameters:
-        - name: discussionId
-          in: path
-          description: 讨论ID
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - name: page_start
-          in: query
-          description: 起始ID
-          schema:
-            type: integer
-            format: int64
-        - name: page_size
-          in: query
-          description: 每页数量 (默认20)
-          schema:
-            type: integer
-            default: 20
+        - $ref: "#/components/parameters/PageStart"
+        - $ref: "#/components/parameters/PageSize"
         - name: sort_by
           in: query
           description: '"createdAt" or "updatedAt"'
@@ -3447,15 +3398,7 @@ paths:
     patch:
       operationId: patch-discussion
       summary: Update Discussion
-      tags: [ ]
-      parameters:
-        - name: discussionId
-          in: path
-          description: 讨论ID
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Discussions ]
       requestBody:
         required: true
         content:
@@ -3491,45 +3434,22 @@ paths:
     delete:
       operationId: delete-discussion
       summary: Delete Discussion
-      tags: [ ]
-      parameters:
-        - name: discussionId
-          in: path
-          description: 讨论ID
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Discussions ]
       responses:
         "204":
           description: No Content
   /discussions/{discussionId}/sub-discussions:
+    parameters:
+      - $ref: "#/components/parameters/DiscussionId"
     get:
       operationId: list-sub-discussions
       summary: List Sub-Discussions
-      tags: [ ]
+      tags: [ Discussions ]
       x-handler-args:
         - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       parameters:
-        - name: discussionId
-          in: path
-          description: 讨论ID
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - name: page_start
-          in: query
-          description: 起始ID
-          schema:
-            type: integer
-            format: int64
-        - name: page_size
-          in: query
-          description: 每页数量 (默认20)
-          schema:
-            type: integer
-            default: 20
+        - $ref: "#/components/parameters/PageStart"
+        - $ref: "#/components/parameters/PageSize"
         - name: sort_by
           in: query
           description: '"createdAt" or "updatedAt"'
@@ -3573,8 +3493,7 @@ paths:
     get:
       summary: Get all reaction types
       operationId: getAllReactionTypes
-      tags:
-        - Reaction Types
+      tags: [ Discussions ]
       responses:
         "200":
           description: Successful operation
@@ -3593,24 +3512,18 @@ paths:
                             items:
                               $ref: "#/components/schemas/ReactionType"
   /discussions/{discussionId}/reactions/{reactionTypeId}:
+    parameters:
+      - $ref: "#/components/parameters/DiscussionId"
+      - name: reactionTypeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
     post:
       operationId: react-to-discussion
       summary: React to Discussion
-      tags: [ ]
-      parameters:
-        - name: discussionId
-          in: path
-          description: 讨论ID
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - name: reactionTypeId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      tags: [ Discussions ]
       responses:
         "200":
           description: OK
@@ -3634,11 +3547,11 @@ paths:
                     properties:
                       reaction:
                         $ref: "#/components/schemas/DiscussionReactionSummary"
-  /knowledges:
+  /knowledge:
     post:
       summary: Create Knowledge Item
-      tags: [ ]
-      operationId: knowledgePost
+      tags: [ Knowledge ]
+      operationId: createKnowledge
       requestBody:
         required: true
         content:
@@ -3704,8 +3617,8 @@ paths:
                         $ref: "#/components/schemas/Knowledge"
     get:
       summary: List Knowledge Items
-      tags: [ ]
-      operationId: KnowledgeGet
+      tags: [ Knowledge ]
+      operationId: listKnowledge
       parameters:
         - name: teamId
           in: query
@@ -3735,18 +3648,8 @@ paths:
           description: Search keyword (optional)
           schema:
             type: string
-        - name: page_start
-          in: query
-          description: Start ID (optional)
-          schema:
-            type: integer
-            format: int64
-        - name: page_size
-          in: query
-          description: Page size (default 20)
-          schema:
-            type: integer
-            default: 20
+        - $ref: "#/components/parameters/PageStart"
+        - $ref: "#/components/parameters/PageSize"
         - name: sort_by
           in: query
           description: Sort by (optional)
@@ -3786,19 +3689,19 @@ paths:
                           $ref: "#/components/schemas/Knowledge"
                       page:
                         $ref: "#/components/schemas/Page"
-  /knowledges/{knowledgeId}:
+  /knowledge/{knowledgeId}:
+    parameters:
+      - name: knowledgeId
+        in: path
+        description: Knowledge Item ID
+        required: true
+        schema:
+          type: integer
+          format: int64
     patch:
       summary: Update Knowledge Item
-      tags: [ ]
+      tags: [ Knowledge ]
       operationId: updateKnowledge
-      parameters:
-        - name: knowledgeId
-          in: path
-          description: Knowledge Item ID
-          required: true
-          schema:
-            type: integer
-            format: int64
       requestBody:
         required: true
         content:
@@ -3853,16 +3756,8 @@ paths:
                         $ref: "#/components/schemas/Knowledge"
     delete:
       summary: Delete Knowledge Item
-      tags: [ ]
+      tags: [ Knowledge ]
       operationId: knowledgeDelete
-      parameters:
-        - name: knowledgeId
-          in: path
-          description: Knowledge Item ID
-          required: true
-          schema:
-            type: integer
-            format: int64
       responses:
         "200":
           description: OK
@@ -3881,16 +3776,8 @@ paths:
                     type: string
     get:
       summary: Get Single Knowledge Item
-      tags: [ ]
+      tags: [ Knowledge ]
       operationId: KnowledgeGetById
-      parameters:
-        - name: knowledgeId
-          in: path
-          description: Knowledge item ID
-          required: true
-          schema:
-            type: integer
-            format: int64
       responses:
         "200":
           description: Successful retrieval of a knowledge item
@@ -3911,32 +3798,19 @@ paths:
                     default: "success"
                   data:
                     $ref: "#/components/schemas/Knowledge"
-        "404":
-          description: Knowledge item not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: integer
-                    example: 404
-                  message:
-                    type: string
-                    example: "Knowledge item not found"
-  /knowledges/{knowledgeId}/upvote:
+  /knowledge/{knowledgeId}/upvote:
+    parameters:
+      - name: knowledgeId
+        in: path
+        description: Knowledge Item ID
+        required: true
+        schema:
+          type: integer
+          format: int64
     post:
       summary: Upvote Knowledge Item
-      tags: [ ]
+      tags: [ Knowledge ]
       operationId: upvoteKnowledge
-      parameters:
-        - name: knowledgeId
-          in: path
-          description: Knowledge Item ID
-          required: true
-          schema:
-            type: integer
-            format: int64
       responses:
         "200":
           description: OK
@@ -3964,16 +3838,8 @@ paths:
                         $ref: "#/components/schemas/Knowledge"
     delete:
       summary: Remove Upvote from Knowledge Item
-      tags: [ ]
+      tags: [ Knowledge ]
       operationId: removeUpvoteKnowledge
-      parameters:
-        - name: knowledgeId
-          in: path
-          description: Knowledge Item ID
-          required: true
-          schema:
-            type: integer
-            format: int64
       responses:
         "200":
           description: OK
@@ -4008,7 +3874,7 @@ components:
           type: integer
           format: int64
           description: Unique identifier for the category.
-          readOnly: true # ID is typically assigned by the server
+          readOnly: true
         name:
           type: string
           description: Name of the category. Must be unique within the space.
@@ -4184,6 +4050,96 @@ components:
       enum:
         - OWNER
         - ADMIN
+    EligibilityRejectReasonCode:
+      type: string
+      enum:
+        - ALREADY_PARTICIPATING
+        - PARTICIPANT_LIMIT_REACHED
+        - TASK_NOT_APPROVED
+        - DEADLINE_PASSED
+        - USER_NOT_FOUND
+        - USER_ACCOUNT_ISSUE
+        - USER_MISSING_REAL_NAME
+        - USER_RANK_NOT_HIGH_ENOUGH
+        - TEAM_NOT_FOUND
+        - TEAM_SIZE_MIN_NOT_MET
+        - TEAM_SIZE_MAX_EXCEEDED
+        - TEAM_MISSING_REQUIRED_INFO
+        - TEAM_MEMBER_MISSING_REAL_NAME
+        - TEAM_MEMBERS_NOT_VERIFIED
+        - TEAM_MEMBER_RANK_NOT_HIGH_ENOUGH
+        - INDIVIDUAL_PARTICIPATION_NOT_ALLOWED
+        - TEAM_PARTICIPATION_NOT_ALLOWED
+        - UNKNOWN
+    EligibilityRejectReasonInfo:
+      type: object
+      description: Describes a specific reason for ineligibility.
+      required:
+        - code
+        - message
+      properties:
+        code:
+          $ref: '#/components/schemas/EligibilityRejectReasonCode'
+          description: Machine-readable code for the reason.
+        message:
+          type: string
+          description: User-friendly explanation of the reason.
+          example: "Team size must be at least 3 members."
+        details:
+          type: object
+          nullable: true
+          description: Optional additional details specific to the reason code (e.g., list of user IDs missing real name info).
+          additionalProperties: true
+          example:
+            missingRealNameUserIds: [ 101, 105 ]
+    EligibilityStatus:
+      type: object
+      description: Represents the eligibility status (e.g., for joining or submitting) for a user or a team regarding a specific task.
+      required:
+        - eligible
+      properties:
+        eligible:
+          type: boolean
+          description: Indicates whether the user/team is eligible.
+        reasons:
+          type: array
+          description: A list of reasons why the user/team is *not* eligible. Empty if eligible is true.
+          items:
+            $ref: '#/components/schemas/EligibilityRejectReasonInfo'
+    TeamTaskEligibility:
+      type: object
+      description: Provides eligibility details for a specific team in the context of a task.
+      required:
+        - team
+        - eligibility
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+          description: Summary of the team.
+        eligibility:
+          $ref: '#/components/schemas/EligibilityStatus'
+          description: Eligibility status of this team for the task.
+    ParticipationEligibility:
+      type: object
+      description: Provides eligibility details for a user and their teams in the context of a task.
+      properties:
+        user:
+          $ref: '#/components/schemas/EligibilityStatus'
+          description: Eligibility status of the user for the task.
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamTaskEligibility'
+          description: Eligibility status of the user's teams for the task.
+    TaskCompletionStatus:
+      title: TaskCompletionStatus
+      type: string
+      enum:
+        - NOT_SUBMITTED
+        - PENDING_REVIEW
+        - REJECTED_RESUBMITTABLE
+        - SUCCESS
+        - FAILED
     Task:
       title: Task
       type: object
@@ -4262,16 +4218,10 @@ components:
         createdAt:
           type: integer
           format: int64
-        joinable:
-          type: boolean
-          description: "Only has value when: 'queryJoinablity' == true"
-        joinableTeams:
-          type: array
-          items:
-            $ref: "#/components/schemas/TeamSummary"
-        joinRejectReason:
-          type: string
-          description: The reason why the user cannot join the task
+        participationEligibility:
+          $ref: "#/components/schemas/ParticipationEligibility"
+          nullable: true
+          description: Detailed eligibility status for the current user and their teams regarding task participation (joining or submitting, based on query flags).
         submittable:
           type: boolean
           description: "Only has value when: 'querySubmitability' == true"
@@ -4307,11 +4257,21 @@ components:
         maxTeamSize:
           type: integer
           description: Maximum size of team that can join this task
+        teamLockingPolicy:
+          $ref: "#/components/schemas/TeamMembershipLockPolicy"
+          description: Team locking policy for this task, only valid when 'submitterType' is TEAM
     TaskSubmitterType:
       title: TaskSubmitterType
+      type: string
       enum:
         - USER
         - TEAM
+    TeamMembershipLockPolicy:
+      title: TeamMembershipLockPolicy
+      type: string
+      enum:
+        - NO_LOCK
+        - LOCK_ON_APPROVAL
     TaskSubmissionSchemaEntry:
       title: TaskSubmissionSchemaEntry
       type: object
@@ -4472,6 +4432,101 @@ components:
           type: boolean
         role:
           $ref: "#/components/schemas/TeamMemberRoleType"
+    TeamJoinRequestCreate:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Optional message accompanying the join request.
+          example: "Hi, I'd like to join your team because..."
+      additionalProperties: false
+    TeamInvitationCreate:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: The ID of the user to invite.
+          example: 12345
+        role:
+          $ref: '#/components/schemas/TeamMemberRoleType'
+          description: The role to assign to the user upon joining (defaults to MEMBER if not provided).
+        message:
+          type: string
+          description: Optional message accompanying the invitation.
+          example: "We'd love for you to join our project team!"
+      additionalProperties: false
+    TeamMembershipApplication:
+      title: TeamMembershipApplication
+      type: object
+      required:
+        - id
+        - user
+        - team
+        - initiator
+        - type
+        - status
+        - role
+        - message
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the application/invitation.
+          readOnly: true
+        user:
+          $ref: '#/components/schemas/User'
+          description: The user who is the subject of the application (applicant or invitee).
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+          description: The team involved in the application.
+        initiator:
+          $ref: '#/components/schemas/User'
+          description: The user who initiated the application (applicant or inviter).
+        type:
+          $ref: '#/components/schemas/ApplicationType'
+        status:
+          $ref: '#/components/schemas/ApplicationStatus'
+        role:
+          $ref: '#/components/schemas/TeamMemberRoleType'
+          description: The role requested or offered.
+        message:
+          type: string
+          nullable: true
+          description: Message associated with the application.
+        processedBy:
+          $ref: '#/components/schemas/User'
+          nullable: true
+          description: The user who processed the application (approved, rejected, accepted, declined).
+          readOnly: true
+        processedAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: Timestamp when the application was processed.
+          readOnly: true
+        createdAt:
+          type: integer
+          format: int64
+          description: Timestamp when the application was created.
+          readOnly: true
+        updatedAt:
+          type: integer
+          format: int64
+          description: Timestamp when the application was last updated.
+          readOnly: true
+    ApplicationType:
+      type: string
+      enum: [ REQUEST, INVITATION ]
+      description: Type of the membership application. REQUEST = User asks to join. INVITATION = Team asks user to join.
+    ApplicationStatus:
+      type: string
+      enum: [ PENDING, APPROVED, REJECTED, ACCEPTED, DECLINED, CANCELED ] # Removed EXPIRED for simplicity
+      description: Current status of the application. PENDING=Waiting action, APPROVED=Request approved, REJECTED=Request rejected, ACCEPTED=Invitation accepted, DECLINED=Invitation declined, CANCELED=Canceled by initiator.
     TeamMemberRealNameStatus:
       title: TeamMemberRealNameStatus
       type: object
@@ -4512,15 +4567,38 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TeamMemberRealNameStatus"
-        joinRejectReason:
-          type: string
-          description: The reason why the team cannot join the team
         updatedAt:
           type: integer
           format: int64
         createdAt:
           type: integer
           format: int64
+    TaskTeamParticipantMemberSummary:
+      title: TaskTeamParticipantMemberSummary
+      type: object
+      required:
+        - name
+        - avatarId
+        - intro
+        - isLeader
+      properties:
+        userId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        avatarId:
+          type: integer
+          format: int64
+        intro:
+          type: string
+        isLeader:
+          type: boolean
+        participantMemberId:
+          type: string
+          format: uuid
+        realNameInfo:
+          $ref: "#/components/schemas/TaskParticipantRealNameInfo"
     TaskMembership:
       title: TaskMembership
       type: object
@@ -4530,6 +4608,7 @@ components:
         - createdAt
         - updatedAt
         - approved
+        - completionStatus
       properties:
         id:
           type: integer
@@ -4549,12 +4628,22 @@ components:
           $ref: "#/components/schemas/ApproveType"
         realNameInfo:
           $ref: "#/components/schemas/TaskParticipantRealNameInfo"
+        email:
+          type: string
+        phone:
+          type: string
         applyReason:
           type: string
         personalAdvantage:
           type: string
         remark:
           type: string
+        teamMembers:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskTeamParticipantMemberSummary"
+        completionStatus:
+          $ref: "#/components/schemas/TaskCompletionStatus"
     TaskParticipationIdentity:
       title: TaskParticipationIdentity
       type: object
@@ -4631,6 +4720,9 @@ components:
         avatarId:
           type: integer
           format: int64
+        participantId:
+          type: string
+          format: uuid
     TeamMember:
       properties:
         role:
@@ -5078,33 +5170,48 @@ components:
           description: 用户名
           example: cheese
           type: string
+    EncodedCursorPage:
+      type: object
+      description: 分页信息
+      required:
+        - pageStart
+        - pageSize
+        - hasMore
+      properties:
+        pageStart:
+          type: string
+          description: 该页第一个 item 的 cursor
+        pageSize:
+          type: integer
+          description: 每页 item 数量
+        hasMore:
+          type: boolean
+          description: 是否有下一页
+        nextStart:
+          type: string
+          description: 下一页第一个 item 的 cursor
+        total:
+          type: integer
+          description: 总 item 数量
     Page:
       type: object
       description: 分页信息
       required:
-        - page_start
-        - page_size
-        - has_prev
-        - has_more
+        - pageStart
+        - pageSize
+        - hasMore
       properties:
-        page_start:
+        pageStart:
           type: integer
           format: int64
           description: 该页第一个 item 的 ID
-        page_size:
+        pageSize:
           type: integer
           description: 每页 item 数量
-        has_prev:
-          type: boolean
-          description: 是否有上一页
-        prev_start:
-          type: integer
-          format: int64
-          description: 上一页第一个 item 的 ID
-        has_more:
+        hasMore:
           type: boolean
           description: 是否有下一页
-        next_start:
+        nextStart:
           type: integer
           format: int64
           description: 下一页第一个 item 的 ID
@@ -5207,68 +5314,111 @@ components:
       required:
         - id
         - name
-    Notification:
+    ResolvedEntityInfo:
       type: object
+      description: Represents basic display information for a resolved entity (User, Team, Project, etc.).
       required:
         - id
         - type
-        - receiverId
-        - content
+        - name
+      properties:
+        id:
+          type: string # Use string for ID for generality across different entity types
+          description: Unique identifier of the resolved entity.
+          example: "123"
+        type:
+          type: string
+          description: The type of the entity (e.g., 'user', 'team', 'project'). Helps the client understand the context.
+          example: "user"
+        name:
+          type: string
+          description: The display name (e.g., nickname, team name, project title) of the entity.
+          example: "Alice"
+        url:
+          type: string
+          nullable: true
+          description: A URL pointing to the entity's page or resource, if applicable.
+          example: "/users/123"
+        avatarUrl:
+          type: string
+          nullable: true
+          description: A URL pointing to an avatar, logo, or icon for the entity, if applicable.
+          example: "https://example.com/avatars/123.png"
+        status:
+          type: string
+          nullable: true
+          description: The status of the entity (e.g., 'online', 'offline', 'busy'), if applicable.
+          example: "online"
+    NotificationType:
+      type: string
+      enum:
+        - MENTION
+        - REPLY
+        - REACTION
+        - PROJECT_INVITE
+        - DEADLINE_REMIND
+        - TEAM_JOIN_REQUEST
+        - TEAM_INVITATION
+        - TEAM_REQUEST_APPROVED
+        - TEAM_REQUEST_REJECTED
+        - TEAM_INVITATION_ACCEPTED
+        - TEAM_INVITATION_DECLINED
+        - TEAM_INVITATION_CANCELED
+        - TEAM_REQUEST_CANCELED
+      description: The type category of the notification.
+      example: TEAM_JOIN_REQUEST
+    Notification:
+      type: object
+      description: Represents a notification with resolved entity information, ready for client-side rendering.
+      required:
+        - id
+        - type
         - read
         - createdAt
       properties:
         id:
           type: integer
           format: int64
+          description: Unique identifier for the notification.
+          readOnly: true
+          example: 101
         type:
-          type: string
-          enum:
-            - MENTION
-            - REPLY
-            - REACTION
-            - PROJECT_INVITE
-            - DEADLINE_REMIND
-        receiverId:
-          type: integer
-          format: int64
-          description: "The ID of the user who will receive the notification. This will be mapped to a User entity in the backend."
-        content:
-          type: object
-          properties:
-            text:
-              type: string
-            projectId:
-              type: integer
-              format: int64
-              nullable: true
-            discussionId:
-              type: integer
-              format: int64
-              nullable: true
-            knowledgeId:
-              type: integer
-              format: int64
-              nullable: true
+          $ref: "#/components/schemas/NotificationType"
+          example: TEAM_INVITATION
         read:
           type: boolean
-          default: false
+          description: Indicates if the notification has been read by the recipient.
+          example: false
         createdAt:
           type: integer
           format: int64
-    #    ProjectContent:
-    #      type: object
-    #      description: 项目富文本内容
-    #      properties:
-    #        raw:
-    #          type: string
-    #          description: 原始markdown内容
-    #        html:
-    #          type: string
-    #          description: 渲染后的HTML
-    #        attachments:
-    #          type: array
-    #          items:
-    #            $ref: '#/components/schemas/Attachment'
+          description: Notification creation timestamp as epoch milliseconds (Unix timestamp * 1000).
+          readOnly: true
+          example: 1700000000000
+        entities:
+          type: object
+          description: >
+            Map containing information about entities related to this notification,
+            resolved by the backend. Keys are logical roles (e.g., "actor", "team",
+            "subjectUser", "targetItem"), and values are the resolved entity details.
+            A value can be null if an entity reference in the metadata could not be resolved.
+          nullable: true
+          additionalProperties:
+            $ref: "#/components/schemas/ResolvedEntityInfo"
+            nullable: true
+        contextMetadata:
+          type: object
+          nullable: true
+          additionalProperties: { }
+          description: >
+            Map containing non-entity specific contextual data needed for rendering,
+            extracted from the original notification metadata. Examples include the role offered
+            in an invitation, the specific reaction emoji used, a custom message string, etc.
+          example:
+            role: "MEMBER"
+            reactionEmoji: "👍"
+            message: "Welcome aboard!"
+            someOtherFlag: true
     Project:
       type: object
       required:
@@ -5590,13 +5740,109 @@ components:
           type: string
         remark:
           type: string
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: The unique identifier of the user.
+      schema:
+        type: integer
+        format: int64
+    TeamId:
+      name: teamId
+      in: path
+      required: true
+      description: The unique identifier of the team.
+      schema:
+        type: integer
+        format: int64
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      description: The unique identifier of the join request.
+      schema:
+        type: integer
+        format: int64
+    SpaceId:
+      name: spaceId
+      in: path
+      required: true
+      description: The unique identifier of the space.
+      schema:
+        type: integer
+        format: int64
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      description: The unique identifier of the task.
+      schema:
+        type: integer
+        format: int64
+    InvitationId:
+      name: invitationId
+      in: path
+      required: true
+      description: The unique identifier of the invitation.
+      schema:
+        type: integer
+        format: int64
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      description: The unique identifier of the notification.
+      schema:
+        type: integer
+        format: int64
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      description: The unique identifier of the project.
+      schema:
+        type: integer
+        format: int64
+    DiscussionId:
+      name: discussionId
+      in: path
+      required: true
+      description: The unique identifier of the discussion.
+      schema:
+        type: integer
+        format: int64
+    EncodedCursorPageStart:
+      name: pageStart
+      in: query
+      required: false
+      description: The cursor of the first item in the page.
+      schema:
+        type: string
+    PageStart:
+      name: pageStart
+      in: query
+      required: false
+      description: The ID of the first item in the page.
+      schema:
+        type: integer
+        format: int64
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      description: The number of items per page.
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
   securitySchemes:
-    bearerAuth:
-      description: The access token is used in this way.
-      in: header
-      name: Authorization
-      type: apiKey
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token obtained through login.
 security:
-  - bearerAuth: [ ]
-x-components:
-  parameters: { }
+  - BearerAuth: [ ]

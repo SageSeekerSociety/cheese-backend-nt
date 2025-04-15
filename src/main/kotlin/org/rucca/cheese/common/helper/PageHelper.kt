@@ -119,14 +119,7 @@ object PageHelper {
         if (data.isEmpty() || pageSize < 0) {
             return Pair(
                 data,
-                PageDTO(
-                    pageStart = 0,
-                    pageSize = 0,
-                    hasPrev = hasPrev,
-                    prevStart = prevStart,
-                    hasMore = false,
-                    nextStart = null,
-                ),
+                PageDTO(pageStart = 0, pageSize = 0, hasMore = false, nextStart = null),
             )
         } else if (data.size > pageSize) {
             return Pair(
@@ -134,8 +127,6 @@ object PageHelper {
                 PageDTO(
                     pageStart = idGetter(data[0]),
                     pageSize = pageSize,
-                    hasPrev = hasPrev,
-                    prevStart = prevStart,
                     hasMore = true,
                     nextStart = idGetter(data[pageSize]),
                 ),
@@ -146,8 +137,6 @@ object PageHelper {
                 PageDTO(
                     pageStart = idGetter(data[0]),
                     pageSize = data.size,
-                    hasPrev = hasPrev,
-                    prevStart = prevStart,
                     hasMore = false,
                     nextStart = null,
                 ),

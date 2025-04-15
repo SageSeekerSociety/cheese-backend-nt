@@ -1,5 +1,7 @@
 package org.rucca.cheese.discussion
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.DiscussionsApi
 import org.rucca.cheese.auth.JwtService
@@ -18,7 +20,7 @@ class DiscussionController(
     private val reactionService: DiscussionReactionService,
 ) : DiscussionsApi {
     @Auth("discussion:list:discussion")
-    override fun listDiscussions(
+    override suspend fun listDiscussions(
         @AuthUser userInfo: AuthUserInfo?,
         @AuthContext("modelType") modelType: DiscussableModelTypeDTO?,
         @AuthContext("modelId") modelId: Long?,
@@ -63,7 +65,7 @@ class DiscussionController(
     }
 
     @Auth("discussion:create:discussion")
-    override fun createDiscussion(
+    override suspend fun createDiscussion(
         @AuthContext("modelType", field = "modelType")
         @AuthContext("modelId", field = "modelId")
         @AuthContext("parentId", field = "parentId")
@@ -72,14 +74,16 @@ class DiscussionController(
         val userId = jwtService.getCurrentUserId()
         val modelTypeEnum = DiscussableModelType.valueOf(createDiscussionRequestDTO.modelType.name)
         val discussionDTO =
-            discussionService.createDiscussion(
-                userId,
-                createDiscussionRequestDTO.content,
-                createDiscussionRequestDTO.parentId,
-                createDiscussionRequestDTO.mentionedUserIds?.toSet() ?: setOf(),
-                modelTypeEnum,
-                createDiscussionRequestDTO.modelId,
-            )
+            withContext(Dispatchers.IO) {
+                discussionService.createDiscussion(
+                    userId,
+                    createDiscussionRequestDTO.content,
+                    createDiscussionRequestDTO.parentId,
+                    createDiscussionRequestDTO.mentionedUserIds?.toSet() ?: setOf(),
+                    modelTypeEnum,
+                    createDiscussionRequestDTO.modelId,
+                )
+            }
         return ResponseEntity.ok(
             CreateDiscussion200ResponseDTO(
                 code = 200,
@@ -90,7 +94,7 @@ class DiscussionController(
     }
 
     @Auth("discussion:view:discussion")
-    override fun getDiscussion(
+    override suspend fun getDiscussion(
         @AuthUser userInfo: AuthUserInfo?,
         @ResourceId discussionId: Long,
         pageStart: Long?,
@@ -141,7 +145,7 @@ class DiscussionController(
     }
 
     @Auth("discussion:view:discussion")
-    override fun listSubDiscussions(
+    override suspend fun listSubDiscussions(
         @AuthUser userInfo: AuthUserInfo?,
         @ResourceId discussionId: Long,
         pageStart: Long?,
@@ -183,7 +187,7 @@ class DiscussionController(
     }
 
     @Auth("discussion:update:discussion")
-    override fun patchDiscussion(
+    override suspend fun patchDiscussion(
         discussionId: Long,
         patchDiscussionRequestDTO: PatchDiscussionRequestDTO,
     ): ResponseEntity<PatchDiscussion200ResponseDTO> {
@@ -199,18 +203,21 @@ class DiscussionController(
     }
 
     @Auth("discussion:delete:discussion")
-    override fun deleteDiscussion(@ResourceId discussionId: Long): ResponseEntity<Unit> {
-        discussionService.deleteDiscussion(discussionId)
+    override suspend fun deleteDiscussion(@ResourceId discussionId: Long): ResponseEntity<Unit> {
+        withContext(Dispatchers.IO) { discussionService.deleteDiscussion(discussionId) }
         return ResponseEntity.noContent().build()
     }
 
     @Auth("discussion:react:reaction")
-    override fun reactToDiscussion(
+    override suspend fun reactToDiscussion(
         @ResourceId discussionId: Long,
         reactionTypeId: Long,
     ): ResponseEntity<ReactToDiscussion200ResponseDTO> {
         val userId = jwtService.getCurrentUserId()
-        val reactionDTO = reactionService.toggleReaction(discussionId, userId, reactionTypeId)
+        val reactionDTO =
+            withContext(Dispatchers.IO) {
+                reactionService.toggleReaction(discussionId, userId, reactionTypeId)
+            }
         return ResponseEntity.ok(
             ReactToDiscussion200ResponseDTO(
                 code = 200,
@@ -221,7 +228,7 @@ class DiscussionController(
     }
 
     @SkipSecurity
-    override fun getAllReactionTypes(): ResponseEntity<GetAllReactionTypes200ResponseDTO> {
+    override suspend fun getAllReactionTypes(): ResponseEntity<GetAllReactionTypes200ResponseDTO> {
         val reactionTypes = reactionService.getAllReactionTypes()
         return ResponseEntity.ok(
             GetAllReactionTypes200ResponseDTO(

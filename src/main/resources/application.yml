@@ -1,0 +1,264 @@
+# Base configuration (applies to all profiles unless overridden)
+management:
+  security:
+    actuator:
+      username: ${ACTUATOR_USERNAME:admin} # Default username for actuator endpoints
+      password: ${ACTUATOR_PASSWORD:admin} # Default password for actuator endpoints
+  endpoint:
+    health:
+      show-details: when_authorized
+
+server:
+  forward-headers-strategy: native
+
+spring:
+  application:
+    name: cheese
+  datasource:
+    # Default driver for PostgreSQL
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    # Keep enabled to avoid issues found in testing, despite the warning.
+    open-in-view: true
+    # Base setting, can be overridden by profiles like dev/test
+    show-sql: false
+    hibernate:
+      # Validate the schema against the database on startup
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    validate-on-migrate: true
+    # Generally false, set to true only for production baseline
+    baseline-on-migrate: false
+    # Prevent accidental cleaning of the database
+    clean-disabled: true
+  cache:
+    type: redis # Use Redis for caching
+    redis:
+      key-prefix: "cheese:cache:" # Prefix for all cache keys
+      time-to-live: 60000 # Default TTL in milliseconds (60 seconds)
+  # MessageSource configuration for i18n
+  messages:
+    basename: i18n/messages # Location of properties files (e.g., src/main/resources/i18n/messages)
+    encoding: UTF-8
+  mail:
+    host: ${EMAIL_SMTP_HOST:smtp.example.com} # Default value if ENV VAR not set
+    port: ${EMAIL_SMTP_PORT:587}             # Default value (587 is common for TLS)
+    username: ${EMAIL_SMTP_USERNAME}         # No default usually, required if set
+    password: ${EMAIL_SMTP_PASSWORD}         # No default, required if set
+    protocol: smtp                           # Explicitly set protocol
+    default-encoding: UTF-8                  # Recommended for consistency
+    properties:
+      mail.smtp.auth: true                   # Enable SMTP authentication (since username/password provided)
+      # Enable SSL based on environment variable (Port 465 usually requires SSL from start)
+      mail.smtp.ssl.enable: ${EMAIL_SMTP_SSL_ENABLE:false}
+      # For STARTTLS (usually port 587), you would use:
+      # mail.smtp.starttls.enable: ${EMAIL_SMTP_STARTTLS_ENABLE:true}
+      # mail.smtp.starttls.required: ${EMAIL_SMTP_STARTTLS_REQUIRED:true}
+
+      # Optional but sometimes helpful properties:
+      # mail.smtp.socketFactory.port: ${EMAIL_SMTP_PORT:465} # Redundant if ssl.enable=true usually
+      # mail.smtp.socketFactory.class: javax.net.ssl.SSLSocketFactory # Often implicit with ssl.enable=true
+      # mail.debug: false # Set to true for detailed mail sending logs during development/debugging
+
+# Application specific configurations
+application:
+  # Log a warning if an audit listener fails
+  warn-audit-failure: true
+  # --- Rank check configuration for task joining ---
+  # If true, rank checks are performed
+  rank-check-enforced: true
+  # User with rank N can join tasks with rank <= N + rank-jump
+  rank-jump: 1
+  # --- Task participant limit configuration ---
+  enforce-task-participant-limit-check: true
+  auto-reject-participant-after-reaches-limit: true
+
+# --- LLM Configuration ---
+cheese:
+  llm:
+    # Read credentials from environment variables
+    api-key: ${OPENAI_API_KEY}
+    base-url: ${OPENAI_BASE_URL}
+    # --- Model specific settings ---
+    models:
+      standard:
+        name: bot-20250223230745-8shdk
+        type: standard # Logical type identifier
+        temperature: 0.7
+        max-tokens: 2000
+        top-p: 1.0
+        # frequency-penalty: 0.0 # Optional parameters
+        # presence-penalty: 0.0
+      reasoning:
+        name: bot-20250225164439-vld75
+        type: advanced
+        temperature: 0.6
+        max-tokens: 2000
+        top-p: 1.0
+      light:
+        name: bot-20250226105936-6klx4
+        type: lightweight
+        temperature: 0.6
+        max-tokens: 500
+        top-p: 1.0
+    # Default model type to use if not specified
+    default-model-type: standard
+    # --- Timeout Settings (in seconds) ---
+    timeout:
+      socket: ${OPENAI_SOCKET_TIMEOUT:60} # Read timeout
+      connect: ${OPENAI_CONNECT_TIMEOUT:60} # Connection timeout
+      request: ${OPENAI_REQUEST_TIMEOUT:600} # Write/Request timeout (longer for LLM processing)
+    # --- AI Usage Quota Configuration ---
+    quota:
+      default-daily-quota: 20 # Default quota units per user per day
+      reset-hour: 4 # Hour (0-23) UTC when the quota resets
+      reset-minute: 0 # Minute when the quota resets
+      # Token ratio relative to 'advanced' model (cost factor)
+      standard-token-ratio: 0.5
+      advanced-token-ratio: 1.0 # Base cost
+      cache-reuse-ratio: 0.1 # Quota cost multiplier when reusing cached content
+      # Cache duration for different content types
+      cold-content-cache-days: 365
+      regular-content-cache-days: 30
+  # --- Encryption Configuration ---
+  encryption:
+    # Master key for encryption. MUST be set via environment variable in production.
+    master-key: ${ENCRYPTION_MASTER_KEY:defaultMasterKeyForDevelopmentOnly} # Default is insecure!
+  # --- Notification System Configuration ---
+  notification:
+    # default-active-channels: [IN_APP] # Default is already IN_APP in properties class
+    type-channels:
+      MENTION: [IN_APP, EMAIL]    # Example: Send email for mentions too
+      REPLY: [IN_APP, EMAIL]      # Example: Send email for replies
+      REACTION: [IN_APP]          # Only In-App for reactions by default
+      PROJECT_INVITE: [IN_APP, EMAIL]
+      DEADLINE_REMIND: [IN_APP, EMAIL]
+    aggregatable-types: [REACTION] # Make reactions aggregatable
+    aggregation-window: PT10M      # 10-minute window for reactions
+    aggregation-max-actors-in-title: 2
+    email:
+      default-from: ${EMAIL_DEFAULT_FROM:"No Reply <noreply@example.com>"}
+
+---
+
+# Development profile specific configurations
+spring:
+  config:
+    activate:
+      on-profile: dev
+  # --- Datasource ---
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
+  jpa:
+    show-sql: true # Show SQL queries in logs for development
+  # --- Elasticsearch ---
+  elasticsearch:
+    uris: http://localhost:9200
+    username: elastic
+    password: elastic # Use strong password in real envs even for dev if needed
+  # --- Redis ---
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0 # Default Redis database
+      timeout: 10000 # Connection timeout in ms
+
+# Application specific overrides for dev
+application:
+  legacy-url: http://localhost:7777 # URL of the legacy system if applicable
+  jwt-secret: ${JWT_SECRET:test-secret} # JWT secret, allow override by env var but provide default for dev
+  cors-origin: http://localhost:3000 # Allowed CORS origin for frontend dev server
+
+# Logging level overrides for dev
+logging:
+  level:
+    org:
+      rucca:
+        cheese:
+          auth: DEBUG
+#          task: DEBUG
+#          notification: DEBUG
+
+---
+
+# Test profile specific configurations
+spring:
+  config:
+    activate:
+      on-profile: test
+  # --- Datasource (potentially separate DB for testing) ---
+  datasource:
+    url: jdbc:postgresql://localhost:5433/postgres # Different port/db for tests
+    username: postgres
+    password: postgres
+  jpa:
+    show-sql: true # Show SQL in tests
+  flyway:
+    clean-disabled: false # Allow Flyway clean for integration tests that need a fresh DB
+  # --- Elasticsearch (separate instance/index for tests) ---
+  elasticsearch:
+    uris: http://localhost:9201 # Different port for test ES
+    username: elastic
+    password: elastic
+  # --- Redis (separate instance/database for tests) ---
+  data:
+    redis:
+      host: localhost
+      port: 6380 # Different port for test Redis
+      database: 0 # Or a different database number, e.g., 1
+      timeout: 10000
+
+# Application specific overrides for test
+application:
+  legacy-url: http://localhost:7779
+  jwt-secret: test-secret # Use a fixed, known secret for tests
+  cors-origin: http://localhost:3000 # Keep consistent if test frontend runs same place
+
+---
+
+# Production profile specific configurations
+spring:
+  config:
+    activate:
+      on-profile: prod
+  # --- Datasource (configured via environment variables) ---
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}?currentSchema=${DB_SCHEMA:public}
+    username: ${DB_USER} # Required environment variable
+    password: ${DB_PASSWORD} # Required environment variable
+  jpa:
+    show-sql: false # Do not show SQL in production logs
+  flyway:
+    # Perform a baseline on first migration in prod if schema already exists
+    baseline-on-migrate: true
+    baseline-version: 20250328220000 # Version to baseline against (YYYYMMDDHHMMSS format)
+    baseline-description: Baseline existing prod schema (of 2025.03.28 22:00:00) # Description for the baseline
+  # --- Elasticsearch (configured via environment variables) ---
+  elasticsearch:
+    uris: http://${ES_HOST:localhost}:${ES_PORT:9200}
+    username: ${ES_USER} # Required environment variable
+    password: ${ES_PASSWORD} # Required environment variable
+  # --- Redis (configured via environment variables) ---
+  data:
+    redis:
+      host: ${REDIS_HOST} # Required environment variable
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+      timeout: 10000
+
+# Application specific overrides for prod (configured via environment variables)
+application:
+  legacy-url: ${LEGACY_URL} # Required environment variable
+  jwt-secret: ${JWT_SECRET} # Required environment variable
+  cors-origin: ${CORS_ORIGIN} # Required environment variable
+
+# Note: Ensure logging levels for production are set appropriately,
+# usually INFO by default, avoiding DEBUG unless necessary for troubleshooting.
+# logging:
+#   level:
+#     root: INFO
+#     org.rucca.cheese: INFO

@@ -2,8 +2,8 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.Valid
 import java.io.Serializable
-import javax.validation.Valid
 
 /**
  * @param name
@@ -24,6 +24,9 @@ import javax.validation.Valid
  * @param topics
  * @param requireRealName
  * @param categoryId ID of the category to which the task belongs.
+ * @param minTeamSize Minimum team size required for the task.
+ * @param maxTeamSize Maximum team size allowed for the task.
+ * @param teamLockingPolicy
  */
 data class PatchTaskRequestDTO(
     @Schema(example = "null", description = "")
@@ -82,6 +85,16 @@ data class PatchTaskRequestDTO(
     @Schema(example = "1", description = "ID of the category to which the task belongs.")
     @get:JsonProperty("categoryId")
     val categoryId: kotlin.Long? = null,
+    @Schema(example = "1", description = "Minimum team size required for the task.")
+    @get:JsonProperty("minTeamSize")
+    val minTeamSize: kotlin.Int? = null,
+    @Schema(example = "10", description = "Maximum team size allowed for the task.")
+    @get:JsonProperty("maxTeamSize")
+    val maxTeamSize: kotlin.Int? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("teamLockingPolicy")
+    val teamLockingPolicy: TeamMembershipLockPolicyDTO? = null,
 ) : Serializable {
 
     companion object {

@@ -1,5 +1,6 @@
 package org.rucca.cheese.common.pagination.model
 
+import org.rucca.cheese.model.EncodedCursorPageDTO
 import org.rucca.cheese.model.PageDTO
 
 /**
@@ -41,9 +42,16 @@ fun <T, V : Number, C : SimpleCursor<T, V>> CursorPageInfo<T, C>.toPageDTO(): Pa
     return PageDTO(
         pageStart = cursor?.value?.toLong() ?: 0,
         pageSize = pageSize,
-        hasPrev = hasPrevious,
         hasMore = hasNext,
-        prevStart = previousCursor?.value?.toLong(),
         nextStart = nextCursor?.value?.toLong(),
+    )
+}
+
+fun <T, C : TypedCompositeCursor<T>> CursorPageInfo<T, C>.toPageDTO(): EncodedCursorPageDTO {
+    return EncodedCursorPageDTO(
+        pageStart = cursor?.encode() ?: "",
+        pageSize = pageSize,
+        hasMore = hasNext,
+        nextStart = nextCursor?.encode(),
     )
 }

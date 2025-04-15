@@ -1,0 +1,27 @@
+/*
+ *  Description: This file defines the TaskSubmissionEntry entity and its repository.
+ *               It stores the information of a single entry in a task submission.
+ *
+ *  Author(s):
+ *      Nictheboy Li    <nictheboy@outlook.com>
+ *
+ */
+
+package org.rucca.cheese.task
+
+import jakarta.persistence.*
+import org.hibernate.annotations.SQLRestriction
+import org.rucca.cheese.attachment.Attachment
+import org.rucca.cheese.common.persistent.BaseEntity
+
+@Entity
+@SQLRestriction("deleted_at IS NULL")
+@Table(indexes = [Index(columnList = "task_submission_id")])
+class TaskSubmissionEntry(
+    @JoinColumn(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    val taskSubmission: TaskSubmission? = null,
+    @Column(nullable = false) val index: Int? = null,
+    val contentText: String? = null,
+    @ManyToOne(fetch = FetchType.LAZY) val contentAttachment: Attachment? = null, // nullable
+) : BaseEntity()

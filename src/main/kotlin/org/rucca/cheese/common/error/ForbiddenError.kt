@@ -2,7 +2,7 @@ package org.rucca.cheese.common.error
 
 import org.springframework.http.HttpStatus
 
-class ForbiddenError(message: String = "Forbidden", data: Map<String, Any> = emptyMap()) :
+open class ForbiddenError(message: String = "Forbidden", data: Map<String, Any> = emptyMap()) :
     BaseError(status = HttpStatus.FORBIDDEN, message = message, data = data) {
     constructor(
         action: String,

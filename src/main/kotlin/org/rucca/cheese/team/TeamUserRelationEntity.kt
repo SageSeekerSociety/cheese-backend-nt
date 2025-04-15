@@ -14,6 +14,7 @@ import java.util.Optional
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.model.TeamMemberRoleTypeDTO
 import org.rucca.cheese.user.User
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -22,6 +23,24 @@ enum class TeamMemberRole {
     OWNER,
     ADMIN,
     MEMBER,
+}
+
+fun TeamMemberRoleTypeDTO?.toTeamMemberRole(): TeamMemberRole {
+    return when (this) {
+        TeamMemberRoleTypeDTO.OWNER ->
+            TeamMemberRole.OWNER // Should not be directly invited as owner usually
+        TeamMemberRoleTypeDTO.ADMIN -> TeamMemberRole.ADMIN
+        TeamMemberRoleTypeDTO.MEMBER -> TeamMemberRole.MEMBER
+        null -> TeamMemberRole.MEMBER // Default to MEMBER if null
+    }
+}
+
+fun TeamMemberRole.toDTO(): TeamMemberRoleTypeDTO {
+    return when (this) {
+        TeamMemberRole.OWNER -> TeamMemberRoleTypeDTO.OWNER
+        TeamMemberRole.ADMIN -> TeamMemberRoleTypeDTO.ADMIN
+        TeamMemberRole.MEMBER -> TeamMemberRoleTypeDTO.MEMBER
+    }
 }
 
 @Entity
@@ -51,4 +70,11 @@ interface TeamUserRelationRepository : JpaRepository<TeamUserRelation, IdType> {
         role: TeamMemberRole,
         pageable: Pageable,
     ): List<TeamUserRelation>
+
+    fun findAllByTeamIdAndRoleIsIn(
+        teamId: Long,
+        roles: Collection<TeamMemberRole>,
+    ): List<TeamUserRelation>
+
+    fun findAllByTeamIdInAndUserId(teamIds: Collection<Long>, userId: Long): List<TeamUserRelation>
 }
