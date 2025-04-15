@@ -21,6 +21,7 @@ import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.task.TaskCompletionStatus
 import org.rucca.cheese.task.TaskMembershipRepository
 import org.rucca.cheese.task.TeamMembershipLockPolicy
 import org.rucca.cheese.team.error.NotTeamMemberYetError
@@ -620,13 +621,20 @@ class TeamService(
     fun checkTeamLockingStatus(teamId: IdType) { // Changed to public for TeamMembershipService
         // Define which policies cause a hard lock
         val lockingPolicies = listOf(TeamMembershipLockPolicy.LOCK_ON_APPROVAL)
+        val ongoing =
+            listOf(
+                TaskCompletionStatus.NOT_SUBMITTED,
+                TaskCompletionStatus.PENDING_REVIEW,
+                TaskCompletionStatus.REJECTED_RESUBMITTABLE,
+            )
 
         // Find any active memberships linked to tasks with these locking policies
         val activeLockedMemberships =
-            taskMembershipRepository.findActiveMembershipsWithLockingPolicy(
+            taskMembershipRepository.findActiveMembershipsWithOngoingLock(
                 teamId = teamId,
-                approvedStatus = ApproveType.APPROVED, // Check approved memberships
+                approvedStatus = ApproveType.APPROVED,
                 lockingPolicies = lockingPolicies,
+                ongoingStatuses = ongoing,
                 currentTime = LocalDateTime.now(),
             )
 

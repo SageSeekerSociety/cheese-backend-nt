@@ -1059,6 +1059,36 @@ paths:
                   example: 10
                 teamLockingPolicy:
                   $ref: "#/components/schemas/TeamMembershipLockPolicy"
+  /tasks/{taskId}/resubmit:
+    parameters:
+      - $ref: '#/components/parameters/TaskId'
+    post:
+      summary: Resubmit a rejected task for approval
+      description: >
+        Allows the creator or an authorized user to resubmit a task that was previously
+        rejected (`REJECTED` status). This action changes the task's approval status
+        to `PENDING` and clears the `rejectReason`. The task must currently be in
+        the `REJECTED` state for this operation to succeed.
+      operationId: resubmit-task
+      tags: [ Tasks ]
+      responses:
+        "200":
+          description: Task successfully resubmitted for approval. The updated task details are returned.
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      task:
+                        $ref: "#/components/schemas/Task"
+                    required:
+                      - task
+                    type: object
+                  message:
+                    type: string
   /tasks/{taskId}/teams:
     parameters:
       - $ref: '#/components/parameters/TaskId'
@@ -4101,6 +4131,15 @@ components:
           items:
             $ref: '#/components/schemas/TeamTaskEligibility'
           description: Eligibility status of the user's teams for the task.
+    TaskCompletionStatus:
+      title: TaskCompletionStatus
+      type: string
+      enum:
+        - NOT_SUBMITTED
+        - PENDING_REVIEW
+        - REJECTED_RESUBMITTABLE
+        - SUCCESS
+        - FAILED
     Task:
       title: Task
       type: object
@@ -4569,6 +4608,7 @@ components:
         - createdAt
         - updatedAt
         - approved
+        - completionStatus
       properties:
         id:
           type: integer
@@ -4602,6 +4642,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskTeamParticipantMemberSummary"
+        completionStatus:
+          $ref: "#/components/schemas/TaskCompletionStatus"
     TaskParticipationIdentity:
       title: TaskParticipationIdentity
       type: object

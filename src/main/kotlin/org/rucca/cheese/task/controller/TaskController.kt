@@ -9,7 +9,7 @@
  *
  */
 
-package org.rucca.cheese.task
+package org.rucca.cheese.task.controller
 
 import jakarta.servlet.http.HttpServletResponse
 import kotlinx.coroutines.Dispatchers
@@ -30,22 +30,16 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.convert
 import org.rucca.cheese.llm.error.ConversationNotFoundError
 import org.rucca.cheese.model.*
+import org.rucca.cheese.task.TaskSubmissionSchema
+import org.rucca.cheese.task.TeamMembershipLockPolicy
 import org.rucca.cheese.task.option.TaskEnumerateOptions
 import org.rucca.cheese.task.option.TaskQueryOptions
+import org.rucca.cheese.task.service.*
+import org.rucca.cheese.task.toEntity
 import org.rucca.cheese.user.services.UserService
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-
-fun List<TaskSubmissionContentDTO>.toEntryList() = map {
-    if (it.text != null) {
-        TaskSubmissionService.TaskSubmissionEntry.Text(it.text)
-    } else if (it.attachmentId != null) {
-        TaskSubmissionService.TaskSubmissionEntry.Attachment(it.attachmentId)
-    } else {
-        throw IllegalArgumentException("Invalid TaskSubmissionContentDTO: $it")
-    }
-}
 
 @RestController
 @UseNewAuth
@@ -138,7 +132,7 @@ class TaskController(
         val approveType = approved?.convert()
         val participants =
             withContext(Dispatchers.IO) {
-                taskMembershipService.getTaskMembershipDTOs(taskId, approveType, queryRealNameInfo)
+                taskMembershipService.getTaskMembershipDTOs(taskId, approveType)
             }
         return ResponseEntity.ok(
             GetTaskParticipants200ResponseDTO(
@@ -286,6 +280,21 @@ class TaskController(
             )
 
         return ResponseEntity.ok(response)
+    }
+
+    @Auth("task:resubmit:task")
+    override suspend fun resubmitTask(
+        @ResourceId taskId: Long
+    ): ResponseEntity<ResubmitTask200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+        val taskDTO = taskService.resubmitTaskForApproval(taskId, currentUserId)
+        return ResponseEntity.ok(
+            ResubmitTask200ResponseDTO(
+                code = 200,
+                data = PatchTask200ResponseDataDTO(taskDTO),
+                message = "OK",
+            )
+        )
     }
 
     @Auth("task:modify:participant")

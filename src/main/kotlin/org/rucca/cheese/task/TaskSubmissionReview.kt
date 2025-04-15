@@ -10,11 +10,8 @@
 package org.rucca.cheese.task
 
 import jakarta.persistence.*
-import java.util.*
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.BaseEntity
-import org.rucca.cheese.common.persistent.IdType
-import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
@@ -27,9 +24,3 @@ class TaskSubmissionReview(
     @Column(nullable = false) var score: Int? = null,
     @Column(nullable = false) var comment: String? = null,
 ) : BaseEntity()
-
-interface TaskSubmissionReviewRepository : JpaRepository<TaskSubmissionReview, IdType> {
-    fun findBySubmissionId(submissionId: IdType): Optional<TaskSubmissionReview>
-
-    fun existsBySubmissionId(submissionId: IdType): Boolean
-}

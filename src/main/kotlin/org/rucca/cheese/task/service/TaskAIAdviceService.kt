@@ -1,4 +1,4 @@
-package org.rucca.cheese.task
+package org.rucca.cheese.task.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -21,6 +21,7 @@ import org.rucca.cheese.llm.error.LLMError.*
 import org.rucca.cheese.llm.service.LLMService
 import org.rucca.cheese.llm.service.UserQuotaService
 import org.rucca.cheese.model.*
+import org.rucca.cheese.task.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext

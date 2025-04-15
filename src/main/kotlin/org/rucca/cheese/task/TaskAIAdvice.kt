@@ -44,10 +44,3 @@ class TaskAIAdvice {
         updatedAt = LocalDateTime.now()
     }
 }
-
-enum class TaskAIAdviceStatus {
-    PENDING, // 等待处理
-    PROCESSING, // 正在处理
-    COMPLETED, // 处理完成
-    FAILED, // 处理失败
-}

@@ -11,6 +11,7 @@ import java.io.Serializable
  * @param createdAt
  * @param updatedAt
  * @param approved
+ * @param completionStatus
  * @param deadline
  * @param realNameInfo
  * @param email
@@ -38,6 +39,10 @@ data class TaskMembershipDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("approved", required = true)
     val approved: ApproveTypeDTO,
+    @field:Valid
+    @Schema(example = "null", required = true, description = "")
+    @get:JsonProperty("completionStatus", required = true)
+    val completionStatus: TaskCompletionStatusDTO,
     @Schema(example = "null", description = "")
     @get:JsonProperty("deadline")
     val deadline: kotlin.Long? = null,

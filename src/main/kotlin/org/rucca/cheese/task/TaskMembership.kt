@@ -21,10 +21,7 @@ import org.hibernate.type.SqlTypes
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.common.persistent.IdType
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
-import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
+import org.rucca.cheese.model.TaskParticipantRealNameInfoDTO
 
 @Embeddable
 data class TeamMemberRealNameInfo(
@@ -49,7 +46,14 @@ class RealNameInfo(
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@Table(indexes = [Index(columnList = "task_id"), Index(columnList = "member_id")])
+@Table(
+    indexes =
+        [
+            Index(columnList = "task_id"),
+            Index(columnList = "member_id"),
+            Index(columnList = "completion_status"),
+        ]
+)
 class TaskMembership(
     @JoinColumn(nullable = false) @ManyToOne(fetch = FetchType.LAZY) val task: Task? = null,
     @Column(nullable = false) val memberId: IdType? = null,
@@ -81,63 +85,44 @@ class TaskMembership(
     @Column(name = "personal_advantage", nullable = false) val personalAdvantage: String? = null,
     @Column(name = "remark", nullable = false) val remark: String? = null,
     @Column(nullable = true) var encryptionKeyId: String? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(
+        name = "completion_status",
+        nullable = false,
+        columnDefinition = "VARCHAR(50) default 'NOT_SUBMITTED'",
+    )
+    var completionStatus: TaskCompletionStatus = TaskCompletionStatus.NOT_SUBMITTED,
 ) : BaseEntity()
 
-interface TaskMembershipRepository : JpaRepository<TaskMembership, IdType> {
-    fun findAllByTaskId(taskId: IdType): List<TaskMembership>
-
-    fun findAllByTaskIdAndApproved(taskId: IdType, approved: ApproveType): List<TaskMembership>
-
-    fun findByTaskIdAndMemberId(taskId: IdType, memberId: IdType): Optional<TaskMembership>
-
-    fun existsByTaskIdAndMemberId(taskId: IdType, memberId: IdType): Boolean
-
-    fun existsByTaskIdAndMemberIdAndApproved(
-        taskId: IdType,
-        memberId: IdType,
-        approved: ApproveType,
-    ): Boolean
-
-    fun existsByTaskId(taskId: IdType): Boolean
-
-    fun countByTaskIdAndApproved(taskId: IdType, approved: ApproveType): Int
-
-    @Query(
-        "SELECT tm FROM TaskMembership tm WHERE tm.task.id = :taskId AND EXISTS (SELECT 1 FROM TaskSubmission ts WHERE ts.membership.id = tm.id)"
+// Default empty RealNameInfo when real name is not required or not available
+val DefaultRealNameInfo =
+    RealNameInfo(
+        realName = null, // Use null for non-required fields
+        studentId = null,
+        grade = null,
+        major = null,
+        className = null,
+        encrypted = false, // Explicitly mark as not encrypted
     )
-    fun findByTaskIdWhereMemberHasSubmitted(taskId: IdType): List<TaskMembership>
 
-    fun findAllByIsTeam(isTeam: Boolean, pageable: Pageable): Page<TaskMembership>
-
-    /**
-     * Finds active TaskMemberships for a specific team that belong to tasks with a locking policy
-     * indicating that changes are forbidden.
-     *
-     * @param teamId The ID of the team.
-     * @param approvedStatus The status indicating active participation (e.g., APPROVED).
-     * @param lockingPolicies The list of Task locking policies that trigger a lock.
-     * @param currentTime The current time, used for checking task deadlines if applicable
-     *   (optional).
-     * @return A list of TaskMemberships indicating a lock is active.
-     */
-    @Query(
-        """
-        SELECT tm
-        FROM TaskMembership tm
-        JOIN FETCH tm.task t
-        WHERE tm.memberId = :teamId
-          AND tm.isTeam = true
-          AND tm.approved = :approvedStatus
-          AND (t.deadline IS NULL OR t.deadline > :currentTime)
-          AND t.teamLockingPolicy IN :lockingPolicies
-          AND tm.deletedAt IS NULL
-          AND t.deletedAt IS NULL
-    """
+fun RealNameInfo.convert(): TaskParticipantRealNameInfoDTO {
+    return TaskParticipantRealNameInfoDTO(
+        realName = realName ?: "", // Convert null to empty string for DTO if needed
+        studentId = studentId ?: "",
+        grade = grade ?: "",
+        major = major ?: "",
+        className = className ?: "",
     )
-    fun findActiveMembershipsWithLockingPolicy(
-        teamId: IdType,
-        approvedStatus: ApproveType,
-        lockingPolicies: List<TeamMembershipLockPolicy>,
-        currentTime: LocalDateTime,
-    ): List<TaskMembership>
+}
+
+fun TaskParticipantRealNameInfoDTO.convert(): RealNameInfo {
+    // This conversion might not be fully accurate if original was null vs empty string
+    return RealNameInfo(
+        realName = realName.ifBlank { null },
+        studentId = studentId.ifBlank { null },
+        grade = grade.ifBlank { null },
+        major = major.ifBlank { null },
+        className = className.ifBlank { null },
+        encrypted = false, // Assume DTOs are decrypted
+    )
 }

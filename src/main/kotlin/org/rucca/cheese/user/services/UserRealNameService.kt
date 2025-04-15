@@ -10,7 +10,7 @@ import org.rucca.cheese.common.pagination.util.desc
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.getProperty
 import org.rucca.cheese.model.*
-import org.rucca.cheese.task.TaskInfoProvider
+import org.rucca.cheese.task.support.TaskInfoProvider
 import org.rucca.cheese.user.models.*
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service

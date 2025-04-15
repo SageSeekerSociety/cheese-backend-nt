@@ -1,6 +1,7 @@
-package org.rucca.cheese.task
+package org.rucca.cheese.task.support
 
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.task.TaskRepository
 import org.springframework.stereotype.Service
 
 /**

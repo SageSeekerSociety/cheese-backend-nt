@@ -7,11 +7,14 @@
  *
  */
 
-package org.rucca.cheese.task
+package org.rucca.cheese.task.service
 
 import java.time.LocalDateTime
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.TopicDTO
+import org.rucca.cheese.task.TaskRepository
+import org.rucca.cheese.task.TaskTopicsRelation
+import org.rucca.cheese.task.TaskTopicsRelationRepository
 import org.rucca.cheese.topic.TopicRepository
 import org.rucca.cheese.topic.TopicService
 import org.springframework.stereotype.Service

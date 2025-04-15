@@ -608,7 +608,7 @@ CREATE
             description TEXT NOT NULL,
             intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
-            reject_reason VARCHAR(255),
+            reject_reason VARCHAR(255) NOT NULL,
             team_locking_policy VARCHAR(50) DEFAULT 'NO_LOCK' NOT NULL CHECK(
                 team_locking_policy IN(
                     'NO_LOCK',
@@ -708,6 +708,15 @@ CREATE
             participant_uuid uuid NOT NULL UNIQUE,
             apply_reason VARCHAR(255) NOT NULL,
             class_name VARCHAR(255),
+            completion_status VARCHAR(50) DEFAULT 'NOT_SUBMITTED' NOT NULL CHECK(
+                completion_status IN(
+                    'NOT_SUBMITTED',
+                    'PENDING_REVIEW',
+                    'REJECTED_RESUBMITTABLE',
+                    'SUCCESS',
+                    'FAILED'
+                )
+            ),
             email VARCHAR(255) NOT NULL,
             encryption_key_id VARCHAR(255),
             grade VARCHAR(255),
@@ -1106,6 +1115,10 @@ CREATE
 CREATE
     INDEX IDXh685vv2ufp7ohjnfw6hw231tv ON
     task_membership(member_id);
+
+CREATE
+    INDEX IDXa4hyq6o5cfj6f91k5ljpk805v ON
+    task_membership(completion_status);
 
 CREATE
     INDEX IDXglmpyfy44ju9tr2tm5h6j8u3t ON

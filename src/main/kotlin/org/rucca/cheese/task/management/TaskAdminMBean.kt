@@ -1,5 +1,6 @@
 package org.rucca.cheese.task.management
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -7,9 +8,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.error.PreconditionFailedError
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.task.TaskMembershipService
-import org.rucca.cheese.task.TaskService
+import org.rucca.cheese.task.TaskMembershipRepository
+import org.rucca.cheese.task.service.TaskMembershipService
+import org.rucca.cheese.task.service.TaskMembershipStatusService
+import org.rucca.cheese.task.service.TaskService
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.PageRequest
 import org.springframework.jmx.export.annotation.ManagedOperation
 import org.springframework.jmx.export.annotation.ManagedOperationParameter
 import org.springframework.jmx.export.annotation.ManagedOperationParameters
@@ -24,10 +28,15 @@ import org.springframework.stereotype.Component
 class TaskAdminMBean(
     private val taskService: TaskService,
     private val taskMembershipService: TaskMembershipService,
+    private val statusService: TaskMembershipStatusService,
+    private val membershipRepository: TaskMembershipRepository,
 ) {
     private val logger = LoggerFactory.getLogger(TaskAdminMBean::class.java)
     // Basic flag to prevent concurrent runs of the snapshot task via JMX
     private val isSnapshotTaskRunning = AtomicBoolean(false)
+
+    private val isStatusBackfillRunning = AtomicBoolean(false)
+
     // Dedicated executor for potentially long-running tasks triggered via JMX
     private val backgroundExecutor: ExecutorService =
         Executors.newSingleThreadExecutor { r ->
@@ -183,5 +192,112 @@ class TaskAdminMBean(
             )
             "ERROR: Failed to disable real name for task ID $taskId. Reason: ${e.message}"
         }
+    }
+
+    @ManagedOperation(
+        description = "Backfill Completion Status for all task memberships (runs asynchronously)."
+    )
+    fun backfillCompletionStatusForAllMemberships(): String {
+        logger.info("[JMX] Operation triggered: backfill completion status.")
+
+        // Prevent concurrent execution of THIS task
+        if (isStatusBackfillRunning.compareAndSet(false, true)) {
+            try {
+                // Submit the backfill task to run in the background
+                CompletableFuture.runAsync(
+                    {
+                        val startTime = System.currentTimeMillis()
+                        var totalProcessed: Long = 0
+                        var errorCount: Long = 0
+                        val pageSize = 100 // Process in batches
+                        var pageNumber = 0
+
+                        try {
+                            logger.info(
+                                "[JMX BG Status Backfill] Starting completion status backfill..."
+                            )
+
+                            do {
+                                val pageable = PageRequest.of(pageNumber, pageSize)
+                                val page = membershipRepository.findAll(pageable)
+
+                                if (page.hasContent()) {
+                                    logger.debug(
+                                        "[JMX BG Status Backfill] Processing page {} ({} memberships)",
+                                        pageNumber + 1,
+                                        page.numberOfElements,
+                                    )
+                                    page.content.forEach { membership ->
+                                        try {
+                                            // Call the status service for each membership
+                                            // It runs in its own transaction (REQUIRES_NEW)
+                                            statusService.updateCompletionStatus(membership.id!!)
+                                            totalProcessed++
+                                        } catch (e: Exception) {
+                                            logger.error(
+                                                "[JMX BG Status Backfill] Failed to update status for membership ID {}: {}",
+                                                membership.id,
+                                                e.message, // Don't log stack trace for every
+                                                // failure potentially
+                                            )
+                                            errorCount++
+                                            // Optionally log full trace periodically or based on
+                                            // error type
+                                            // if (errorCount % 100 == 0) { logger.error("...", e) }
+                                        }
+                                    }
+                                } else {
+                                    logger.debug(
+                                        "[JMX BG Status Backfill] No more memberships found on page {}.",
+                                        pageNumber + 1,
+                                    )
+                                }
+                                pageNumber++
+                            } while (page.hasNext())
+
+                            val duration = Duration.ofMillis(System.currentTimeMillis() - startTime)
+                            logger.info(
+                                "[JMX BG Status Backfill] Completion status backfill finished in {}. Processed: {}, Errors: {}",
+                                duration,
+                                totalProcessed,
+                                errorCount,
+                            )
+                        } catch (e: Exception) {
+                            logger.error(
+                                "[JMX BG Status Backfill] Unrecoverable error during status backfill.",
+                                e,
+                            )
+                            // Potentially log more context here
+                        } finally {
+                            isStatusBackfillRunning.set(false) // Release the lock
+                            logger.info("[JMX BG Status Backfill] Lock released.")
+                        }
+                    },
+                    backgroundExecutor,
+                )
+
+                val message =
+                    "Completion status backfill task started asynchronously. Check server logs for progress and results."
+                logger.info("[JMX] {}", message)
+                return "SUCCESS: $message"
+            } catch (e: Exception) {
+                // Handle potential errors during submission itself
+                logger.error("[JMX] Error submitting status backfill task.", e)
+                isStatusBackfillRunning.set(false) // Ensure lock is released on submission error
+                return "ERROR: Failed to start status backfill task. Reason: ${e.message}"
+            }
+        } else {
+            val message =
+                "Completion status backfill task is already running. Please wait for it to complete."
+            logger.warn("[JMX] {}", message)
+            return "WARN: $message"
+        }
+    }
+
+    @ManagedOperation(
+        description = "Check if the completion status backfill task is currently running."
+    )
+    fun isCompletionStatusBackfillRunning(): Boolean {
+        return isStatusBackfillRunning.get()
     }
 }

@@ -39,6 +39,7 @@ import org.rucca.cheese.model.PostTaskSubmission200ResponseDTO
 import org.rucca.cheese.model.PostTaskSubmissionReview200ResponseDTO
 import org.rucca.cheese.model.PostTaskSubmissionReviewRequestDTO
 import org.rucca.cheese.model.RequestTaskAiAdvice200ResponseDTO
+import org.rucca.cheese.model.ResubmitTask200ResponseDTO
 import org.rucca.cheese.model.TaskSubmissionContentDTO
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -1179,6 +1180,42 @@ The teams can be filtered based on eligibility criteria.
         @PathVariable("taskId")
         taskId: kotlin.Long
     ): ResponseEntity<RequestTaskAiAdvice200ResponseDTO> {
+        return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
+    }
+
+    @Operation(
+        tags = ["Tasks"],
+        summary = "Resubmit a rejected task for approval",
+        operationId = "resubmitTask",
+        description =
+            """Allows the creator or an authorized user to resubmit a task that was previously rejected (`REJECTED` status). This action changes the task's approval status to `PENDING` and clears the `rejectReason`. The task must currently be in the `REJECTED` state for this operation to succeed.
+""",
+        responses =
+            [
+                ApiResponse(
+                    responseCode = "200",
+                    description =
+                        "Task successfully resubmitted for approval. The updated task details are returned.",
+                    content =
+                        [
+                            Content(
+                                schema = Schema(implementation = ResubmitTask200ResponseDTO::class)
+                            )
+                        ],
+                )
+            ],
+        security = [SecurityRequirement(name = "BearerAuth")],
+    )
+    @RequestMapping(
+        method = [RequestMethod.POST],
+        value = ["/tasks/{taskId}/resubmit"],
+        produces = ["application/json"],
+    )
+    suspend fun resubmitTask(
+        @Parameter(description = "The unique identifier of the task.", required = true)
+        @PathVariable("taskId")
+        taskId: kotlin.Long
+    ): ResponseEntity<ResubmitTask200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 }

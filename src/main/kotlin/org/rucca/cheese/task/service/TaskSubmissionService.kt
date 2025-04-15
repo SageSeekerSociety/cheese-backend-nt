@@ -9,7 +9,7 @@
  *
  */
 
-package org.rucca.cheese.task
+package org.rucca.cheese.task.service
 
 import java.time.LocalDateTime
 import org.hibernate.query.SortDirection
@@ -23,16 +23,17 @@ import org.rucca.cheese.common.pagination.repository.idSeekSpec
 import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.getProperty
-import org.rucca.cheese.model.PageDTO
-import org.rucca.cheese.model.TaskSubmissionContentEntryDTO
-import org.rucca.cheese.model.TaskSubmissionDTO
-import org.rucca.cheese.model.TaskSubmissionTypeDTO
+import org.rucca.cheese.model.*
+import org.rucca.cheese.task.*
 import org.rucca.cheese.task.error.TaskNotResubmittableError
 import org.rucca.cheese.task.error.TaskSubmissionNotEditableError
 import org.rucca.cheese.task.error.TaskSubmissionNotMatchSchemaError
 import org.rucca.cheese.task.error.TaskVersionNotSubmittedYetError
+import org.rucca.cheese.task.event.TaskMembershipStatusUpdateEvent
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.services.UserService
+import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 
 @Service
@@ -45,7 +46,10 @@ class TaskSubmissionService(
     private val taskSubmissionEntryRepository: TaskSubmissionEntryRepository,
     private val taskSubmissionReviewService: TaskSubmissionReviewService,
     private val taskMembershipService: TaskMembershipService,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
+    private val log = LoggerFactory.getLogger(TaskSubmissionService::class.java)
+
     sealed class TaskSubmissionEntry {
         data class Text(val text: String) : TaskSubmissionEntry()
 
@@ -119,7 +123,7 @@ class TaskSubmissionService(
                 version = version,
                 submitter = User().apply { id = submitterId.toInt() },
             )
-        taskSubmissionRepository.save(submission)
+        val savedSubmission = taskSubmissionRepository.save(submission)
         val entries =
             submissions.withIndex().map {
                 val text =
@@ -141,6 +145,19 @@ class TaskSubmissionService(
                 )
             }
         taskSubmissionEntryRepository.saveAll(entries)
+
+        val membershipId = savedSubmission.membership?.id
+        if (membershipId != null) {
+            eventPublisher.publishEvent(TaskMembershipStatusUpdateEvent(this, membershipId))
+            log.debug(
+                "Published status update event after creating submission {} for membership {}",
+                savedSubmission.id,
+                membershipId,
+            )
+        } else {
+            log.warn("Saved TaskSubmission {} has no associated membership ID.", savedSubmission.id)
+        }
+
         return submission.toTaskSubmissionDTO(entries, schema)
     }
 
@@ -384,5 +401,15 @@ class TaskSubmissionService(
         return taskSubmissionRepository.findById(submissionId).orElseThrow {
             NotFoundError("task submission", submissionId)
         }
+    }
+}
+
+fun List<TaskSubmissionContentDTO>.toEntryList() = map {
+    if (it.text != null) {
+        TaskSubmissionService.TaskSubmissionEntry.Text(it.text)
+    } else if (it.attachmentId != null) {
+        TaskSubmissionService.TaskSubmissionEntry.Attachment(it.attachmentId)
+    } else {
+        throw IllegalArgumentException("Invalid TaskSubmissionContentDTO: $it")
     }
 }

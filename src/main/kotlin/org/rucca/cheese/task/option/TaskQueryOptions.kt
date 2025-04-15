@@ -10,12 +10,12 @@
 package org.rucca.cheese.task.option
 
 data class TaskQueryOptions(
-    val querySpace: Boolean,
-    val queryJoinability: Boolean,
-    val querySubmittability: Boolean,
-    val queryJoined: Boolean,
-    val queryTopics: Boolean,
-    val queryUserDeadline: Boolean,
+    val querySpace: Boolean = false,
+    val queryJoinability: Boolean = false,
+    val querySubmittability: Boolean = false,
+    val queryJoined: Boolean = false,
+    val queryTopics: Boolean = false,
+    val queryUserDeadline: Boolean = false,
 ) {
     companion object {
         val MINIMUM =

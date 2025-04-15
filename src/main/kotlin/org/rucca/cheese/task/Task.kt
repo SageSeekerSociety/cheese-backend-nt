@@ -1,15 +1,3 @@
-/*
- *  Description: This file defines the Task entity and its repository.
- *               It stores the information of a task.
- *
- *  Author(s):
- *      Nictheboy Li    <nictheboy@outlook.com>
- *      HuanCheng65
- *      nameisyui
- *      CH3COOH-JYR
- *
- */
-
 package org.rucca.cheese.task
 
 import jakarta.persistence.*
@@ -18,48 +6,10 @@ import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.BaseEntity
-import org.rucca.cheese.model.TaskSubmitterTypeDTO
-import org.rucca.cheese.model.TeamMembershipLockPolicyDTO
 import org.rucca.cheese.space.models.Space
 import org.rucca.cheese.space.models.SpaceCategory
+import org.rucca.cheese.task.listener.TaskElasticSearchSyncListener
 import org.rucca.cheese.user.User
-
-enum class TeamMembershipLockPolicy {
-    NO_LOCK, // Team members can be changed freely (with warnings/checks if applicable)
-    LOCK_ON_APPROVAL, // Team members are locked once the TaskMembership is approved
-}
-
-fun TeamMembershipLockPolicy.toDTO(): TeamMembershipLockPolicyDTO {
-    return TeamMembershipLockPolicyDTO.forValue(this.name)
-}
-
-fun TeamMembershipLockPolicyDTO.toEntity(): TeamMembershipLockPolicy {
-    return TeamMembershipLockPolicy.valueOf(this.value)
-}
-
-enum class TaskSubmitterType {
-    USER,
-    TEAM,
-}
-
-fun TaskSubmitterType.toDTO(): TaskSubmitterTypeDTO {
-    return when (this) {
-        TaskSubmitterType.USER -> TaskSubmitterTypeDTO.USER
-        TaskSubmitterType.TEAM -> TaskSubmitterTypeDTO.TEAM
-    }
-}
-
-enum class TaskSubmissionEntryType {
-    TEXT,
-    ATTACHMENT,
-}
-
-@Embeddable
-class TaskSubmissionSchema(
-    @Column(nullable = false) val index: Int? = null,
-    @Column(nullable = false) val description: String? = null,
-    @Column(nullable = false) val type: TaskSubmissionEntryType? = null,
-)
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
@@ -86,7 +36,7 @@ class Task(
     @ElementCollection var submissionSchema: List<TaskSubmissionSchema>? = null,
     @Column(nullable = true) var rank: Int? = null,
     @Column(nullable = false) var approved: ApproveType = ApproveType.NONE,
-    @Column(nullable = true) var rejectReason: String? = null,
+    @Column(nullable = false) var rejectReason: String? = null,
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT false")
     var requireRealName: Boolean = false,
     /**

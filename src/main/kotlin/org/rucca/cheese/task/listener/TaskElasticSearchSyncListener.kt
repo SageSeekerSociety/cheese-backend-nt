@@ -8,10 +8,13 @@
  *
  */
 
-package org.rucca.cheese.task
+package org.rucca.cheese.task.listener
 
 import jakarta.persistence.PrePersist
 import jakarta.persistence.PreUpdate
+import org.rucca.cheese.task.Task
+import org.rucca.cheese.task.TaskElasticSearch
+import org.rucca.cheese.task.TaskElasticSearchRepository
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Configurable

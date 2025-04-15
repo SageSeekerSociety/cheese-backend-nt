@@ -9,7 +9,7 @@
  *
  */
 
-package org.rucca.cheese.task
+package org.rucca.cheese.task.service
 
 import jakarta.persistence.criteria.*
 import java.time.LocalDateTime
@@ -17,6 +17,7 @@ import java.time.ZoneId
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.auth.services.AuthorizationQueryService
 import org.rucca.cheese.common.error.BadRequestError
+import org.rucca.cheese.common.error.ForbiddenError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.error.PreconditionFailedError
 import org.rucca.cheese.common.helper.EntityPatcher
@@ -37,6 +38,10 @@ import org.rucca.cheese.space.models.Space
 import org.rucca.cheese.space.models.SpaceCategory
 import org.rucca.cheese.space.repositories.SpaceCategoryRepository
 import org.rucca.cheese.space.repositories.SpaceRepository
+import org.rucca.cheese.task.*
+import org.rucca.cheese.task.auth.TaskDomain
+import org.rucca.cheese.task.auth.TaskResource
+import org.rucca.cheese.task.auth.TaskRole
 import org.rucca.cheese.task.option.TaskEnumerateOptions
 import org.rucca.cheese.task.option.TaskQueryOptions
 import org.rucca.cheese.team.Team
@@ -69,6 +74,7 @@ class TaskService(
     private val spaceService: SpaceService,
     private val taskTopicsService: TaskTopicsService,
     private val taskMembershipService: TaskMembershipService,
+    private val taskMembershipEligibilityService: TaskMembershipEligibilityService,
     private val userRealNameService: UserRealNameService,
     private val entityPatcher: EntityPatcher,
     private val topicService: TopicService,
@@ -230,15 +236,15 @@ class TaskService(
             else null
         val participationEligibilityDto =
             if (options.queryJoinability && currentUserId != null) {
-                taskMembershipService.getParticipationEligibility(this, currentUserId)
+                taskMembershipService.getParticipationEligibility(this.id!!, currentUserId)
             } else null
         val submittability =
             if (options.querySubmittability && currentUserId != null)
-                taskMembershipService.getSubmittability(this, currentUserId)
+                taskMembershipService.getSubmittability(this.id!!, currentUserId)
             else null
         val joined =
             if (options.queryJoined && currentUserId != null)
-                taskMembershipService.getJoined(this, currentUserId)
+                taskMembershipService.getJoined(this.id!!, currentUserId)
             else null
         val userDeadline =
             if (options.queryUserDeadline && currentUserId != null)
@@ -374,6 +380,24 @@ class TaskService(
 
     private fun getTask(taskId: IdType): Task {
         return taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+    }
+
+    fun resubmitTaskForApproval(taskId: IdType, currentUserId: IdType): TaskDTO {
+        val task = getTask(taskId)
+
+        if (currentUserId != task.creator.id?.toLong()) {
+            throw ForbiddenError("Only the task creator can resubmit the task for approval.")
+        }
+
+        if (task.approved != ApproveType.DISAPPROVED) {
+            throw ForbiddenError("Task $taskId is not in a state that allows resubmission.")
+        }
+
+        task.approved = ApproveType.NONE
+        task.rejectReason = ""
+        return taskRepository
+            .save(task)
+            .toTaskDTO(TaskQueryOptions(querySpace = true, queryTopics = true), currentUserId)
     }
 
     /**
@@ -652,7 +676,7 @@ class TaskService(
         currentUserId: IdType,
         joined: Boolean,
     ): Predicate {
-        if (query.isDistinct == false) {
+        if (!query.isDistinct) {
             query.distinct(true)
         }
 
@@ -828,15 +852,15 @@ class TaskService(
             (SearchHitSupport.unwrapSearchHits(hints) as List<*>).filterIsInstance<
                 TaskElasticSearch
             >()
-        var entities = taskRepository.findAllById(result.map { it.id })
-        if (options.space != null) entities = entities.filter { it.space.id == options.space }
+        var entities =
+            taskRepository.findAllById(result.map { it.id }).filter { it.space.id == options.space }
         if (options.approved != null) entities = entities.filter { it.approved == options.approved }
         if (options.owner != null)
             entities = entities.filter { it.creator.id == options.owner.toInt() }
         if (options.joined != null)
             entities =
                 entities.filter {
-                    taskMembershipService.getJoined(it, currentUserId).first == options.joined
+                    taskMembershipService.getJoined(it.id!!, currentUserId).first == options.joined
                 }
         if (options.topics != null)
             entities =
@@ -896,7 +920,7 @@ class TaskService(
 
         return userTeams.mapNotNull { team ->
             val (eligibility, memberDetails, allVerified) =
-                taskMembershipService.checkTeamEligibilityForTeamTask(task, team.id)
+                taskMembershipEligibilityService.checkTeamEligibilityForTeamTask(task, team.id)
 
             val addRealNameDetails =
                 filter == "all" ||

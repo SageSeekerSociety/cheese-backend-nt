@@ -1,4 +1,4 @@
-package org.rucca.cheese.task
+package org.rucca.cheese.task.auth
 
 import jakarta.annotation.PostConstruct
 import org.rucca.cheese.auth.context.ContextKey
@@ -17,6 +17,9 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.ApproveTypeDTO
 import org.rucca.cheese.model.TaskSubmitterTypeDTO
 import org.rucca.cheese.space.SpaceService
+import org.rucca.cheese.task.service.TaskMembershipService
+import org.rucca.cheese.task.service.TaskService
+import org.rucca.cheese.task.service.TaskSubmissionService
 import org.rucca.cheese.team.TeamService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -31,6 +34,7 @@ enum class TaskAction(override val actionId: String) : Action {
     QUERY("query"),
     ENUMERATE("enumerate"),
     MODIFY("modify"),
+    RESUBMIT("resubmit"),
     DELETE("delete");
 
     override val domain: Domain = TaskDomain
@@ -291,7 +295,7 @@ class TaskPermissionConfig(
                     .on(TaskResource.TASK, TaskResource.PARTICIPANT)
                     .all()
 
-                can(TaskAction.DELETE).on(TaskResource.TASK).all()
+                can(TaskAction.DELETE, TaskAction.RESUBMIT).on(TaskResource.TASK).all()
 
                 can(TaskAction.MODIFY, TaskAction.DELETE).on(TaskResource.PARTICIPANT).all()
 
