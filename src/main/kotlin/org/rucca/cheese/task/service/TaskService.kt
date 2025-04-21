@@ -146,7 +146,7 @@ class TaskService(
                 )
             } else {
                 logger.info(
-                    "User {} (effectively has {}) is performing '{}}' on task {} which has participants/submissions. Bypassing state restriction.",
+                    "User {} (effectively has {}) is performing '{}' on task {} which has participants/submissions. Bypassing state restriction.",
                     userId,
                     TaskRole.SPACE_ADMIN.roleId,
                     operationType.presentTense,

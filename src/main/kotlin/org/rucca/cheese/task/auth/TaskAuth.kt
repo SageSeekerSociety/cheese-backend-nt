@@ -327,7 +327,9 @@ class TaskPermissionConfig(
                     .on(TaskResource.TASK)
                     .all()
 
-                can(TaskAction.ENUMERATE, TaskAction.QUERY).on(TaskResource.PARTICIPANT).all()
+                can(TaskAction.ENUMERATE, TaskAction.QUERY, TaskAction.CREATE, TaskAction.MODIFY)
+                    .on(TaskResource.PARTICIPANT)
+                    .all()
             }
 
             // Participant permissions
