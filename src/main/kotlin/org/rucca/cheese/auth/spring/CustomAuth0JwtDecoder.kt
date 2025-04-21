@@ -14,6 +14,8 @@ import java.time.Instant // Import Instant
 import org.rucca.cheese.auth.TokenPayload // Your payload class
 import org.rucca.cheese.common.config.ApplicationConfig
 import org.slf4j.LoggerFactory
+import org.springframework.security.oauth2.core.OAuth2Error
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes
 import org.springframework.security.oauth2.jwt.*
 import org.springframework.stereotype.Component
 
@@ -54,8 +56,8 @@ class CustomAuth0JwtDecoder(
 
             if (expiresAt.isBefore(Instant.now())) {
                 throw JwtValidationException(
-                    "Token has expired based on custom 'validUntil' field.",
-                    listOf(),
+                    "Token has expired.",
+                    listOf(OAuth2Error(OAuth2ErrorCodes.INVALID_TOKEN, "Token has expired.", null)),
                 )
             }
 
