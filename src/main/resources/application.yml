@@ -171,7 +171,8 @@ spring:
 application:
   legacy-url: http://localhost:7777 # URL of the legacy system if applicable
   jwt-secret: ${JWT_SECRET:test-secret} # JWT secret, allow override by env var but provide default for dev
-  cors-origin: http://localhost:3000 # Allowed CORS origin for frontend dev server
+  cors-origins:
+    - http://localhost:3000 # Allowed CORS origin for frontend dev server
 
 # Logging level overrides for dev
 logging:
@@ -216,7 +217,8 @@ spring:
 application:
   legacy-url: http://localhost:7779
   jwt-secret: test-secret # Use a fixed, known secret for tests
-  cors-origin: http://localhost:3000 # Keep consistent if test frontend runs same place
+  cors-origins: 
+    - http://localhost:3000 # Keep consistent if test frontend runs same place
 
 ---
 
@@ -228,8 +230,8 @@ spring:
   # --- Datasource (configured via environment variables) ---
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}?currentSchema=${DB_SCHEMA:public}
-    username: ${DB_USER} # Required environment variable
-    password: ${DB_PASSWORD} # Required environment variable
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
   jpa:
     show-sql: false # Do not show SQL in production logs
   flyway:
@@ -240,21 +242,21 @@ spring:
   # --- Elasticsearch (configured via environment variables) ---
   elasticsearch:
     uris: http://${ES_HOST:localhost}:${ES_PORT:9200}
-    username: ${ES_USER} # Required environment variable
-    password: ${ES_PASSWORD} # Required environment variable
+    username: ${ES_USER}
+    password: ${ES_PASSWORD}
   # --- Redis (configured via environment variables) ---
   data:
     redis:
-      host: ${REDIS_HOST} # Required environment variable
+      host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
       database: ${REDIS_DATABASE:0}
       timeout: 10000
 
 # Application specific overrides for prod (configured via environment variables)
 application:
-  legacy-url: ${LEGACY_URL} # Required environment variable
-  jwt-secret: ${JWT_SECRET} # Required environment variable
-  cors-origin: ${CORS_ORIGIN} # Required environment variable
+  legacy-url: ${LEGACY_URL}
+  jwt-secret: ${JWT_SECRET}
+  cors-origins: ${CORS_ORIGINS}
 
 # Note: Ensure logging levels for production are set appropriately,
 # usually INFO by default, avoiding DEBUG unless necessary for troubleshooting.

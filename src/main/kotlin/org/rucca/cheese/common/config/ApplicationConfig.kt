@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component
 class ApplicationConfig {
     lateinit var legacyUrl: String
     lateinit var jwtSecret: String
-    lateinit var corsOrigin: String
+    lateinit var corsOrigins: List<String>
     var shutdownOnStartup: Boolean = false
     var warnAuditFailure: Boolean = false
     var rankCheckEnforced: Boolean = false
