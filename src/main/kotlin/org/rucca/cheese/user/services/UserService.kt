@@ -18,6 +18,7 @@ import org.rucca.cheese.user.*
 import org.rucca.cheese.user.caches.UserInfoCache
 import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.CacheEvict
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -50,7 +51,20 @@ class UserService(
     fun addRole(userId: IdType, role: UserRole) {
         ensureUserIdExists(userId)
         if (!userRoleRepository.existsByUserIdAndRole(userId, role)) {
-            userRoleRepository.save(UserRoleEntity(userId, role))
+            try {
+                userRoleRepository.save(UserRoleEntity(userId, role))
+            } catch (e: DataIntegrityViolationException) {
+                // Catch constraint violation, likely due to a concurrent request
+                // adding the same role between the 'exists' check and 'save'.
+                // Log a warning and proceed, assuming the role now exists.
+                log.warn(
+                    "Constraint violation likely due to race condition when adding role {} for user {}. Assuming role exists now.",
+                    role,
+                    userId,
+                    e,
+                )
+                // No further action needed here, the goal (role exists) is achieved.
+            }
         }
     }
 

@@ -305,8 +305,6 @@ class TaskPermissionConfig(
                     }
                 }
 
-                can(TaskAction.MODIFY).on(TaskResource.PARTICIPANT).all()
-
                 can(TaskAction.CREATE, TaskAction.MODIFY, TaskAction.DELETE)
                     .on(TaskResource.SUBMISSION_REVIEW)
                     .all()

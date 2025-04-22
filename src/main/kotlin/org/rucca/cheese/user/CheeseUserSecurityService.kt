@@ -27,7 +27,7 @@ class CheeseUserSecurityService(private val userService: UserService) : UserSecu
             return setOf(SystemRole.USER)
         }
 
-        return userService.getUserRoles(userId).map { it.toSystemRole() }.toSet()
+        return roles.map { it.toSystemRole() }.toSet()
     }
 }
 
