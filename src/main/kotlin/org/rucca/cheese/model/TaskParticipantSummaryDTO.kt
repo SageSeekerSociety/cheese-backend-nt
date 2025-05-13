@@ -9,6 +9,7 @@ import java.io.Serializable
  * @param intro
  * @param name
  * @param avatarId
+ * @param participantId
  */
 data class TaskParticipantSummaryDTO(
     @Schema(example = "null", required = true, description = "")
@@ -23,6 +24,9 @@ data class TaskParticipantSummaryDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("avatarId", required = true)
     val avatarId: kotlin.Long,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("participantId")
+    val participantId: java.util.UUID? = null,
 ) : Serializable {
 
     companion object {

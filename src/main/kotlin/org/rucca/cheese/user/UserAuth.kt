@@ -78,7 +78,7 @@ class UserIdentityContextProvider : PermissionContextProvider {
 }
 
 @Component
-class UserRoleProvider(private val userService: UserService) : DomainRoleProvider {
+class UserRoleProvider : DomainRoleProvider {
     private val logger = LoggerFactory.getLogger(UserRoleProvider::class.java)
 
     override val domain: Domain = UserDomain
@@ -92,7 +92,6 @@ class UserRoleProvider(private val userService: UserService) : DomainRoleProvide
                 val targetUserId =
                     UserIdentityContextKeys.TARGET_USER_ID.get(context) ?: return roles
 
-                // Self-access - user can view their own identity information
                 if (userId == targetUserId) {
                     roles.add(UserDomainRole.SELF)
                 }
@@ -100,7 +99,6 @@ class UserRoleProvider(private val userService: UserService) : DomainRoleProvide
             null -> {}
         }
 
-        logger.debug("Roles for user {} on identity resource: {}", userId, roles)
         return roles.toSet()
     }
 }

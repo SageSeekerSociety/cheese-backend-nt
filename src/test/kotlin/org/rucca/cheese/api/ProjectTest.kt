@@ -8,41 +8,46 @@
 
 package org.rucca.cheese.api
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import kotlin.math.floor
-import org.json.JSONObject
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.model.CreateProjectRequestDTO
+import org.rucca.cheese.model.CreateProjectRequestDTO // Assuming this DTO is still correct
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-import org.springframework.test.web.servlet.result.MockMvcResultHandlers
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import org.springframework.test.web.reactive.server.WebTestClient // Import WebTestClient
+import org.springframework.test.web.reactive.server.expectBody // For expectBody extensions
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@AutoConfigureMockMvc
 @TestMethodOrder(OrderAnnotation::class)
 class ProjectTest
 @Autowired
-constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCreatorService) {
+constructor(
+    private val webTestClient: WebTestClient, // Inject WebTestClient
+    private val userCreatorService: UserCreatorService,
+    // private val objectMapper: ObjectMapper // Usually not needed directly with WebTestClient
+) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
     lateinit var user: UserCreatorService.CreateUserResponse
     lateinit var userToken: String
     var teamId: IdType = -1
+
+    // Define simple helper DTOs for createTeam response parsing for type safety
+    private data class TeamIdHolder(val id: IdType)
+
+    private data class CreateTeamResponseData(val team: TeamIdHolder)
+
+    private data class CreateTeamResponse(val data: CreateTeamResponseData)
 
     fun createTeam(
         creatorToken: String,
@@ -51,27 +56,32 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
         teamDescription: String,
         teamAvatarId: IdType,
     ): IdType {
-        val request =
-            MockMvcRequestBuilders.post("/teams")
+        val requestBody =
+            mapOf(
+                "name" to teamName,
+                "intro" to teamIntro,
+                "description" to teamDescription,
+                "avatarId" to teamAvatarId,
+            )
+
+        val response =
+            webTestClient
+                .post()
+                .uri("/teams")
                 .header("Authorization", "Bearer $creatorToken")
-                .contentType("application/json")
-                .content(
-                    """
-                {
-                  "name": "$teamName",
-                  "intro": "$teamIntro",
-                  "description": "$teamDescription",
-                  "avatarId": $teamAvatarId
-                }
-            """
-                )
-        val teamId =
-            JSONObject(mockMvc.perform(request).andReturn().response.contentAsString)
-                .getJSONObject("data")
-                .getJSONObject("team")
-                .getLong("id")
-        logger.info("Created team: $teamId")
-        return teamId
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody) // Use bodyValue for simple maps/objects
+                .exchange()
+                .expectStatus()
+                .isOk // Check HTTP status first
+                .expectBody<CreateTeamResponse>() // Expect and deserialize the response body
+                .returnResult()
+                .responseBody
+
+        requireNotNull(response) { "Response body was null after creating team" }
+        val createdTeamId = response.data.team.id
+        logger.info("Created team: $createdTeamId")
+        return createdTeamId
     }
 
     @BeforeAll
@@ -96,37 +106,61 @@ constructor(private val mockMvc: MockMvc, private val userCreatorService: UserCr
                 description = "Test Description",
                 colorCode = "#FFFFFF",
                 startDate = System.currentTimeMillis(),
-                endDate = System.currentTimeMillis() + 86400000,
+                endDate = System.currentTimeMillis() + 86400000, // 1 day later
                 teamId = teamId,
                 leaderId = user.userId,
-                content = "Test Content",
+                content = "Test Content", // Assuming 'content' was missing but intended
                 parentId = null,
                 externalTaskId = null,
                 githubRepo = null,
             )
 
-        mockMvc
-            .perform(
-                MockMvcRequestBuilders.post("/projects")
-                    .header("Authorization", "Bearer $userToken")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(ObjectMapper().writeValueAsString(request))
-            )
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.project.name").value("Test Project"))
-            .andDo(MockMvcResultHandlers.print())
+        webTestClient
+            .post()
+            .uri("/projects")
+            .header("Authorization", "Bearer $userToken")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request) // Automatically serializes the DTO
+            .exchange() // Execute the request
+            .expectStatus()
+            .isOk // Assert HTTP status
+            // Assert response body content using JSONPath
+            .expectBody()
+            .jsonPath("$.data.project.name")
+            .isEqualTo("Test Project")
+            // Optionally: Deserialize to the full response DTO for more comprehensive checks
+            // .expectBody(CreateProject201ResponseDTO::class.java)
+            // .value { response -> assertEquals("Test Project", response.data.project.name) }
+            .consumeWith {
+                logger.info("Create project response: $it")
+            } // Log response details if needed
     }
 
     @Test
     fun `test get projects`() {
-        mockMvc
-            .perform(
-                MockMvcRequestBuilders.get("/projects")
-                    .header("Authorization", "Bearer $userToken")
-                    .param("team_id", teamId.toString())
-            )
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.data.projects").isArray)
-            .andDo(MockMvcResultHandlers.print())
+        webTestClient
+            .get()
+            // Build URI with query parameters correctly
+            .uri { uriBuilder ->
+                uriBuilder
+                    .path("/projects")
+                    .queryParam("team_id", teamId) // Use the expected query param name
+                    .build()
+            }
+            .header("Authorization", "Bearer $userToken")
+            .exchange() // Execute the request
+            .expectStatus()
+            .isOk // Assert HTTP status
+            // Assert response body structure using JSONPath
+            .expectBody()
+            .jsonPath("$.data.projects")
+            .isArray // Check if 'projects' is an array
+            // Optionally: Deserialize to the full response DTO
+            // .expectBody(GetProjects200ResponseDTO::class.java)
+            // .value { response -> assertTrue(response.data.projects.isNotEmpty()) } // Example
+            // check
+            .consumeWith {
+                logger.info("Get projects response: $it")
+            } // Log response details if needed
     }
 }

@@ -13,6 +13,10 @@ import org.springframework.data.redis.serializer.StringRedisSerializer
 @Configuration
 @EnableCaching
 class CacheConfig {
+    companion object {
+        const val USER_DTO_CACHE = "user_dto"
+    }
+
     @Bean
     fun cacheManager(redisConnectionFactory: RedisConnectionFactory): RedisCacheManager {
         val defaultCacheConfig =
@@ -32,6 +36,7 @@ class CacheConfig {
                 "discussableModelTypeAndId" to defaultCacheConfig.entryTtl(Duration.ofDays(1)),
                 "userRoles" to defaultCacheConfig.entryTtl(Duration.ofMinutes(15)),
                 "projectMemberRole" to defaultCacheConfig.entryTtl(Duration.ofMinutes(15)),
+                USER_DTO_CACHE to defaultCacheConfig.entryTtl(Duration.ofHours(1)),
             )
 
         return RedisCacheManager.builder(redisConnectionFactory)

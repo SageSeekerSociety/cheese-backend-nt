@@ -2,8 +2,8 @@ package org.rucca.cheese.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.Valid
 import java.io.Serializable
-import javax.validation.Valid
 
 /**
  * @param id
@@ -25,9 +25,7 @@ import javax.validation.Valid
  * @param space
  * @param category
  * @param team
- * @param joinable Only has value when: 'queryJoinablity' == true
- * @param joinableTeams
- * @param joinRejectReason The reason why the user cannot join the task
+ * @param participationEligibility
  * @param submittable Only has value when: 'querySubmitability' == true
  * @param submittableAsTeam
  * @param rank
@@ -39,6 +37,7 @@ import javax.validation.Valid
  * @param topics
  * @param minTeamSize Minimum size of team that can join this task
  * @param maxTeamSize Maximum size of team that can join this task
+ * @param teamLockingPolicy
  */
 data class TaskDTO(
     @Schema(example = "null", required = true, description = "")
@@ -109,16 +108,10 @@ data class TaskDTO(
     @Schema(example = "null", description = "")
     @get:JsonProperty("team")
     val team: TeamDTO? = null,
-    @Schema(example = "null", description = "Only has value when: 'queryJoinablity' == true")
-    @get:JsonProperty("joinable")
-    val joinable: kotlin.Boolean? = null,
     @field:Valid
     @Schema(example = "null", description = "")
-    @get:JsonProperty("joinableTeams")
-    val joinableTeams: kotlin.collections.List<TeamSummaryDTO>? = null,
-    @Schema(example = "null", description = "The reason why the user cannot join the task")
-    @get:JsonProperty("joinRejectReason")
-    val joinRejectReason: kotlin.String? = null,
+    @get:JsonProperty("participationEligibility")
+    val participationEligibility: ParticipationEligibilityDTO? = null,
     @Schema(example = "null", description = "Only has value when: 'querySubmitability' == true")
     @get:JsonProperty("submittable")
     val submittable: kotlin.Boolean? = null,
@@ -156,6 +149,10 @@ data class TaskDTO(
     @Schema(example = "null", description = "Maximum size of team that can join this task")
     @get:JsonProperty("maxTeamSize")
     val maxTeamSize: kotlin.Int? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("teamLockingPolicy")
+    val teamLockingPolicy: TeamMembershipLockPolicyDTO? = null,
 ) : Serializable {
 
     companion object {

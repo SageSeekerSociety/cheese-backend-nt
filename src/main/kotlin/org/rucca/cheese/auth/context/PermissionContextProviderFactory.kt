@@ -1,7 +1,7 @@
 package org.rucca.cheese.auth.context
 
-import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Component
 
@@ -10,13 +10,13 @@ import org.springframework.stereotype.Component
  * implementations.
  */
 @Component
-class PermissionContextProviderFactory(private val applicationContext: ApplicationContext) {
+class PermissionContextProviderFactory(private val applicationContext: ApplicationContext) :
+    SmartInitializingSingleton {
     private val logger = LoggerFactory.getLogger(PermissionContextProviderFactory::class.java)
     private val providers = mutableMapOf<String, PermissionContextProvider>()
 
     /** Initialize the factory by discovering all context providers. */
-    @PostConstruct
-    fun initialize() {
+    override fun afterSingletonsInstantiated() {
         logger.info("Initializing permission context provider factory")
 
         // Get all context providers from the application context

@@ -68,15 +68,21 @@ class Knowledge(
     @JoinColumn(name = "discussion_id", nullable = true)
     @ManyToOne(fetch = FetchType.LAZY)
     var sourceDiscussion: Discussion? = null,
+) : BaseEntity() {
+    @OneToMany(mappedBy = "knowledge", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var knowledgeLabels: MutableList<KnowledgeLabelEntity> = mutableListOf()
+        private set
 
-    // 标签
-    @OneToMany(
-        targetEntity = KnowledgeLabelEntity::class,
-        cascade = [CascadeType.ALL],
-        orphanRemoval = true,
-    )
-    var knowledgeLabels: MutableList<KnowledgeLabelEntity> = mutableListOf(),
-) : BaseEntity()
+    fun addLabel(label: KnowledgeLabelEntity) {
+        knowledgeLabels.add(label)
+        label.knowledge = this
+    }
+
+    fun removeLabel(label: KnowledgeLabelEntity) {
+        knowledgeLabels.remove(label)
+        label.knowledge = null
+    }
+}
 
 interface KnowledgeRepository : CursorPagingRepository<Knowledge, IdType> {
     // 通过团队ID查找知识条目

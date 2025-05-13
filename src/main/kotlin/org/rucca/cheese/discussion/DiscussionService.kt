@@ -19,7 +19,7 @@ import org.rucca.cheese.common.persistent.getProperty
 import org.rucca.cheese.knowledge.KnowledgeService
 import org.rucca.cheese.model.*
 import org.rucca.cheese.user.User
-import org.rucca.cheese.user.UserService
+import org.rucca.cheese.user.services.UserService
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.context.ApplicationContext
 import org.springframework.data.jpa.domain.Specification

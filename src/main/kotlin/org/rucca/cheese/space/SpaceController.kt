@@ -11,6 +11,8 @@ package org.rucca.cheese.space
 
 import jakarta.annotation.PostConstruct
 import java.net.URI
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.SpacesApi
 import org.rucca.cheese.auth.AuthorizationService
@@ -24,7 +26,8 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.option.SpaceQueryOptions
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @UseOldAuth
@@ -52,40 +55,56 @@ class SpaceController(
     }
 
     @Guard("delete", "space")
-    override fun deleteSpace(@ResourceId spaceId: Long): ResponseEntity<DeleteSpace200ResponseDTO> {
-        spaceService.deleteSpace(spaceId)
-        return ResponseEntity.ok(DeleteSpace200ResponseDTO(200, "OK"))
+    override suspend fun deleteSpace(@ResourceId spaceId: Long): ResponseEntity<Unit> {
+        withContext(Dispatchers.IO) { spaceService.deleteSpace(spaceId) }
+        return ResponseEntity.noContent().build()
     }
 
     @Guard("remove-admin", "space")
-    override fun deleteSpaceAdmin(
+    override suspend fun deleteSpaceAdmin(
         @ResourceId spaceId: Long,
         userId: Long,
-    ): ResponseEntity<DeleteSpace200ResponseDTO> {
-        spaceService.removeSpaceAdmin(spaceId, userId)
-        return ResponseEntity.ok(DeleteSpace200ResponseDTO(200, "OK"))
+    ): ResponseEntity<Unit> {
+        withContext(Dispatchers.IO) { spaceService.removeSpaceAdmin(spaceId, userId) }
+        return ResponseEntity.noContent().build()
     }
 
     @Guard("query", "space")
-    override fun getSpace(
+    override suspend fun getSpace(
         @ResourceId spaceId: Long,
         queryMyRank: Boolean,
+        queryCategories: Boolean,
     ): ResponseEntity<GetSpace200ResponseDTO> {
-        val queryOptions = SpaceQueryOptions(queryMyRank = queryMyRank)
-        val spaceDTO = spaceService.getSpaceDto(spaceId, queryOptions)
+        val currentUserId = jwtService.getCurrentUserId()
+        val queryOptions =
+            SpaceQueryOptions(queryMyRank = queryMyRank, queryCategories = queryCategories)
+        val spaceDTO =
+            withContext(Dispatchers.IO) {
+                spaceService.getSpaceDto(spaceId, queryOptions, currentUserId)
+            }
+        val categories =
+            if (queryCategories) {
+                withContext(Dispatchers.IO) {
+                    spaceService.listCategories(spaceId, includeArchived = false)
+                }
+            } else {
+                null
+            }
         return ResponseEntity.ok(
-            GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
+            GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO, categories), "OK")
         )
     }
 
     @Guard("enumerate", "space")
-    override fun getSpaces(
+    override suspend fun getSpaces(
         queryMyRank: Boolean,
-        pageSize: Int?,
         pageStart: Long?,
+        pageSize: Int,
         sortBy: String,
         sortOrder: String,
     ): ResponseEntity<GetSpaces200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+
         val by =
             when (sortBy) {
                 "updatedAt" -> SpaceService.SpacesSortBy.UPDATED_AT
@@ -100,96 +119,128 @@ class SpaceController(
             }
         val queryOptions = SpaceQueryOptions(queryMyRank = queryMyRank)
         val (spaces, page) =
-            spaceService.enumerateSpaces(by, order, pageSize ?: 10, pageStart, queryOptions)
+            withContext(Dispatchers.IO) {
+                spaceService.enumerateSpaces(
+                    currentUserId,
+                    by,
+                    order,
+                    pageSize ?: 10,
+                    pageStart,
+                    queryOptions,
+                )
+            }
         return ResponseEntity.ok(
             GetSpaces200ResponseDTO(200, GetSpaces200ResponseDataDTO(spaces, page), "OK")
         )
     }
 
     @Guard("modify", "space")
-    override fun patchSpace(
+    override suspend fun patchSpace(
         @ResourceId spaceId: Long,
         patchSpaceRequestDTO: PatchSpaceRequestDTO,
-    ): ResponseEntity<GetSpace200ResponseDTO> {
-        val spaceDTO = spaceService.patchSpace(spaceId, patchSpaceRequestDTO)
+    ): ResponseEntity<PatchSpace200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+
+        val spaceDTO =
+            withContext(Dispatchers.IO) {
+                spaceService.patchSpace(currentUserId, spaceId, patchSpaceRequestDTO)
+            }
         return ResponseEntity.ok(
-            GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
+            PatchSpace200ResponseDTO(200, PatchSpace200ResponseDataDTO(spaceDTO), "OK")
         )
     }
 
     @Guard("modify-admin", "space")
-    override fun patchSpaceAdmin(
+    override suspend fun patchSpaceAdmin(
         @ResourceId spaceId: Long,
         userId: Long,
         patchSpaceAdminRequestDTO: PatchSpaceAdminRequestDTO,
-    ): ResponseEntity<GetSpace200ResponseDTO> {
+    ): ResponseEntity<PatchSpace200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+        val token = jwtService.getToken()
         if (patchSpaceAdminRequestDTO.role != null) {
             when (patchSpaceAdminRequestDTO.role) {
                 SpaceAdminRoleTypeDTO.OWNER -> {
-                    authorizationService.audit("ship-ownership", "space", spaceId)
-                    spaceService.shipSpaceOwnership(spaceId, userId)
+                    authorizationService.audit(token, "ship-ownership", "space", spaceId)
+                    withContext(Dispatchers.IO) { spaceService.shipSpaceOwnership(spaceId, userId) }
                 }
                 SpaceAdminRoleTypeDTO.ADMIN -> {
                     /* do nothing */
                 }
             }
         }
-        val spaceDTO = spaceService.getSpaceDto(spaceId)
+        val spaceDTO =
+            withContext(Dispatchers.IO) {
+                spaceService.getSpaceDto(spaceId, currentUserId = currentUserId)
+            }
         return ResponseEntity.ok(
-            GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
+            PatchSpace200ResponseDTO(200, PatchSpace200ResponseDataDTO(spaceDTO), "OK")
         )
     }
 
     @Guard("create", "space")
-    override fun postSpace(
+    override suspend fun postSpace(
         postSpaceRequestDTO: PostSpaceRequestDTO
-    ): ResponseEntity<GetSpace200ResponseDTO> {
+    ): ResponseEntity<PatchSpace200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
         val spaceDTO =
-            spaceService.createSpace(
-                name = postSpaceRequestDTO.name,
-                intro = postSpaceRequestDTO.intro,
-                description = postSpaceRequestDTO.description,
-                avatarId = postSpaceRequestDTO.avatarId,
-                ownerId = jwtService.getCurrentUserId(),
-                enableRank = postSpaceRequestDTO.enableRank ?: false,
-                announcements =
-                    postSpaceRequestDTO.announcements.takeUnless { it.isEmpty() } ?: "[]",
-                taskTemplates =
-                    postSpaceRequestDTO.taskTemplates.takeUnless { it.isEmpty() } ?: "[]",
-                classificationTopics = postSpaceRequestDTO.classificationTopics ?: emptyList(),
-            )
+            withContext(Dispatchers.IO) {
+                spaceService.createSpace(
+                    name = postSpaceRequestDTO.name,
+                    intro = postSpaceRequestDTO.intro,
+                    description = postSpaceRequestDTO.description,
+                    avatarId = postSpaceRequestDTO.avatarId,
+                    ownerId = currentUserId,
+                    enableRank = postSpaceRequestDTO.enableRank ?: false,
+                    announcements =
+                        postSpaceRequestDTO.announcements.takeUnless { it.isEmpty() } ?: "[]",
+                    taskTemplates =
+                        postSpaceRequestDTO.taskTemplates.takeUnless { it.isEmpty() } ?: "[]",
+                    classificationTopics = postSpaceRequestDTO.classificationTopics ?: emptyList(),
+                )
+            }
         return ResponseEntity.ok(
-            GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
+            PatchSpace200ResponseDTO(200, PatchSpace200ResponseDataDTO(spaceDTO), "OK")
         )
     }
 
     @Guard("add-admin", "space")
-    override fun postSpaceAdmin(
+    override suspend fun postSpaceAdmin(
         @ResourceId spaceId: Long,
         postSpaceAdminRequestDTO: PostSpaceAdminRequestDTO,
-    ): ResponseEntity<GetSpace200ResponseDTO> {
-        spaceService.addSpaceAdmin(spaceId, postSpaceAdminRequestDTO.userId)
+    ): ResponseEntity<PatchSpace200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+        val token = jwtService.getToken()
+        withContext(Dispatchers.IO) {
+            spaceService.addSpaceAdmin(spaceId, postSpaceAdminRequestDTO.userId)
+        }
         when (postSpaceAdminRequestDTO.role) {
             SpaceAdminRoleTypeDTO.OWNER -> {
-                authorizationService.audit("ship-ownership", "space", spaceId)
-                spaceService.shipSpaceOwnership(spaceId, postSpaceAdminRequestDTO.userId)
+                authorizationService.audit(token, "ship-ownership", "space", spaceId)
+                withContext(Dispatchers.IO) {
+                    spaceService.shipSpaceOwnership(spaceId, postSpaceAdminRequestDTO.userId)
+                }
             }
             SpaceAdminRoleTypeDTO.ADMIN -> {
                 /* do nothing */
             }
         }
-        val spaceDTO = spaceService.getSpaceDto(spaceId)
+        val spaceDTO =
+            withContext(Dispatchers.IO) {
+                spaceService.getSpaceDto(spaceId, currentUserId = currentUserId)
+            }
         return ResponseEntity.ok(
-            GetSpace200ResponseDTO(200, GetSpace200ResponseDataDTO(spaceDTO), "OK")
+            PatchSpace200ResponseDTO(200, PatchSpace200ResponseDataDTO(spaceDTO), "OK")
         )
     }
 
     @Guard("query", "space")
-    override fun listSpaceCategories(
+    override suspend fun listSpaceCategories(
         @ResourceId spaceId: Long,
         includeArchived: Boolean,
     ): ResponseEntity<ListSpaceCategories200ResponseDTO> {
-        val categories = spaceService.listCategories(spaceId, includeArchived)
+        val categories =
+            withContext(Dispatchers.IO) { spaceService.listCategories(spaceId, includeArchived) }
         return ResponseEntity.ok(
             ListSpaceCategories200ResponseDTO(
                 200,
@@ -200,17 +251,19 @@ class SpaceController(
     }
 
     @Guard("modify", "space")
-    override fun createSpaceCategory(
+    override suspend fun createSpaceCategory(
         @ResourceId spaceId: Long,
         createSpaceCategoryRequestDTO: CreateSpaceCategoryRequestDTO,
     ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
         val createdCategory =
-            spaceService.createCategory(
-                spaceId = spaceId,
-                name = createSpaceCategoryRequestDTO.name,
-                description = createSpaceCategoryRequestDTO.description,
-                displayOrder = createSpaceCategoryRequestDTO.displayOrder,
-            )
+            withContext(Dispatchers.IO) {
+                spaceService.createCategory(
+                    spaceId = spaceId,
+                    name = createSpaceCategoryRequestDTO.name,
+                    description = createSpaceCategoryRequestDTO.description,
+                    displayOrder = createSpaceCategoryRequestDTO.displayOrder,
+                )
+            }
         return ResponseEntity.created(
                 URI.create("/spaces/$spaceId/categories/${createdCategory.id}")
             )
@@ -224,11 +277,12 @@ class SpaceController(
     }
 
     @Guard("query", "space")
-    override fun getSpaceCategory(
+    override suspend fun getSpaceCategory(
         @ResourceId spaceId: Long,
         @PathVariable("categoryId") categoryId: Long,
     ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
-        val category = spaceService.getCategoryDTO(spaceId, categoryId)
+        val category =
+            withContext(Dispatchers.IO) { spaceService.getCategoryDTO(spaceId, categoryId) }
         return ResponseEntity.ok(
             CreateSpaceCategory201ResponseDTO(
                 200,
@@ -239,17 +293,19 @@ class SpaceController(
     }
 
     @Guard("modify", "space")
-    override fun updateSpaceCategory(
+    override suspend fun updateSpaceCategory(
         @ResourceId spaceId: Long,
         @PathVariable("categoryId") categoryId: Long,
         updateSpaceCategoryRequestDTO: UpdateSpaceCategoryRequestDTO,
     ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
         val updatedCategory =
-            spaceService.updateCategory(
-                spaceId = spaceId,
-                categoryId = categoryId,
-                patch = updateSpaceCategoryRequestDTO,
-            )
+            withContext(Dispatchers.IO) {
+                spaceService.updateCategory(
+                    spaceId = spaceId,
+                    categoryId = categoryId,
+                    patch = updateSpaceCategoryRequestDTO,
+                )
+            }
         return ResponseEntity.ok(
             CreateSpaceCategory201ResponseDTO(
                 200,
@@ -260,20 +316,21 @@ class SpaceController(
     }
 
     @Guard("modify", "space")
-    override fun deleteSpaceCategory(
+    override suspend fun deleteSpaceCategory(
         @ResourceId spaceId: Long,
         @PathVariable("categoryId") categoryId: Long,
     ): ResponseEntity<Unit> {
-        spaceService.deleteCategory(spaceId, categoryId)
+        withContext(Dispatchers.IO) { spaceService.deleteCategory(spaceId, categoryId) }
         return ResponseEntity.noContent().build()
     }
 
     @Guard("modify", "space")
-    override fun archiveSpaceCategory(
+    override suspend fun archiveSpaceCategory(
         @ResourceId spaceId: Long,
         categoryId: Long,
     ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
-        val archivedCategory = spaceService.archiveCategory(spaceId, categoryId)
+        val archivedCategory =
+            withContext(Dispatchers.IO) { spaceService.archiveCategory(spaceId, categoryId) }
         return ResponseEntity.ok(
             CreateSpaceCategory201ResponseDTO(
                 200,
@@ -284,11 +341,12 @@ class SpaceController(
     }
 
     @Guard("modify", "space")
-    override fun unarchiveSpaceCategory(
+    override suspend fun unarchiveSpaceCategory(
         @ResourceId spaceId: Long,
         @PathVariable("categoryId") categoryId: Long,
     ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
-        val unarchivedCategory = spaceService.unarchiveCategory(spaceId, categoryId)
+        val unarchivedCategory =
+            withContext(Dispatchers.IO) { spaceService.unarchiveCategory(spaceId, categoryId) }
         return ResponseEntity.ok(
             CreateSpaceCategory201ResponseDTO(
                 200,

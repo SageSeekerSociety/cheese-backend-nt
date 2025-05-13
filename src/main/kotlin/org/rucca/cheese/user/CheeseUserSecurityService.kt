@@ -5,6 +5,7 @@ import org.rucca.cheese.auth.core.SystemRole
 import org.rucca.cheese.auth.spring.UserSecurityService
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.user.UserRole.*
+import org.rucca.cheese.user.services.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Component
@@ -26,7 +27,7 @@ class CheeseUserSecurityService(private val userService: UserService) : UserSecu
             return setOf(SystemRole.USER)
         }
 
-        return userService.getUserRoles(userId).map { it.toSystemRole() }.toSet()
+        return roles.map { it.toSystemRole() }.toSet()
     }
 }
 

@@ -1,7 +1,9 @@
 package org.rucca.cheese.knowledge
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.hibernate.query.SortDirection
-import org.rucca.cheese.api.KnowledgesApi
+import org.rucca.cheese.api.KnowledgeApi
 import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.UseNewAuth
 import org.rucca.cheese.auth.spring.Auth
@@ -16,32 +18,39 @@ import org.springframework.web.bind.annotation.RestController
 class KnowledgeController(
     private val knowledgeService: KnowledgeService,
     private val jwtService: JwtService,
-) : KnowledgesApi {
+) : KnowledgeApi {
     @Auth("knowledge:create:knowledge")
-    override fun knowledgePost(
-        @AuthContext("teamId", field = "teamId") knowledgePostRequestDTO: KnowledgePostRequestDTO
-    ): ResponseEntity<KnowledgePost200ResponseDTO> {
+    override suspend fun createKnowledge(
+        @AuthContext("teamId", field = "teamId")
+        createKnowledgeRequestDTO: CreateKnowledgeRequestDTO
+    ): ResponseEntity<CreateKnowledge200ResponseDTO> {
         val userId = jwtService.getCurrentUserId()
         val knowledgeDTO =
-            knowledgeService.createKnowledge(
-                name = knowledgePostRequestDTO.name,
-                type = knowledgePostRequestDTO.type,
-                content = knowledgePostRequestDTO.content,
-                description = knowledgePostRequestDTO.description,
-                teamId = knowledgePostRequestDTO.teamId,
-                materialId = knowledgePostRequestDTO.materialId,
-                projectId = knowledgePostRequestDTO.projectId,
-                labels = knowledgePostRequestDTO.labels,
-                discussionId = knowledgePostRequestDTO.discussionId,
-                userId = userId,
-            )
+            withContext(Dispatchers.IO) {
+                knowledgeService.createKnowledge(
+                    name = createKnowledgeRequestDTO.name,
+                    type = createKnowledgeRequestDTO.type,
+                    content = createKnowledgeRequestDTO.content,
+                    description = createKnowledgeRequestDTO.description,
+                    teamId = createKnowledgeRequestDTO.teamId,
+                    materialId = createKnowledgeRequestDTO.materialId,
+                    projectId = createKnowledgeRequestDTO.projectId,
+                    labels = createKnowledgeRequestDTO.labels,
+                    discussionId = createKnowledgeRequestDTO.discussionId,
+                    userId = userId,
+                )
+            }
         return ResponseEntity.ok(
-            KnowledgePost200ResponseDTO(200, "ok", KnowledgePost200ResponseDataDTO(knowledgeDTO))
+            CreateKnowledge200ResponseDTO(
+                200,
+                "ok",
+                CreateKnowledge200ResponseDataDTO(knowledgeDTO),
+            )
         )
     }
 
     @Auth("knowledge:list:knowledge")
-    override fun knowledgeGet(
+    override suspend fun listKnowledge(
         @AuthContext("teamId") teamId: Long,
         projectId: Long?,
         type: String?,
@@ -51,7 +60,7 @@ class KnowledgeController(
         pageSize: Int,
         sortBy: String,
         sortOrder: String,
-    ): ResponseEntity<KnowledgeGet200ResponseDTO> {
+    ): ResponseEntity<ListKnowledge200ResponseDTO> {
         // 解析排序字段
         val sortByEnum =
             when (sortBy) {
@@ -91,16 +100,16 @@ class KnowledgeController(
             )
 
         return ResponseEntity.ok(
-            KnowledgeGet200ResponseDTO(
+            ListKnowledge200ResponseDTO(
                 code = 200,
                 message = "success",
-                data = KnowledgeGet200ResponseDataDTO(knowledges = knowledgeDTOs, page = page),
+                data = ListKnowledge200ResponseDataDTO(knowledges = knowledgeDTOs, page = page),
             )
         )
     }
 
     @Auth("knowledge:view:knowledge")
-    override fun knowledgeGetById(
+    override suspend fun knowledgeGetById(
         @ResourceId knowledgeId: Long
     ): ResponseEntity<KnowledgeGetById200ResponseDTO> {
         val knowledgeDTO = knowledgeService.getKnowledgeDTO(knowledgeId)
@@ -108,7 +117,7 @@ class KnowledgeController(
     }
 
     @Auth("knowledge:delete:knowledge")
-    override fun knowledgeDelete(
+    override suspend fun knowledgeDelete(
         @ResourceId knowledgeId: Long
     ): ResponseEntity<KnowledgeDelete200ResponseDTO> {
         knowledgeService.deleteKnowledge(knowledgeId)
@@ -116,13 +125,15 @@ class KnowledgeController(
     }
 
     @Auth("knowledge:update:knowledge")
-    override fun updateKnowledge(
+    override suspend fun updateKnowledge(
         @ResourceId knowledgeId: Long,
         updateKnowledgeRequestDTO: UpdateKnowledgeRequestDTO,
     ): ResponseEntity<UpdateKnowledge200ResponseDTO> {
         // 更新知识点信息
         val updatedKnowledge =
-            knowledgeService.updateKnowledge(knowledgeId, updateKnowledgeRequestDTO)
+            withContext(Dispatchers.IO) {
+                knowledgeService.updateKnowledge(knowledgeId, updateKnowledgeRequestDTO)
+            }
         return ResponseEntity.ok(
             UpdateKnowledge200ResponseDTO(
                 code = 200,
