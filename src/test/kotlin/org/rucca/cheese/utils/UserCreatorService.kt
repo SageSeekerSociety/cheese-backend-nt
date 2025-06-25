@@ -1,6 +1,5 @@
 package org.rucca.cheese.utils
 
-import at.favre.lib.crypto.bcrypt.BCrypt
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlin.math.floor
 import org.rucca.cheese.common.config.ApplicationConfig
@@ -13,6 +12,7 @@ import org.rucca.cheese.user.UserRepository
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 
@@ -22,7 +22,8 @@ class UserCreatorService(
     private val userRepository: UserRepository,
     private val avatarRepository: AvatarRepository,
     private val userProfileRepository: UserProfileRepository,
-    private val objectMapper: ObjectMapper, // 注入 ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val passwordEncoder: PasswordEncoder,
 ) {
     private val restTemplate = RestTemplate()
 
@@ -45,17 +46,23 @@ class UserCreatorService(
         avatarId: IdType = testAvatarId(),
         intro: String = testIntro(),
     ): CreateUserResponse {
-        val user = User()
-        user.username = username
-        user.hashedPassword = BCrypt.withDefaults().hashToString(12, password.toCharArray())
-        user.email = email
-        val userId = userRepository.save(user).id!!
-        val userProfile = UserProfile()
-        userProfile.nickname = nickname
-        userProfile.avatar = avatarRepository.getReferenceById(1)
-        userProfile.intro = intro
-        userProfile.user = user
-        userProfileRepository.save(userProfile)
+        val user =
+            User()
+                .apply {
+                    this.username = username
+                    this.hashedPassword = passwordEncoder.encode(password)
+                    this.email = email
+                }
+                .let { userRepository.save(it) }
+        val userId = user.id!!
+        UserProfile()
+            .apply {
+                this.nickname = nickname
+                this.avatar = avatarRepository.getReferenceById(avatarId.toInt())
+                this.intro = intro
+                this.user = user
+            }
+            .let { userProfileRepository.save(it) }
         return CreateUserResponse(
             userId.toLong(),
             username,
@@ -71,22 +78,17 @@ class UserCreatorService(
     fun login(username: String, password: String): String {
         val url = "${applicationConfig.legacyUrl}/users/auth/login"
 
-        // 设置请求头
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_JSON
 
-        // 构造请求体 Map
         val requestBody: Map<String, String> = mapOf("username" to username, "password" to password)
 
-        // 组装成 HttpEntity
         val requestEntity = HttpEntity(requestBody, headers)
 
-        // 发送 POST 请求并获取响应
         val response =
             restTemplate.postForObject(url, requestEntity, String::class.java)
                 ?: throw RuntimeException("Failed to login: No response from server")
 
-        // 使用 ObjectMapper 解析响应
         try {
             val jsonNode = objectMapper.readTree(response)
             return jsonNode.path("data").path("accessToken").asText()
@@ -95,7 +97,6 @@ class UserCreatorService(
         }
     }
 
-    // ... test* 方法保持不变 ...
     fun testUsername(): String {
         return "NTTestUsername-${floor(Math.random() * 10000000000).toLong()}"
     }

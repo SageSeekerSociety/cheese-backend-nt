@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+if [ -x "./mvnw" ]; then
+  MVN=./mvnw
+elif [ -x "./mvnw.cmd" ]; then
+  MVN=./mvnw.cmd
+elif command -v mvn >/dev/null 2>&1; then
+  MVN=mvn
+else
+  echo "Error: cannot find Maven executable."
+  exit 1
+fi
+
+$MVN -q spotless:apply
+
+exit $?

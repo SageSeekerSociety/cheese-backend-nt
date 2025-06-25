@@ -56,16 +56,6 @@ jobs:
           KOTLIN_POST_PROCESS_FILE: python3 ${{ github.workspace }}/scripts/fix_kotlin_defaults.py
         run: ./mvnw install
 
-      - name: Check uncommitted changes to ensure format applied
-        run: |
-          if [[ -n $(git status --porcelain) ]]; then
-            git status
-            echo "There are uncommitted changes. Please run './mvnw spotless:apply' and commit the changes."
-            exit 1
-          else
-            echo "No uncommitted changes."
-          fi
-
       - name: Upload jar
         uses: actions/upload-artifact@v4
         with:
