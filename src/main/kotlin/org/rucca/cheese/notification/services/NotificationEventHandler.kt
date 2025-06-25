@@ -1,9 +1,7 @@
 package org.rucca.cheese.notification.services
 
-// proxy
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import jakarta.inject.Provider // Keep Provider for self-injection if needed for @Transactional
 import jakarta.persistence.OptimisticLockException
 import java.time.Instant
 import java.util.*
@@ -16,8 +14,9 @@ import org.rucca.cheese.notification.models.NotificationChannel
 import org.rucca.cheese.notification.models.NotificationType
 import org.rucca.cheese.notification.repositories.NotificationRepository
 import org.rucca.cheese.notification.resolver.NotificationEntityResolverFacade
-import org.rucca.cheese.user.services.UserService // Keep for locale
+import org.rucca.cheese.user.services.UserService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -32,7 +31,7 @@ class NotificationEventHandler(
     private val externalNotificationRenderer: ExternalNotificationRenderer,
     private val userService: UserService,
     private val objectMapper: ObjectMapper,
-    private val selfProvider: Provider<NotificationEventHandler>,
+    private val selfProvider: ObjectProvider<NotificationEventHandler>,
 ) {
     private val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val log = LoggerFactory.getLogger(javaClass)
@@ -70,7 +69,7 @@ class NotificationEventHandler(
             ) {
                 try {
                     selfProvider
-                        .get()
+                        .getObject()
                         .processAggregationOrStartNew(recipientId, event.type, event.payload)
                 } catch (e: OptimisticLockException) {
                     log.warn(

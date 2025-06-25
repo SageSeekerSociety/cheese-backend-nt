@@ -22,24 +22,29 @@ import org.rucca.cheese.utils.TopicCreatorService
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation::class)
-class TaskTopicTest
-@Autowired
-constructor(
-    private val webTestClient: WebTestClient,
-    private val userCreatorService: UserCreatorService,
-    private val topicCreatorService: TopicCreatorService,
-) {
+@AutoConfigureMockMvc
+class TaskTopicTest {
+    @Autowired private lateinit var userCreatorService: UserCreatorService
+
+    @Autowired private lateinit var topicCreatorService: TopicCreatorService
+
+    @Autowired private lateinit var mockMvc: MockMvc
+
     private val logger = LoggerFactory.getLogger(javaClass)
+    private lateinit var webTestClient: WebTestClient
     lateinit var creator: UserCreatorService.CreateUserResponse
     lateinit var creatorToken: String
     private var spaceId: IdType = -1
@@ -98,10 +103,13 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(response?.data?.space, "Space data should not be null in response")
+        assertNotNull(response?.data?.space, message = "Space data should not be null in response")
         val createdSpace = response!!.data.space
-        assertNotNull(createdSpace.id, "Created space ID cannot be null")
-        assertNotNull(createdSpace.defaultCategoryId, "Default category ID cannot be null")
+        assertNotNull(createdSpace.id, message = "Created space ID cannot be null")
+        assertNotNull(
+            createdSpace.defaultCategoryId,
+            message = "Default category ID cannot be null",
+        )
 
         val createdSpaceId = createdSpace.id
         val createdDefaultCategoryId = createdSpace.defaultCategoryId
@@ -158,12 +166,12 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(response?.data?.task, "Task data should not be null")
+        assertNotNull(response?.data?.task, message = "Task data should not be null")
         val task = response!!.data.task
-        assertNotNull(task.id, "Created task ID should not be null")
+        assertNotNull(task.id, message = "Created task ID should not be null")
 
         // --- Assertions for topics in response DTO ---
-        assertNotNull(task.topics, "Topics list should exist in response task DTO")
+        assertNotNull(task.topics, message = "Topics list should exist in response task DTO")
         assertEquals(topics.size, task.topics!!.size, "Topic count mismatch in response")
         val returnedTopicIds = task.topics!!.map { it.id }.toSet()
         topics.forEach { expectedTopicId ->
@@ -196,13 +204,15 @@ constructor(
             .isOk
             .expectBody<PatchTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task)
+                assertNotNull(response.data.task, message = "Task data missing")
                 assertEquals(ApproveTypeDTO.APPROVED, response.data.task.approved)
             }
     }
 
     @BeforeAll
     fun prepare() {
+        webTestClient = MockMvcWebTestClient.bindTo(mockMvc).build()
+
         creator = userCreatorService.createUser()
         creatorToken = userCreatorService.login(creator.username, creator.password)
 
@@ -251,8 +261,8 @@ constructor(
 
     // Helper to assert topics in GetTask response
     private fun assertTaskTopics(taskDto: TaskDTO?, expectedTopics: List<Pair<IdType, String>>) {
-        assertNotNull(taskDto, "Task DTO is null")
-        assertNotNull(taskDto!!.topics, "Task topics list is null")
+        assertNotNull(taskDto, message = "Task DTO is null")
+        assertNotNull(taskDto!!.topics, message = "Task topics list is null")
         val actualTopics = taskDto.topics!!
         assertEquals(expectedTopics.size, actualTopics.size, "Topic count mismatch")
         val actualTopicMap = actualTopics.associateBy { it.id }
@@ -283,7 +293,7 @@ constructor(
             .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task, "Task data missing")
+                assertNotNull(response.data.task, message = "Task data missing")
                 // Assert the initial two topics are present
                 assertTaskTopics(response.data.task, listOf(testTopics[0], testTopics[1]))
             }
@@ -311,7 +321,7 @@ constructor(
             .isOk
             .expectBody<PatchTask200ResponseDTO>() // Assuming patch returns updated task
             .value { response ->
-                assertNotNull(response.data.task, "Task data missing")
+                assertNotNull(response.data.task, message = "Task data missing")
                 // Assert the updated topics (ID and Name)
                 assertTaskTopics(response.data.task, listOf(testTopics[1], testTopics[2]))
             }
@@ -331,7 +341,7 @@ constructor(
             .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task, "Task data missing")
+                assertNotNull(response.data.task, message = "Task data missing")
                 // Assert the topics reflect the update from test 20
                 assertTaskTopics(response.data.task, listOf(testTopics[1], testTopics[2]))
             }
@@ -359,7 +369,7 @@ constructor(
             .isOk
             .expectBody<GetTasks200ResponseDTO>() // Assuming enumeration uses this DTO
             .value { response ->
-                assertNotNull(response.data?.tasks, "Tasks list missing in response")
+                assertNotNull(response.data?.tasks, message = "Tasks list missing in response")
                 val actualTaskIds = response.data!!.tasks!!.map { it.id }.toSet()
                 assertEquals(
                     expectedTaskIds,

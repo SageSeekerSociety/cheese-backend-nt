@@ -17,24 +17,26 @@ import org.rucca.cheese.model.*
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation::class)
-class TeamTest
-@Autowired
-constructor(
-    private val webTestClient: WebTestClient,
-    private val userCreatorService: UserCreatorService,
-) {
+@AutoConfigureMockMvc
+class TeamTest @Autowired constructor(private val userCreatorService: UserCreatorService) {
+    @Autowired private lateinit var mockMvc: MockMvc
+
     private val logger = LoggerFactory.getLogger(javaClass)
+    private lateinit var webTestClient: WebTestClient
 
     // --- User Setup ---
     lateinit var creator: UserCreatorService.CreateUserResponse
@@ -78,6 +80,8 @@ constructor(
 
     @BeforeAll
     fun prepare() {
+        webTestClient = MockMvcWebTestClient.bindTo(mockMvc).build()
+
         creator = userCreatorService.createUser()
         creatorToken = userCreatorService.login(creator.username, creator.password)
         newOwnerCandidate = userCreatorService.createUser()
@@ -115,7 +119,7 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(response?.data?.invitation?.id, "Invitation ID is null")
+        assertNotNull(response?.data?.invitation?.id, message = "Invitation ID is null")
         logger.info(
             "Invited user $userIdToInvite to team $teamId with role $role. Invitation ID: ${response!!.data.invitation.id}"
         )
@@ -157,7 +161,7 @@ constructor(
             .isOk
             .expectBody<GetTeam200ResponseDTO>() // Assuming PATCH returns updated Team DTO
             .value { response ->
-                assertNotNull(response.data.team)
+                assertNotNull(response.data.team, message = "response.data.team should not be null")
                 // Could add verification here that the member list reflects the change, but might
                 // be complex.
                 // Rely on getTeamMembers test later.
@@ -216,7 +220,7 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(response?.data?.team, "Team data missing in response")
+        assertNotNull(response?.data?.team, message = "Team data missing in response")
         val team = response!!.data.team
 
         assertEquals(teamName, team.name)
@@ -234,7 +238,7 @@ constructor(
             "Creator's role should be OWNER",
         ) // Assuming role is returned
 
-        assertNotNull(team.id, "Team ID is null")
+        assertNotNull(team.id, message = "Team ID is null")
         teamId = team.id
         assertTrue(teamId > 0)
     }
@@ -251,7 +255,7 @@ constructor(
             .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.team, "Team data missing")
+                assertNotNull(response.data.team, message = "Team data missing")
                 val team = response.data.team
                 assertEquals(teamId, team.id)
                 assertEquals(teamName, team.name) // Use current state of teamName
@@ -271,9 +275,9 @@ constructor(
         expectedSize: Int,
         expectedFirstTeamId: IdType? = null,
     ) {
-        assertNotNull(response?.data, "Response data missing")
-        assertNotNull(response!!.data.teams, "Teams list missing")
-        assertNotNull(response.data.page, "Page info missing")
+        assertNotNull(response?.data, message = "Response data missing")
+        assertNotNull(response!!.data.teams, message = "Teams list missing")
+        assertNotNull(response.data.page, message = "Page info missing")
         val teams = response.data.teams
         val page = response.data.page!!
 
@@ -286,9 +290,9 @@ constructor(
             assertEquals(teamAvatarId, teams[0].avatarId)
             assertEquals(creator.userId, teams[0].owner.id) // Owner might change later
         }
-        assertNotNull(page.pageStart, "pageStart missing")
-        assertNotNull(page.pageSize, "pageSize missing")
-        assertNotNull(page.hasMore, "hasMore missing")
+        assertNotNull(page.pageStart, message = "pageStart missing")
+        assertNotNull(page.pageSize, message = "pageSize missing")
+        assertNotNull(page.hasMore, message = "hasMore missing")
         // Assert specific page details if needed based on query params
     }
 
@@ -380,7 +384,8 @@ constructor(
             .isOk
             .expectBody<GetTeams200ResponseDTO>() // Just ensure it returns OK and correct DTO type
         //            .value { response ->
-        //                assertNotNull(response?.data?.teams)
+        //                assertNotNull(response?.data?.teams, message = "response?.data?.teams
+        // should not be null")
         //                assertTrue(response!!.data.teams.any { it.id == teamId }) // Check our
         // team is listed
         //            }
@@ -398,9 +403,12 @@ constructor(
             .isOk
             .expectBody<GetMyTeams200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.teams)
+                assertNotNull(
+                    response.data.teams,
+                    message = "response.data.teams should not be null",
+                )
                 val myTeam = response.data.teams.find { it.id == teamId }
-                assertNotNull(myTeam, "Created team not found in my-teams list")
+                assertNotNull(myTeam, message = "Created team not found in my-teams list")
                 assertEquals(teamName, myTeam!!.name)
                 assertEquals(teamIntro, myTeam.intro)
                 assertEquals(teamAvatarId, myTeam.avatarId)
@@ -437,13 +445,13 @@ constructor(
             .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.team)
+                assertNotNull(response.data.team, message = "response.data.team should not be null")
                 val team = response.data.team
                 assertEquals(creator.userId, team.owner.id) // Creator is still owner
                 assertEquals(1, team.admins.total) // newOwnerCandidate is now admin
                 assertNotNull(
                     team.admins.examples.find { it.id == newOwnerCandidate.userId },
-                    "New admin not found in examples",
+                    message = "New admin not found in examples",
                 )
                 assertEquals(true, team.joined) // Creator is still joined
                 assertEquals(TeamMemberRoleTypeDTO.OWNER, team.role) // Creator role is OWNER
@@ -459,7 +467,7 @@ constructor(
             .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.team)
+                assertNotNull(response.data.team, message = "response.data.team should not be null")
                 val team = response.data.team
                 assertEquals(creator.userId, team.owner.id) // Verify owner is creator
                 assertEquals(true, team.joined) // New admin is joined
@@ -505,7 +513,7 @@ constructor(
             .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.team)
+                assertNotNull(response.data.team, message = "response.data.team should not be null")
                 // Admins: newOwnerCandidate, admin
                 assertEquals(2, response.data.team.admins.total)
             }
@@ -525,7 +533,7 @@ constructor(
             .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.team)
+                assertNotNull(response.data.team, message = "response.data.team should not be null")
                 val team = response.data.team
                 assertEquals(true, team.joined)
                 assertEquals(TeamMemberRoleTypeDTO.MEMBER, team.role)
@@ -622,7 +630,7 @@ constructor(
             .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.team)
+                assertNotNull(response.data.team, message = "response.data.team should not be null")
                 val team = response.data.team
                 assertEquals(updatedTeamNameAdmin, team.name)
                 assertEquals(updatedTeamIntroAdmin, team.intro)
@@ -663,7 +671,7 @@ constructor(
             .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.team)
+                assertNotNull(response.data.team, message = "response.data.team should not be null")
                 val team = response.data.team
                 assertEquals(updatedTeamNameOwner, team.name)
                 assertEquals(updatedTeamIntroOwner, team.intro)
@@ -690,7 +698,10 @@ constructor(
             .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.members)
+                assertNotNull(
+                    response.data.members,
+                    message = "response.data.members should not be null",
+                )
                 val members = response.data.members
                 // Expected: creator(owner), newOwnerCandidate(admin), admin(admin), member(member)
                 assertEquals(4, members.size)
@@ -727,9 +738,12 @@ constructor(
             .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.members)
+                assertNotNull(
+                    response.data.members,
+                    message = "response.data.members should not be null",
+                )
                 val adminMember = response.data.members.find { it.user.id == admin.userId }
-                assertNotNull(adminMember)
+                assertNotNull(adminMember, message = "adminMember should not be null")
                 assertEquals(TeamMemberRoleTypeDTO.MEMBER, adminMember!!.role)
             }
     }
@@ -750,9 +764,12 @@ constructor(
             .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.members)
+                assertNotNull(
+                    response.data.members,
+                    message = "response.data.members should not be null",
+                )
                 val memberNowAdmin = response.data.members.find { it.user.id == member.userId }
-                assertNotNull(memberNowAdmin)
+                assertNotNull(memberNowAdmin, message = "memberNowAdmin should not be null")
                 assertEquals(TeamMemberRoleTypeDTO.ADMIN, memberNowAdmin!!.role)
             }
     }
@@ -773,9 +790,12 @@ constructor(
             .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.members)
+                assertNotNull(
+                    response.data.members,
+                    message = "response.data.members should not be null",
+                )
                 val memberAgain = response.data.members.find { it.user.id == member.userId }
-                assertNotNull(memberAgain)
+                assertNotNull(memberAgain, message = "memberAgain should not be null")
                 assertEquals(TeamMemberRoleTypeDTO.MEMBER, memberAgain!!.role)
                 // Check owner and other admins are still correct
                 val owner = response.data.members.find { it.user.id == creator.userId }
@@ -800,7 +820,7 @@ constructor(
             .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.team)
+                assertNotNull(response.data.team, message = "response.data.team should not be null")
                 assertEquals(true, response.data.team.joined)
                 assertEquals(TeamMemberRoleTypeDTO.MEMBER, response.data.team.role)
             }
@@ -818,9 +838,9 @@ constructor(
             .isOk // Non-members can likely still view public team info
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.team)
+                assertNotNull(response.data.team, message = "response.data.team should not be null")
                 assertEquals(false, response.data.team.joined)
-                assertNull(response.data.team.role, "Role should be null for non-members")
+                assertNull(response.data.team.role, message = "Role should be null for non-members")
             }
     }
 
@@ -844,10 +864,13 @@ constructor(
             .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.members)
+                assertNotNull(
+                    response.data.members,
+                    message = "response.data.members should not be null",
+                )
                 assertNull(
                     response.data.members.find { it.user.id == member.userId },
-                    "Member should be removed",
+                    message = "Member should be removed",
                 )
             }
     }
@@ -870,9 +893,12 @@ constructor(
             .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.members)
+                assertNotNull(
+                    response.data.members,
+                    message = "response.data.members should not be null",
+                )
                 val memberFound = response.data.members.find { it.user.id == member.userId }
-                assertNotNull(memberFound)
+                assertNotNull(memberFound, message = "memberFound should not be null")
                 assertEquals(TeamMemberRoleTypeDTO.MEMBER, memberFound!!.role)
             }
     }
@@ -892,10 +918,13 @@ constructor(
             .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.members)
+                assertNotNull(
+                    response.data.members,
+                    message = "response.data.members should not be null",
+                )
                 assertNull(
                     response.data.members.find { it.user.id == member.userId },
-                    "Member should be removed again",
+                    message = "Member should be removed again",
                 )
             }
     }
@@ -916,10 +945,13 @@ constructor(
             .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.members)
+                assertNotNull(
+                    response.data.members,
+                    message = "response.data.members should not be null",
+                )
                 assertNull(
                     response.data.members.find { it.user.id == admin.userId },
-                    "User 'admin' should be removed",
+                    message = "User 'admin' should be removed",
                 )
 
                 // Check owner and remaining admin(s)
@@ -927,13 +959,13 @@ constructor(
                     response.data.members.find {
                         it.user.id == creator.userId && it.role == TeamMemberRoleTypeDTO.OWNER
                     }
-                assertNotNull(owner)
+                assertNotNull(owner, message = "owner should not be null")
                 val admin1 =
                     response.data.members.find {
                         it.user.id == newOwnerCandidate.userId &&
                             it.role == TeamMemberRoleTypeDTO.ADMIN
                     }
-                assertNotNull(admin1)
+                assertNotNull(admin1, message = "admin1 should not be null")
 
                 // Verify total count reflects removal
                 assertEquals(2, response.data.members.size) // Owner + 1 Admin remaining

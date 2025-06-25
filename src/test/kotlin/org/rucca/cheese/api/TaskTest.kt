@@ -23,24 +23,26 @@ import org.rucca.cheese.task.toDTO
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation::class)
-class TaskTest
-@Autowired
-constructor(
-    private val webTestClient: WebTestClient,
-    private val userCreatorService: UserCreatorService,
-) {
+@AutoConfigureMockMvc
+class TaskTest @Autowired constructor(private val userCreatorService: UserCreatorService) {
+    @Autowired private lateinit var mockMvc: MockMvc
+
     private val logger = LoggerFactory.getLogger(javaClass)
+    private lateinit var webTestClient: WebTestClient
 
     // --- User Setup ---
     private lateinit var creator: UserCreatorService.CreateUserResponse
@@ -143,10 +145,13 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(response?.data?.space, "Space data should not be null in response")
+        assertNotNull(response?.data?.space, message = "Space data should not be null in response")
         val createdSpace = response!!.data.space
-        assertNotNull(createdSpace.id, "Created space ID cannot be null")
-        assertNotNull(createdSpace.defaultCategoryId, "Default category ID cannot be null")
+        assertNotNull(createdSpace.id, message = "Created space ID cannot be null")
+        assertNotNull(
+            createdSpace.defaultCategoryId,
+            message = "Default category ID cannot be null",
+        )
 
         val createdSpaceId = createdSpace.id
         val createdDefaultCategoryId = createdSpace.defaultCategoryId
@@ -200,9 +205,9 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(response?.data?.team, "Team data missing in response")
+        assertNotNull(response?.data?.team, message = "Team data missing in response")
         val createdTeamId = response!!.data.team.id
-        assertNotNull(createdTeamId, "Created team ID is null")
+        assertNotNull(createdTeamId, message = "Created team ID is null")
         logger.info("Created team: $createdTeamId")
         return createdTeamId
     }
@@ -282,7 +287,7 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(invitationResponse?.data?.invitation, "Invitation data missing")
+        assertNotNull(invitationResponse?.data?.invitation, message = "Invitation data missing")
         val invitationId = invitationResponse!!.data.invitation.id
 
         // Step 2: User accepts the admin invitation
@@ -297,6 +302,8 @@ constructor(
 
     @BeforeAll
     fun prepare() {
+        webTestClient = MockMvcWebTestClient.bindTo(mockMvc).build()
+
         creator = userCreatorService.createUser()
         creatorToken = userCreatorService.login(creator.username, creator.password)
         teamCreator = userCreatorService.createUser()
@@ -409,7 +416,10 @@ constructor(
                     .returnResult()
                     .responseBody
 
-            assertNotNull(responseBody?.data?.task, "Task data missing in successful response")
+            assertNotNull(
+                responseBody?.data?.task,
+                message = "Task data missing in successful response",
+            )
             val task = responseBody!!.data.task
 
             // --- DTO Assertions ---
@@ -421,7 +431,7 @@ constructor(
             // Creator check needs adjustment based on who performs the action (passed in `token`)
             // assertEquals(creator.userId, task.creator?.id) // This assumes creatorToken is always
             // used
-            assertNotNull(task.creator.id, "Task creator ID should not be null")
+            assertNotNull(task.creator.id, message = "Task creator ID should not be null")
             assertEquals(deadline, task.deadline)
             assertEquals(defaultDeadline, task.defaultDeadline)
             assertEquals(resubmittable, task.resubmittable)
@@ -430,11 +440,14 @@ constructor(
             assertEquals(description, task.description)
             assertEquals(spaceId, task.space?.id)
             assertEquals(categoryId ?: defaultCategoryId, task.category?.id) // Check category ID
-            assertNotNull(task.category?.name, "Category name should exist")
+            assertNotNull(task.category?.name, message = "Category name should exist")
             assertEquals(ApproveTypeDTO.NONE, task.approved) // Expect initial state NONE
 
             // Schema validation using DTO
-            assertNotNull(task.submissionSchema)
+            assertNotNull(
+                task.submissionSchema,
+                message = "task.submissionSchema should not be null",
+            )
             assertEquals(submissionSchema.size, task.submissionSchema.size)
             submissionSchema.forEach { expectedEntry ->
                 assertTrue(
@@ -447,7 +460,7 @@ constructor(
             }
 
             val createdTaskId = task.id
-            assertNotNull(createdTaskId, "Task ID should not be null")
+            assertNotNull(createdTaskId, message = "Task ID should not be null")
             taskIds.add(createdTaskId)
             logger.info(
                 "Created task: $createdTaskId (Type: $submitterType, Space: $spaceId, Category: ${task.category?.id})"
@@ -472,7 +485,7 @@ constructor(
             .isOk
             .expectBody<PatchTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task)
+                assertNotNull(response.data.task, message = "response.data.task should not be null")
                 assertEquals(ApproveTypeDTO.APPROVED, response.data.task.approved)
             }
     }
@@ -496,9 +509,9 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(response?.data?.participant, "Participant data missing")
+        assertNotNull(response?.data?.participant, message = "Participant data missing")
         val membershipId = response!!.data.participant!!.id
-        assertNotNull(membershipId, "Membership ID is null")
+        assertNotNull(membershipId, message = "Membership ID is null")
         return membershipId
     }
 
@@ -521,9 +534,9 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(response?.data?.participant, "Participant data missing")
+        assertNotNull(response?.data?.participant, message = "Participant data missing")
         val membershipId = response!!.data.participant!!.id
-        assertNotNull(membershipId, "Membership ID is null")
+        assertNotNull(membershipId, message = "Membership ID is null")
         return membershipId
     }
 
@@ -541,7 +554,10 @@ constructor(
             .isOk
             .expectBody<GetTaskParticipant200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.taskMembership)
+                assertNotNull(
+                    response.data.taskMembership,
+                    message = "response.data.taskMembership should not be null",
+                )
                 assertEquals(ApproveTypeDTO.APPROVED, response.data.taskMembership.approved)
             }
     }
@@ -574,10 +590,10 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(response?.data?.category, "Category data missing")
+        assertNotNull(response?.data?.category, message = "Category data missing")
         assertEquals(name, response!!.data!!.category.name)
         val categoryId = response.data!!.category.id
-        assertNotNull(categoryId, "Category ID is null")
+        assertNotNull(categoryId, message = "Category ID is null")
         logger.info("Created category '$name' (ID: $categoryId) in space $spaceId")
         return categoryId
     }
@@ -595,9 +611,15 @@ constructor(
                 CreateSpaceCategory201ResponseDTO
             >() // Assuming archive returns updated Category DTO
             .value { response ->
-                assertNotNull(response.data?.category)
+                assertNotNull(
+                    response.data?.category,
+                    message = "response.data?.category should not be null",
+                )
                 assertEquals(categoryId, response.data!!.category.id)
-                assertNotNull(response.data!!.category.archivedAt)
+                assertNotNull(
+                    response.data!!.category.archivedAt,
+                    message = "response.data!!.category.archivedAt should not be null",
+                )
             }
         logger.info("Archived category $categoryId in space $spaceId")
     }
@@ -615,9 +637,15 @@ constructor(
                 CreateSpaceCategory201ResponseDTO
             >() // Assuming unarchive returns updated Category DTO
             .value { response ->
-                assertNotNull(response.data?.category)
+                assertNotNull(
+                    response.data?.category,
+                    message = "response.data?.category should not be null",
+                )
                 assertEquals(categoryId, response.data!!.category.id)
-                assertNull(response.data!!.category.archivedAt)
+                assertNull(
+                    response.data!!.category.archivedAt,
+                    message = "response.data!!.category.archivedAt should not be null",
+                )
             }
         logger.info("Unarchived category $categoryId in space $spaceId")
     }
@@ -653,7 +681,10 @@ constructor(
             .isOk
             .expectBody<ListSpaceCategories200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.categories)
+                assertNotNull(
+                    response.data?.categories,
+                    message = "response.data?.categories should not be null",
+                )
                 val categories = response.data!!.categories
                 assertEquals(2, categories.size, "Expected 2 active categories (Default, Custom)")
                 assertTrue(
@@ -683,7 +714,10 @@ constructor(
             .isOk
             .expectBody<ListSpaceCategories200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.categories)
+                assertNotNull(
+                    response.data?.categories,
+                    message = "response.data?.categories should not be null",
+                )
                 val categories = response.data!!.categories
                 assertEquals(
                     3,
@@ -691,8 +725,11 @@ constructor(
                     "Expected 3 categories (Default, Custom, Archived)",
                 )
                 val archived = categories.find { it.id == archivedCategoryId }
-                assertNotNull(archived)
-                assertNotNull(archived!!.archivedAt)
+                assertNotNull(archived, message = "archived should not be null")
+                assertNotNull(
+                    archived!!.archivedAt,
+                    message = "archived!!.archivedAt should not be null",
+                )
             }
     }
 
@@ -800,7 +837,10 @@ constructor(
             .isOk
             .expectBody<GetTasks200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.tasks)
+                assertNotNull(
+                    response.data?.tasks,
+                    message = "response.data?.tasks should not be null",
+                )
                 assertEquals(4, response.data!!.tasks!!.size)
                 assertTrue(response.data!!.tasks!!.all { it.creator.id == creator.userId })
             }
@@ -827,7 +867,10 @@ constructor(
             .isOk
             .expectBody<GetTasks200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.tasks)
+                assertNotNull(
+                    response.data?.tasks,
+                    message = "response.data?.tasks should not be null",
+                )
                 // Initially, all 4 tasks are NONE
                 assertEquals(4, response.data!!.tasks!!.size)
                 assertTrue(response.data!!.tasks!!.all { it.approved == ApproveTypeDTO.NONE })
@@ -874,7 +917,7 @@ constructor(
             .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task)
+                assertNotNull(response.data.task, message = "response.data.task should not be null")
                 val task = response.data.task
                 assertEquals(taskId, task.id)
                 assertEquals("$taskNamePrefix (4 - USER, Custom Cat)", task.name)
@@ -964,7 +1007,7 @@ constructor(
             .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task)
+                assertNotNull(response.data.task, message = "response.data.task should not be null")
                 assertEquals(ApproveTypeDTO.APPROVED, response.data.task.approved)
             }
     }
@@ -988,7 +1031,7 @@ constructor(
             .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task)
+                assertNotNull(response.data.task, message = "response.data.task should not be null")
                 val task = response.data.task
                 assertEquals(taskId, task.id)
                 assertEquals("$taskNamePrefix (1 - USER, Default Cat)", task.name)
@@ -1004,7 +1047,10 @@ constructor(
                 assertEquals(ApproveTypeDTO.APPROVED, task.approved)
 
                 // Schema check
-                assertNotNull(task.submissionSchema)
+                assertNotNull(
+                    task.submissionSchema,
+                    message = "task.submissionSchema should not be null",
+                )
                 assertEquals(taskSubmissionSchema.size, task.submissionSchema.size)
                 taskSubmissionSchema.forEach { expectedEntry ->
                     assertTrue(
@@ -1052,7 +1098,7 @@ constructor(
             .isOk
             .expectBody<PatchTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task)
+                assertNotNull(response.data.task, message = "response.data.task should not be null")
                 assertEquals(reason, response.data.task.rejectReason)
             }
     }
@@ -1061,13 +1107,13 @@ constructor(
 
     // Helper function for asserting optional fields
     private fun assertTaskOptionalFields(task: TaskDTO?, participation: TaskParticipationInfoDTO?) {
-        assertNotNull(task, "Task DTO is null")
-        assertNotNull(participation, "Participation Info DTO is null")
-        assertNotNull(task!!.submittable, "'submittable' field is null")
-        assertNotNull(task.joined, "'joined' field is null on participation info")
+        assertNotNull(task, message = "Task DTO is null")
+        assertNotNull(participation, message = "Participation Info DTO is null")
+        assertNotNull(task!!.submittable, message = "'submittable' field is null")
+        assertNotNull(task.joined, message = "'joined' field is null on participation info")
         assertNotNull(
             participation!!.hasParticipation,
-            "'hasParticipation' field is null on participation info",
+            message = "'hasParticipation' field is null on participation info",
         )
     }
 
@@ -1094,8 +1140,11 @@ constructor(
             .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task)
-                assertNotNull(response.data.participation)
+                assertNotNull(response.data.task, message = "response.data.task should not be null")
+                assertNotNull(
+                    response.data.participation,
+                    message = "response.data.participation should not be null",
+                )
                 val task = response.data.task
                 val participation = response.data.participation
 
@@ -1106,21 +1155,24 @@ constructor(
 
                 assertNotNull(
                     task.participationEligibility,
-                    "Participation eligibility data missing",
+                    message = "Participation eligibility data missing",
                 )
                 assertNull(
                     task.participationEligibility!!.user,
-                    "User status should be null for TEAM task",
+                    message = "User status should be null for TEAM task",
                 )
                 assertNotNull(
                     task.participationEligibility!!.teams,
-                    "Team status list should not be null for TEAM task",
+                    message = "Team status list should not be null for TEAM task",
                 )
 
                 val teamStatuses = task.participationEligibility!!.teams!!
                 // Check eligibility for the specific team 'teamId'
                 val targetTeamStatus = teamStatuses.find { it.team.id == teamId }
-                assertNotNull(targetTeamStatus, "Status for target team ID $teamId not found")
+                assertNotNull(
+                    targetTeamStatus,
+                    message = "Status for target team ID $teamId not found",
+                )
                 assertTrue(
                     targetTeamStatus!!.eligibility.eligible,
                     "Team $teamId should be eligible to join",
@@ -1140,7 +1192,10 @@ constructor(
                 assertTrue(task.joinedTeams.isNullOrEmpty()) // Not joined as any team yet
                 assertEquals(false, task.submittable) // Not joined, so cannot submit
                 assertTrue(task.submittableAsTeam.isNullOrEmpty()) // Cannot submit as any team yet
-                assertNull(task.userDeadline) // No specific deadline set
+                assertNull(
+                    task.userDeadline,
+                    message = "task.userDeadline should not be null",
+                ) // No specific deadline set
             }
     }
 
@@ -1168,8 +1223,11 @@ constructor(
             .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task)
-                assertNotNull(response.data.participation)
+                assertNotNull(response.data.task, message = "response.data.task should not be null")
+                assertNotNull(
+                    response.data.participation,
+                    message = "response.data.participation should not be null",
+                )
                 val task = response.data.task
                 val participation = response.data.participation
 
@@ -1180,11 +1238,11 @@ constructor(
 
                 assertNotNull(
                     task.participationEligibility,
-                    "Participation eligibility data missing",
+                    message = "Participation eligibility data missing",
                 )
                 assertNull(
                     task.participationEligibility!!.user,
-                    "User status should be null for TEAM task",
+                    message = "User status should be null for TEAM task",
                 )
                 // Team status might be null or empty if the user is not part of ANY team
                 // Or it might list teams, all of which are ineligible because the user isn't part
@@ -1233,8 +1291,11 @@ constructor(
             .isOk
             .expectBody<GetTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task)
-                assertNotNull(response.data.participation)
+                assertNotNull(response.data.task, message = "response.data.task should not be null")
+                assertNotNull(
+                    response.data.participation,
+                    message = "response.data.participation should not be null",
+                )
                 val task = response.data.task
                 val participation = response.data.participation
 
@@ -1245,15 +1306,15 @@ constructor(
 
                 assertNotNull(
                     task.participationEligibility,
-                    "Participation eligibility data missing",
+                    message = "Participation eligibility data missing",
                 )
                 assertNotNull(
                     task.participationEligibility!!.user,
-                    "User status should not be null for USER task",
+                    message = "User status should not be null for USER task",
                 )
                 assertNull(
                     task.participationEligibility!!.teams,
-                    "Team status list should be null for USER task",
+                    message = "Team status list should be null for USER task",
                 )
 
                 val userStatus = task.participationEligibility!!.user!!
@@ -1267,9 +1328,10 @@ constructor(
                 assertTrue(task.joinedTeams.isNullOrEmpty()) // joinedTeams irrelevant for user join
                 assertEquals(false, task.submittable) // Not joined yet
                 // submittableAsTeam might not exist or be empty for USER tasks
-                // assertNull(task.submittableAsTeam) or
+                // assertNull(task.submittableAsTeam, message = "task.submittableAsTeam should not
+                // be null") or
                 // assertTrue(task.submittableAsTeam.isNullOrEmpty())
-                assertNull(task.userDeadline)
+                assertNull(task.userDeadline, message = "task.userDeadline should not be null")
             }
     }
 
@@ -1336,7 +1398,7 @@ constructor(
             .isOk
             .expectBody<PatchTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task)
+                assertNotNull(response.data.task, message = "response.data.task should not be null")
                 val task = response.data.task
                 assertEquals(updatedName, task.name)
                 assertEquals(newDeadline, task.deadline)
@@ -1368,7 +1430,7 @@ constructor(
             .isOk
             .expectBody<PatchTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task)
+                assertNotNull(response.data.task, message = "response.data.task should not be null")
                 val task = response.data.task
                 assertEquals(originalName, task.name)
                 assertEquals(taskIntro, task.intro)
@@ -1415,8 +1477,11 @@ constructor(
             .isOk
             .expectBody<PatchTask200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.task)
-                assertNull(response.data.task.deadline, "Deadline should be null after patch")
+                assertNotNull(response.data.task, message = "response.data.task should not be null")
+                assertNull(
+                    response.data.task.deadline,
+                    message = "Deadline should be null after patch",
+                )
             }
     }
 
@@ -1442,14 +1507,17 @@ constructor(
             .isOk
             .expectBody<GetTasks200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.tasks)
+                assertNotNull(
+                    response.data?.tasks,
+                    message = "response.data?.tasks should not be null",
+                )
                 val tasks = response.data!!.tasks!!
                 // Tasks 0, 1, 2 are approved
                 assertEquals(3, tasks.size)
                 assertTrue(tasks.all { it.approved == ApproveTypeDTO.APPROVED })
                 // Check specific task details
                 val task0 = tasks.find { it.id == taskIds[0] }
-                assertNotNull(task0)
+                assertNotNull(task0, message = "task0 should not be null")
                 assertEquals("$taskNamePrefix (1 - USER, Default Cat)", task0!!.name)
                 assertEquals(taskIntro, task0.intro)
                 assertEquals(1, task0.rank) // Rank was set in test 40
@@ -1476,7 +1544,10 @@ constructor(
             .isOk
             .expectBody<GetTasks200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.tasks)
+                assertNotNull(
+                    response.data?.tasks,
+                    message = "response.data?.tasks should not be null",
+                )
                 val tasks = response.data!!.tasks!!
                 // Only Task 2 is in custom category and approved
                 assertEquals(1, tasks.size)
@@ -1505,8 +1576,14 @@ constructor(
             .isOk
             .expectBody<GetTasks200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.tasks)
-                assertNotNull(response.data?.page)
+                assertNotNull(
+                    response.data?.tasks,
+                    message = "response.data?.tasks should not be null",
+                )
+                assertNotNull(
+                    response.data?.page,
+                    message = "response.data?.page should not be null",
+                )
                 val tasks = response.data!!.tasks!!
                 val page = response.data!!.page!!
                 assertEquals(2, tasks.size)
@@ -1541,14 +1618,23 @@ constructor(
             .isOk
             .expectBody<GetTasks200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.tasks)
-                assertNotNull(response.data?.page)
+                assertNotNull(
+                    response.data?.tasks,
+                    message = "response.data?.tasks should not be null",
+                )
+                assertNotNull(
+                    response.data?.page,
+                    message = "response.data?.page should not be null",
+                )
                 val tasks = response.data!!.tasks!!
                 val page = response.data!!.page!!
                 assertEquals(1, tasks.size)
                 assertEquals(startId, tasks[0].id) // Should contain Task 1
                 assertEquals(false, page.hasMore)
-                assertNull(page.nextStart) // No more pages
+                assertNull(
+                    page.nextStart,
+                    message = "page.nextStart should not be null",
+                ) // No more pages
             }
     }
 
@@ -1572,7 +1658,10 @@ constructor(
             .isOk
             .expectBody<GetTasks200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.tasks)
+                assertNotNull(
+                    response.data?.tasks,
+                    message = "response.data?.tasks should not be null",
+                )
                 val tasks = response.data!!.tasks!!
                 assertTrue(tasks.isNotEmpty())
                 // First created and approved task is Task 1 (index 0)
@@ -1603,7 +1692,10 @@ constructor(
             .isOk
             .expectBody<GetTasks200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.tasks)
+                assertNotNull(
+                    response.data?.tasks,
+                    message = "response.data?.tasks should not be null",
+                )
                 val tasks = response.data!!.tasks!!
                 assertTrue(
                     tasks.none { it.approved != ApproveTypeDTO.APPROVED },
@@ -1634,7 +1726,10 @@ constructor(
             .isOk
             .expectBody<GetTasks200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.tasks)
+                assertNotNull(
+                    response.data?.tasks,
+                    message = "response.data?.tasks should not be null",
+                )
                 // Further assertions depend on whether deadlines differ
                 // e.g., check if tasks are ordered correctly based on taskDeadline
             }
@@ -1676,7 +1771,10 @@ constructor(
             .isOk
             .expectBody<GetTasks200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.tasks)
+                assertNotNull(
+                    response.data?.tasks,
+                    message = "response.data?.tasks should not be null",
+                )
                 val tasks = response.data!!.tasks!!
                 assertEquals(1, tasks.size, "Participant 1 should have joined 1 task")
                 assertEquals(taskIds[0], tasks[0].id)
@@ -1706,7 +1804,10 @@ constructor(
             .isOk
             .expectBody<GetTasks200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.tasks)
+                assertNotNull(
+                    response.data?.tasks,
+                    message = "response.data?.tasks should not be null",
+                )
                 val tasks = response.data!!.tasks!!
                 // Assuming Task 1 (joined by P1) matches the keyword prefix
                 assertEquals(1, tasks.size)
@@ -1742,7 +1843,10 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(response?.data?.participant)
+        assertNotNull(
+            response?.data?.participant,
+            message = "response?.data?.participant should not be null",
+        )
         participant3TaskMembershipId = response!!.data.participant!!.id
         assertTrue(participant3TaskMembershipId > 0)
         // Verify participant is automatically approved because owner added with deadline? Check
@@ -1874,7 +1978,10 @@ constructor(
             .isOk
             .expectBody<GetTaskParticipants200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.participants)
+                assertNotNull(
+                    response.data.participants,
+                    message = "response.data.participants should not be null",
+                )
                 val participants = response.data.participants
                 // Users added: P1 (ID: participantTaskMembershipId), P3 (ID:
                 // participant3TaskMembershipId), P4 (ID: participant4TaskMembershipId)
@@ -1900,12 +2007,15 @@ constructor(
             .isOk
             .expectBody<GetTaskParticipants200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.participants)
+                assertNotNull(
+                    response.data.participants,
+                    message = "response.data.participants should not be null",
+                )
                 val participants = response.data.participants
                 // Only the team was added
                 assertEquals(1, participants.size)
                 assertEquals(teamId, participants[0].member.id)
-                assertNotNull(participants[0].member.name) // Check team name exists
+                assertNotNull(participants[0].member.name, message = "Team name should not be null")
             }
     }
 
@@ -1926,7 +2036,10 @@ constructor(
             .isOk
             .expectBody<GetTaskParticipant200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.taskMembership)
+                assertNotNull(
+                    response.data.taskMembership,
+                    message = "response.data.taskMembership should not be null",
+                )
                 assertEquals(ApproveTypeDTO.DISAPPROVED, response.data.taskMembership.approved)
             }
     }
@@ -1953,7 +2066,10 @@ constructor(
             .isOk
             .expectBody<GetTaskParticipants200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.participants)
+                assertNotNull(
+                    response.data.participants,
+                    message = "response.data.participants should not be null",
+                )
                 val participants = response.data.participants
                 assertEquals(expectedCount, participants.size, "Count mismatch for status $status")
                 val actualMemberIds = participants.map { it.member.id }.toSet()
@@ -2021,10 +2137,13 @@ constructor(
             // PatchTaskMembershipByMember200ResponseDTO
             .expectBody<PatchTaskMembershipByMember200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.participants)
+                assertNotNull(
+                    response.data.participants,
+                    message = "response.data.participants should not be null",
+                )
                 val p1Membership =
                     response.data.participants!!.find { it.member.id == participant.userId }
-                assertNotNull(p1Membership, "Participant 1 not found in response")
+                assertNotNull(p1Membership, message = "Participant 1 not found in response")
                 assertEquals(
                     ApproveTypeDTO.APPROVED,
                     p1Membership!!.approved,
@@ -2055,10 +2174,13 @@ constructor(
             .isOk
             .expectBody<PatchTaskMembershipByMember200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.participants)
+                assertNotNull(
+                    response.data.participants,
+                    message = "response.data.participants should not be null",
+                )
                 val p1Membership =
                     response.data.participants!!.find { it.member.id == participant.userId }
-                assertNotNull(p1Membership, "Participant 1 not found in response")
+                assertNotNull(p1Membership, message = "Participant 1 not found in response")
                 assertEquals(
                     newDeadline,
                     p1Membership!!.deadline,
@@ -2149,7 +2271,10 @@ constructor(
             .isOk
             .expectBody<GetTaskParticipants200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.participants)
+                assertNotNull(
+                    response.data.participants,
+                    message = "response.data.participants should not be null",
+                )
                 assertTrue(
                     response.data.participants.isEmpty(),
                     "Participant list for Task 1 should be empty",
@@ -2170,7 +2295,10 @@ constructor(
             .isOk
             .expectBody<GetTaskParticipants200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.participants)
+                assertNotNull(
+                    response.data.participants,
+                    message = "response.data.participants should not be null",
+                )
                 assertTrue(
                     response.data.participants.isEmpty(),
                     "Participant list for Task 2 should be empty",

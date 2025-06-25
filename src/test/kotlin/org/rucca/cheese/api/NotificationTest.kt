@@ -20,19 +20,25 @@ import org.rucca.cheese.notification.models.toEnum
 import org.rucca.cheese.notification.services.NotificationQueryService
 import org.rucca.cheese.utils.UserCreatorService
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.springframework.web.reactive.function.BodyInserters
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation::class)
+@AutoConfigureMockMvc
 class NotificationTest {
-    @Autowired private lateinit var webTestClient: WebTestClient
+    @Autowired private lateinit var mockMvc: MockMvc
+
+    private lateinit var webTestClient: WebTestClient
+
     @Autowired private lateinit var userCreatorService: UserCreatorService
 
     @MockkBean private lateinit var notificationQueryService: NotificationQueryService
@@ -45,6 +51,8 @@ class NotificationTest {
 
     @BeforeEach
     fun setUp() {
+        webTestClient = MockMvcWebTestClient.bindTo(mockMvc).build()
+
         every {
             permissionEvaluator.evaluate<Action, ResourceType>(any(), any(), any(), any())
         } returns true
@@ -325,7 +333,7 @@ class NotificationTest {
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
-            .body(BodyInserters.fromValue(requestDto))
+            .bodyValue(requestDto)
             .exchange()
             .expectStatus()
             .isOk
@@ -358,7 +366,7 @@ class NotificationTest {
             .uri("$baseUri/$notificationId") // Path from API definition
             .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
             .contentType(MediaType.APPLICATION_JSON)
-            .body(BodyInserters.fromValue(requestDto))
+            .bodyValue(requestDto)
             .exchange()
             .expectStatus()
             .isNotFound
@@ -386,7 +394,7 @@ class NotificationTest {
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
-            .body(BodyInserters.fromValue(requestDto))
+            .bodyValue(requestDto)
             .exchange()
             .expectStatus()
             .isOk
@@ -414,7 +422,7 @@ class NotificationTest {
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
-            .body(BodyInserters.fromValue(requestDto))
+            .bodyValue(requestDto)
             .exchange()
             .expectStatus()
             .isOk
@@ -440,7 +448,7 @@ class NotificationTest {
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .header(HttpHeaders.AUTHORIZATION, "Bearer $userToken")
-            .body(BodyInserters.fromValue(requestDto))
+            .bodyValue(requestDto)
             .exchange()
             .expectStatus()
             .isBadRequest // Expect 400 based on controller's check

@@ -9,28 +9,32 @@ import org.rucca.cheese.model.*
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient
 
 /**
  * Tests for the Team Membership Application/Invitation flow. This class is separate from TeamTest
  * to avoid state conflicts.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation::class)
+@AutoConfigureMockMvc
 class TeamApplicationTest
 @Autowired
-constructor(
-    private val webTestClient: WebTestClient,
-    private val userCreatorService: UserCreatorService,
-) {
+constructor(private val userCreatorService: UserCreatorService) {
+    @Autowired private lateinit var mockMvc: MockMvc
+
     private val logger = LoggerFactory.getLogger(javaClass)
+    private lateinit var webTestClient: WebTestClient
 
     // --- Users for this Test Suite ---
     lateinit var teamOwner: UserCreatorService.CreateUserResponse // Owner of the test team
@@ -73,6 +77,8 @@ constructor(
 
     @BeforeAll
     fun setup() {
+        webTestClient = MockMvcWebTestClient.bindTo(mockMvc).build()
+
         // Create users
         teamOwner = userCreatorService.createUser()
         teamOwnerToken = userCreatorService.login(teamOwner.username, teamOwner.password)
@@ -140,7 +146,7 @@ constructor(
                     .expectBody<CreateTeamInvitation201ResponseDTO>()
                     .returnResult()
                     .responseBody
-            assertNotNull(response?.data?.invitation?.id, "Invitation ID is null")
+            assertNotNull(response?.data?.invitation?.id, message = "Invitation ID is null")
             val id = response!!.data.invitation.id
             logger.info(
                 "Invited user $userIdToInvite to team $teamId with role $role. Invitation ID: $id"
@@ -215,7 +221,7 @@ constructor(
                     .expectBody<CreateTeamJoinRequest201ResponseDTO>()
                     .returnResult()
                     .responseBody
-            assertNotNull(response?.data?.application?.id, "Join Request ID is null")
+            assertNotNull(response?.data?.application?.id, message = "Join Request ID is null")
             val id = response!!.data!!.application!!.id
             logger.info("User requested to join team $teamId. Request ID: $id")
             return id
@@ -326,10 +332,16 @@ constructor(
             .isOk
             .expectBody<ListMyJoinRequests200ResponseDTO>() // Adjust DTO name if needed
             .value { response ->
-                assertNotNull(response.data?.requests)
+                assertNotNull(
+                    response.data?.requests,
+                    message = "response.data?.requests should not be null",
+                )
                 val requests = response.data!!.requests
                 val foundRequest = requests.find { it.id == joinRequestId }
-                assertNotNull(foundRequest, "Pending request $joinRequestId not found for user")
+                assertNotNull(
+                    foundRequest,
+                    message = "Pending request $joinRequestId not found for user",
+                )
                 assertEquals(ApplicationStatusDTO.PENDING, foundRequest!!.status)
                 assertEquals(ApplicationTypeDTO.REQUEST, foundRequest.type)
                 assertEquals(requesterUser.userId, foundRequest.user.id)
@@ -356,10 +368,16 @@ constructor(
             .isOk
             .expectBody<ListTeamJoinRequests200ResponseDTO>() // Adjust DTO name
             .value { response ->
-                assertNotNull(response.data?.applications)
+                assertNotNull(
+                    response.data?.applications,
+                    message = "response.data?.applications should not be null",
+                )
                 val requests = response.data!!.applications!!
                 val foundRequest = requests.find { it.id == joinRequestId }
-                assertNotNull(foundRequest, "Pending request $joinRequestId not found for team")
+                assertNotNull(
+                    foundRequest,
+                    message = "Pending request $joinRequestId not found for team",
+                )
                 assertEquals(ApplicationStatusDTO.PENDING, foundRequest!!.status)
                 assertEquals(ApplicationTypeDTO.REQUEST, foundRequest.type)
                 assertEquals(requesterUser.userId, foundRequest.user.id) // User is the requester
@@ -388,9 +406,12 @@ constructor(
             .isOk
             .expectBody<ListMyJoinRequests200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.requests)
+                assertNotNull(
+                    response.data?.requests,
+                    message = "response.data?.requests should not be null",
+                )
                 val request = response.data!!.requests.find { it.id == joinRequestId }
-                assertNotNull(request, "Request $joinRequestId not found")
+                assertNotNull(request, message = "Request $joinRequestId not found")
                 assertEquals(
                     ApplicationStatusDTO.REJECTED,
                     request!!.status,
@@ -401,7 +422,10 @@ constructor(
                     request.processedBy?.id,
                     "ProcessedBy should be the team owner",
                 )
-                assertNotNull(request.processedAt)
+                assertNotNull(
+                    request.processedAt,
+                    message = "request.processedAt should not be null",
+                )
             }
     }
 
@@ -433,9 +457,12 @@ constructor(
             .isOk
             .expectBody<ListMyJoinRequests200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.requests)
+                assertNotNull(
+                    response.data?.requests,
+                    message = "response.data?.requests should not be null",
+                )
                 val request = response.data!!.requests.find { it.id == joinRequestIdCanceled }
-                assertNotNull(request, "Request $joinRequestIdCanceled not found")
+                assertNotNull(request, message = "Request $joinRequestIdCanceled not found")
                 assertEquals(
                     ApplicationStatusDTO.CANCELED,
                     request!!.status,
@@ -447,7 +474,10 @@ constructor(
                     request.processedBy?.id,
                     "ProcessedBy should be the requester",
                 )
-                assertNotNull(request.processedAt)
+                assertNotNull(
+                    request.processedAt,
+                    message = "request.processedAt should not be null",
+                )
             }
     }
 
@@ -478,9 +508,15 @@ constructor(
             .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.members)
+                assertNotNull(
+                    response.data.members,
+                    message = "response.data.members should not be null",
+                )
                 val newMember = response.data.members.find { it.user.id == requesterUser.userId }
-                assertNotNull(newMember, "User ${requesterUser.userId} should now be a member")
+                assertNotNull(
+                    newMember,
+                    message = "User ${requesterUser.userId} should now be a member",
+                )
                 // Should join with default MEMBER role from request flow
                 assertEquals(TeamMemberRoleTypeDTO.MEMBER, newMember!!.role)
             }
@@ -495,7 +531,7 @@ constructor(
             .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.team)
+                assertNotNull(response.data.team, message = "response.data.team should not be null")
                 assertEquals(true, response.data.team.joined, "User should be marked as joined")
                 assertEquals(
                     TeamMemberRoleTypeDTO.MEMBER,
@@ -517,9 +553,12 @@ constructor(
             .isOk
             .expectBody<ListMyJoinRequests200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.requests)
+                assertNotNull(
+                    response.data?.requests,
+                    message = "response.data?.requests should not be null",
+                )
                 val request = response.data!!.requests.find { it.id == joinRequestIdApproved }
-                assertNotNull(request, "Request $joinRequestIdApproved not found")
+                assertNotNull(request, message = "Request $joinRequestIdApproved not found")
                 assertEquals(
                     ApplicationStatusDTO.APPROVED,
                     request!!.status,
@@ -530,7 +569,10 @@ constructor(
                     request.processedBy?.id,
                     "ProcessedBy should be the team owner",
                 )
-                assertNotNull(request.processedAt)
+                assertNotNull(
+                    request.processedAt,
+                    message = "request.processedAt should not be null",
+                )
             }
     }
 
@@ -563,10 +605,16 @@ constructor(
             .isOk
             .expectBody<ListTeamInvitations200ResponseDTO>() // Adjust DTO name
             .value { response ->
-                assertNotNull(response.data.invitations)
+                assertNotNull(
+                    response.data.invitations,
+                    message = "response.data.invitations should not be null",
+                )
                 val invitations = response.data.invitations
                 val foundInvite = invitations.find { it.id == invitationIdCanceled }
-                assertNotNull(foundInvite, "Pending invitation $invitationIdCanceled not found")
+                assertNotNull(
+                    foundInvite,
+                    message = "Pending invitation $invitationIdCanceled not found",
+                )
                 assertEquals(ApplicationStatusDTO.PENDING, foundInvite!!.status)
                 assertEquals(ApplicationTypeDTO.INVITATION, foundInvite.type)
                 assertEquals(inviteeUser.userId, foundInvite.user.id) // User is the invitee
@@ -592,12 +640,15 @@ constructor(
             .isOk
             .expectBody<ListMyInvitations200ResponseDTO>() // Adjust DTO name
             .value { response ->
-                assertNotNull(response.data?.invitations)
+                assertNotNull(
+                    response.data?.invitations,
+                    message = "response.data?.invitations should not be null",
+                )
                 val invitations = response.data!!.invitations
                 val foundInvite = invitations.find { it.id == invitationIdCanceled }
                 assertNotNull(
                     foundInvite,
-                    "Pending invitation $invitationIdCanceled not found for invitee",
+                    message = "Pending invitation $invitationIdCanceled not found for invitee",
                 )
                 assertEquals(ApplicationStatusDTO.PENDING, foundInvite!!.status)
                 assertEquals(teamId, foundInvite.team.id)
@@ -622,9 +673,12 @@ constructor(
             .isOk
             .expectBody<ListMyInvitations200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.invitations)
+                assertNotNull(
+                    response.data?.invitations,
+                    message = "response.data?.invitations should not be null",
+                )
                 val invite = response.data!!.invitations.find { it.id == invitationIdCanceled }
-                assertNotNull(invite, "Invitation $invitationIdCanceled not found")
+                assertNotNull(invite, message = "Invitation $invitationIdCanceled not found")
                 assertEquals(
                     ApplicationStatusDTO.CANCELED,
                     invite!!.status,
@@ -635,7 +689,7 @@ constructor(
                     invite.processedBy?.id,
                     "ProcessedBy should be the owner who canceled",
                 )
-                assertNotNull(invite.processedAt)
+                assertNotNull(invite.processedAt, message = "invite.processedAt should not be null")
             }
     }
 
@@ -666,9 +720,12 @@ constructor(
             .isOk
             .expectBody<ListMyInvitations200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.invitations)
+                assertNotNull(
+                    response.data?.invitations,
+                    message = "response.data?.invitations should not be null",
+                )
                 val invite = response.data!!.invitations.find { it.id == invitationIdDeclined }
-                assertNotNull(invite, "Invitation $invitationIdDeclined not found")
+                assertNotNull(invite, message = "Invitation $invitationIdDeclined not found")
                 assertEquals(
                     ApplicationStatusDTO.DECLINED,
                     invite!!.status,
@@ -679,7 +736,7 @@ constructor(
                     invite.processedBy?.id,
                     "ProcessedBy should be the invitee who declined",
                 )
-                assertNotNull(invite.processedAt)
+                assertNotNull(invite.processedAt, message = "invite.processedAt should not be null")
             }
     }
 
@@ -710,9 +767,15 @@ constructor(
             .isOk
             .expectBody<GetTeamMembers200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.members)
+                assertNotNull(
+                    response.data.members,
+                    message = "response.data.members should not be null",
+                )
                 val newMember = response.data.members.find { it.user.id == inviteeUser.userId }
-                assertNotNull(newMember, "User ${inviteeUser.userId} should now be a member")
+                assertNotNull(
+                    newMember,
+                    message = "User ${inviteeUser.userId} should now be a member",
+                )
                 // Should join with ADMIN role as invited
                 assertEquals(TeamMemberRoleTypeDTO.ADMIN, newMember!!.role)
             }
@@ -727,7 +790,7 @@ constructor(
             .isOk
             .expectBody<GetTeam200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.team)
+                assertNotNull(response.data.team, message = "response.data.team should not be null")
                 assertEquals(true, response.data.team.joined, "User should be marked as joined")
                 assertEquals(
                     TeamMemberRoleTypeDTO.ADMIN,
@@ -749,9 +812,12 @@ constructor(
             .isOk
             .expectBody<ListMyInvitations200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.invitations)
+                assertNotNull(
+                    response.data?.invitations,
+                    message = "response.data?.invitations should not be null",
+                )
                 val invite = response.data!!.invitations.find { it.id == invitationIdAccepted }
-                assertNotNull(invite, "Invitation $invitationIdAccepted not found")
+                assertNotNull(invite, message = "Invitation $invitationIdAccepted not found")
                 assertEquals(
                     ApplicationStatusDTO.ACCEPTED,
                     invite!!.status,
@@ -762,7 +828,7 @@ constructor(
                     invite.processedBy?.id,
                     "ProcessedBy should be the invitee who accepted",
                 )
-                assertNotNull(invite.processedAt)
+                assertNotNull(invite.processedAt, message = "invite.processedAt should not be null")
             }
     }
 
@@ -777,7 +843,7 @@ constructor(
                 "Try joining again",
                 expectedStatus = HttpStatus.CONFLICT,
             )
-            .also { assertNull(it, "Request should fail, ID should be null") }
+            .also { assertNull(it, message = "Request should fail, ID should be null") }
 
         // Verify with specific error DTO if possible
         webTestClient
@@ -808,7 +874,7 @@ constructor(
                 "Second Request",
                 expectedStatus = HttpStatus.CONFLICT,
             )
-            .also { assertNull(it, "Second request should fail") }
+            .also { assertNull(it, message = "Second request should fail") }
 
         // Verify error type
         webTestClient
@@ -837,7 +903,7 @@ constructor(
                 TeamMemberRoleTypeDTO.MEMBER,
                 expectedStatus = HttpStatus.CONFLICT,
             )
-            .also { assertNull(it, "Invitation should fail, ID should be null") }
+            .also { assertNull(it, message = "Invitation should fail, ID should be null") }
 
         // Verify error type
         webTestClient
@@ -873,7 +939,7 @@ constructor(
                 TeamMemberRoleTypeDTO.ADMIN,
                 expectedStatus = HttpStatus.CONFLICT,
             )
-            .also { assertNull(it, "Second invitation should fail") }
+            .also { assertNull(it, message = "Second invitation should fail") }
 
         // Verify error type
         webTestClient

@@ -14,15 +14,28 @@ import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.context.SecurityContextHolderStrategy
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+
+@Configuration
+class SecurityContextHolderStrategyConfig {
+
+    @Bean
+    fun securityContextHolderStrategy(): SecurityContextHolderStrategy {
+        SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_THREADLOCAL)
+
+        return SecurityContextHolder.getContextHolderStrategy()
+            ?: error("SecurityContextHolderStrategy should have been initialized")
+    }
+}
 
 @Configuration
 @EnableWebSecurity
@@ -71,14 +84,11 @@ class SecurityConfig(
     @Bean
     @Order(1)
     fun actuatorSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        val actuatorMatcher = AntPathRequestMatcher("/actuator/**")
-        val healthMatcher = AntPathRequestMatcher("/actuator/health")
-
         http
-            .securityMatcher(actuatorMatcher)
+            .securityMatcher("/actuator/**")
             .authorizeHttpRequests { requests ->
                 requests
-                    .requestMatchers(healthMatcher)
+                    .requestMatchers("/actuator/health")
                     .permitAll()
                     .anyRequest()
                     .hasRole(actuatorCredentialsProperties.role)
@@ -99,21 +109,14 @@ class SecurityConfig(
         jwtDecoder: CustomAuth0JwtDecoder,
         customJwtAuthenticationConverter: CustomJwtAuthenticationConverter,
     ): SecurityFilterChain {
-        logger.debug("Configuring API security filter chain")
-
-        val apiMatcher = AntPathRequestMatcher("/**")
-
         http
-            .securityMatcher(apiMatcher)
+            .securityMatcher("/**")
             .cors(Customizer.withDefaults())
             .authorizeHttpRequests { requests ->
                 requests
-                    .requestMatchers(AntPathRequestMatcher("/actuator/**"))
+                    .requestMatchers("/actuator/**")
                     .permitAll()
-                    .requestMatchers(
-                        AntPathRequestMatcher("/users/auth/**"),
-                        AntPathRequestMatcher("/public/**"),
-                    )
+                    .requestMatchers("/users/auth/**", "/public/**")
                     .permitAll()
                     .anyRequest()
                     .authenticated()

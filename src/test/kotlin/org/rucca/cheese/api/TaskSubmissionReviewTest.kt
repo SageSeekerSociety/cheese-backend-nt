@@ -23,25 +23,32 @@ import org.rucca.cheese.utils.AttachmentCreatorService
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation::class)
+@AutoConfigureMockMvc
 class TaskSubmissionReviewTest
 @Autowired
 constructor(
-    private val webTestClient: WebTestClient,
     private val userCreatorService: UserCreatorService,
     private val attachmentCreatorService: AttachmentCreatorService,
 ) {
+    @Autowired private lateinit var mockMvc: MockMvc
+
     private val logger = LoggerFactory.getLogger(javaClass)
+    private lateinit var webTestClient: WebTestClient
+
     lateinit var creator: UserCreatorService.CreateUserResponse
     lateinit var creatorToken: String
     lateinit var participant: UserCreatorService.CreateUserResponse
@@ -107,10 +114,13 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(response?.data?.space, "Space data should not be null in response")
+        assertNotNull(response?.data?.space, message = "Space data should not be null in response")
         val createdSpace = response!!.data.space
-        assertNotNull(createdSpace.id, "Created space ID cannot be null")
-        assertNotNull(createdSpace.defaultCategoryId, "Default category ID cannot be null")
+        assertNotNull(createdSpace.id, message = "Created space ID cannot be null")
+        assertNotNull(
+            createdSpace.defaultCategoryId,
+            message = "Default category ID cannot be null",
+        )
 
         val createdSpaceId = createdSpace.id
         val createdDefaultCategoryId = createdSpace.defaultCategoryId
@@ -162,9 +172,9 @@ constructor(
                 .returnResult()
                 .responseBody
 
-        assertNotNull(response?.data?.task, "Task data should not be null")
+        assertNotNull(response?.data?.task, message = "Task data should not be null")
         val createdTaskId = response!!.data.task.id
-        assertNotNull(createdTaskId, "Created task ID should not be null")
+        assertNotNull(createdTaskId, message = "Created task ID should not be null")
         logger.info("Created task: $createdTaskId")
         return createdTaskId
     }
@@ -195,9 +205,9 @@ constructor(
                 .responseBody
 
         // Assuming the DTO has data.participant.id structure based on original JSON parsing
-        assertNotNull(response?.data?.participant, "Participant data should not be null")
+        assertNotNull(response?.data?.participant, message = "Participant data should not be null")
         val taskMembershipId = response!!.data.participant!!.id
-        assertNotNull(taskMembershipId, "Task Membership ID should not be null")
+        assertNotNull(taskMembershipId, message = "Task Membership ID should not be null")
         logger.info("Joined task, membership ID: $taskMembershipId")
         return taskMembershipId
     }
@@ -220,7 +230,10 @@ constructor(
                 GetTaskParticipant200ResponseDTO
             >() // Assuming PATCH returns the updated membership DTO
             .value { response ->
-                assertNotNull(response.data.taskMembership, "Task membership data missing")
+                assertNotNull(
+                    response.data.taskMembership,
+                    message = "Task membership data missing",
+                )
                 assertEquals(ApproveTypeDTO.APPROVED, response.data.taskMembership.approved)
             }
     }
@@ -254,9 +267,9 @@ constructor(
                 .responseBody
 
         // Assuming DTO structure data.submission.id based on original JSON parsing
-        assertNotNull(response?.data?.submission, "Submission data missing")
+        assertNotNull(response?.data?.submission, message = "Submission data missing")
         val createdSubmissionId = response!!.data.submission.id
-        assertNotNull(createdSubmissionId, "Submission ID should not be null")
+        assertNotNull(createdSubmissionId, message = "Submission ID should not be null")
         logger.info("Submitted task with submission: $createdSubmissionId")
         return createdSubmissionId
     }
@@ -276,13 +289,15 @@ constructor(
             .isOk
             .expectBody<PatchTask200ResponseDTO>() // Expect task response DTO
             .value { response ->
-                assertNotNull(response.data.task, "Task data missing")
+                assertNotNull(response.data.task, message = "Task data missing")
                 assertEquals(ApproveTypeDTO.APPROVED, response.data.task.approved)
             }
     }
 
     @BeforeAll
     fun prepare() {
+        webTestClient = MockMvcWebTestClient.bindTo(mockMvc).build()
+
         // Create users
         creator = userCreatorService.createUser()
         creatorToken = userCreatorService.login(creator.username, creator.password)
@@ -346,17 +361,20 @@ constructor(
         expectedScore: Int? = null,
         expectedComment: String? = null,
     ) {
-        assertNotNull(submission.review, "Review object should exist")
+        assertNotNull(submission.review, message = "Review object should exist")
         val review = submission.review!!
         assertEquals(expectedReviewed, review.reviewed, "Review 'reviewed' state mismatch")
         if (expectedReviewed) {
-            assertNotNull(review.detail, "Review detail should exist when reviewed=true")
+            assertNotNull(review.detail, message = "Review detail should exist when reviewed=true")
             val detail = review.detail!!
             assertEquals(expectedAccepted, detail.accepted, "Review 'accepted' state mismatch")
             assertEquals(expectedScore, detail.score, "Review 'score' mismatch")
             assertEquals(expectedComment, detail.comment, "Review 'comment' mismatch")
         } else {
-            assertNull(review.detail, "Review detail should not exist when reviewed=false")
+            assertNull(
+                review.detail,
+                message = "Review detail should not exist when reviewed=false",
+            )
         }
     }
 
@@ -380,7 +398,10 @@ constructor(
             .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.submissions)
+                assertNotNull(
+                    response.data.submissions,
+                    message = "response.data.submissions should not be null",
+                )
                 val submissions = response.data.submissions
                 assertEquals(1, submissions.size)
                 assertReviewState(submissions[0], expectedReviewed = false)
@@ -405,7 +426,10 @@ constructor(
             .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.submissions)
+                assertNotNull(
+                    response.data.submissions,
+                    message = "response.data.submissions should not be null",
+                )
                 assertTrue(
                     response.data.submissions.isEmpty(),
                     "Should find no reviewed submissions yet",
@@ -431,7 +455,10 @@ constructor(
             .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.submissions)
+                assertNotNull(
+                    response.data.submissions,
+                    message = "response.data.submissions should not be null",
+                )
                 val submissions = response.data.submissions
                 assertEquals(1, submissions.size)
                 assertReviewState(submissions[0], expectedReviewed = false)
@@ -460,7 +487,10 @@ constructor(
                 PostTaskSubmissionReview200ResponseDTO
             >() // Expect the specific DTO for review creation
             .value { response ->
-                assertNotNull(response.data.submission)
+                assertNotNull(
+                    response.data.submission,
+                    message = "response.data.submission should not be null",
+                )
                 assertReviewState(
                     response.data.submission,
                     expectedReviewed = true,
@@ -469,7 +499,8 @@ constructor(
                     expectedComment = "Good job!",
                 )
                 // Optionally assert hasUpgradedParticipantRank if it's in the DTO
-                // assertNotNull(response.data.hasUpgradedParticipantRank)
+                // assertNotNull(response.data.hasUpgradedParticipantRank, message =
+                // "response.data.hasUpgradedParticipantRank should not be null")
             }
     }
 
@@ -538,7 +569,10 @@ constructor(
             .isOk
             .expectBody<PostTaskSubmissionReview200ResponseDTO>() // Assuming PATCH returns this DTO
             .value { response ->
-                assertNotNull(response.data.submission)
+                assertNotNull(
+                    response.data.submission,
+                    message = "response.data.submission should not be null",
+                )
                 // Verify review state remains unchanged from test 10
                 assertReviewState(
                     response.data.submission,
@@ -574,7 +608,10 @@ constructor(
             .isOk
             .expectBody<PostTaskSubmissionReview200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.submission)
+                assertNotNull(
+                    response.data.submission,
+                    message = "response.data.submission should not be null",
+                )
                 // Verify review state is updated
                 assertReviewState(
                     response.data.submission,
@@ -631,7 +668,10 @@ constructor(
             .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.submissions)
+                assertNotNull(
+                    response.data.submissions,
+                    message = "response.data.submissions should not be null",
+                )
                 val submissions = response.data.submissions
                 assertEquals(1, submissions.size)
                 // Verify state matches the update from test 50
@@ -663,7 +703,10 @@ constructor(
             .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.submissions)
+                assertNotNull(
+                    response.data.submissions,
+                    message = "response.data.submissions should not be null",
+                )
                 val submissions = response.data.submissions
                 assertEquals(1, submissions.size)
                 // Verify state matches the update from test 50
@@ -695,7 +738,10 @@ constructor(
             .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.submissions)
+                assertNotNull(
+                    response.data.submissions,
+                    message = "response.data.submissions should not be null",
+                )
                 assertTrue(
                     response.data.submissions.isEmpty(),
                     "Should find no unreviewed submissions now",
@@ -755,7 +801,10 @@ constructor(
             .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.submissions)
+                assertNotNull(
+                    response.data.submissions,
+                    message = "response.data.submissions should not be null",
+                )
                 val submissions = response.data.submissions
                 assertEquals(1, submissions.size)
                 // Verify review state is back to not reviewed
@@ -827,7 +876,10 @@ constructor(
             .isOk
             .expectBody<PostTaskSubmissionReview200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.submission)
+                assertNotNull(
+                    response.data.submission,
+                    message = "response.data.submission should not be null",
+                )
                 assertReviewState(
                     response.data.submission,
                     expectedReviewed = true,
@@ -855,7 +907,10 @@ constructor(
             .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.submissions)
+                assertNotNull(
+                    response.data.submissions,
+                    message = "response.data.submissions should not be null",
+                )
                 val submissions = response.data.submissions
                 assertEquals(1, submissions.size)
                 assertReviewState(
@@ -886,7 +941,10 @@ constructor(
             .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.submissions)
+                assertNotNull(
+                    response.data.submissions,
+                    message = "response.data.submissions should not be null",
+                )
                 val submissions = response.data.submissions
                 assertEquals(1, submissions.size)
                 assertReviewState(
@@ -917,7 +975,10 @@ constructor(
             .isOk
             .expectBody<GetTaskSubmissions200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.submissions)
+                assertNotNull(
+                    response.data.submissions,
+                    message = "response.data.submissions should not be null",
+                )
                 assertTrue(
                     response.data.submissions.isEmpty(),
                     "Should be no unreviewed submissions",

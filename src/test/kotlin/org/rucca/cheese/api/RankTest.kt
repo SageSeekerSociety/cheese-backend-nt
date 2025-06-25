@@ -24,23 +24,26 @@ import org.rucca.cheese.model.GetSpaces200ResponseDTO
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation::class)
-class RankTest
-@Autowired
-constructor(
-    private val webTestClient: WebTestClient, // Inject WebTestClient
-    private val userCreatorService: UserCreatorService,
-) {
+@AutoConfigureMockMvc
+class RankTest @Autowired constructor(private val userCreatorService: UserCreatorService) {
+    @Autowired private lateinit var mockMvc: MockMvc
+
     private val logger = LoggerFactory.getLogger(javaClass)
+    private lateinit var webTestClient: WebTestClient
+
     lateinit var creator: UserCreatorService.CreateUserResponse
     lateinit var creatorToken: String
     lateinit var participant: UserCreatorService.CreateUserResponse
@@ -279,6 +282,8 @@ constructor(
 
     @BeforeAll
     fun prepare() {
+        webTestClient = MockMvcWebTestClient.bindTo(mockMvc).build()
+
         creator = userCreatorService.createUser()
         creatorToken = userCreatorService.login(creator.username, creator.password)
         participant = userCreatorService.createUser()

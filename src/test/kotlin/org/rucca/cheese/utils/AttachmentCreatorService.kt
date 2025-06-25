@@ -1,45 +1,47 @@
-/*
- *  Description: Responsible for creating attachments in the legacy system.
- *
- *  Author(s):
- *      Nictheboy Li    <nictheboy@outlook.com>
- *
- */
-
 package org.rucca.cheese.utils
 
-import jakarta.ws.rs.client.ClientBuilder
-import jakarta.ws.rs.client.Entity
-import jakarta.ws.rs.core.MediaType
+import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.File
-import org.glassfish.jersey.media.multipart.FormDataMultiPart
-import org.glassfish.jersey.media.multipart.file.FileDataBodyPart
-import org.json.JSONObject
 import org.rucca.cheese.common.config.ApplicationConfig
 import org.rucca.cheese.common.persistent.IdType
+import org.springframework.core.io.FileSystemResource
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.util.LinkedMultiValueMap
+import org.springframework.util.MultiValueMap
+import org.springframework.web.client.RestTemplate
 
 @Service
-class AttachmentCreatorService(private val applicationConfig: ApplicationConfig) {
+class AttachmentCreatorService(
+    private val applicationConfig: ApplicationConfig,
+    private val objectMapper: ObjectMapper,
+) {
+
+    private val restTemplate = RestTemplate()
+
     fun createAttachment(token: String): IdType {
         val file = File.createTempFile("attachment", ".txt")
         file.writeText("This is a test attachment")
         file.deleteOnExit()
-        val client =
-            ClientBuilder.newBuilder()
-                .register(org.glassfish.jersey.media.multipart.MultiPartFeature::class.java)
-                .build()
-        val target = client.target(applicationConfig.legacyUrl).path("/attachments")
-        val multiPart =
-            FormDataMultiPart()
-                .field("type", "file")
-                .bodyPart(FileDataBodyPart("file", file, MediaType.APPLICATION_OCTET_STREAM_TYPE))
+
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.MULTIPART_FORM_DATA
+        headers.set("Authorization", "Bearer $token")
+
+        val body: MultiValueMap<String, Any> = LinkedMultiValueMap()
+        body.add("type", "file")
+        body.add("file", FileSystemResource(file))
+
+        val requestEntity: HttpEntity<MultiValueMap<String, Any>> = HttpEntity(body, headers)
+
+        val url = "${applicationConfig.legacyUrl}/attachments"
         val response =
-            target
-                .request(MediaType.MULTIPART_FORM_DATA_TYPE)
-                .header("Authorization", "Bearer $token") // 替换为实际的 Bearer token
-                .post(Entity.entity(multiPart, multiPart.mediaType))
-        val json = JSONObject(response.readEntity(String::class.java))
-        return json.getJSONObject("data").getLong("id")
+            restTemplate.postForObject(url, requestEntity, String::class.java)
+                ?: throw IllegalStateException("Failed to get response from legacy system")
+
+        val jsonNode = objectMapper.readTree(response)
+        return jsonNode.path("data").path("id").asLong()
     }
 }

@@ -1,6 +1,5 @@
 package org.rucca.cheese.api
 
-// Removed: import org.json.JSONObject // Use ObjectMapper instead
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlin.math.floor
 import org.assertj.core.api.Assertions.assertThat
@@ -13,29 +12,32 @@ import org.rucca.cheese.model.*
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
-import org.springframework.web.reactive.function.BodyInserters
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation::class)
+@AutoConfigureMockMvc
 class DiscussionTest {
-    @Autowired private lateinit var webTestClient: WebTestClient
+    @Autowired private lateinit var mockMvc: MockMvc
+
+    private val logger = LoggerFactory.getLogger(javaClass)
+    private lateinit var webTestClient: WebTestClient
+
     @Autowired
     private lateinit var objectMapper: ObjectMapper // For serializing request bodies if needed
 
-    // Keep dependencies needed for data setup
     @Autowired private lateinit var userCreatorService: UserCreatorService
     @Autowired private lateinit var reactionTypeRepository: ReactionTypeRepository
-    // Removed @MockkBeans for services, jwt, permissionEvaluator
-
-    private val logger = LoggerFactory.getLogger(javaClass)
 
     // --- Shared state for tests ---
     private lateinit var creator: UserCreatorService.CreateUserResponse
@@ -72,7 +74,7 @@ class DiscussionTest {
                 .uri("/teams")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(teamPayload))
+                .bodyValue(teamPayload)
                 .exchange()
                 .expectStatus()
                 .isOk // Or isCreated if that's what your API returns
@@ -120,7 +122,7 @@ class DiscussionTest {
                 .uri("/projects")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(requestDTO)) // Pass the DTO directly
+                .bodyValue(requestDTO) // Pass the DTO directly
                 .exchange()
                 .expectStatus()
                 .isOk // Or isCreated
@@ -143,6 +145,8 @@ class DiscussionTest {
     // --- Test Setup (runs once for the class) ---
     @BeforeAll
     fun prepareTestData() {
+        webTestClient = MockMvcWebTestClient.bindTo(mockMvc).build()
+
         // Create user using the service (or API if you have one)
         creator = userCreatorService.createUser()
         // Login using the service (or API) to get a real token
@@ -272,7 +276,7 @@ class DiscussionTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer $creatorToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(requestDto)) // Send the DTO
+                .bodyValue(requestDto) // Send the DTO
                 .exchange()
                 .expectStatus()
                 .isOk // Or isCreated if applicable

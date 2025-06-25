@@ -18,12 +18,15 @@ import org.rucca.cheese.utils.TopicCreatorService
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
@@ -31,14 +34,18 @@ import org.springframework.test.web.reactive.server.expectBody
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation::class)
+@AutoConfigureMockMvc
 class SpaceTest
 @Autowired
 constructor(
-    private val webTestClient: WebTestClient, // Inject WebTestClient
     private val userCreatorService: UserCreatorService,
     private val topicCreatorService: TopicCreatorService,
 ) {
+    @Autowired private lateinit var mockMvc: MockMvc
+
     private val logger = LoggerFactory.getLogger(javaClass)
+    private lateinit var webTestClient: WebTestClient
+
     lateinit var creator: UserCreatorService.CreateUserResponse
     lateinit var creatorToken: String
     lateinit var admin: UserCreatorService.CreateUserResponse
@@ -84,6 +91,8 @@ constructor(
 
     @BeforeAll
     fun prepare() {
+        webTestClient = MockMvcWebTestClient.bindTo(mockMvc).build()
+
         creator = userCreatorService.createUser()
         creatorToken = userCreatorService.login(creator.username, creator.password)
         admin = userCreatorService.createUser()
@@ -115,7 +124,7 @@ constructor(
             .expectBody<GenericErrorResponse>() // Expect specific error DTO
             .value { errorResponse ->
                 assertEquals("NotFoundError", errorResponse.error.name)
-                assertNotNull(errorResponse.error.data)
+                assertNotNull(errorResponse.error.data, message = "Error data should not be null")
                 assertEquals("space", errorResponse.error.data!!.type)
                 // ID might be returned as String in error DTO, adjust as necessary
                 assertEquals("-1", errorResponse.error.data.id?.toString())
@@ -163,10 +172,10 @@ constructor(
                 .responseBody
 
         // --- Assertions on the Deserialized DTO ---
-        assertNotNull(responseDTO, "Response body should not be null")
-        assertNotNull(responseDTO!!.data, "Response data should not be null")
+        assertNotNull(responseDTO, message = "Response body should not be null")
+        assertNotNull(responseDTO!!.data, message = "Response data should not be null")
         val space = responseDTO.data.space
-        assertNotNull(space, "Space DTO within response data should not be null")
+        assertNotNull(space, message = "Space DTO within response data should not be null")
 
         assertEquals(spaceName, space.name)
         assertEquals(spaceIntro, space.intro)
@@ -179,9 +188,9 @@ constructor(
         assertEquals(spaceTaskTemplates, space.taskTemplates)
 
         // Verify admins list
-        assertNotNull(space.admins)
+        assertNotNull(space.admins, message = "Admins list should not be null")
         val ownerAdmin = space.admins.find { it.user.id == creator.userId }
-        assertNotNull(ownerAdmin, "Creator should be owner")
+        assertNotNull(ownerAdmin, message = "Creator should be owner")
         assertEquals(SpaceAdminRoleTypeDTO.OWNER, ownerAdmin!!.role) // Use the enum DTO
 
         // Verify classification topics
@@ -195,7 +204,7 @@ constructor(
         }
 
         val createdSpaceId = space.id
-        assertNotNull(createdSpaceId, "Created space ID should not be null")
+        assertNotNull(createdSpaceId, message = "Created space ID should not be null")
         logger.info("Created space: $createdSpaceId")
         return createdSpaceId // Return non-null ID
     }
@@ -282,21 +291,23 @@ constructor(
             .isOk
             .expectBody<GetSpace200ResponseDTO>() // Expect the GET response DTO
             .value { response ->
-                assertNotNull(response.data)
+                assertNotNull(response.data?.space, message = "Space data should not be null")
                 val space = response.data.space
-                assertNotNull(space)
                 assertEquals(spaceId, space.id)
                 // Use the current value of spaceName which might have been updated in createSpace
                 assertEquals(spaceName, space.name)
                 assertEquals(spaceIntro, space.intro)
                 assertEquals(spaceAvatarId, space.avatarId)
 
-                assertNotNull(space.admins)
+                assertNotNull(space.admins, message = "Admins list should not be null")
                 val ownerAdmin = space.admins.find { it.user.id == creator.userId }
-                assertNotNull(ownerAdmin)
+                assertNotNull(ownerAdmin, message = "Creator should be owner")
                 assertEquals(SpaceAdminRoleTypeDTO.OWNER, ownerAdmin!!.role)
 
-                assertNotNull(space.classificationTopics)
+                assertNotNull(
+                    space.classificationTopics,
+                    message = "Classification topics should not be null",
+                )
                 assertEquals(2, space.classificationTopics.size)
                 val topicIds = space.classificationTopics.map { it.id }.toSet()
                 assertTrue(topicIds.contains(topics[0]))
@@ -330,7 +341,7 @@ constructor(
             .expectBody<GenericErrorResponse>()
             .value { errorResponse ->
                 assertEquals("NameAlreadyExistsError", errorResponse.error.name)
-                assertNotNull(errorResponse.error.data)
+                assertNotNull(errorResponse.error.data, message = "Error data should not be null")
                 assertEquals("space", errorResponse.error.data!!.type)
                 assertEquals(spaceName, errorResponse.error.data.name)
             }
@@ -353,17 +364,16 @@ constructor(
             .isOk
             .expectBody<PatchSpace200ResponseDTO>() // Expect patch response DTO
             .value { response ->
-                assertNotNull(response.data)
+                assertNotNull(response.data?.space, message = "Space data should not be null")
                 val space = response.data.space
-                assertNotNull(space)
                 // Verify fields remain unchanged (using current test state values)
                 assertEquals(spaceId, space.id)
                 assertEquals(spaceName, space.name)
                 assertEquals(spaceIntro, space.intro)
                 assertEquals(spaceAvatarId, space.avatarId)
-                assertNotNull(space.admins)
+                assertNotNull(space.admins, message = "Admins list should not be null")
                 val ownerAdmin = space.admins.find { it.user.id == creator.userId }
-                assertNotNull(ownerAdmin)
+                assertNotNull(ownerAdmin, message = "Creator should be owner")
                 assertEquals(SpaceAdminRoleTypeDTO.OWNER, ownerAdmin!!.role)
                 // Note: enableRank was false before, check if it stays false (or true if changed in
                 // test 60)
@@ -408,9 +418,8 @@ constructor(
             .isOk
             .expectBody<PatchSpace200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data)
+                assertNotNull(response.data.space, message = "Space data should not be null")
                 val space = response.data.space
-                assertNotNull(space)
 
                 assertEquals(spaceId, space.id)
                 assertEquals(updatedSpaceName, space.name)
@@ -421,13 +430,16 @@ constructor(
                 assertEquals(updatedSpaceAnnouncements, space.announcements)
                 assertEquals(updatedSpaceTaskTemplates, space.taskTemplates)
 
-                assertNotNull(space.admins)
+                assertNotNull(space.admins, message = "Admins list should not be null")
                 val ownerAdmin = space.admins.find { it.user.id == creator.userId }
-                assertNotNull(ownerAdmin)
+                assertNotNull(ownerAdmin, message = "Creator should be owner")
                 // Owner role should persist unless explicitly changed
                 assertEquals(SpaceAdminRoleTypeDTO.OWNER, ownerAdmin!!.role)
 
-                assertNotNull(space.classificationTopics)
+                assertNotNull(
+                    space.classificationTopics,
+                    message = "Classification topics should not be null",
+                )
                 assertEquals(updatedTopics.size, space.classificationTopics.size)
                 val returnedTopicIds = space.classificationTopics.map { it.id }.toSet()
                 updatedTopics.forEach { topicId ->
@@ -469,7 +481,7 @@ constructor(
                 ?.data
                 ?.space
 
-        assertNotNull(initialSpace?.defaultCategoryId, "Default category ID should exist")
+        assertNotNull(initialSpace?.defaultCategoryId, message = "Default category ID should exist")
         defaultCategoryId = initialSpace!!.defaultCategoryId
 
         // 2. Create first new category
@@ -499,11 +511,11 @@ constructor(
                 ?.data
                 ?.category
 
-        assertNotNull(createdCategory1, "Created category 1 should not be null")
+        assertNotNull(createdCategory1, message = "Created category 1 should not be null")
         assertEquals(category1Name, createdCategory1!!.name)
         assertEquals(category1Desc, createdCategory1.description)
         assertEquals(category1Order, createdCategory1.displayOrder)
-        assertNotNull(createdCategory1.id)
+        assertNotNull(createdCategory1.id, message = "Created category 1 ID should not be null")
         categoryIds.add(createdCategory1.id)
 
         // 3. Create second new category
@@ -533,10 +545,10 @@ constructor(
                 ?.data
                 ?.category
 
-        assertNotNull(createdCategory2, "Created category 2 should not be null")
-        assertEquals(category2Name, createdCategory2!!.name)
-        // ... assert other fields if needed ...
-        assertNotNull(createdCategory2.id)
+        assertNotNull(createdCategory2, message = "Created category 2 should not be null")
+        assertEquals(category2Name, createdCategory2.name)
+        assertEquals(category2Desc, createdCategory2.description)
+        assertNotNull(createdCategory2.id, message = "Created category 2 ID should not be null")
         categoryIds.add(createdCategory2.id)
     }
 
@@ -552,10 +564,11 @@ constructor(
             .isOk
             .expectBody<ListSpaceCategories200ResponseDTO>() // Expect the list DTO
             .value { response ->
-                assertNotNull(response.data)
+                assertNotNull(
+                    response.data?.categories,
+                    message = "Categories data should not be null",
+                )
                 val categories = response.data!!.categories
-                assertNotNull(categories)
-                // Expecting the original default + the two created ones
                 assertEquals(3, categories.size, "Should be 3 categories (default + 2 created)")
 
                 val categoryMap = categories.associateBy { it.id }
@@ -601,12 +614,13 @@ constructor(
             .exchange()
             .expectStatus()
             .isOk
-            // Controller returns CreateSpaceCategory201ResponseDTO on update, adjust if different
             .expectBody<CreateSpaceCategory201ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data)
+                assertNotNull(
+                    response.data?.category,
+                    message = "Updated category data should not be null",
+                )
                 val category = response.data!!.category
-                assertNotNull(category)
                 assertEquals(categoryToUpdateId, category.id)
                 assertEquals(updatedName, category.name)
                 assertEquals(updatedDesc, category.description)
@@ -632,7 +646,7 @@ constructor(
             .isOk
             .expectBody<PatchSpace200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.space)
+                assertNotNull(response.data.space, message = "Space data should not be null")
                 assertEquals(newDefaultCategoryId, response.data.space.defaultCategoryId)
             }
 
@@ -646,7 +660,7 @@ constructor(
             .isOk
             .expectBody<GetSpace200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.space)
+                assertNotNull(response.data.space, message = "Space data should not be null")
                 assertEquals(newDefaultCategoryId, response.data.space.defaultCategoryId)
             }
     }
@@ -668,11 +682,14 @@ constructor(
             // Assuming it returns CreateSpaceCategory201ResponseDTO or similar
             .expectBody<CreateSpaceCategory201ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.category)
+                assertNotNull(
+                    response.data?.category,
+                    message = "Archived category data should not be null",
+                )
                 assertEquals(categoryToArchiveId, response.data!!.category.id)
                 assertNotNull(
                     response.data!!.category.archivedAt,
-                    "archivedAt should not be null after archiving",
+                    message = "archivedAt should not be null after archiving",
                 )
             }
 
@@ -686,7 +703,10 @@ constructor(
             .isOk
             .expectBody<ListSpaceCategories200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.categories)
+                assertNotNull(
+                    response.data?.categories,
+                    message = "Categories data should not be null",
+                )
                 val categories = response.data!!.categories
                 assertEquals(
                     2,
@@ -695,7 +715,7 @@ constructor(
                 )
                 assertNull(
                     categories.find { it.id == categoryToArchiveId },
-                    "Archived category should not be present",
+                    message = "Archived category should not be present",
                 )
             }
 
@@ -714,7 +734,10 @@ constructor(
             .isOk
             .expectBody<ListSpaceCategories200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.categories)
+                assertNotNull(
+                    response.data?.categories,
+                    message = "Categories data should not be null",
+                )
                 val categories = response.data!!.categories
                 assertEquals(
                     3,
@@ -723,7 +746,7 @@ constructor(
                 )
                 assertNotNull(
                     categories.find { it.id == categoryToArchiveId },
-                    "Archived category should be present",
+                    message = "Archived category should be present",
                 )
             }
 
@@ -739,11 +762,14 @@ constructor(
             // Assuming it returns CreateSpaceCategory201ResponseDTO or similar
             .expectBody<CreateSpaceCategory201ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.category)
+                assertNotNull(
+                    response.data?.category,
+                    message = "Unarchived category data should not be null",
+                )
                 assertEquals(categoryToArchiveId, response.data!!.category.id)
                 assertNull(
                     response.data!!.category.archivedAt,
-                    "archivedAt should be null after unarchiving",
+                    message = "archivedAt should be null after unarchiving",
                 )
             }
 
@@ -757,12 +783,15 @@ constructor(
             .isOk
             .expectBody<ListSpaceCategories200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.categories)
+                assertNotNull(
+                    response.data?.categories,
+                    message = "Categories data should not be null",
+                )
                 val categories = response.data!!.categories
                 assertEquals(3, categories.size, "All 3 categories should be listed again")
                 assertNotNull(
                     categories.find { it.id == categoryToArchiveId },
-                    "Unarchived category should be present",
+                    message = "Unarchived category should be present",
                 )
             }
     }
@@ -822,21 +851,24 @@ constructor(
             .isOk
             .expectBody<ListSpaceCategories200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.categories)
+                assertNotNull(
+                    response.data?.categories,
+                    message = "Categories data should not be null",
+                )
                 val categories = response.data!!.categories
                 // Original default and the unarchived one (categoryIds[1]) should remain
                 assertEquals(2, categories.size, "Should be 2 categories remaining")
                 assertNull(
                     categories.find { it.id == categoryToDeleteId },
-                    "Deleted category should not be present",
+                    message = "Deleted category should not be present",
                 )
                 assertNotNull(
                     categories.find { it.id == defaultCategoryId },
-                    "Original default category should be present",
+                    message = "Original default category should be present",
                 )
                 assertNotNull(
                     categories.find { it.id == categoryIds[1] },
-                    "Other category should be present",
+                    message = "Other category should be present",
                 )
             }
     }
@@ -858,7 +890,7 @@ constructor(
             .expectBody<GenericErrorResponse>()
             .value { errorResponse ->
                 assertEquals("PermissionDeniedError", errorResponse.error.name)
-                assertNotNull(errorResponse.error.data)
+                assertNotNull(errorResponse.error.data, message = "Error data should not be null")
                 assertEquals("modify", errorResponse.error.data!!.action)
                 assertEquals("space", errorResponse.error.data.resourceType)
                 assertEquals(spaceId, errorResponse.error.data.resourceId)
@@ -877,13 +909,12 @@ constructor(
             .isOk
             .expectBody<GetSpaces200ResponseDTO>() // Expect the list response DTO
             .value { response ->
-                assertNotNull(response.data)
-                val spaces = response.data!!.spaces
-                val page = response.data!!.page
-                assertNotNull(spaces)
-                assertNotNull(page)
+                assertNotNull(response.data?.spaces, message = "Spaces data should not be null")
+                assertNotNull(response.data?.page, message = "Page data should not be null")
+                val spaces = response.data!!.spaces!!
+                val page = response.data!!.page!!
 
-                assertEquals(5, spaces!!.size)
+                assertEquals(5, spaces.size)
                 // Default sort is likely by creation date descending in many systems
                 // Verify based on IDs created in test 20
                 assertEquals(spaceIdOfLast, spaces[0].id)
@@ -897,12 +928,12 @@ constructor(
 
                 assertEquals(
                     spaceIdOfLast,
-                    page!!.pageStart,
+                    page.pageStart,
                     "pageStart should be the ID of the first item in the list",
                 )
                 assertEquals(5, page.pageSize)
                 assertTrue(page.hasMore, "hasMore should be true as more spaces exist")
-                assertNotNull(page.nextStart, "nextStart should not be null")
+                assertNotNull(page.nextStart, message = "nextStart should not be null")
                 // nextStart should be the ID of the *last* item in the current page if using cursor
                 // pagination based on ID
                 // assertEquals(spaceId, page.nextStart) // Verify this based on your pagination
@@ -929,11 +960,10 @@ constructor(
             .isOk
             .expectBody<GetSpaces200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data)
+                assertNotNull(response.data?.spaces, message = "Spaces data should not be null")
+                assertNotNull(response.data?.page, message = "Page data should not be null")
                 val spaces = response.data!!.spaces
                 val page = response.data!!.page
-                assertNotNull(spaces)
-                assertNotNull(page)
 
                 assertEquals(4, spaces!!.size)
                 // Space 'spaceId' was updated most recently in test 60
@@ -955,7 +985,7 @@ constructor(
                 )
                 assertEquals(4, page.pageSize)
                 assertTrue(page.hasMore)
-                assertNotNull(page.nextStart)
+                assertNotNull(page.nextStart, message = "nextStart should not be null")
                 // nextStart should be the ID of the last item in this page
                 assertEquals(spaceIdOfSecond, page.nextStart)
             }
@@ -984,29 +1014,18 @@ constructor(
             .isOk
             .expectBody<GetSpaces200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data)
+                assertNotNull(response.data?.spaces, message = "Spaces data should not be null")
+                assertNotNull(response.data?.page, message = "Page data should not be null")
                 val spaces = response.data!!.spaces
                 val page = response.data!!.page
-                assertNotNull(spaces)
-                assertNotNull(page)
 
                 assertEquals(1, spaces!!.size)
-                // Following the order from test 76, after spaceIdOfLast comes spaceIdOfBeforeLast
-                // Note: This depends heavily on how pageStart works (cursor vs offset)
-                // Assuming cursor based on ID: We start *after* spaceIdOfLast. The next most
-                // recently updated is spaceIdOfBeforeLast
-                // Let's re-evaluate the previous test's order: Updated(spaceId), Created(Last),
-                // Created(BeforeLast), Created(Second), ...
-                // If starting *at* pageStart=spaceIdOfLast, the first item IS spaceIdOfLast.
-
-                // Let's assume pageStart means "start with the item identified by this ID"
-                //                assertEquals(spaceIdOfLast, spaces[0].id)
                 assertEquals("$originalSpaceName 04", spaces[0].name)
 
                 assertEquals(spaceIdOfLast, page!!.pageStart)
                 assertEquals(1, page.pageSize)
                 assertTrue(page.hasMore)
-                assertNotNull(page.nextStart)
+                assertNotNull(page.nextStart, message = "nextStart should not be null")
                 // The next one after spaceIdOfLast in the updatedAt desc order is
                 // spaceIdOfBeforeLast
                 assertEquals(spaceIdOfBeforeLast, page.nextStart)
@@ -1034,7 +1053,10 @@ constructor(
             .isOk
             .expectBody<PatchSpace200ResponseDTO>() // Endpoint likely returns updated space
             .value { response ->
-                assertNotNull(response.data.space.admins)
+                assertNotNull(
+                    response.data.space.admins,
+                    message = "Admins list should not be null",
+                )
                 val admins = response.data.space.admins
                 assertTrue(
                     admins.any {
@@ -1071,7 +1093,10 @@ constructor(
             .isOk
             .expectBody<PatchSpace200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.space.admins)
+                assertNotNull(
+                    response.data.space.admins,
+                    message = "Admins list should not be null",
+                )
                 val admins = response.data.space.admins
                 // Verify new owner exists with OWNER role
                 assertTrue(
@@ -1118,7 +1143,7 @@ constructor(
             .expectBody<GenericErrorResponse>()
             .value { errorResponse ->
                 assertEquals("PermissionDeniedError", errorResponse.error.name)
-                assertNotNull(errorResponse.error.data)
+                assertNotNull(errorResponse.error.data, message = "Error data should not be null")
                 assertEquals(
                     "add-admin",
                     errorResponse.error.data!!.action,
@@ -1148,7 +1173,10 @@ constructor(
             .isOk
             .expectBody<PatchSpace200ResponseDTO>() // Endpoint likely returns updated space
             .value { response ->
-                assertNotNull(response.data.space.admins)
+                assertNotNull(
+                    response.data.space.admins,
+                    message = "Admins list should not be null",
+                )
                 val admins = response.data.space.admins
                 // Verify target user is now OWNER
                 assertTrue(
@@ -1199,23 +1227,26 @@ constructor(
             .isOk
             .expectBody<GetSpace200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data.space.admins)
+                assertNotNull(
+                    response.data.space.admins,
+                    message = "Admins list should not be null",
+                )
                 val admins = response.data.space.admins
                 assertNull(
                     admins.find { it.user.id == newOwner.userId },
-                    "Removed admin should not be present",
+                    message = "Removed admin should not be present",
                 )
                 assertNotNull(
                     admins.find {
                         it.user.id == creator.userId && it.role == SpaceAdminRoleTypeDTO.OWNER
                     },
-                    "Owner should still be present",
+                    message = "Owner should still be present",
                 )
                 assertNotNull(
                     admins.find {
                         it.user.id == admin.userId && it.role == SpaceAdminRoleTypeDTO.ADMIN
                     },
-                    "Other admin should still be present",
+                    message = "Other admin should still be present",
                 )
             }
     }

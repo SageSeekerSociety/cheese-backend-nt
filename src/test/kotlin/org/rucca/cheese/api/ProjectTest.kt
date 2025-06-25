@@ -19,25 +19,26 @@ import org.rucca.cheese.model.CreateProjectRequestDTO // Assuming this DTO is st
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient // Import WebTestClient
 import org.springframework.test.web.reactive.server.expectBody // For expectBody extensions
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation::class)
-class ProjectTest
-@Autowired
-constructor(
-    private val webTestClient: WebTestClient, // Inject WebTestClient
-    private val userCreatorService: UserCreatorService,
-    // private val objectMapper: ObjectMapper // Usually not needed directly with WebTestClient
-) {
+@AutoConfigureMockMvc
+class ProjectTest @Autowired constructor(private val userCreatorService: UserCreatorService) {
+    @Autowired private lateinit var mockMvc: MockMvc
 
     private val logger = LoggerFactory.getLogger(javaClass)
+    private lateinit var webTestClient: WebTestClient
+
     lateinit var user: UserCreatorService.CreateUserResponse
     lateinit var userToken: String
     var teamId: IdType = -1
@@ -86,6 +87,8 @@ constructor(
 
     @BeforeAll
     fun prepare() {
+        webTestClient = MockMvcWebTestClient.bindTo(mockMvc).build()
+
         user = userCreatorService.createUser()
         userToken = userCreatorService.login(user.username, user.password)
         teamId =

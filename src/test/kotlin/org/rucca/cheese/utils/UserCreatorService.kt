@@ -1,23 +1,20 @@
-/*
- *  Description: Responsible for creating users in the legacy system and logging in.
- *
- *  Author(s):
- *      Nictheboy Li    <nictheboy@outlook.com>
- *
- */
-
 package org.rucca.cheese.utils
 
 import at.favre.lib.crypto.bcrypt.BCrypt
-import jakarta.ws.rs.client.ClientBuilder
-import jakarta.ws.rs.client.Entity
-import jakarta.ws.rs.core.MediaType
+import com.fasterxml.jackson.databind.ObjectMapper
 import kotlin.math.floor
-import org.json.JSONObject
 import org.rucca.cheese.common.config.ApplicationConfig
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.user.*
+import org.rucca.cheese.user.AvatarRepository
+import org.rucca.cheese.user.User
+import org.rucca.cheese.user.UserProfile
+import org.rucca.cheese.user.UserProfileRepository
+import org.rucca.cheese.user.UserRepository
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.web.client.RestTemplate
 
 @Service
 class UserCreatorService(
@@ -25,7 +22,10 @@ class UserCreatorService(
     private val userRepository: UserRepository,
     private val avatarRepository: AvatarRepository,
     private val userProfileRepository: UserProfileRepository,
+    private val objectMapper: ObjectMapper, // 注入 ObjectMapper
 ) {
+    private val restTemplate = RestTemplate()
+
     class CreateUserResponse(
         val userId: IdType,
         val username: String,
@@ -69,24 +69,33 @@ class UserCreatorService(
 
     /** @return JWT token */
     fun login(username: String, password: String): String {
-        val client = ClientBuilder.newClient()
-        val target = client.target(applicationConfig.legacyUrl).path("/users/auth/login")
-        val request =
-            """
-            {
-                "username": "$username",
-                "password": "$password"
-            }
-        """
-        val response = target.request().post(Entity.entity(request, MediaType.APPLICATION_JSON))
-        val result = JSONObject(response.readEntity(String::class.java))
+        val url = "${applicationConfig.legacyUrl}/users/auth/login"
+
+        // 设置请求头
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.APPLICATION_JSON
+
+        // 构造请求体 Map
+        val requestBody: Map<String, String> = mapOf("username" to username, "password" to password)
+
+        // 组装成 HttpEntity
+        val requestEntity = HttpEntity(requestBody, headers)
+
+        // 发送 POST 请求并获取响应
+        val response =
+            restTemplate.postForObject(url, requestEntity, String::class.java)
+                ?: throw RuntimeException("Failed to login: No response from server")
+
+        // 使用 ObjectMapper 解析响应
         try {
-            return result.getJSONObject("data").getString("accessToken")
+            val jsonNode = objectMapper.readTree(response)
+            return jsonNode.path("data").path("accessToken").asText()
         } catch (e: Exception) {
-            throw RuntimeException("Failed to login: $result")
+            throw RuntimeException("Failed to parse login response: $response", e)
         }
     }
 
+    // ... test* 方法保持不变 ...
     fun testUsername(): String {
         return "NTTestUsername-${floor(Math.random() * 10000000000).toLong()}"
     }

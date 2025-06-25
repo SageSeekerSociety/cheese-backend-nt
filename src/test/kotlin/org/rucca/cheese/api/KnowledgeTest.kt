@@ -22,22 +22,24 @@ import org.rucca.cheese.user.UserRepository
 import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
-import org.springframework.web.reactive.function.BodyInserters
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
 @TestMethodOrder(OrderAnnotation::class)
 @TestInstance(Lifecycle.PER_CLASS)
+@AutoConfigureMockMvc
 class KnowledgeTest
 @Autowired
 constructor(
-    private val webTestClient: WebTestClient,
     private val userCreatorService: UserCreatorService,
     private val teamRepository: TeamRepository,
     private val teamUserRelationRepository: TeamUserRelationRepository,
@@ -48,9 +50,11 @@ constructor(
         const val DEFAULT_AVATAR_ID = 1
     }
 
-    private val logger = LoggerFactory.getLogger(javaClass)
+    @Autowired private lateinit var mockMvc: MockMvc
 
-    // --- Shared state remains the same ---
+    private val logger = LoggerFactory.getLogger(javaClass)
+    private lateinit var webTestClient: WebTestClient
+
     private lateinit var creatorToken: String
     private var knowledgeId: IdType = -1L // Use Long suffix
     private var teamId: IdType = -1L
@@ -61,7 +65,8 @@ constructor(
 
     @BeforeAll
     fun setup() {
-        logger.info("Starting KnowledgeIntegrationTest setup...")
+        webTestClient = MockMvcWebTestClient.bindTo(mockMvc).build()
+
         // Create user
         val creator = userCreatorService.createUser()
         userId = creator.userId
@@ -127,7 +132,7 @@ constructor(
                 .header(HttpHeaders.AUTHORIZATION, "Bearer $creatorToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(requestBody)) // Send the map
+                .bodyValue(requestBody) // Send the map
                 .exchange()
                 .expectStatus()
                 .isOk // Check status first
@@ -253,7 +258,7 @@ constructor(
             .header(HttpHeaders.AUTHORIZATION, "Bearer $creatorToken")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
-            .body(BodyInserters.fromValue(updateRequest))
+            .bodyValue(updateRequest)
             .exchange()
             .expectStatus()
             .isOk
