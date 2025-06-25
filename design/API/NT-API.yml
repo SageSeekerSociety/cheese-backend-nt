@@ -5518,7 +5518,7 @@ components:
     DiscussableModelType:
       type: string
       description: 可被讨论的模型类型
-      enum: [ PROJECT ]
+      enum: [ PROJECT, SPACE ]
     Discussion:
       type: object
       required:
