@@ -25,6 +25,7 @@ spring:
     hibernate:
       # Validate the schema against the database on startup
       ddl-auto: validate
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: true
     validate-on-migrate: true

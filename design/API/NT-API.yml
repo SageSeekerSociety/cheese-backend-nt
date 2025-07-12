@@ -882,6 +882,87 @@ paths:
                 userId:
                   type: integer
                   format: int64
+  /spaces/{spaceId}/analytics/activity:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      summary: Get Space Activity Statistics
+      operationId: getSpaceActivityStatistics
+      tags: [ Spaces ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      responses:
+        "200":
+          description: Activity statistics for the specific space
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/SpaceActivityStatistics"
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+  /spaces/{spaceId}/analytics/participation:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      summary: Get Participation Analysis
+      operationId: getParticipationAnalysis
+      tags: [ Spaces ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      responses:
+        "200":
+          description: Participation analysis for the specific space
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/ParticipationAnalysis"
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+  /spaces/{spaceId}/analytics/completion:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      summary: Get Submission and Completion Analysis
+      operationId: getSubmissionCompletionAnalysis
+      tags: [ Spaces ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      responses:
+        "200":
+          description: Submission and completion analysis for the specific space
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/SubmissionCompletionAnalysis"
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
   /tasks/{taskId}:
     parameters:
       - $ref: '#/components/parameters/TaskId'
@@ -5740,6 +5821,148 @@ components:
           type: string
         remark:
           type: string
+    SpaceActivityStatistics:
+      type: object
+      description: Activity statistics for a specific space
+      properties:
+        totalTaskCount:
+          type: integer
+          description: Total number of tasks in the space
+        activeTaskCount:
+          type: integer
+          description: Number of tasks with ongoing participation
+        totalParticipantCount:
+          type: integer
+          description: Total number of participants (approved) in all tasks
+        taskCompletionDistribution:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Distribution of tasks by completion status
+        categoryTaskDistribution:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Number of tasks per category
+      required:
+        - totalTaskCount
+        - activeTaskCount
+        - totalParticipantCount
+        - taskCompletionDistribution
+        - categoryTaskDistribution
+    ParticipationAnalysis:
+      type: object
+      description: Participation analysis for a specific space
+      properties:
+        totalParticipants:
+          type: integer
+          description: Total number of participants in the space
+        approvedParticipants:
+          type: integer
+          description: Number of approved participants
+        participationRate:
+          type: number
+          format: double
+          description: Approval rate as percentage
+        teamVsUserParticipation:
+          type: object
+          properties:
+            teamParticipants:
+              type: integer
+              description: Number of team participants
+            userParticipants:
+              type: integer
+              description: Number of individual participants
+            teamRatio:
+              type: number
+              format: double
+              description: Percentage of team participation
+          required:
+            - teamParticipants
+            - userParticipants
+            - teamRatio
+        userActivityRanking:
+          type: array
+          items:
+            type: object
+            properties:
+              userId:
+                type: integer
+                format: int64
+              userName:
+                type: string
+              participatedTaskCount:
+                type: integer
+              successfulTaskCount:
+                type: integer
+            required:
+              - userId
+              - userName
+              - participatedTaskCount
+              - successfulTaskCount
+          description: Top active users in the space
+      required:
+        - totalParticipants
+        - approvedParticipants
+        - participationRate
+        - teamVsUserParticipation
+        - userActivityRanking
+    SubmissionCompletionAnalysis:
+      type: object
+      description: Submission and completion analysis for a specific space
+      properties:
+        overallCompletionRate:
+          type: number
+          format: double
+          description: Overall task completion rate in the space
+        taskCompletionRates:
+          type: array
+          items:
+            type: object
+            properties:
+              taskId:
+                type: integer
+                format: int64
+              taskName:
+                type: string
+              completionRate:
+                type: number
+                format: double
+              totalParticipants:
+                type: integer
+              successfulParticipants:
+                type: integer
+            required:
+              - taskId
+              - taskName
+              - completionRate
+              - totalParticipants
+              - successfulParticipants
+          description: Completion rates for individual tasks
+        submissionStatusDistribution:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Distribution of submissions by status
+        submissionTrendAnalysis:
+          type: object
+          properties:
+            averageSubmissionTime:
+              type: number
+              format: double
+              description: Average time from participation to first submission (in days)
+            resubmissionRate:
+              type: number
+              format: double
+              description: Percentage of submissions that were resubmitted
+          required:
+            - averageSubmissionTime
+            - resubmissionRate
+      required:
+        - overallCompletionRate
+        - taskCompletionRates
+        - submissionStatusDistribution
+        - submissionTrendAnalysis
   parameters:
     UserId:
       name: userId

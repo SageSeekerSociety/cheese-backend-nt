@@ -1277,4 +1277,315 @@ constructor(
             .expectStatus()
             .isNotFound // Should now be Not Found
     }
+
+    @Test
+    @Order(135)
+    fun `test space analytics activity statistics`() {
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceIdOfSecond/analytics/activity")
+            .header("Authorization", "Bearer $creatorToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<GetSpaceActivityStatistics200ResponseDTO>()
+            .value { response ->
+                assertTrue(
+                    response.data != null,
+                    "Activity statistics response data should not be null",
+                )
+                val stats = response.data!!
+                assertTrue(stats.totalTaskCount != null, "Total task count should not be null")
+                assertTrue(stats.activeTaskCount != null, "Active task count should not be null")
+                assertTrue(
+                    stats.totalParticipantCount != null,
+                    "Total participant count should not be null",
+                )
+                assertTrue(
+                    stats.taskCompletionDistribution != null,
+                    "Task completion distribution should not be null",
+                )
+                assertTrue(
+                    stats.categoryTaskDistribution != null,
+                    "Category task distribution should not be null",
+                )
+
+                // Verify numeric values are non-negative
+                assertTrue(stats.totalTaskCount!! >= 0, "Total task count should be non-negative")
+                assertTrue(stats.activeTaskCount!! >= 0, "Active task count should be non-negative")
+                assertTrue(
+                    stats.totalParticipantCount!! >= 0,
+                    "Total participant count should be non-negative",
+                )
+                assertTrue(
+                    stats.activeTaskCount!! <= stats.totalTaskCount!!,
+                    "Active tasks should not exceed total tasks",
+                )
+            }
+    }
+
+    @Test
+    @Order(136)
+    fun `test space analytics participation analysis`() {
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceIdOfSecond/analytics/participation")
+            .header("Authorization", "Bearer $creatorToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<GetParticipationAnalysis200ResponseDTO>()
+            .value { response ->
+                assertTrue(
+                    response.data != null,
+                    "Participation analysis response data should not be null",
+                )
+                val analysis = response.data!!
+                assertTrue(
+                    analysis.totalParticipants != null,
+                    "Total participants should not be null",
+                )
+                assertTrue(
+                    analysis.approvedParticipants != null,
+                    "Approved participants should not be null",
+                )
+                assertTrue(
+                    analysis.participationRate != null,
+                    "Participation rate should not be null",
+                )
+                assertTrue(
+                    analysis.teamVsUserParticipation != null,
+                    "Team vs user participation should not be null",
+                )
+                assertTrue(
+                    analysis.userActivityRanking != null,
+                    "User activity ranking should not be null",
+                )
+
+                // Verify numeric values are non-negative
+                assertTrue(
+                    analysis.totalParticipants!! >= 0,
+                    "Total participants should be non-negative",
+                )
+                assertTrue(
+                    analysis.approvedParticipants!! >= 0,
+                    "Approved participants should be non-negative",
+                )
+                assertTrue(
+                    analysis.participationRate!! >= 0.0,
+                    "Participation rate should be non-negative",
+                )
+                assertTrue(
+                    analysis.participationRate!! <= 100.0,
+                    "Participation rate should not exceed 100%",
+                )
+                assertTrue(
+                    analysis.approvedParticipants!! <= analysis.totalParticipants!!,
+                    "Approved participants should not exceed total",
+                )
+
+                // Verify team vs user participation structure
+                val teamVsUser = analysis.teamVsUserParticipation!!
+                assertTrue(
+                    teamVsUser.teamParticipants != null,
+                    "Team participants should not be null",
+                )
+                assertTrue(
+                    teamVsUser.userParticipants != null,
+                    "User participants should not be null",
+                )
+                assertTrue(teamVsUser.teamRatio != null, "Team ratio should not be null")
+                assertTrue(
+                    teamVsUser.teamParticipants!! >= 0,
+                    "Team participants should be non-negative",
+                )
+                assertTrue(
+                    teamVsUser.userParticipants!! >= 0,
+                    "User participants should be non-negative",
+                )
+                assertTrue(teamVsUser.teamRatio!! >= 0.0, "Team ratio should be non-negative")
+                assertTrue(teamVsUser.teamRatio!! <= 100.0, "Team ratio should not exceed 100%")
+
+                // Verify user activity ranking is a list and contains expected fields
+                assertTrue(
+                    analysis.userActivityRanking!!.size <= 10,
+                    "User activity ranking should contain at most 10 users",
+                )
+                analysis.userActivityRanking!!.forEach { user ->
+                    assertTrue(user.userId != null, "User ID should not be null")
+                    assertTrue(user.userName != null, "User name should not be null")
+                    assertTrue(
+                        user.participatedTaskCount != null,
+                        "Participated task count should not be null",
+                    )
+                    assertTrue(
+                        user.successfulTaskCount != null,
+                        "Successful task count should not be null",
+                    )
+                    assertTrue(
+                        user.participatedTaskCount!! >= 0,
+                        "Participated task count should be non-negative",
+                    )
+                    assertTrue(
+                        user.successfulTaskCount!! >= 0,
+                        "Successful task count should be non-negative",
+                    )
+                    assertTrue(
+                        user.successfulTaskCount!! <= user.participatedTaskCount!!,
+                        "Successful tasks should not exceed participated tasks",
+                    )
+                }
+            }
+    }
+
+    @Test
+    @Order(137)
+    fun `test space analytics submission completion analysis`() {
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceIdOfSecond/analytics/completion")
+            .header("Authorization", "Bearer $creatorToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<GetSubmissionCompletionAnalysis200ResponseDTO>()
+            .value { response ->
+                assertTrue(
+                    response.data != null,
+                    "Submission completion analysis response data should not be null",
+                )
+                val analysis = response.data!!
+                assertTrue(
+                    analysis.overallCompletionRate != null,
+                    "Overall completion rate should not be null",
+                )
+                assertTrue(
+                    analysis.taskCompletionRates != null,
+                    "Task completion rates should not be null",
+                )
+                assertTrue(
+                    analysis.submissionStatusDistribution != null,
+                    "Submission status distribution should not be null",
+                )
+                assertTrue(
+                    analysis.submissionTrendAnalysis != null,
+                    "Submission trend analysis should not be null",
+                )
+
+                // Verify overall completion rate
+                assertTrue(
+                    analysis.overallCompletionRate!! >= 0.0,
+                    "Overall completion rate should be non-negative",
+                )
+                assertTrue(
+                    analysis.overallCompletionRate!! <= 100.0,
+                    "Overall completion rate should not exceed 100%",
+                )
+
+                // Verify task completion rates structure
+                analysis.taskCompletionRates!!.forEach { taskRate ->
+                    assertTrue(taskRate.taskId != null, "Task ID should not be null")
+                    assertTrue(taskRate.taskName != null, "Task name should not be null")
+                    assertTrue(
+                        taskRate.completionRate != null,
+                        "Completion rate should not be null",
+                    )
+                    assertTrue(
+                        taskRate.totalParticipants != null,
+                        "Total participants should not be null",
+                    )
+                    assertTrue(
+                        taskRate.successfulParticipants != null,
+                        "Successful participants should not be null",
+                    )
+
+                    assertTrue(
+                        taskRate.completionRate!! >= 0.0,
+                        "Task completion rate should be non-negative",
+                    )
+                    assertTrue(
+                        taskRate.completionRate!! <= 100.0,
+                        "Task completion rate should not exceed 100%",
+                    )
+                    assertTrue(
+                        taskRate.totalParticipants!! >= 0,
+                        "Total participants should be non-negative",
+                    )
+                    assertTrue(
+                        taskRate.successfulParticipants!! >= 0,
+                        "Successful participants should be non-negative",
+                    )
+                    assertTrue(
+                        taskRate.successfulParticipants!! <= taskRate.totalParticipants!!,
+                        "Successful participants should not exceed total",
+                    )
+                }
+
+                // Verify submission status distribution
+                analysis.submissionStatusDistribution!!.values.forEach { count ->
+                    assertTrue(count >= 0, "Status distribution count should be non-negative")
+                }
+
+                // Verify submission trend analysis structure
+                val trendAnalysis = analysis.submissionTrendAnalysis!!
+                assertTrue(
+                    trendAnalysis.averageSubmissionTime != null,
+                    "Average submission time should not be null",
+                )
+                assertTrue(
+                    trendAnalysis.resubmissionRate != null,
+                    "Resubmission rate should not be null",
+                )
+                assertTrue(
+                    trendAnalysis.averageSubmissionTime!! >= 0.0,
+                    "Average submission time should be non-negative",
+                )
+                assertTrue(
+                    trendAnalysis.resubmissionRate!! >= 0.0,
+                    "Resubmission rate should be non-negative",
+                )
+                assertTrue(
+                    trendAnalysis.resubmissionRate!! <= 100.0,
+                    "Resubmission rate should not exceed 100%",
+                )
+            }
+    }
+
+    @Test
+    @Order(138)
+    fun `test space analytics unauthorized access`() {
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceIdOfSecond/analytics/activity")
+            .header("Authorization", "Bearer $anonymousToken") // User without proper permissions
+            .exchange()
+            .expectStatus()
+            .isForbidden
+            .expectBody<GenericErrorResponse>()
+            .value { errorResponse ->
+                assertEquals("PermissionDeniedError", errorResponse.error.name)
+                assertTrue(errorResponse.error.data != null, "Error data should not be null")
+                assertEquals("query", errorResponse.error.data!!.action)
+                assertEquals("space", errorResponse.error.data.resourceType)
+            }
+    }
+
+    @Test
+    @Order(139)
+    fun `test space analytics nonexistent space`() {
+        webTestClient
+            .get()
+            .uri("/spaces/-1/analytics/activity")
+            .header("Authorization", "Bearer $creatorToken")
+            .exchange()
+            .expectStatus()
+            .isNotFound
+            .expectBody<GenericErrorResponse>()
+            .value { errorResponse ->
+                assertEquals("NotFoundError", errorResponse.error.name)
+                assertTrue(errorResponse.error.data != null, "Error data should not be null")
+                assertEquals("space", errorResponse.error.data!!.type)
+                assertEquals("-1", errorResponse.error.data.id?.toString())
+            }
+    }
 }

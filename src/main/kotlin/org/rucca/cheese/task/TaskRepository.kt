@@ -7,4 +7,6 @@ interface TaskRepository : CursorPagingRepository<Task, IdType> {
     fun existsByCategoryId(categoryId: IdType): Boolean
 
     fun findByCategoryId(categoryId: IdType): List<Task>
+
+    fun findBySpaceId(spaceId: IdType): List<Task>
 }

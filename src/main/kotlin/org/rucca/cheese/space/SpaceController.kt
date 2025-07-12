@@ -20,6 +20,8 @@ import org.rucca.cheese.auth.AuthorizedAction
 import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.auth.model.AuthUserInfo
+import org.rucca.cheese.auth.spring.AuthUser
 import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
@@ -35,6 +37,7 @@ class SpaceController(
     private val spaceService: SpaceService,
     private val authorizationService: AuthorizationService,
     private val jwtService: JwtService,
+    private val spaceAnalyticsService: org.rucca.cheese.space.analytics.SpaceAnalyticsService,
 ) : SpacesApi {
     @PostConstruct
     fun initialize() {
@@ -354,5 +357,63 @@ class SpaceController(
                 "OK",
             )
         )
+    }
+
+    @Guard("query", "space")
+    override suspend fun getSpaceActivityStatistics(
+        @AuthUser userInfo: AuthUserInfo?,
+        @ResourceId spaceId: Long,
+    ): ResponseEntity<GetSpaceActivityStatistics200ResponseDTO> {
+        val statistics =
+            withContext(Dispatchers.IO) {
+                spaceAnalyticsService.getSpaceActivityStatistics(spaceId)
+            }
+
+        val response =
+            GetSpaceActivityStatistics200ResponseDTO(
+                code = 200,
+                data = statistics,
+                message = "Space activity statistics retrieved successfully",
+            )
+
+        return ResponseEntity.ok(response)
+    }
+
+    @Guard("query", "space")
+    override suspend fun getParticipationAnalysis(
+        @AuthUser userInfo: AuthUserInfo?,
+        @ResourceId spaceId: Long,
+    ): ResponseEntity<GetParticipationAnalysis200ResponseDTO> {
+        val analysis =
+            withContext(Dispatchers.IO) { spaceAnalyticsService.getParticipationAnalysis(spaceId) }
+
+        val response =
+            GetParticipationAnalysis200ResponseDTO(
+                code = 200,
+                data = analysis,
+                message = "Participation analysis retrieved successfully",
+            )
+
+        return ResponseEntity.ok(response)
+    }
+
+    @Guard("query", "space")
+    override suspend fun getSubmissionCompletionAnalysis(
+        @AuthUser userInfo: AuthUserInfo?,
+        @ResourceId spaceId: Long,
+    ): ResponseEntity<GetSubmissionCompletionAnalysis200ResponseDTO> {
+        val analysis =
+            withContext(Dispatchers.IO) {
+                spaceAnalyticsService.getSubmissionCompletionAnalysis(spaceId)
+            }
+
+        val response =
+            GetSubmissionCompletionAnalysis200ResponseDTO(
+                code = 200,
+                data = analysis,
+                message = "Submission and completion analysis retrieved successfully",
+            )
+
+        return ResponseEntity.ok(response)
     }
 }
