@@ -87,6 +87,9 @@ class DiscussionContextProvider(private val projectService: ProjectService) :
                     DiscussableModelTypeDTO.PROJECT -> {
                         runCatching { projectService.getMemberRole(modelId, userId) }.isSuccess
                     }
+                    DiscussableModelTypeDTO.SPACE -> {
+                        true
+                    }
                 }
             }
         }

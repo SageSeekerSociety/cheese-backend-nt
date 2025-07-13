@@ -138,6 +138,7 @@ class SecurityConfig(
             .httpBasic { it.disable() }
             .formLogin { it.disable() }
             .csrf { it.disable() }
+            .securityContext(Customizer.withDefaults())
 
         return http.build()
     }
