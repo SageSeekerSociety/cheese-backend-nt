@@ -1292,27 +1292,29 @@ constructor(
             .value { errorResponse ->
                 assertEquals("PermissionDeniedError", errorResponse.error.name)
                 assertTrue(errorResponse.error.data != null, "Error data should not be null")
-                assertEquals("query", errorResponse.error.data!!.action)
+                assertEquals("query-task-statistics", errorResponse.error.data!!.action)
                 assertEquals("space", errorResponse.error.data.resourceType)
             }
     }
 
     @Test
-    @Order(139)
-    fun `test space analytics nonexistent space`() {
+    @Order(140)
+    fun `test space analytics tasks returns 200`() {
         webTestClient
             .get()
-            .uri("/spaces/-1/analytics/tasks")
+            .uri("/spaces/$spaceIdOfSecond/analytics/tasks")
             .header("Authorization", "Bearer $creatorToken")
             .exchange()
             .expectStatus()
-            .isNotFound
-            .expectBody<GenericErrorResponse>()
-            .value { errorResponse ->
-                assertEquals("NotFoundError", errorResponse.error.name)
-                assertTrue(errorResponse.error.data != null, "Error data should not be null")
-                assertEquals("space", errorResponse.error.data!!.type)
-                assertEquals("-1", errorResponse.error.data.id?.toString())
+            .isOk
+            .expectBody<GetSpaceTaskStatistics200ResponseDTO>()
+            .value { response ->
+                assertEquals(
+                    "Space task statistics retrieved successfully",
+                    response.message,
+                    "Message should be 'Space task statistics retrieved successfully'",
+                )
+                assertEquals(200, response.code, "Code should be 200")
             }
     }
 }

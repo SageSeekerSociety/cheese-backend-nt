@@ -889,8 +889,6 @@ paths:
       summary: Get Space Task Statistics
       operationId: getSpaceTaskStatistics
       tags: [ Spaces ]
-      x-handler-args:
-        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       responses:
         "200":
           description: Task statistics for the specific space
@@ -5799,7 +5797,7 @@ components:
           description: The name/title of this distribution
         type:
           type: string
-          enum: ["discrete", "continuous"]
+          enum: ["DISCRETE", "CONTINUOUS"]
           description: The type of distribution (discrete for categories/labels, continuous for ranges)
         items:
           type: array

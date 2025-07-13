@@ -20,7 +20,6 @@ import org.rucca.cheese.auth.AuthorizedAction
 import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.ResourceId
-import org.rucca.cheese.auth.model.AuthUserInfo
 import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
@@ -358,10 +357,9 @@ class SpaceController(
         )
     }
 
-    @Guard("query", "space")
+    @Guard("query-task-statistics", "space")
     override suspend fun getSpaceTaskStatistics(
-        userInfo: org.rucca.cheese.auth.model.AuthUserInfo?,
-        spaceId: kotlin.Long,
+        @ResourceId spaceId: kotlin.Long
     ): ResponseEntity<GetSpaceTaskStatistics200ResponseDTO> {
         val statistics =
             withContext(Dispatchers.IO) { spaceAnalyticsService.getSpaceTaskStatistics(spaceId) }
