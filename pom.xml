@@ -36,7 +36,7 @@
         <kotlinx.coroutines.version>1.10.2</kotlinx.coroutines.version>
         <kotlinx.serialization.version>1.8.1</kotlinx.serialization.version>
 
-        <assertj.version>3.25.3</assertj.version>
+        <assertj.version>3.27.3</assertj.version>
         <springmockk.version>4.0.2</springmockk.version>
 
         <hypersistence.version>3.9.9</hypersistence.version>
