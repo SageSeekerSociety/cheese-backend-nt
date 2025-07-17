@@ -52,10 +52,10 @@ class SpaceAnalyticsService(
         val unsuccessStudentStatistics = generateUnsuccessStudentStatistics(spaceId)
 
         return SpaceTaskStatisticsDTO(
-            taskCategoryDistribution = taskCategoryDistribution,
-            taskStatusDistribution = taskStatusDistribution,
-            participantStatusDistribution = participantStatusDistribution,
-            rankDistribution = rankDistribution,
+            taskCategoryDistribution = taskCategoryDistribution.toDistributionDTO(),
+            taskStatusDistribution = taskStatusDistribution.toDistributionDTO(),
+            participantStatusDistribution = participantStatusDistribution.toDistributionDTO(),
+            rankDistribution = rankDistribution?.toDistributionDTO(),
             successStudentStatistics = successStudentStatistics,
             unsuccessStudentStatistics = unsuccessStudentStatistics,
         )
@@ -63,29 +63,29 @@ class SpaceAnalyticsService(
 
     private fun generateTaskCategoryDistribution(
         tasks: List<org.rucca.cheese.task.Task>
-    ): DistributionDTO {
+    ): DistributionOneOfDTO {
         val categoryCount = tasks.groupingBy { it.category.name }.eachCount()
         val total = tasks.size
 
         val items =
             categoryCount.map { (categoryName, count) ->
-                DistributionItemDTO(
+                DiscreteDistributionItemDTO(
                     label = categoryName,
                     count = count,
                     percentage = if (total > 0) (count.toDouble() / total * 100) else 0.0,
                 )
             }
 
-        return DistributionDTO(
+        return DistributionOneOfDTO(
             name = "Task Category Distribution",
-            type = DistributionDTO.Type.DISCRETE,
+            type = DistributionOneOfDTO.Type.DISCRETE,
             items = items,
         )
     }
 
     private fun generateTaskStatusDistribution(
         tasks: List<org.rucca.cheese.task.Task>
-    ): DistributionDTO {
+    ): DistributionOneOfDTO {
         val statusCount =
             tasks
                 .groupingBy { task ->
@@ -101,21 +101,21 @@ class SpaceAnalyticsService(
 
         val items =
             statusCount.map { (status, count) ->
-                DistributionItemDTO(
+                DiscreteDistributionItemDTO(
                     label = status,
                     count = count,
                     percentage = if (total > 0) (count.toDouble() / total * 100) else 0.0,
                 )
             }
 
-        return DistributionDTO(
+        return DistributionOneOfDTO(
             name = "Task Status Distribution",
-            type = DistributionDTO.Type.DISCRETE,
+            type = DistributionOneOfDTO.Type.DISCRETE,
             items = items,
         )
     }
 
-    private fun generateParticipantStatusDistribution(spaceId: IdType): DistributionDTO {
+    private fun generateParticipantStatusDistribution(spaceId: IdType): DistributionOneOfDTO {
         val tasks = taskRepository.findBySpaceId(spaceId)
         val taskIds = tasks.mapNotNull { it.id }
 
@@ -127,36 +127,38 @@ class SpaceAnalyticsService(
 
         val items =
             statusCount.map { (status, count) ->
-                DistributionItemDTO(
+                DiscreteDistributionItemDTO(
                     label = status,
                     count = count,
                     percentage = if (total > 0) (count.toDouble() / total * 100) else 0.0,
                 )
             }
 
-        return DistributionDTO(
+        return DistributionOneOfDTO(
             name = "Participant Status Distribution",
-            type = DistributionDTO.Type.DISCRETE,
+            type = DistributionOneOfDTO.Type.DISCRETE,
             items = items,
         )
     }
 
-    private fun generateRankDistribution(tasks: List<org.rucca.cheese.task.Task>): DistributionDTO {
+    private fun generateRankDistribution(
+        tasks: List<org.rucca.cheese.task.Task>
+    ): DistributionOneOfDTO {
         val rankCount = tasks.filter { it.rank != null }.groupingBy { it.rank!! }.eachCount()
         val total = tasks.count { it.rank != null }
 
         val items =
             rankCount.map { (rank, count) ->
-                DistributionItemDTO(
+                DiscreteDistributionItemDTO(
                     label = rank.toString(),
                     count = count,
                     percentage = if (total > 0) (count.toDouble() / total * 100) else 0.0,
                 )
             }
 
-        return DistributionDTO(
+        return DistributionOneOfDTO(
             name = "Rank Distribution",
-            type = DistributionDTO.Type.DISCRETE,
+            type = DistributionOneOfDTO.Type.DISCRETE,
             items = items,
         )
     }
@@ -223,69 +225,97 @@ class SpaceAnalyticsService(
         return StudentRealNameInfoStatisticsDTO(
             totalStudents = totalStudents,
             totalStudentsWithRealName = totalStudentsWithRealName,
-            gradeDistribution = gradeDistribution,
-            majorDistribution = majorDistribution,
-            classNameDistribution = classNameDistribution,
+            gradeDistribution = gradeDistribution.toDistributionDTO(),
+            majorDistribution = majorDistribution.toDistributionDTO(),
+            classNameDistribution = classNameDistribution.toDistributionDTO(),
         )
     }
 
-    private fun generateGradeDistribution(students: List<UserIdentityDTO>): DistributionDTO {
+    private fun generateGradeDistribution(students: List<UserIdentityDTO>): DistributionOneOfDTO {
         val gradeCount = students.groupingBy { it.grade }.eachCount()
         val total = students.size
 
         val items =
             gradeCount.map { (grade, count) ->
-                DistributionItemDTO(
+                DiscreteDistributionItemDTO(
                     label = grade,
                     count = count,
                     percentage = if (total > 0) (count.toDouble() / total * 100) else 0.0,
                 )
             }
 
-        return DistributionDTO(
+        return DistributionOneOfDTO(
             name = "Grade Distribution",
-            type = DistributionDTO.Type.DISCRETE,
+            type = DistributionOneOfDTO.Type.DISCRETE,
             items = items,
         )
     }
 
-    private fun generateMajorDistribution(students: List<UserIdentityDTO>): DistributionDTO {
+    private fun generateMajorDistribution(students: List<UserIdentityDTO>): DistributionOneOfDTO {
         val majorCount = students.groupingBy { it.major }.eachCount()
         val total = students.size
 
         val items =
             majorCount.map { (major, count) ->
-                DistributionItemDTO(
+                DiscreteDistributionItemDTO(
                     label = major,
                     count = count,
                     percentage = if (total > 0) (count.toDouble() / total * 100) else 0.0,
                 )
             }
 
-        return DistributionDTO(
+        return DistributionOneOfDTO(
             name = "Major Distribution",
-            type = DistributionDTO.Type.DISCRETE,
+            type = DistributionOneOfDTO.Type.DISCRETE,
             items = items,
         )
     }
 
-    private fun generateClassNameDistribution(students: List<UserIdentityDTO>): DistributionDTO {
+    private fun generateClassNameDistribution(
+        students: List<UserIdentityDTO>
+    ): DistributionOneOfDTO {
         val classNameCount = students.groupingBy { it.className }.eachCount()
         val total = students.size
 
         val items =
             classNameCount.map { (className, count) ->
-                DistributionItemDTO(
+                DiscreteDistributionItemDTO(
                     label = className,
                     count = count,
                     percentage = if (total > 0) (count.toDouble() / total * 100) else 0.0,
                 )
             }
 
-        return DistributionDTO(
+        return DistributionOneOfDTO(
             name = "Class Name Distribution",
-            type = DistributionDTO.Type.DISCRETE,
+            type = DistributionOneOfDTO.Type.DISCRETE,
             items = items,
+        )
+    }
+
+    // Temporary conversion function until API definition is fixed
+    private fun DistributionOneOfDTO.toDistributionDTO(): DistributionDTO {
+        // This is a workaround - the generated DistributionDTO expects
+        // ContinuousDistributionItemDTO
+        // but we need to convert discrete items to continuous items
+        // This is not ideal but necessary due to the API generation issue
+        val continuousItems =
+            this.items.map { discreteItem ->
+                ContinuousDistributionItemDTO(
+                    rangeStart = 0.0.toBigDecimal(), // Placeholder values
+                    rangeEnd = 1.0.toBigDecimal(), // Placeholder values
+                    count = discreteItem.count,
+                    percentage = discreteItem.percentage,
+                )
+            }
+
+        return DistributionDTO(
+            name = this.name,
+            type =
+                when (this.type) {
+                    DistributionOneOfDTO.Type.DISCRETE -> DistributionDTO.Type.DISCRETE
+                },
+            items = continuousItems,
         )
     }
 }
