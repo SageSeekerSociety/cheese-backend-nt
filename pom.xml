@@ -39,7 +39,7 @@
         <assertj.version>3.27.3</assertj.version>
         <springmockk.version>4.0.2</springmockk.version>
 
-        <hypersistence.version>3.9.9</hypersistence.version>
+        <hypersistence.version>3.10.3</hypersistence.version>
         <java-jwt.version>4.5.0</java-jwt.version>
 
         <swagger-annotations.version>2.2.34</swagger-annotations.version>
