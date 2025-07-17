@@ -40,16 +40,16 @@ class SpaceAnalyticsService(
         val taskStatusDistribution = generateTaskStatusDistribution(tasks)
 
         // 3. 参与者状态分布
-        val participantStatusDistribution = generateParticipantStatusDistribution(spaceId)
+        val participantStatusDistribution = generateParticipantStatusDistribution(tasks)
 
         // 4. 排名分布
         val rankDistribution = generateRankDistribution(tasks)
 
         // 5. 成功学生统计信息
-        val successStudentStatistics = generateSuccessStudentStatistics(spaceId)
+        val successStudentStatistics = generateSuccessStudentStatistics(tasks)
 
         // 6. 失败学生统计信息
-        val unsuccessStudentStatistics = generateUnsuccessStudentStatistics(spaceId)
+        val unsuccessStudentStatistics = generateUnsuccessStudentStatistics(tasks)
 
         return SpaceTaskStatisticsDTO(
             taskCategoryDistribution = taskCategoryDistribution.toDistributionDTO(),
@@ -115,8 +115,9 @@ class SpaceAnalyticsService(
         )
     }
 
-    private fun generateParticipantStatusDistribution(spaceId: IdType): DistributionOneOfDTO {
-        val tasks = taskRepository.findBySpaceId(spaceId)
+    private fun generateParticipantStatusDistribution(
+        tasks: List<org.rucca.cheese.task.Task>
+    ): DistributionOneOfDTO {
         val taskIds = tasks.mapNotNull { it.id }
 
         val allMemberships =
@@ -164,9 +165,8 @@ class SpaceAnalyticsService(
     }
 
     private fun generateSuccessStudentStatistics(
-        spaceId: IdType
+        tasks: List<org.rucca.cheese.task.Task>
     ): StudentRealNameInfoStatisticsDTO {
-        val tasks = taskRepository.findBySpaceId(spaceId)
         val taskIds = tasks.mapNotNull { it.id }
 
         val successfulMemberships =
@@ -180,9 +180,8 @@ class SpaceAnalyticsService(
     }
 
     private fun generateUnsuccessStudentStatistics(
-        spaceId: IdType
+        tasks: List<org.rucca.cheese.task.Task>
     ): StudentRealNameInfoStatisticsDTO {
-        val tasks = taskRepository.findBySpaceId(spaceId)
         val taskIds = tasks.mapNotNull { it.id }
 
         val unsuccessfulMemberships =
