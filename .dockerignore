@@ -1,0 +1,52 @@
+# Git相关
+.git
+.gitignore
+.gitattributes
+.githooks
+.github
+
+# IDE相关
+.idea
+*.iml
+.vscode
+.settings
+.project
+.classpath
+
+# Maven目标目录
+target/
+!target/*.jar
+
+# 日志文件
+*.log
+
+# 环境文件
+.env
+sample.env
+
+# 文档和README
+*.md
+docs/
+
+# 测试相关
+.mvn/wrapper/maven-wrapper.jar
+
+# 临时文件
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Node.js相关（如果有前端资源）
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 开发容器配置
+.devcontainer/
+
+# Docker相关
+docker-compose.yml
+Dockerfile
+.dockerignore
