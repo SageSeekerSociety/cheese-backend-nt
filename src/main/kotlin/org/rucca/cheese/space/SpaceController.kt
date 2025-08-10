@@ -24,9 +24,9 @@ import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.space.analytics.SpaceAnalyticsService
 import org.rucca.cheese.space.option.SpaceQueryOptions
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -35,6 +35,7 @@ class SpaceController(
     private val spaceService: SpaceService,
     private val authorizationService: AuthorizationService,
     private val jwtService: JwtService,
+    private val spaceAnalyticsService: SpaceAnalyticsService,
 ) : SpacesApi {
     @PostConstruct
     fun initialize() {
@@ -279,7 +280,7 @@ class SpaceController(
     @Guard("query", "space")
     override suspend fun getSpaceCategory(
         @ResourceId spaceId: Long,
-        @PathVariable("categoryId") categoryId: Long,
+        categoryId: Long,
     ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
         val category =
             withContext(Dispatchers.IO) { spaceService.getCategoryDTO(spaceId, categoryId) }
@@ -295,7 +296,7 @@ class SpaceController(
     @Guard("modify", "space")
     override suspend fun updateSpaceCategory(
         @ResourceId spaceId: Long,
-        @PathVariable("categoryId") categoryId: Long,
+        categoryId: Long,
         updateSpaceCategoryRequestDTO: UpdateSpaceCategoryRequestDTO,
     ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
         val updatedCategory =
@@ -318,7 +319,7 @@ class SpaceController(
     @Guard("modify", "space")
     override suspend fun deleteSpaceCategory(
         @ResourceId spaceId: Long,
-        @PathVariable("categoryId") categoryId: Long,
+        categoryId: Long,
     ): ResponseEntity<Unit> {
         withContext(Dispatchers.IO) { spaceService.deleteCategory(spaceId, categoryId) }
         return ResponseEntity.noContent().build()
@@ -343,7 +344,7 @@ class SpaceController(
     @Guard("modify", "space")
     override suspend fun unarchiveSpaceCategory(
         @ResourceId spaceId: Long,
-        @PathVariable("categoryId") categoryId: Long,
+        categoryId: Long,
     ): ResponseEntity<CreateSpaceCategory201ResponseDTO> {
         val unarchivedCategory =
             withContext(Dispatchers.IO) { spaceService.unarchiveCategory(spaceId, categoryId) }
@@ -354,5 +355,22 @@ class SpaceController(
                 "OK",
             )
         )
+    }
+
+    @Guard("query-task-statistics", "space")
+    override suspend fun getSpaceTaskStatistics(
+        @ResourceId spaceId: kotlin.Long
+    ): ResponseEntity<GetSpaceTaskStatistics200ResponseDTO> {
+        val statistics =
+            withContext(Dispatchers.IO) { spaceAnalyticsService.getSpaceTaskStatistics(spaceId) }
+
+        val response =
+            GetSpaceTaskStatistics200ResponseDTO(
+                code = 200,
+                data = statistics,
+                message = "Space task statistics retrieved successfully",
+            )
+
+        return ResponseEntity.ok(response)
     }
 }

@@ -882,6 +882,31 @@ paths:
                 userId:
                   type: integer
                   format: int64
+  /spaces/{spaceId}/analytics/tasks:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      summary: Get Space Task Statistics
+      operationId: getSpaceTaskStatistics
+      tags: [ Spaces ]
+      responses:
+        "200":
+          description: Task statistics for the specific space
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/SpaceTaskStatistics"
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
   /tasks/{taskId}:
     parameters:
       - $ref: '#/components/parameters/TaskId'
@@ -5740,6 +5765,135 @@ components:
           type: string
         remark:
           type: string
+    DiscreteDistributionItem:
+      type: object
+      description: A single item in a discrete distribution
+      properties:
+        label:
+          type: string
+          description: The label for discrete distribution (e.g., status name, category name)
+        count:
+          type: integer
+          description: The count of items in this category
+        percentage:
+          type: number
+          format: double
+          description: The percentage of total for this category
+      required:
+        - label
+        - count
+        - percentage
+    ContinuousDistributionItem:
+      type: object
+      description: A single item in a continuous distribution
+      properties:
+        rangeStart:
+          type: number
+          description: The start of the range (inclusive) for continuous distribution
+        rangeEnd:
+          type: number
+          description: The end of the range (exclusive) for continuous distribution
+        count:
+          type: integer
+          description: The count of items in this range
+        percentage:
+          type: number
+          format: double
+          description: The percentage of total for this range
+      required:
+        - rangeStart
+        - rangeEnd
+        - count
+        - percentage
+    Distribution:
+      type: object
+      description: A distribution with a name and collection of items
+      oneOf:
+        - type: object
+          description: Discrete distribution with labeled categories
+          properties:
+            name:
+              type: string
+              description: The name/title of this distribution
+            type:
+              type: string
+              enum: ["DISCRETE"]
+              description: The type of distribution (discrete for categories/labels)
+            items:
+              type: array
+              description: A collection of discrete distribution items
+              items:
+                $ref: "#/components/schemas/DiscreteDistributionItem"
+          required:
+            - name
+            - type
+            - items
+        - type: object
+          description: Continuous distribution with numeric ranges
+          properties:
+            name:
+              type: string
+              description: The name/title of this distribution
+            type:
+              type: string
+              enum: ["CONTINUOUS"]
+              description: The type of distribution (continuous for ranges)
+            items:
+              type: array
+              description: A collection of continuous distribution items
+              items:
+                $ref: "#/components/schemas/ContinuousDistributionItem"
+          required:
+            - name
+            - type
+            - items
+    studentRealNameInfoStatistics:
+      type: object
+      description: Statistics for a student set
+      properties:
+        totalStudents:
+          type: integer
+        totalStudentsWithRealName:
+          type: integer
+        gradeDistribution:
+          $ref: "#/components/schemas/Distribution"
+        majorDistribution:
+          $ref: "#/components/schemas/Distribution"
+        classNameDistribution:
+          $ref: "#/components/schemas/Distribution"
+      required:
+        - totalStudents
+        - totalStudentsWithRealName
+        - gradeDistribution
+        - majorDistribution
+        - classNameDistribution
+    SpaceTaskStatistics:
+      type: object
+      description: Task statistics for a specific space
+      properties:
+        taskCategoryDistribution:
+          $ref: "#/components/schemas/Distribution"
+        taskStatusDistribution:
+          $ref: "#/components/schemas/Distribution"
+          description: unapproved, open, ongoing, completed
+        participantStatusDistribution:
+          $ref: "#/components/schemas/Distribution"
+          description: statuses in TaskCompletionStatus
+        rankDistribution:
+          $ref: "#/components/schemas/Distribution"
+          description: rank in TaskRank
+        successStudentStatistics:
+          $ref: "#/components/schemas/studentRealNameInfoStatistics"
+          description: students who's TaskCompletionStatus == success
+        unsuccessStudentStatistics:
+          $ref: "#/components/schemas/studentRealNameInfoStatistics"
+          description: students who's TaskCompletionStatus != success
+      required:
+        - taskCategoryDistribution
+        - taskStatusDistribution
+        - participantStatusDistribution
+        - successStudentStatistics
+        - unsuccessStudentStatistics
   parameters:
     UserId:
       name: userId

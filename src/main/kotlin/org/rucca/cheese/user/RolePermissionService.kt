@@ -47,7 +47,7 @@ class RolePermissionService {
                         customLogic = "owned",
                     ),
                     Permission(
-                        authorizedActions = listOf("modify", "delete"),
+                        authorizedActions = listOf("modify", "delete", "query-task-statistics"),
                         authorizedResource = AuthorizedResource(types = listOf("space")),
                         customLogic = "is-space-admin",
                     ),
