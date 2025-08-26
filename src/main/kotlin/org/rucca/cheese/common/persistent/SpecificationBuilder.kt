@@ -18,7 +18,7 @@ class SpecificationBuilder<T> {
     fun where(
         predicate: (Root<T>, CriteriaQuery<*>, CriteriaBuilder) -> Predicate?
     ): SpecificationBuilder<T> {
-        spec = Specification.where { root, query, cb -> predicate(root, query!!, cb) }
+        spec = Specification { root, query, cb -> predicate(root, query!!, cb) }
         return this
     }
 
@@ -38,7 +38,7 @@ class SpecificationBuilder<T> {
         return this
     }
 
-    fun build(): Specification<T> = spec ?: Specification.where(null)
+    fun build(): Specification<T> = spec ?: Specification { _, _, _ -> null }
 }
 
 /** Extensions */

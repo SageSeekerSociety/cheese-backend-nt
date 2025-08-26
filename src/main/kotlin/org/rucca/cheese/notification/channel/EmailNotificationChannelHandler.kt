@@ -18,7 +18,8 @@ class EmailNotificationChannelHandler(
     private val mailSender: JavaMailSender,
     private val templateService: NotificationTemplateService,
     private val userService: UserService,
-    @Value("\${cheese.notification.email.default-from}") private val defaultFromAddress: String,
+    @param:Value("\${cheese.notification.email.default-from}")
+    private val defaultFromAddress: String,
 ) : NotificationChannelHandler {
 
     private val log = LoggerFactory.getLogger(javaClass)
