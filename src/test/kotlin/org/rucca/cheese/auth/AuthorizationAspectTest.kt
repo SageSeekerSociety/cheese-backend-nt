@@ -12,7 +12,7 @@ import com.ninjasquad.springmockk.SpykBean
 import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.junit.jupiter.api.Test
 import org.rucca.cheese.auth.exception.DuplicatedAuthInfoKeyException
 import org.rucca.cheese.auth.exception.DuplicatedResourceIdAnnotationException
@@ -29,7 +29,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 
-@Disabled("Disabled to speed up tests")
+@EnabledIfSystemProperty(named = "cli", matches = "true")
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc

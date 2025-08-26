@@ -10,7 +10,7 @@ package org.rucca.cheese.auth
 
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.rucca.cheese.client.UserClient
@@ -19,7 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 
-@Disabled("Disabled to speed up tests")
+@EnabledIfSystemProperty(named = "cli", matches = "true")
 @SpringBootTest
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

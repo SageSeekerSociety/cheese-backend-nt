@@ -8,7 +8,7 @@
 
 package org.rucca.cheese.auth
 
-import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.junit.jupiter.api.Test
 import org.rucca.cheese.client.UserClient
 import org.slf4j.LoggerFactory
@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 
-@Disabled("Disabled to speed up tests")
+@EnabledIfSystemProperty(named = "cli", matches = "true")
 @SpringBootTest
 @ActiveProfiles("test")
 class UserClientTest @Autowired constructor(private val userClient: UserClient) {
