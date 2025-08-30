@@ -24,19 +24,19 @@ data class PostSpaceRequestDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("name", required = true)
     val name: kotlin.String,
-    @Schema(example = "null", required = true, description = "")
+    @Schema(example = "1", required = true, description = "")
     @get:JsonProperty("avatarId", required = true)
     val avatarId: kotlin.Long,
-    @Schema(example = "null", required = true, description = "")
+    @Schema(example = "[]", required = true, description = "")
     @get:JsonProperty("announcements", required = true)
-    val announcements: kotlin.String,
-    @Schema(example = "null", required = true, description = "")
+    val announcements: kotlin.String = "[]",
+    @Schema(example = "[]", required = true, description = "")
     @get:JsonProperty("taskTemplates", required = true)
-    val taskTemplates: kotlin.String,
+    val taskTemplates: kotlin.String = "[]",
     @Schema(example = "null", description = "")
     @get:JsonProperty("enableRank")
     val enableRank: kotlin.Boolean? = false,
-    @Schema(example = "null", description = "")
+    @Schema(example = "[]", description = "")
     @get:JsonProperty("classificationTopics")
     val classificationTopics: kotlin.collections.List<kotlin.Long>? = arrayListOf(),
 ) : Serializable {

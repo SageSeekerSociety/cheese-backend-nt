@@ -10,6 +10,7 @@ import javax.validation.Valid
  * @param user
  * @param updatedAt
  * @param createdAt
+ * @param hasRealNameInfo
  */
 data class TeamMemberDTO(
     @field:Valid
@@ -26,6 +27,9 @@ data class TeamMemberDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("createdAt", required = true)
     val createdAt: kotlin.Long,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("hasRealNameInfo")
+    val hasRealNameInfo: kotlin.Boolean? = null,
 ) : Serializable {
 
     companion object {

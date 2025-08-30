@@ -23,8 +23,7 @@ sealed interface Cursor<T> {
         fun <T> decode(encoded: String): Cursor<T> {
             return try {
                 // Try to decode as composite cursor
-                val values = CursorConfig.getEncoder().decode(encoded)
-                TypedCompositeCursor(values)
+                TypedCompositeCursor.decode(encoded)
             } catch (e: Exception) {
                 // Fall back to simple cursor for backward compatibility
                 try {
@@ -54,6 +53,12 @@ sealed interface Cursor<T> {
  */
 data class SimpleCursor<T, V : Any>(val value: V) : Cursor<T> {
     override fun encode(): String = value.toString()
+
+    companion object {
+        fun <T, V : Any> of(value: V): SimpleCursor<T, V> {
+            return SimpleCursor(value)
+        }
+    }
 }
 
 /**

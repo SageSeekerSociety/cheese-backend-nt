@@ -28,7 +28,7 @@ class SpaceClient(private val mockMvc: MockMvc, private val userClient: UserClie
         spaceAnnouncements: String = "[]",
         spaceTaskTemplates: String = "[]",
         classificationTopics: List<IdType> = emptyList(),
-    ): IdType {
+    ): Pair<IdType, IdType> {
         val request =
             MockMvcRequestBuilders.post("/spaces")
                 .header("Authorization", "Bearer $creatorToken")
@@ -58,6 +58,7 @@ class SpaceClient(private val mockMvc: MockMvc, private val userClient: UserClie
                 .andExpect(jsonPath("$.data.space.enableRank").value(false))
                 .andExpect(jsonPath("$.data.space.announcements").value(spaceAnnouncements))
                 .andExpect(jsonPath("$.data.space.taskTemplates").value(spaceTaskTemplates))
+                .andExpect(jsonPath("$.data.space.defaultCategoryId").exists())
                 .andExpect(
                     jsonPath("$.data.space.classificationTopics.length()")
                         .value(classificationTopics.size)
@@ -65,13 +66,12 @@ class SpaceClient(private val mockMvc: MockMvc, private val userClient: UserClie
         for (topic in classificationTopics) response.andExpect(
             jsonPath("$.data.space.classificationTopics[?(@.id == $topic)].name").exists()
         )
-        val spaceId =
-            JSONObject(response.andReturn().response.contentAsString)
-                .getJSONObject("data")
-                .getJSONObject("space")
-                .getLong("id")
-        logger.info("Created space: $spaceId")
-        return spaceId
+        val json = JSONObject(response.andReturn().response.contentAsString)
+        val spaceData = json.getJSONObject("data").getJSONObject("space")
+        val spaceId = spaceData.getLong("id")
+        val defaultCategoryId = spaceData.getLong("defaultCategoryId")
+        logger.info("Created space: $spaceId with default category ID: $defaultCategoryId")
+        return Pair(spaceId, defaultCategoryId)
     }
 
     fun addSpaceAdmin(creatorToken: String, spaceId: IdType, adminId: IdType) {
@@ -88,5 +88,67 @@ class SpaceClient(private val mockMvc: MockMvc, private val userClient: UserClie
             """
                 )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+    }
+
+    fun createCategory(
+        token: String,
+        spaceId: IdType,
+        name: String,
+        description: String? = null,
+        displayOrder: Int? = null,
+    ): IdType {
+        val contentJson =
+            JSONObject().put("name", name).apply {
+                description?.let { put("description", it) }
+                displayOrder?.let { put("displayOrder", it) }
+            }
+
+        val request =
+            MockMvcRequestBuilders.post("/spaces/$spaceId/categories")
+                .header("Authorization", "Bearer $token")
+                .contentType("application/json")
+                .content(contentJson.toString())
+
+        val response =
+            mockMvc
+                .perform(request)
+                .andExpect(status().isCreated)
+                .andExpect(jsonPath("$.data.category.id").exists())
+                .andExpect(jsonPath("$.data.category.name").value(name))
+                .andReturn()
+
+        val categoryId =
+            JSONObject(response.response.contentAsString)
+                .getJSONObject("data")
+                .getJSONObject("category")
+                .getLong("id")
+        logger.info("Created category '$name' (ID: $categoryId) in space $spaceId")
+        return categoryId
+    }
+
+    fun archiveCategory(token: String, spaceId: IdType, categoryId: IdType) {
+        val request =
+            MockMvcRequestBuilders.post("/spaces/$spaceId/categories/$categoryId/archive")
+                .header("Authorization", "Bearer $token")
+
+        mockMvc
+            .perform(request)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.category.id").value(categoryId))
+            .andExpect(jsonPath("$.data.category.archivedAt").exists())
+        logger.info("Archived category $categoryId in space $spaceId")
+    }
+
+    fun unarchiveCategory(token: String, spaceId: IdType, categoryId: IdType) {
+        val request =
+            MockMvcRequestBuilders.delete("/spaces/$spaceId/categories/$categoryId/archive")
+                .header("Authorization", "Bearer $token")
+
+        mockMvc
+            .perform(request)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.category.id").value(categoryId))
+            .andExpect(jsonPath("$.data.category.archivedAt").doesNotExist())
+        logger.info("Unarchived category $categoryId in space $spaceId")
     }
 }

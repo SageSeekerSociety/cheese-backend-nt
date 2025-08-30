@@ -76,4 +76,6 @@ open class User {
     @Column(name = "deleted_at") open var deletedAt: OffsetDateTime? = null
 }
 
-interface UserRepository : JpaRepository<User, Int>
+interface UserRepository : JpaRepository<User, Int> {
+    fun countByIdIn(ids: List<Int>): Int
+}

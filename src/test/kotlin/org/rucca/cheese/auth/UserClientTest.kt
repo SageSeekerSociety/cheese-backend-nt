@@ -8,8 +8,8 @@
 
 package org.rucca.cheese.auth
 
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.rucca.cheese.client.UserClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

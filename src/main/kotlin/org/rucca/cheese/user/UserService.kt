@@ -13,13 +13,25 @@ package org.rucca.cheese.user
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.UserDTO
+import org.springframework.cache.annotation.CacheEvict
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class UserService(
     private val userRepository: UserRepository,
     private val userProfileRepository: UserProfileRepository,
+    private val userRoleRepository: UserRoleRepository,
 ) {
+    @Transactional
+    @CacheEvict(cacheNames = ["userRoles"], key = "#userId")
+    fun addRole(userId: IdType, role: UserRole) {
+        ensureUserIdExists(userId)
+        if (!userRoleRepository.existsByUserIdAndRole(userId, role)) {
+            userRoleRepository.save(UserRoleEntity(userId, role))
+        }
+    }
+
     fun getUserDto(userId: IdType): UserDTO {
         val user =
             userRepository.findById(userId.toInt()).orElseThrow { NotFoundError("user", userId) }
@@ -34,6 +46,12 @@ class UserService(
             nickname = profile.nickname!!,
             username = user.username!!,
         )
+    }
+
+    // use batch query to improve performance
+    fun getUserDtos(userIds: List<IdType>): Map<Long, UserDTO> {
+        val users = userRepository.findAllById(userIds.map { it.toInt() })
+        return convertUsersToDto(users)
     }
 
     /**
@@ -84,5 +102,15 @@ class UserService(
 
     fun ensureUserIdExists(userId: IdType) {
         if (!existsUser(userId)) throw NotFoundError("user", userId)
+    }
+
+    fun ensureUsersExist(userIds: List<IdType>) {
+        val expectedCount = userIds.distinct().size
+        val count = userRepository.countByIdIn(userIds.distinct().map { it.toInt() })
+        if (count != expectedCount) throw NotFoundError("Some users not found")
+    }
+
+    fun getUserRoles(userId: IdType): Set<UserRole> {
+        return userRoleRepository.findAllByUserId(userId).map { it.role }.toSet()
     }
 }

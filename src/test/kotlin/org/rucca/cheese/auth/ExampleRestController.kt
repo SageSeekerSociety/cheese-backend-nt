@@ -12,12 +12,14 @@ import org.rucca.cheese.auth.annotation.AuthInfo
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.NoAuth
 import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.common.persistent.IdType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@UseOldAuth
 class ExampleRestController {
     @GetMapping("/example/1")
     fun withoutGuardOrNoAuth(): String {

@@ -48,7 +48,17 @@ START WITH
     1 INCREMENT BY 1;
 
 CREATE
-    SEQUENCE knowledge_label_entity_seq
+    SEQUENCE discussion_reaction_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
+    SEQUENCE discussion_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
+    SEQUENCE knowledge_label_seq
 START WITH
     1 INCREMENT BY 50;
 
@@ -73,17 +83,7 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
-    SEQUENCE project_discussion_reaction_seq
-START WITH
-    1 INCREMENT BY 50;
-
-CREATE
-    SEQUENCE project_discussion_seq
-START WITH
-    1 INCREMENT BY 50;
-
-CREATE
-    SEQUENCE project_external_collaborator_seq
+    SEQUENCE project_membership_seq
 START WITH
     1 INCREMENT BY 50;
 
@@ -93,7 +93,17 @@ START WITH
     1 INCREMENT BY 50;
 
 CREATE
+    SEQUENCE reaction_type_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE space_admin_relation_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
+    SEQUENCE space_categories_seq
 START WITH
     1 INCREMENT BY 50;
 
@@ -178,6 +188,16 @@ START WITH
     1 INCREMENT BY 1;
 
 CREATE
+    SEQUENCE user_real_name_access_logs_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
+    SEQUENCE user_real_name_identities_seq
+START WITH
+    1 INCREMENT BY 50;
+
+CREATE
     SEQUENCE user_seu_consumption_seq
 START WITH
     1 INCREMENT BY 50;
@@ -240,30 +260,104 @@ CREATE
 
 CREATE
     TABLE
-        knowledge(
-            "created_by_id" INTEGER NOT NULL,
-            material_id INTEGER NOT NULL,
+        discussion(
+            sender_id INTEGER NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
+            model_id BIGINT NOT NULL,
+            parent_id BIGINT,
             updated_at TIMESTAMP(6) NOT NULL,
-            content jsonb NOT NULL,
-            description text NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            TYPE VARCHAR(255) NOT NULL CHECK(
-                TYPE IN(
-                    'DOCUMENT',
-                    'LINK',
-                    'TEXT',
-                    'IMAGE'
+            model_type VARCHAR(255) NOT NULL CHECK(
+                model_type IN(
+                    'PROJECT',
+                    'SPACE'
                 )
             ),
+            content JSONB NOT NULL,
             PRIMARY KEY(id)
         );
 
 CREATE
     TABLE
-        knowledge_label_entity(
+        discussion_mentioned_users(
+            discussion_id BIGINT NOT NULL,
+            user_id BIGINT
+        );
+
+CREATE
+    TABLE
+        discussion_reaction(
+            user_id INTEGER NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            discussion_id BIGINT NOT NULL,
+            id BIGINT NOT NULL,
+            reaction_type_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            PRIMARY KEY(id),
+            CONSTRAINT uk_discussion_reaction_user_type UNIQUE(
+                discussion_id,
+                user_id,
+                reaction_type_id
+            )
+        );
+
+CREATE
+    TABLE
+        encryption_keys(
+            purpose SMALLINT NOT NULL CHECK(
+                purpose BETWEEN 0 AND 1
+            ),
+            created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+            related_entity_id BIGINT,
+            id VARCHAR(255) NOT NULL,
+            key_value VARCHAR(255) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        knowledge(
+            "created_by_id" INTEGER NOT NULL,
+            material_id INTEGER,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            discussion_id BIGINT,
+            id BIGINT NOT NULL,
+            project_id BIGINT,
+            team_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            description text NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            source_type VARCHAR(255) NOT NULL CHECK(
+                source_type IN(
+                    'MANUAL',
+                    'FROM_DISCUSSION'
+                )
+            ),
+            TYPE VARCHAR(255) NOT NULL CHECK(
+                TYPE IN(
+                    'MATERIAL',
+                    'LINK',
+                    'TEXT',
+                    'CODE'
+                )
+            ),
+            content jsonb NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        knowledge_knowledge_labels(
+            knowledge_id BIGINT NOT NULL,
+            knowledge_labels_id BIGINT NOT NULL UNIQUE
+        );
+
+CREATE
+    TABLE
+        knowledge_label(
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
@@ -340,18 +434,18 @@ CREATE
 CREATE
     TABLE
         project(
-            "leader_id" INTEGER NOT NULL,
+            archived BOOLEAN DEFAULT FALSE NOT NULL,
             color_code VARCHAR(7) NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
-            end_date TIMESTAMP(6) NOT NULL,
+            end_date TIMESTAMP(6) WITH TIME ZONE NOT NULL,
             external_task_id BIGINT,
             id BIGINT NOT NULL,
+            leader_id BIGINT NOT NULL,
             parent_id BIGINT,
-            start_date TIMESTAMP(6) NOT NULL,
+            start_date TIMESTAMP(6) WITH TIME ZONE NOT NULL,
             team_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            content text NOT NULL,
             description text NOT NULL,
             github_repo VARCHAR(255),
             name VARCHAR(255) NOT NULL,
@@ -360,48 +454,42 @@ CREATE
 
 CREATE
     TABLE
-        project_knowledge_project(
-            knowledge_id BIGINT NOT NULL,
-            project_ids BIGINT
-        );
-
-CREATE
-    TABLE
-        project_discussion(
-            "sender_id" INTEGER NOT NULL,
-            created_at TIMESTAMP(6) NOT NULL,
-            deleted_at TIMESTAMP(6),
-            id BIGINT NOT NULL,
-            parent_id BIGINT,
-            project_id BIGINT NOT NULL,
-            updated_at TIMESTAMP(6) NOT NULL,
-            content jsonb NOT NULL,
-            PRIMARY KEY(id)
-        );
-
-CREATE
-    TABLE
-        project_discussion_reaction(
-            "user_id" INTEGER NOT NULL,
-            created_at TIMESTAMP(6) NOT NULL,
-            deleted_at TIMESTAMP(6),
-            id BIGINT NOT NULL,
-            project_discussion_id BIGINT NOT NULL,
-            updated_at TIMESTAMP(6) NOT NULL,
-            emoji VARCHAR(255) NOT NULL,
-            PRIMARY KEY(id)
-        );
-
-CREATE
-    TABLE
-        project_external_collaborator(
-            "user_id" INTEGER NOT NULL,
+        project_membership(
             created_at TIMESTAMP(6) NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             project_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
-            PRIMARY KEY(id)
+            user_id BIGINT NOT NULL,
+            notes text,
+            ROLE VARCHAR(255) NOT NULL CHECK(
+                ROLE IN(
+                    'LEADER',
+                    'MEMBER',
+                    'EXTERNAL'
+                )
+            ),
+            PRIMARY KEY(id),
+            UNIQUE(
+                project_id,
+                user_id
+            )
+        );
+
+CREATE
+    TABLE
+        reaction_type(
+            display_order INTEGER NOT NULL,
+            is_active BOOLEAN NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            code VARCHAR(32) NOT NULL,
+            name VARCHAR(64) NOT NULL,
+            description VARCHAR(255),
+            PRIMARY KEY(id),
+            CONSTRAINT idx_reaction_type_code UNIQUE(code)
         );
 
 CREATE
@@ -410,6 +498,7 @@ CREATE
             avatar_id INTEGER NOT NULL,
             enable_rank BOOLEAN NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
+            default_category_id BIGINT,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
@@ -419,6 +508,25 @@ CREATE
             name VARCHAR(255) NOT NULL,
             task_templates TEXT NOT NULL,
             PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        space_categories(
+            display_order INT DEFAULT 0 NOT NULL,
+            archived_at TIMESTAMP(6) WITH TIME ZONE,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            space_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            description TEXT,
+            name VARCHAR(255) NOT NULL,
+            PRIMARY KEY(id),
+            UNIQUE(
+                space_id,
+                name
+            )
         );
 
 CREATE
@@ -467,26 +575,29 @@ CREATE
             approved SMALLINT NOT NULL CHECK(
                 approved BETWEEN 0 AND 2
             ),
-            "creator_id" INTEGER NOT NULL,
+            creator_id INTEGER NOT NULL,
             editable BOOLEAN NOT NULL,
+            max_team_size INTEGER,
+            min_team_size INTEGER,
             participant_limit INTEGER,
             RANK INTEGER,
+            require_real_name BOOLEAN DEFAULT FALSE NOT NULL,
             resubmittable BOOLEAN NOT NULL,
             submitter_type SMALLINT NOT NULL CHECK(
                 submitter_type BETWEEN 0 AND 1
             ),
+            category_id BIGINT NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deadline TIMESTAMP(6),
             default_deadline BIGINT NOT NULL,
             deleted_at TIMESTAMP(6),
             id BIGINT NOT NULL,
-            space_id BIGINT,
-            team_id BIGINT,
+            space_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
             description TEXT NOT NULL,
             intro VARCHAR(255) NOT NULL,
             name VARCHAR(255) NOT NULL,
-            reject_reason VARCHAR(255) NOT NULL,
+            reject_reason VARCHAR(255),
             PRIMARY KEY(id)
         );
 
@@ -539,6 +650,19 @@ CREATE
 
 CREATE
     TABLE
+        task_membership_team_members(
+            encrypted BOOLEAN DEFAULT FALSE,
+            member_id BIGINT NOT NULL,
+            task_membership_id BIGINT NOT NULL,
+            class_name VARCHAR(255),
+            grade VARCHAR(255),
+            major VARCHAR(255),
+            real_name VARCHAR(255),
+            student_id VARCHAR(255)
+        );
+
+CREATE
+    TABLE
         task_submission_schema(
             INDEX INTEGER NOT NULL,
             TYPE SMALLINT NOT NULL CHECK(
@@ -554,6 +678,8 @@ CREATE
             approved SMALLINT NOT NULL CHECK(
                 approved BETWEEN 0 AND 2
             ),
+            encrypted BOOLEAN DEFAULT FALSE,
+            is_team BOOLEAN NOT NULL,
             created_at TIMESTAMP(6) NOT NULL,
             deadline TIMESTAMP(6),
             deleted_at TIMESTAMP(6),
@@ -562,15 +688,16 @@ CREATE
             task_id BIGINT NOT NULL,
             updated_at TIMESTAMP(6) NOT NULL,
             apply_reason VARCHAR(255) NOT NULL,
-            class_name VARCHAR(255) NOT NULL,
+            class_name VARCHAR(255),
             email VARCHAR(255) NOT NULL,
-            grade VARCHAR(255) NOT NULL,
-            major VARCHAR(255) NOT NULL,
+            encryption_key_id VARCHAR(255),
+            grade VARCHAR(255),
+            major VARCHAR(255),
             personal_advantage VARCHAR(255) NOT NULL,
             phone VARCHAR(255) NOT NULL,
-            real_name VARCHAR(255) NOT NULL,
+            real_name VARCHAR(255),
             remark VARCHAR(255) NOT NULL,
-            student_id VARCHAR(255) NOT NULL,
+            student_id VARCHAR(255),
             PRIMARY KEY(id)
         );
 
@@ -693,6 +820,68 @@ CREATE
 
 CREATE
     TABLE
+        user_real_name_access_logs(
+            accessor_id BIGINT NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            module_entity_id BIGINT,
+            target_id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            access_reason VARCHAR(255) NOT NULL,
+            access_type VARCHAR(255) NOT NULL CHECK(
+                access_type IN(
+                    'VIEW',
+                    'EXPORT'
+                )
+            ),
+            ip_address VARCHAR(255) NOT NULL,
+            module_type VARCHAR(255) CHECK(
+                module_type IN('TASK')
+            ),
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        user_real_name_identities(
+            encrypted BOOLEAN DEFAULT FALSE NOT NULL,
+            created_at TIMESTAMP(6) NOT NULL,
+            deleted_at TIMESTAMP(6),
+            id BIGINT NOT NULL,
+            updated_at TIMESTAMP(6) NOT NULL,
+            user_id BIGINT NOT NULL,
+            class_name VARCHAR(255) NOT NULL,
+            encryption_key_id VARCHAR(255) NOT NULL,
+            grade VARCHAR(255) NOT NULL,
+            major VARCHAR(255) NOT NULL,
+            real_name VARCHAR(255) NOT NULL,
+            student_id VARCHAR(255) NOT NULL,
+            PRIMARY KEY(id)
+        );
+
+CREATE
+    TABLE
+        user_role(
+            id BIGINT GENERATED BY DEFAULT AS IDENTITY,
+            user_id BIGINT NOT NULL,
+            ROLE VARCHAR(255) NOT NULL CHECK(
+                ROLE IN(
+                    'SUPER_ADMIN',
+                    'ADMIN',
+                    'MODERATOR',
+                    'USER'
+                )
+            ),
+            PRIMARY KEY(id),
+            UNIQUE(
+                user_id,
+                ROLE
+            )
+        );
+
+CREATE
+    TABLE
         user_seu_consumption(
             is_cached BOOLEAN,
             seu_consumed NUMERIC(
@@ -719,16 +908,57 @@ CREATE
         );
 
 CREATE
+    INDEX IDXiuy7mmgy0obas3bfqu1j519bc ON
+    discussion(
+        model_type,
+        model_id
+    );
+
+CREATE
+    INDEX IDXkhxb42bgml7ds4m1mn25ulgpj ON
+    discussion(sender_id);
+
+CREATE
+    INDEX idx_reaction_discussion_type ON
+    discussion_reaction(
+        discussion_id,
+        reaction_type_id
+    );
+
+CREATE
+    INDEX idx_reaction_discussion_user ON
+    discussion_reaction(
+        discussion_id,
+        user_id
+    );
+
+CREATE
     INDEX IDXaj3gr2rwnv7uamdf03p78372m ON
     knowledge(name);
 
 CREATE
-    INDEX IDXpscwbyxoud3wy81qoy7a01f80 ON
-    knowledge_label_entity(knowledge_id);
+    INDEX IDXlk5f1tf6v3vslj8o1rfqwgcwi ON
+    knowledge(team_id);
 
 CREATE
-    INDEX IDXdwigtt9w7i3sbwkq9s1t5ihh0 ON
-    knowledge_label_entity(label);
+    INDEX IDXjabwimmbvt40wl20fp0kaevp4 ON
+    knowledge(source_type);
+
+CREATE
+    INDEX IDXk01yi4pk1orlwhihsorqhnwr8 ON
+    knowledge(project_id);
+
+CREATE
+    INDEX IDXp6qd6pe6q2uaa78bypcy99k2k ON
+    knowledge(discussion_id);
+
+CREATE
+    INDEX IDXiyfipycyf7afycfn9f8gkhcvf ON
+    knowledge_label(knowledge_id);
+
+CREATE
+    INDEX IDX2lm01yrx3fukjj9a89v0hpr2 ON
+    knowledge_label(label);
 
 CREATE
     INDEX IDX3k75vvu7mevyvvb5may5lj8k7 ON
@@ -747,36 +977,24 @@ CREATE
     project(parent_id);
 
 CREATE
-    INDEX IDXqsx9ogphlxqm4g7funlasxwit ON
-    project_discussion(project_id);
+    INDEX IDX95fxueh91d9uobhmly6smcdtw ON
+    project_membership(project_id);
 
 CREATE
-    INDEX IDX31oe4tu1rdota0bkwd2e78oju ON
-    project_discussion(sender_id);
+    INDEX IDXc0ggmiab5m1chu88hitikohha ON
+    project_membership(user_id);
 
 CREATE
-    INDEX IDXgbv14riv3876fsd5bir8fik52 ON
-    project_discussion(parent_id);
-
-CREATE
-    INDEX IDXafswtrwv5hq0ml0gulagy7b3b ON
-    project_discussion_reaction(project_discussion_id);
-
-CREATE
-    INDEX IDX43kw6o6kjlj006asay8wxedn3 ON
-    project_discussion_reaction(user_id);
-
-CREATE
-    INDEX IDXs4ljf8ihivq2aim4m44e6c3if ON
-    project_external_collaborator(project_id);
-
-CREATE
-    INDEX IDXl0ohd41bxpy9ln4urlj2v3kcj ON
-    project_external_collaborator(user_id);
+    INDEX IDXobr8vksep0or878byk2kohpty ON
+    project_membership(ROLE);
 
 CREATE
     INDEX IDXmllyu96n9vj606vm9w0gp3obx ON
     SPACE(name);
+
+CREATE
+    INDEX idx_spacecategories_archived ON
+    space_categories(archived_at);
 
 CREATE
     INDEX IDXfmekoev1y1edqr9achyy8jp3b ON
@@ -842,6 +1060,10 @@ CREATE
     INDEX IDXquiqutq8cnj700u982xlo8bsm ON
     team_user_relation(user_id);
 
+CREATE
+    INDEX IDXapcc8lxk2xnug8377fatvbn04 ON
+    user_role(user_id);
+
 ALTER TABLE
     IF EXISTS public.user_profile ADD CONSTRAINT FKo5dcemd97atrmjapi9x4s1j32 FOREIGN KEY(avatar_id) REFERENCES avatar;
 
@@ -852,13 +1074,43 @@ ALTER TABLE
     IF EXISTS ai_message ADD CONSTRAINT FKsaxwtwysovynl73cqwffe1fbn FOREIGN KEY(conversation_id) REFERENCES ai_conversation;
 
 ALTER TABLE
+    IF EXISTS discussion ADD CONSTRAINT FKgs1dxhfnb68rh344y4f34fwqa FOREIGN KEY(parent_id) REFERENCES discussion;
+
+ALTER TABLE
+    IF EXISTS discussion ADD CONSTRAINT FK7wmfmeiq6a9y5ygdi1obp01r FOREIGN KEY(sender_id) REFERENCES public."user";
+
+ALTER TABLE
+    IF EXISTS discussion_mentioned_users ADD CONSTRAINT FKg7pxkxyxyxq2g2qttjeyph6ra FOREIGN KEY(discussion_id) REFERENCES discussion;
+
+ALTER TABLE
+    IF EXISTS discussion_reaction ADD CONSTRAINT FKawpinudxl9749buwtradij9p6 FOREIGN KEY(discussion_id) REFERENCES discussion;
+
+ALTER TABLE
+    IF EXISTS discussion_reaction ADD CONSTRAINT FK9r8w78vm7sdf6iqkcl0pc9jqp FOREIGN KEY(reaction_type_id) REFERENCES reaction_type;
+
+ALTER TABLE
+    IF EXISTS discussion_reaction ADD CONSTRAINT FKjh9fs8xa2fuupaw2josqcjbfv FOREIGN KEY(user_id) REFERENCES public."user";
+
+ALTER TABLE
     IF EXISTS knowledge ADD CONSTRAINT FKacal20h046lgv8bl4bkl2di1f FOREIGN KEY("created_by_id") REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS knowledge ADD CONSTRAINT FKhniy1bsjjeoxbpfnlwydlgxtk FOREIGN KEY(material_id) REFERENCES material;
 
 ALTER TABLE
-    IF EXISTS knowledge_label_entity ADD CONSTRAINT FKn9rdc2m01070dfpopfiexs5n9 FOREIGN KEY(knowledge_id) REFERENCES knowledge;
+    IF EXISTS knowledge ADD CONSTRAINT FK1df46ccdrd9w7i5bf1urij4j2 FOREIGN KEY(discussion_id) REFERENCES discussion;
+
+ALTER TABLE
+    IF EXISTS knowledge ADD CONSTRAINT FKs854y5ajesie1jja4thskulsc FOREIGN KEY(team_id) REFERENCES team;
+
+ALTER TABLE
+    IF EXISTS knowledge_knowledge_labels ADD CONSTRAINT FKd9dp2f3c65b8d2gdc9oeql6ja FOREIGN KEY(knowledge_labels_id) REFERENCES knowledge_label;
+
+ALTER TABLE
+    IF EXISTS knowledge_knowledge_labels ADD CONSTRAINT FKbdxbbpetfqn7y3cuq50tgcuoq FOREIGN KEY(knowledge_id) REFERENCES knowledge;
+
+ALTER TABLE
+    IF EXISTS knowledge_label ADD CONSTRAINT FK43k38w4y2j691mb6nhyijhq96 FOREIGN KEY(knowledge_id) REFERENCES knowledge;
 
 ALTER TABLE
     IF EXISTS material ADD CONSTRAINT FK21nqwvdonsvsnp7r3d9uo17bo FOREIGN KEY(uploader_id) REFERENCES public."user" ON
@@ -884,40 +1136,19 @@ ALTER TABLE
     IF EXISTS notification ADD CONSTRAINT FKs951ba5cqr6ibbu6w295b3ljg FOREIGN KEY(receiver_id) REFERENCES public."user";
 
 ALTER TABLE
-    IF EXISTS project ADD CONSTRAINT FKo1hhpy5548w2mkqptfoejhn9l FOREIGN KEY("leader_id") REFERENCES public."user";
-
-ALTER TABLE
     IF EXISTS project ADD CONSTRAINT FKt0just6g3205u402vn88i0fhy FOREIGN KEY(parent_id) REFERENCES project;
 
 ALTER TABLE
-    IF EXISTS project ADD CONSTRAINT FK99hcloicqmg95ty11qht49n8x FOREIGN KEY(team_id) REFERENCES team;
-
-ALTER TABLE
-    IF EXISTS project_knowledge_project ADD CONSTRAINT FK118urn3jpv1bbqou4vgt7plbf FOREIGN KEY(knowledge_id) REFERENCES knowledge;
-
-ALTER TABLE
-    IF EXISTS project_discussion ADD CONSTRAINT FKtqjqyqmvkqtgm0ehxhokyou00 FOREIGN KEY(parent_id) REFERENCES project_discussion;
-
-ALTER TABLE
-    IF EXISTS project_discussion ADD CONSTRAINT FK38osivo96n9pn7tktnookf6hc FOREIGN KEY(project_id) REFERENCES project;
-
-ALTER TABLE
-    IF EXISTS project_discussion ADD CONSTRAINT FKacbplng6k4nd13jimdq7smr7d FOREIGN KEY("sender_id") REFERENCES public."user";
-
-ALTER TABLE
-    IF EXISTS project_discussion_reaction ADD CONSTRAINT FKgwp92ko43m29ulofqhm9l4ecx FOREIGN KEY(project_discussion_id) REFERENCES project_discussion;
-
-ALTER TABLE
-    IF EXISTS project_discussion_reaction ADD CONSTRAINT FKcmgufje6xw5v10l5xkl7c7tg9 FOREIGN KEY("user_id") REFERENCES public."user";
-
-ALTER TABLE
-    IF EXISTS project_external_collaborator ADD CONSTRAINT FKg743uet6baba96l4nvt09si6b FOREIGN KEY(project_id) REFERENCES project;
-
-ALTER TABLE
-    IF EXISTS project_external_collaborator ADD CONSTRAINT FKont3tarqujw2xphhpsnddpbo7 FOREIGN KEY("user_id") REFERENCES public."user";
+    IF EXISTS project_membership ADD CONSTRAINT FK6nerxrll628ug1mvgpt2spgpk FOREIGN KEY(project_id) REFERENCES project;
 
 ALTER TABLE
     IF EXISTS SPACE ADD CONSTRAINT FK77tn26hq1ml6ri82fp970we8n FOREIGN KEY(avatar_id) REFERENCES avatar;
+
+ALTER TABLE
+    IF EXISTS SPACE ADD CONSTRAINT FKfumv58c5xoatfj5qa9cw6grgy FOREIGN KEY(default_category_id) REFERENCES space_categories;
+
+ALTER TABLE
+    IF EXISTS space_categories ADD CONSTRAINT FKtk9fc6aqpb9hr1yg4rk284a2i FOREIGN KEY(space_id) REFERENCES SPACE;
 
 ALTER TABLE
     IF EXISTS space_admin_relation ADD CONSTRAINT FKhkpyunhmsubl1gvahyk9e9lff FOREIGN KEY(space_id) REFERENCES SPACE;
@@ -938,13 +1169,16 @@ ALTER TABLE
     IF EXISTS space_user_rank ADD CONSTRAINT FKiego7kcolpikn8o93o3qdjt3p FOREIGN KEY("user_id") REFERENCES public."user";
 
 ALTER TABLE
-    IF EXISTS task ADD CONSTRAINT FK67uenor8d9f8lq7wjv7h56n2o FOREIGN KEY("creator_id") REFERENCES public."user";
+    IF EXISTS task ADD CONSTRAINT FKm8oxgq962olauqi7d4s0cufoj FOREIGN KEY(category_id) REFERENCES space_categories;
+
+ALTER TABLE
+    IF EXISTS task ADD CONSTRAINT FKgbm6entex11ihw1lb57wb1vgt FOREIGN KEY(creator_id) REFERENCES public."user";
 
 ALTER TABLE
     IF EXISTS task ADD CONSTRAINT FKe6m3e5625asfu59r4doayop1o FOREIGN KEY(space_id) REFERENCES SPACE;
 
 ALTER TABLE
-    IF EXISTS task ADD CONSTRAINT FK6r32b6vk1rpu7ww7gratmce1i FOREIGN KEY(team_id) REFERENCES team;
+    IF EXISTS task_membership_team_members ADD CONSTRAINT FKqqe540ncjf6ylguc5r3mt51sm FOREIGN KEY(task_membership_id) REFERENCES task_membership;
 
 ALTER TABLE
     IF EXISTS task_submission_schema ADD CONSTRAINT FKeipe4rx4f493n82xgon4padr5 FOREIGN KEY(task_id) REFERENCES task;

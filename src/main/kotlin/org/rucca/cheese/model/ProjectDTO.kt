@@ -14,13 +14,16 @@ import javax.validation.constraints.Pattern
  * @param endDate 项目结束时间戳(毫秒)
  * @param team
  * @param leader
- * @param content
+ * @param members
  * @param colorCode
  * @param parentId 父项目ID
  * @param externalTaskId
  * @param githubRepo
+ * @param content
  * @param createdAt
  * @param updatedAt
+ * @param archived
+ * @param children
  */
 data class ProjectDTO(
     @Schema(example = "null", required = true, description = "")
@@ -46,9 +49,10 @@ data class ProjectDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("leader", required = true)
     val leader: UserDTO,
+    @field:Valid
     @Schema(example = "null", required = true, description = "")
-    @get:JsonProperty("content", required = true)
-    val content: kotlin.String,
+    @get:JsonProperty("members", required = true)
+    val members: ProjectMembersDTO,
     @get:Pattern(regexp = "^#[0-9A-Fa-f]{6}$")
     @Schema(example = "null", description = "")
     @get:JsonProperty("colorCode")
@@ -63,11 +67,21 @@ data class ProjectDTO(
     @get:JsonProperty("githubRepo")
     val githubRepo: kotlin.String? = null,
     @Schema(example = "null", description = "")
+    @get:JsonProperty("content")
+    val content: kotlin.String? = null,
+    @Schema(example = "null", description = "")
     @get:JsonProperty("createdAt")
     val createdAt: kotlin.Long? = null,
     @Schema(example = "null", description = "")
     @get:JsonProperty("updatedAt")
     val updatedAt: kotlin.Long? = null,
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("archived")
+    val archived: kotlin.Boolean? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
+    @get:JsonProperty("children")
+    val children: kotlin.collections.List<ProjectDTO>? = null,
 ) : Serializable {
 
     companion object {

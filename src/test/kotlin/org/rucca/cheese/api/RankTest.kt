@@ -59,10 +59,13 @@ constructor(
         """
                         [
                           {
-                            "contentText": "This is a test submission."
+                            "text": "This is a test submission."
                           }
                         ]
                     """
+    private var participantTaskMembershipId: IdType = -1
+    private var participant2TaskMembershipId: IdType = -1
+    private var participant3TaskMembershipId: IdType = -1
 
     @BeforeAll
     fun prepare() {
@@ -70,60 +73,74 @@ constructor(
         creatorToken = userClient.login(creator.username, creator.password)
         participant = userClient.createUser()
         participantToken = userClient.login(participant.username, participant.password)
-        spaceId = spaceClient.createSpace(creatorToken)
+        spaceId = spaceClient.createSpace(creatorToken).first
         taskId =
             taskClient.createTask(
                 creatorToken,
                 submitterType = "USER",
                 resubmittable = false,
                 editable = false,
-                team = null,
-                space = spaceId,
+                spaceId = spaceId,
                 rank = 1,
             )
         taskClient.approveTask(taskId, creatorToken)
-        taskClient.addParticipantUser(participantToken, taskId, participant.userId)
-        taskClient.approveTaskParticipant(creatorToken, taskId, participant.userId)
+        participantTaskMembershipId =
+            taskClient.addParticipantUser(participantToken, taskId, participant.userId)
+        taskClient.approveTaskParticipant(creatorToken, taskId, participantTaskMembershipId)
         submissionId =
-            taskClient.submitTaskUser(participantToken, taskId, participant.userId, submission)
+            taskClient.submitTaskUser(
+                participantToken,
+                taskId,
+                participantTaskMembershipId,
+                submission,
+            )
         taskId2 =
             taskClient.createTask(
                 creatorToken,
                 submitterType = "USER",
                 resubmittable = false,
                 editable = false,
-                team = null,
-                space = spaceId,
+                spaceId = spaceId,
                 rank = 2,
             )
         taskClient.approveTask(taskId2, creatorToken)
-        taskClient.addParticipantUser(participantToken, taskId2, participant.userId)
-        taskClient.approveTaskParticipant(creatorToken, taskId2, participant.userId)
+        participant2TaskMembershipId =
+            taskClient.addParticipantUser(participantToken, taskId2, participant.userId)
+        taskClient.approveTaskParticipant(creatorToken, taskId2, participant2TaskMembershipId)
         submissionId2 =
-            taskClient.submitTaskUser(participantToken, taskId2, participant.userId, submission)
+            taskClient.submitTaskUser(
+                participantToken,
+                taskId2,
+                participant2TaskMembershipId,
+                submission,
+            )
         taskId3 =
             taskClient.createTask(
                 creatorToken,
                 submitterType = "USER",
                 resubmittable = false,
                 editable = false,
-                team = null,
-                space = spaceId,
+                spaceId = spaceId,
                 rank = 1,
             )
         taskClient.approveTask(taskId3, creatorToken)
-        taskClient.addParticipantUser(participantToken, taskId3, participant.userId)
-        taskClient.approveTaskParticipant(creatorToken, taskId3, participant.userId)
+        participant3TaskMembershipId =
+            taskClient.addParticipantUser(participantToken, taskId3, participant.userId)
+        taskClient.approveTaskParticipant(creatorToken, taskId3, participant3TaskMembershipId)
         submissionId3 =
-            taskClient.submitTaskUser(participantToken, taskId3, participant.userId, submission)
+            taskClient.submitTaskUser(
+                participantToken,
+                taskId3,
+                participant3TaskMembershipId,
+                submission,
+            )
         taskId4 =
             taskClient.createTask(
                 creatorToken,
                 submitterType = "USER",
                 resubmittable = false,
                 editable = false,
-                team = null,
-                space = spaceId,
+                spaceId = spaceId,
                 rank = 2,
             )
         taskClient.approveTask(taskId4, creatorToken)
@@ -211,7 +228,9 @@ constructor(
                 .contentType("application/json")
                 .content(
                     """
-                    {}
+                    {
+                      "email": "test@example.com"
+                    }
                 """
                 )
         mockMvc
@@ -226,7 +245,9 @@ constructor(
     @Order(60)
     fun testCreateReview() {
         val request =
-            MockMvcRequestBuilders.post("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -262,7 +283,9 @@ constructor(
     @Order(70)
     fun testUpdateReview() {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.patch(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -287,7 +310,9 @@ constructor(
                 .contentType("application/json")
                 .content(
                     """
-                    {}
+                    {
+                      "email": "test@example.com"
+                    }
                 """
                 )
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
@@ -311,7 +336,9 @@ constructor(
     @Order(90)
     fun testCreateReview2() {
         val request =
-            MockMvcRequestBuilders.post("/tasks/submissions/$submissionId2/review")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participant2TaskMembershipId/submissions/$submissionId2/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -347,7 +374,9 @@ constructor(
     @Order(110)
     fun testCreateReview3() {
         val request =
-            MockMvcRequestBuilders.post("/tasks/submissions/$submissionId3/review")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participant3TaskMembershipId/submissions/$submissionId3/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(

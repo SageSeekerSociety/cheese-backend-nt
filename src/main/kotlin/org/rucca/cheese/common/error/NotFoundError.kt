@@ -12,9 +12,13 @@ package org.rucca.cheese.common.error
 import org.rucca.cheese.common.persistent.IdType
 import org.springframework.http.HttpStatus
 
-class NotFoundError(type: String, id: IdType) :
-    BaseError(
-        status = HttpStatus.NOT_FOUND,
-        message = "$type with id $id was not found",
+class NotFoundError(message: String = "Resource not found", data: Map<String, Any> = emptyMap()) :
+    BaseError(status = HttpStatus.NOT_FOUND, message = message, data = data) {
+    constructor(
+        type: String,
+        id: IdType,
+    ) : this(
+        message = "Resource $type with id $id not found",
         data = mapOf("type" to type, "id" to id),
     )
+}

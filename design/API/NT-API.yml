@@ -5,6 +5,212 @@ info:
 servers:
   - url: "http://localhost:8080"
 paths:
+  /users/{userId}/identity:
+    get:
+      tags: [ ]
+      operationId: get-user-identity
+      summary: Get User Real Name Identity Info
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      parameters:
+        - description: User ID
+          in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Whether to return the precise identity info
+          in: query
+          name: precise
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      hasIdentity:
+                        type: boolean
+                      identity:
+                        $ref: "#/components/schemas/UserIdentity"
+                    required:
+                      - hasIdentity
+                    type: object
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+    put:
+      tags: [ ]
+      operationId: put-user-identity
+      summary: Update User Real Name Identity Info
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      parameters:
+        - description: User ID
+          in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                realName:
+                  type: string
+                studentId:
+                  type: string
+                grade:
+                  type: string
+                major:
+                  type: string
+                className:
+                  type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      identity:
+                        $ref: "#/components/schemas/UserIdentity"
+                    required:
+                      - identity
+                    type: object
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+    patch:
+      tags: [ ]
+      operationId: patch-user-identity
+      summary: Update User Real Name Identity Info
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      parameters:
+        - description: User ID
+          in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                realName:
+                  type: string
+                studentId:
+                  type: string
+                grade:
+                  type: string
+                major:
+                  type: string
+                className:
+                  type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      identity:
+                        $ref: "#/components/schemas/UserIdentity"
+                    required:
+                      - identity
+                    type: object
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+  /users/{userId}/identity/access-logs:
+    get:
+      tags: [ ]
+      operationId: get-user-identity-access-logs
+      summary: Get User Real Name Identity Access Logs
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      parameters:
+        - description: User ID
+          in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - schema:
+            type: integer
+            format: int64
+          in: query
+          name: page_size
+          description: Page Size
+        - schema:
+            type: integer
+            format: int64
+          in: query
+          name: page_start
+          description: ID of First Element
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      logs:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/UserIdentityAccessLog"
+                      page:
+                        $ref: "#/components/schemas/Page"
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
   /spaces/{spaceId}:
     delete:
       parameters:
@@ -23,22 +229,16 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: fr61caeks4gxw
                   message:
                     type: string
-                    x-stoplight:
-                      id: 8ylo3xkd1jmiq
                 required:
                   - code
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: delete-space
       summary: Delete Space
-      x-stoplight:
-        id: y5t7k7vw6v5lj
     get:
       parameters:
         - description: Space ID
@@ -62,8 +262,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: fr61caeks4gxw
                   data:
                     properties:
                       space:
@@ -71,23 +269,17 @@ paths:
                     required:
                       - space
                     type: object
-                    x-stoplight:
-                      id: aq9k2n1lkyybd
                   message:
                     type: string
-                    x-stoplight:
-                      id: 8ylo3xkd1jmiq
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: get-space
       summary: Query Space
-      x-stoplight:
-        id: sa76mapokoxdw
     patch:
       parameters:
         - description: Space ID
@@ -105,8 +297,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: fr61caeks4gxw
                   data:
                     properties:
                       space:
@@ -114,19 +304,15 @@ paths:
                     required:
                       - space
                     type: object
-                    x-stoplight:
-                      id: aq9k2n1lkyybd
                   message:
                     type: string
-                    x-stoplight:
-                      id: 8ylo3xkd1jmiq
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: patch-space
       requestBody:
         required: true
@@ -137,18 +323,12 @@ paths:
               properties:
                 intro:
                   type: string
-                  x-stoplight:
-                    id: o0xbwqyvvlxbw
                 description:
                   type: string
                 name:
                   type: string
-                  x-stoplight:
-                    id: nvrbufaetpfgt
                 avatarId:
                   type: integer
-                  x-stoplight:
-                    id: jfrrkzlkmiav2
                   format: int64
                 enableRank:
                   type: boolean
@@ -161,13 +341,297 @@ paths:
                   items:
                     type: integer
                     format: int64
+                defaultCategoryId:
+                  type: integer
+                  format: int64
+                  description: ID of the default category for tasks in this space.
+                  example: 1
       summary: Update Space
-      x-stoplight:
-        id: 0f71c5ul8igvq
+  /spaces/{spaceId}/categories:
+    parameters:
+      - name: spaceId
+        in: path
+        required: true
+        description: ID of the space to manage categories for.
+        schema:
+          type: integer
+          format: int64
+    get:
+      tags:
+        - Space Categories
+      summary: List categories in a space
+      description: Retrieves a list of all categories belonging to the specified space, ordered by displayOrder and name.
+      operationId: listSpaceCategories
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: A list of categories.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      categories:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SpaceCategory'
+                    required:
+                      - categories
+                  message:
+                    type: string
+      parameters:
+        - name: spaceId
+          in: path
+          required: true
+          description: ID of the space to manage categories for.
+          schema:
+            type: integer
+            format: int64
+        - name: includeArchived
+          in: query
+          required: false
+          description: Set to true to include archived categories in the results. Defaults to false.
+          schema:
+            type: boolean
+            default: false
+    post:
+      tags:
+        - Space Categories
+      summary: Create a category in a space
+      description: Creates a new category within the specified space. Requires admin privileges for the space.
+      operationId: createSpaceCategory
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name for the new category. Must be unique within the space.
+                  minLength: 1
+                  example: "Urgent"
+                description:
+                  type: string
+                  nullable: true
+                  description: Optional description for the category.
+                  example: "High priority tasks."
+                displayOrder:
+                  type: integer
+                  description: Optional display order. Defaults to 0 if not provided.
+                  example: 5
+              required:
+                - name
+      responses:
+        '201':
+          description: Category created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      category:
+                        $ref: '#/components/schemas/SpaceCategory'
+                    required:
+                      - category
+                  message:
+                    type: string
+  /spaces/{spaceId}/categories/{categoryId}:
+    parameters:
+      - name: spaceId
+        in: path
+        required: true
+        description: ID of the space the category belongs to.
+        schema:
+          type: integer
+          format: int64
+      - name: categoryId
+        in: path
+        required: true
+        description: ID of the category to retrieve, update, or delete.
+        schema:
+          type: integer
+          format: int64
+    get:
+      tags:
+        - Space Categories
+      summary: Get a specific category
+      description: Retrieves details of a specific category within a space.
+      operationId: getSpaceCategory
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: Category details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      category:
+                        $ref: '#/components/schemas/SpaceCategory'
+                    required:
+                      - category
+                  message:
+                    type: string
+    patch:
+      tags:
+        - Space Categories
+      summary: Update a category
+      description: Updates specific fields of a category. Requires admin privileges for the space.
+      operationId: updateSpaceCategory
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: New name for the category. Must be unique within the space if changed.
+                  minLength: 1
+                  example: "High Priority"
+                description:
+                  type: string
+                  nullable: true
+                  description: New description for the category. Set to null to clear.
+                  example: "Tasks requiring immediate attention."
+                displayOrder:
+                  type: integer
+                  description: New display order for the category.
+                  example: 2
+      responses:
+        '200':
+          description: Category updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      category:
+                        $ref: '#/components/schemas/SpaceCategory'
+                    required:
+                      - category
+                  message:
+                    type: string
+    delete:
+      tags:
+        - Space Categories
+      summary: Delete a category
+      description: Soft-deletes a category ONLY if it contains no tasks. For categories with tasks, use the archive endpoint. Cannot delete the default category.
+      operationId: deleteSpaceCategory
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '204':
+          description: Category deleted successfully.
+  /spaces/{spaceId}/categories/{categoryId}/archive:
+    post:
+      tags:
+        - Space Categories
+      summary: Archive a category
+      description: Marks a category as archived. Tasks within it remain associated. Cannot archive the default category.
+      operationId: archiveSpaceCategory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: spaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Category archived successfully. Returns updated category details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      category:
+                        $ref: '#/components/schemas/SpaceCategory'
+                    required:
+                      - category
+                  message:
+                    type: string
+    delete:
+      tags:
+        - Space Categories
+      summary: Unarchive a category
+      description: Removes the archived status from a category, making it active again.
+      operationId: unarchiveSpaceCategory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: spaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Category unarchived successfully. Returns updated category details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      category:
+                        $ref: '#/components/schemas/SpaceCategory'
+                    required:
+                      - category
+                  message:
+                    type: string
   /spaces:
     get:
       summary: Enumerate Spaces
-      tags: []
+      tags: [ ]
       responses:
         "200":
           description: OK
@@ -178,28 +642,18 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: 5gq7kfjr7g288
                   data:
                     type: object
-                    x-stoplight:
-                      id: pf3jhme2fvxd9
                     properties:
                       spaces:
                         type: array
-                        x-stoplight:
-                          id: mmwrg6njl8i2e
                         items:
                           $ref: "#/components/schemas/Space"
                       page:
                         $ref: "#/components/schemas/Page"
                   message:
                     type: string
-                    x-stoplight:
-                      id: jl4ak7ckhxdhm
       operationId: get-spaces
-      x-stoplight:
-        id: ftqdjmms34blr
       parameters:
         - description: Query your rank in this space
           in: query
@@ -239,8 +693,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: fr61caeks4gxw
                   data:
                     properties:
                       space:
@@ -248,19 +700,15 @@ paths:
                     required:
                       - space
                     type: object
-                    x-stoplight:
-                      id: aq9k2n1lkyybd
                   message:
                     type: string
-                    x-stoplight:
-                      id: 8ylo3xkd1jmiq
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: post-space
       requestBody:
         required: true
@@ -278,39 +726,37 @@ paths:
               properties:
                 intro:
                   type: string
-                  x-stoplight:
-                    id: 7k1r7n9xll0k2
                 description:
                   type: string
                 name:
                   type: string
-                  x-stoplight:
-                    id: ters5hblboh72
                 avatarId:
                   type: integer
-                  x-stoplight:
-                    id: 3ec9m0u97i2rr
                   format: int64
+                  example: 1
                 enableRank:
                   type: boolean
                   default: false
                 announcements:
                   type: string
+                  default: "[]"
+                  example: "[]"
                 taskTemplates:
                   type: string
+                  default: "[]"
+                  example: "[]"
                 classificationTopics:
                   type: array
                   items:
                     type: integer
                     format: int64
-                  default: []
+                  default: [ ]
+                  example: [ ]
       summary: Create Space
-      x-stoplight:
-        id: pg0dllezwwg9w
   /spaces/{spaceId}/managers/{userId}:
     delete:
       summary: Disqualify Space Admin
-      tags: []
+      tags: [ ]
       responses:
         "200":
           content:
@@ -319,20 +765,14 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: fr61caeks4gxw
                   message:
                     type: string
-                    x-stoplight:
-                      id: 8ylo3xkd1jmiq
                 required:
                   - code
                   - message
                 type: object
           description: OK
       operationId: delete-space-admin
-      x-stoplight:
-        id: 3folrj4cnukp4
       parameters:
         - schema:
             type: integer
@@ -350,7 +790,7 @@ paths:
           required: true
     patch:
       summary: Update Space Admin Info
-      tags: []
+      tags: [ ]
       responses:
         "200":
           content:
@@ -359,8 +799,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: fr61caeks4gxw
                   data:
                     properties:
                       space:
@@ -368,12 +806,8 @@ paths:
                     required:
                       - space
                     type: object
-                    x-stoplight:
-                      id: aq9k2n1lkyybd
                   message:
                     type: string
-                    x-stoplight:
-                      id: 8ylo3xkd1jmiq
                 required:
                   - code
                   - data
@@ -381,8 +815,6 @@ paths:
                 type: object
           description: OK
       operationId: patch-space-admin
-      x-stoplight:
-        id: viqdcn2w1j37r
       parameters:
         - schema:
             type: integer
@@ -410,7 +842,7 @@ paths:
   /spaces/{spaceId}/managers:
     post:
       summary: Add Space Admin
-      tags: []
+      tags: [ ]
       responses:
         "200":
           content:
@@ -419,8 +851,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: fr61caeks4gxw
                   data:
                     properties:
                       space:
@@ -428,12 +858,8 @@ paths:
                     required:
                       - space
                     type: object
-                    x-stoplight:
-                      id: aq9k2n1lkyybd
                   message:
                     type: string
-                    x-stoplight:
-                      id: 8ylo3xkd1jmiq
                 required:
                   - code
                   - data
@@ -441,8 +867,6 @@ paths:
                 type: object
           description: OK
       operationId: post-space-admin
-      x-stoplight:
-        id: le3meyzafgt31
       parameters:
         - schema:
             type: integer
@@ -465,8 +889,6 @@ paths:
                   $ref: "#/components/schemas/SpaceAdminRoleType"
                 userId:
                   type: integer
-                  x-stoplight:
-                    id: uqb3cxqft9n9q
                   format: int64
   /tasks/{taskId}:
     delete:
@@ -483,25 +905,11 @@ paths:
           content:
             application/json:
               schema:
-                properties:
-                  code:
-                    type: integer
-                    x-stoplight:
-                      id: 5h4i9qnxtzkyc
-                  message:
-                    type: string
-                    x-stoplight:
-                      id: yakrhf5tw2k0o
-                required:
-                  - code
-                  - message
-                type: object
+                $ref: "#/components/schemas/CommonResponse"
           description: OK
-      tags: []
+      tags: [ ]
       operationId: delete-task
       summary: Delete Task
-      x-stoplight:
-        id: zjib7afl5gujp
     get:
       parameters:
         - description: Task ID
@@ -545,20 +953,8 @@ paths:
             type: boolean
             default: false
           in: query
-          name: queryJoinedApproved
-          description: Check whether current user has joined this task and has been approved
-        - schema:
-            type: boolean
-            default: false
-          in: query
-          name: queryJoinedDisapproved
-          description: Check whether current user has joined this task and has been disapproved
-        - schema:
-            type: boolean
-            default: false
-          in: query
-          name: queryJoinedNotApprovedOrDisapproved
-          description: Check whether current user has joined this task and has not been approved or disapproved
+          name: queryUserDeadline
+          description: Check whether current user has a specific deadline for this task
         - schema:
             type: boolean
             default: false
@@ -573,32 +969,27 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: ehv14gy4oxg6y
                   data:
                     properties:
                       task:
                         $ref: "#/components/schemas/Task"
+                      participation:
+                        $ref: "#/components/schemas/TaskParticipationInfo"
                     required:
                       - task
+                      - participation
                     type: object
-                    x-stoplight:
-                      id: nkg36f022iluq
                   message:
                     type: string
-                    x-stoplight:
-                      id: avsxy26ifxoca
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: get-task
       summary: Query Task
-      x-stoplight:
-        id: fuv3w7t9i0rmo
     patch:
       parameters:
         - description: Task ID
@@ -616,8 +1007,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: ehv14gy4oxg6y
                   data:
                     properties:
                       task:
@@ -625,19 +1014,15 @@ paths:
                     required:
                       - task
                     type: object
-                    x-stoplight:
-                      id: nkg36f022iluq
                   message:
                     type: string
-                    x-stoplight:
-                      id: avsxy26ifxoca
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: patch-task
       requestBody:
         required: true
@@ -648,8 +1033,6 @@ paths:
               properties:
                 name:
                   type: string
-                  x-stoplight:
-                    id: 4eatfhceym142
                 hasDeadline:
                   type: boolean
                 deadline:
@@ -664,22 +1047,14 @@ paths:
                   format: int64
                 resubmittable:
                   type: boolean
-                  x-stoplight:
-                    id: 3uylnstdpqmi8
                 editable:
                   type: boolean
-                  x-stoplight:
-                    id: 5z1nmt7xtfq6p
                 intro:
                   type: string
                 description:
                   type: string
-                  x-stoplight:
-                    id: 50a27oqgfu81b
                 submissionSchema:
                   type: array
-                  x-stoplight:
-                    id: s3pibjz1gy1ek
                   items:
                     $ref: "#/components/schemas/TaskSubmissionSchemaEntry"
                 hasRank:
@@ -695,9 +1070,65 @@ paths:
                   items:
                     type: integer
                     format: int64
+                requireRealName:
+                  type: boolean
+                categoryId:
+                  type: integer
+                  format: int64
+                  description: ID of the category to which the task belongs.
+                  example: 1
       summary: Update Task
-      x-stoplight:
-        id: sy7yhfh83myt0
+  /tasks/{taskId}/teams:
+    get:
+      summary: Get teams associated with a task
+      description: |
+        Retrieves a list of teams associated with a specific task. 
+        The teams can be filtered based on eligibility criteria.
+      operationId: getTaskTeams
+      tags:
+        - Tasks
+      parameters:
+        - in: path
+          name: taskId
+          schema:
+            type: integer
+            format: int64
+          required: true
+          description: The ID of the task
+        - in: query
+          name: filter
+          schema:
+            type: string
+            enum: [ eligible, all ]
+            default: eligible
+          description: |
+            Filter teams based on eligibility. 
+            "eligible" returns teams that meet the task's requirements (e.g., real name info).
+            "all" returns all teams.
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    description: Response code
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      teams:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TeamSummary"
+                    description: List of teams
+                  message:
+                    type: string
+                    description: Response message
+                    example: OK
   /tasks/{taskId}/ai-advice/conversations:
     post:
       summary: Create AI Advice Conversation
@@ -801,7 +1232,7 @@ paths:
                     type: string
     delete:
       summary: Delete AI Advice Conversation
-      tags: []
+      tags: [ ]
       operationId: delete-task-ai-advice-conversation
       parameters:
         - name: taskId
@@ -821,7 +1252,7 @@ paths:
   /tasks/{taskId}/ai-advice:
     get:
       summary: Get AI Advice
-      tags: []
+      tags: [ ]
       operationId: get-task-ai-advice
       parameters:
         - description: Task ID
@@ -857,7 +1288,7 @@ paths:
                     example: "Task AI advice is not ready yet. Current status: PROCESSING"
     post:
       summary: Request AI Advice Generation
-      tags: []
+      tags: [ ]
       operationId: request-task-ai-advice
       parameters:
         - description: Task ID
@@ -888,7 +1319,7 @@ paths:
   /tasks/{taskId}/ai-advice/status:
     get:
       summary: Get AI Advice Generation Status
-      tags: []
+      tags: [ ]
       operationId: get-task-ai-advice-status
       parameters:
         - description: Task ID
@@ -918,7 +1349,7 @@ paths:
   /ai/quota:
     get:
       summary: Get Current User's AI Quota
-      tags: []
+      tags: [ ]
       operationId: get-user-ai-quota
       responses:
         "200":
@@ -936,7 +1367,7 @@ paths:
   /tasks:
     get:
       summary: Enumerate Tasks
-      tags: []
+      tags: [ ]
       responses:
         "200":
           description: OK
@@ -947,28 +1378,18 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: 5gq7kfjr7g288
                   data:
                     type: object
-                    x-stoplight:
-                      id: pf3jhme2fvxd9
                     properties:
                       tasks:
                         type: array
-                        x-stoplight:
-                          id: mmwrg6njl8i2e
                         items:
                           $ref: "#/components/schemas/Task"
                       page:
                         $ref: "#/components/schemas/Page"
                   message:
                     type: string
-                    x-stoplight:
-                      id: jl4ak7ckhxdhm
       operationId: get-tasks
-      x-stoplight:
-        id: ftqdjmms34blr
       parameters:
         - schema:
             type: integer
@@ -976,12 +1397,14 @@ paths:
           in: query
           name: space
           description: Space ID
-        - schema:
+          required: true
+        - name: categoryId
+          in: query
+          required: false
+          description: Filter tasks by the ID of the category they belong to.
+          schema:
             type: integer
             format: int64
-          in: query
-          name: team
-          description: Team ID
         - schema:
             $ref: "#/components/schemas/ApproveType"
           in: query
@@ -1064,20 +1487,8 @@ paths:
             type: boolean
             default: false
           in: query
-          name: queryJoinedApproved
-          description: Check whether current user has joined this task and has been approved
-        - schema:
-            type: boolean
-            default: false
-          in: query
-          name: queryJoinedDisapproved
-          description: Check whether current user has joined this task and has been disapproved
-        - schema:
-            type: boolean
-            default: false
-          in: query
-          name: queryJoinedNotApprovedOrDisapproved
-          description: Check whether current user has joined this task and has not been approved or disapproved
+          name: queryUserDeadline
+          description: Check whether current user has a specific deadline for this task
         - schema:
             type: boolean
             default: false
@@ -1098,8 +1509,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: ehv14gy4oxg6y
                   data:
                     properties:
                       task:
@@ -1107,19 +1516,15 @@ paths:
                     required:
                       - task
                     type: object
-                    x-stoplight:
-                      id: nkg36f022iluq
                   message:
                     type: string
-                    x-stoplight:
-                      id: avsxy26ifxoca
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: post-task
       requestBody:
         required: true
@@ -1129,6 +1534,7 @@ paths:
               type: object
               required:
                 - name
+                - space
                 - submitterType
                 - resubmittable
                 - editable
@@ -1138,8 +1544,6 @@ paths:
               properties:
                 name:
                   type: string
-                  x-stoplight:
-                    id: o3nu6n0d4nu01
                 submitterType:
                   $ref: "#/components/schemas/TaskSubmitterType"
                 deadline:
@@ -1153,31 +1557,24 @@ paths:
                   default: 30
                 resubmittable:
                   type: boolean
-                  x-stoplight:
-                    id: 5x0rtugaj2v8a
                 editable:
                   type: boolean
-                  x-stoplight:
-                    id: 6slkgw3drj9t0
                 intro:
                   type: string
                 description:
                   type: string
-                  x-stoplight:
-                    id: s3hgl7ozj3e12
                 submissionSchema:
                   type: array
-                  x-stoplight:
-                    id: a08xra4phvwqx
                   items:
                     $ref: "#/components/schemas/TaskSubmissionSchemaEntry"
-                team:
-                  type: integer
-                  format: int64
-                  x-stoplight:
                 space:
                   type: integer
                   format: int64
+                categoryId:
+                  type: integer
+                  format: int64
+                  description: The ID of the category to assign this task to. Requires spaceId to be set.
+                  example: 123
                 rank:
                   type: integer
                 topics:
@@ -1185,14 +1582,24 @@ paths:
                   items:
                     type: integer
                     format: int64
-                  default: []
+                  default: [ ]
+                requireRealName:
+                  type: boolean
+                  description: Whether the task requires real name information
+                  default: false
+                minTeamSize:
+                  type: integer
+                  format: int64
+                  description: Minimum team size required to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.
+                maxTeamSize:
+                  type: integer
+                  format: int64
+                  description: Maximum team size allowed to submit the task, only valid if submitterType is TEAM. `undefined` if not specified.
       summary: Create Task
-      x-stoplight:
-        id: ai79622xpxp6v
   /tasks/{taskId}/participants:
     get:
       summary: Get Participants
-      tags: []
+      tags: [ ]
       operationId: get-task-participants
       parameters:
         - description: Task ID
@@ -1226,12 +1633,8 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: ehv14gy4oxg6y
                   data:
                     type: object
-                    x-stoplight:
-                      id: nkg36f022iluq
                     required:
                       - participants
                     properties:
@@ -1243,7 +1646,7 @@ paths:
                     type: string
           description: OK
     patch:
-      summary: Update TaskMembership
+      summary: Update TaskMembership By Member ID
       parameters:
         - description: Task ID
           in: path
@@ -1267,8 +1670,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: ehv14gy4oxg6y
                   data:
                     properties:
                       participants:
@@ -1280,30 +1681,20 @@ paths:
                     type: object
                   message:
                     type: string
-                    x-stoplight:
-                      id: avsxy26ifxoca
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
-      operationId: patch-task-membership
+      tags: [ ]
+      operationId: patch-task-membership-by-member
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                deadline:
-                  type: integer
-                  format: int64
-                approved:
-                  $ref: "#/components/schemas/ApproveType"
-                realNameInfo:
-                  $ref: "#/components/schemas/TaskParticipantRealNameInfo"
+              $ref: "#/components/schemas/PatchTaskMembershipRequest"
     delete:
       parameters:
         - description: Task ID
@@ -1321,41 +1712,11 @@ paths:
             type: integer
             format: int64
       responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                properties:
-                  code:
-                    type: integer
-                    x-stoplight:
-                      id: ehv14gy4oxg6y
-                  data:
-                    properties:
-                      participants:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/TaskMembership"
-                    required:
-                      - task
-                    type: object
-                    x-stoplight:
-                      id: nkg36f022iluq
-                  message:
-                    type: string
-                    x-stoplight:
-                      id: avsxy26ifxoca
-                required:
-                  - code
-                  - data
-                  - message
-                type: object
-          description: OK
-      tags: []
-      operationId: delete-task-participant
-      summary: Leave Task
-      x-stoplight:
-        id: a3mg97p7csitv
+        "204":
+          description: No Content
+      tags: [ ]
+      operationId: delete-task-participant-by-member
+      summary: Leave Task By Member ID
     post:
       parameters:
         - description: Task ID
@@ -1380,23 +1741,15 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: ehv14gy4oxg6y
                   data:
                     properties:
-                      participants:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/TaskMembership"
+                      participant:
+                        $ref: "#/components/schemas/TaskMembership"
                     required:
                       - task
                     type: object
-                    x-stoplight:
-                      id: nkg36f022iluq
                   message:
                     type: string
-                    x-stoplight:
-                      id: avsxy26ifxoca
                 required:
                   - code
                   - data
@@ -1413,17 +1766,136 @@ paths:
                 deadline:
                   type: integer
                   format: int64
-                realNameInfo:
-                  $ref: "#/components/schemas/TaskParticipantRealNameInfo"
-      tags: []
+                email:
+                  type: string
+                phone:
+                  type: string
+                applyReason:
+                  type: string
+                personalAdvantage:
+                  type: string
+                remark:
+                  type: string
+      tags: [ ]
       operationId: post-task-participant
       summary: Apply for Task
-      x-stoplight:
-        id: 0ecf6ar0lufhc
-  /tasks/{taskId}/submissions:
+  /tasks/{taskId}/participants/{participantId}:
+    get:
+      summary: Get TaskMembership
+      tags: [ ]
+      operationId: get-task-participant
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Participant ID
+          in: path
+          name: participantId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      taskMembership:
+                        $ref: "#/components/schemas/TaskMembership"
+                    required:
+                      - taskMembership
+                    type: object
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+    patch:
+      summary: Update TaskMembership
+      tags: [ ]
+      operationId: patch-task-participant
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Member ID
+          in: path
+          name: participantId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchTaskMembershipRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    properties:
+                      taskMembership:
+                        $ref: "#/components/schemas/TaskMembership"
+                    required:
+                      - taskMembership
+                    type: object
+                  message:
+                    type: string
+                required:
+                  - code
+                  - data
+                  - message
+                type: object
+          description: OK
+    delete:
+      summary: Delete TaskMembership
+      tags: [ ]
+      operationId: delete-task-participant
+      parameters:
+        - description: Task ID
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - description: Member ID
+          in: path
+          name: participantId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: No Content
+  /tasks/{taskId}/participants/{participantId}/submissions:
     get:
       summary: Enumerate Submissions
-      tags: []
+      tags: [ ]
       responses:
         "200":
           description: OK
@@ -1438,45 +1910,36 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: z9cn9fpmjd8q9
                   data:
                     type: object
-                    x-stoplight:
-                      id: 4qz1eg2f7ik2r
                     required:
                       - submissions
                       - page
                     properties:
                       submissions:
                         type: array
-                        x-stoplight:
-                          id: 7d338ut7il9ir
                         items:
                           $ref: "#/components/schemas/TaskSubmission"
                       page:
                         $ref: "#/components/schemas/Page"
                   message:
                     type: string
-                    x-stoplight:
-                      id: r66i6ceotv1v5
       operationId: get-task-submissions
-      x-stoplight:
-        id: usg5sp6qn0vk5
       parameters:
         - description: Task ID
           in: path
           name: taskId
-          required: true
           schema:
             type: integer
             format: int64
+          required: true
         - schema:
             type: integer
             format: int64
-          in: query
-          name: member
-          description: Submitter's User/Team ID
+          in: path
+          name: participantId
+          description: Submitters' TaskMembership ID
+          required: true
         - schema:
             type: boolean
             default: false
@@ -1520,7 +1983,7 @@ paths:
           description: '"asc" or "desc"'
     post:
       summary: Create Submission
-      tags: []
+      tags: [ ]
       responses:
         "200":
           description: OK
@@ -1535,12 +1998,8 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: 8cycuoqnez3jy
                   data:
                     type: object
-                    x-stoplight:
-                      id: 61ebyaq47bf2m
                     required:
                       - submission
                     properties:
@@ -1548,11 +2007,7 @@ paths:
                         $ref: "#/components/schemas/TaskSubmission"
                   message:
                     type: string
-                    x-stoplight:
-                      id: 1yqhvadvvagsi
       operationId: post-task-submission
-      x-stoplight:
-        id: yxrs4ye6kd72l
       parameters:
         - schema:
             type: integer
@@ -1564,9 +2019,9 @@ paths:
         - schema:
             type: integer
             format: int64
-          in: query
-          name: member
-          description: Member's User/Group ID
+          in: path
+          name: participantId
+          description: Submitters' TaskMembership ID
           required: true
       requestBody:
         required: true
@@ -1575,23 +2030,11 @@ paths:
             schema:
               type: array
               items:
-                x-stoplight:
-                  id: qah6gsxw0ac86
-                type: object
-                properties:
-                  contentText:
-                    type: string
-                    x-stoplight:
-                      id: bvu1xobv7k62h
-                  contentAttachmentId:
-                    type: integer
-                    x-stoplight:
-                      id: 6pybgx4byzj2l
-                    format: int64
-  /tasks/{taskId}/submissions/{version}:
+                $ref: "#/components/schemas/TaskSubmissionContent"
+  /tasks/{taskId}/participants/{participantId}/submissions/{version}:
     patch:
       summary: Update Submission
-      tags: []
+      tags: [ ]
       responses:
         "200":
           description: OK
@@ -1606,12 +2049,8 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: 8cycuoqnez3jy
                   data:
                     type: object
-                    x-stoplight:
-                      id: 61ebyaq47bf2m
                     required:
                       - submission
                     properties:
@@ -1619,11 +2058,7 @@ paths:
                         $ref: "#/components/schemas/TaskSubmission"
                   message:
                     type: string
-                    x-stoplight:
-                      id: 1yqhvadvvagsi
       operationId: patch-task-submission
-      x-stoplight:
-        id: bne4484m8c59j
       parameters:
         - schema:
             type: integer
@@ -1635,9 +2070,9 @@ paths:
         - schema:
             type: integer
             format: int64
-          in: query
-          name: member
-          description: Member's User/Group ID
+          in: path
+          name: participantId
+          description: Submitters' TaskMembership ID
           required: true
         - schema:
             type: integer
@@ -1652,23 +2087,11 @@ paths:
             schema:
               type: array
               items:
-                x-stoplight:
-                  id: qah6gsxw0ac86
-                type: object
-                properties:
-                  contentText:
-                    type: string
-                    x-stoplight:
-                      id: bvu1xobv7k62h
-                  contentAttachmentId:
-                    type: integer
-                    x-stoplight:
-                      id: 6pybgx4byzj2l
-                    format: int64
-  "/tasks/submissions/{submissionId}/review":
+                $ref: "#/components/schemas/TaskSubmissionContent"
+  /tasks/{taskId}/participants/{participantId}/submissions/{submissionId}/review:
     post:
       summary: Review Submission
-      tags: []
+      tags: [ ]
       responses:
         "200":
           description: OK
@@ -1701,6 +2124,20 @@ paths:
             type: integer
             format: int64
           in: path
+          name: taskId
+          description: Task ID
+          required: true
+        - schema:
+            type: integer
+            format: int64
+          in: path
+          name: participantId
+          description: Submitters' TaskMembership ID
+          required: true
+        - schema:
+            type: integer
+            format: int64
+          in: path
           name: submissionId
           description: Task Submission ID
           required: true
@@ -1723,7 +2160,7 @@ paths:
                   type: string
     patch:
       summary: Re-Review Submission
-      tags: []
+      tags: [ ]
       responses:
         "200":
           description: OK
@@ -1756,6 +2193,20 @@ paths:
             type: integer
             format: int64
           in: path
+          name: taskId
+          description: Task ID
+          required: true
+        - schema:
+            type: integer
+            format: int64
+          in: path
+          name: participantId
+          description: Submitters' TaskMembership ID
+          required: true
+        - schema:
+            type: integer
+            format: int64
+          in: path
           name: submissionId
           description: Task Submission ID
           required: true
@@ -1774,12 +2225,26 @@ paths:
                   type: string
     delete:
       summary: Revert Review Submission
-      tags: []
+      tags: [ ]
       responses:
         "200":
           description: OK
       operationId: delete-task-submission-review
       parameters:
+        - schema:
+            type: integer
+            format: int64
+          in: path
+          name: taskId
+          description: Task ID
+          required: true
+        - schema:
+            type: integer
+            format: int64
+          in: path
+          name: participantId
+          description: Submitters' TaskMembership ID
+          required: true
         - schema:
             type: integer
             format: int64
@@ -1802,25 +2267,11 @@ paths:
           content:
             application/json:
               schema:
-                properties:
-                  code:
-                    type: integer
-                    x-stoplight:
-                      id: d3x5wr67b0uvq
-                  message:
-                    type: string
-                    x-stoplight:
-                      id: 1tqn6nvv2twh3
-                required:
-                  - code
-                  - message
-                type: object
-          description: No Content
-      tags: []
+                $ref: "#/components/schemas/CommonResponse"
+          description: OK
+      tags: [ ]
       operationId: delete-team
       summary: Delete Team
-      x-stoplight:
-        id: cszkqabi3y737
     get:
       parameters:
         - description: Team ID
@@ -1838,8 +2289,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: tlgjum86pp2qc
                   data:
                     properties:
                       team:
@@ -1847,23 +2296,17 @@ paths:
                     required:
                       - team
                     type: object
-                    x-stoplight:
-                      id: uc32cpg2k5x68
                   message:
                     type: string
-                    x-stoplight:
-                      id: zp1goqu7fzjss
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: get-team
       summary: Query Team
-      x-stoplight:
-        id: kvkav72t81xwo
     patch:
       parameters:
         - description: Team ID
@@ -1881,8 +2324,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: tlgjum86pp2qc
                   data:
                     properties:
                       team:
@@ -1890,19 +2331,15 @@ paths:
                     required:
                       - team
                     type: object
-                    x-stoplight:
-                      id: uc32cpg2k5x68
                   message:
                     type: string
-                    x-stoplight:
-                      id: zp1goqu7fzjss
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: patch-team
       requestBody:
         required: true
@@ -1913,22 +2350,14 @@ paths:
               properties:
                 intro:
                   type: string
-                  x-stoplight:
-                    id: 8ctriovz0q68i
                 description:
                   type: string
                 name:
                   type: string
-                  x-stoplight:
-                    id: w0qplzea4vc28
                 avatarId:
                   type: integer
-                  x-stoplight:
-                    id: 2rmqalnmdzlw7
                   format: int64
       summary: Update Team
-      x-stoplight:
-        id: 6f4e855dosj7n
   /teams/my-teams:
     get:
       responses:
@@ -1944,32 +2373,22 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: tlgjum86pp2qc
                   data:
                     type: object
-                    x-stoplight:
-                      id: uc32cpg2k5x68
                     required:
                       - teams
                     properties:
                       teams:
-                        x-stoplight:
-                          id: hrqbg64zl0qbw
                         type: array
                         items:
                           $ref: "#/components/schemas/Team"
                   message:
                     type: string
-                    x-stoplight:
-                      id: zp1goqu7fzjss
           description: OK
-      tags: []
+      tags: [ ]
       operationId: get-my-teams
       summary: Query My Teams
-      x-stoplight:
-        id: a2xj7aw8g9ryd
-    parameters: []
+      parameters: [ ]
   /teams:
     post:
       responses:
@@ -1980,8 +2399,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: tlgjum86pp2qc
                   data:
                     properties:
                       team:
@@ -1989,19 +2406,15 @@ paths:
                     required:
                       - team
                     type: object
-                    x-stoplight:
-                      id: uc32cpg2k5x68
                   message:
                     type: string
-                    x-stoplight:
-                      id: zp1goqu7fzjss
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: post-team
       requestBody:
         required: true
@@ -2017,25 +2430,17 @@ paths:
               properties:
                 intro:
                   type: string
-                  x-stoplight:
-                    id: ld5e4eauav2h5
                 description:
                   type: string
                 name:
                   type: string
-                  x-stoplight:
-                    id: fjmkk5mgsmm7u
                 avatarId:
                   type: integer
-                  x-stoplight:
-                    id: 52sk47hz5a1ra
                   format: int64
       summary: Create Team
-      x-stoplight:
-        id: b30d0d09hir43
     get:
       summary: Get Teams
-      tags: []
+      tags: [ ]
       responses:
         "200":
           content:
@@ -2064,8 +2469,6 @@ paths:
                     type: string
           description: OK
       operationId: get-teams
-      x-stoplight:
-        id: o741q5kyy29oq
       parameters:
         - schema:
             type: string
@@ -2087,7 +2490,7 @@ paths:
   /teams/{teamId}/members:
     get:
       summary: Enumerate Team Members
-      tags: []
+      tags: [ ]
       responses:
         "200":
           description: OK
@@ -2102,28 +2505,20 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: 0th6k67nb90s9
                   data:
                     type: object
-                    x-stoplight:
-                      id: 8by2zt9excjeb
                     required:
                       - members
                     properties:
                       members:
                         type: array
-                        x-stoplight:
-                          id: ip7suy3lywjot
                         items:
                           $ref: "#/components/schemas/TeamMember"
+                      allMembersVerified:
+                        type: boolean
                   message:
                     type: string
-                    x-stoplight:
-                      id: rtcby5e62je5x
       operationId: get-team-members
-      x-stoplight:
-        id: dgnsjcgro7dgn
       parameters:
         - schema:
             type: integer
@@ -2132,6 +2527,13 @@ paths:
           name: teamId
           description: Team ID
           required: true
+        - schema:
+            type: boolean
+            default: false
+          in: query
+          name: queryRealNameStatus
+          description: Whether to query real name verification status of members
+          required: false
     post:
       parameters:
         - description: Team ID
@@ -2149,8 +2551,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: tlgjum86pp2qc
                   data:
                     properties:
                       team:
@@ -2158,19 +2558,15 @@ paths:
                     required:
                       - team
                     type: object
-                    x-stoplight:
-                      id: uc32cpg2k5x68
                   message:
                     type: string
-                    x-stoplight:
-                      id: zp1goqu7fzjss
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: post-team-member
       requestBody:
         required: true
@@ -2183,15 +2579,11 @@ paths:
                 user_id:
                   type: integer
                   format: int64
-                  x-stoplight:
-                    id: wdxfg6sq0yrj5
               required:
                 - role
                 - user_id
               type: object
       summary: Add Team Member
-      x-stoplight:
-        id: qpmnix1tpjoiy
   /teams/{teamId}/members/{userId}:
     delete:
       parameters:
@@ -2217,8 +2609,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: tlgjum86pp2qc
                   data:
                     properties:
                       team:
@@ -2226,23 +2616,17 @@ paths:
                     required:
                       - team
                     type: object
-                    x-stoplight:
-                      id: uc32cpg2k5x68
                   message:
                     type: string
-                    x-stoplight:
-                      id: zp1goqu7fzjss
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: delete-team-member
       summary: Kick Out Team Member
-      x-stoplight:
-        id: 2d36c06ks5t0y
     patch:
       parameters:
         - description: Team ID
@@ -2267,8 +2651,6 @@ paths:
                 properties:
                   code:
                     type: integer
-                    x-stoplight:
-                      id: tlgjum86pp2qc
                   data:
                     properties:
                       team:
@@ -2276,19 +2658,15 @@ paths:
                     required:
                       - team
                     type: object
-                    x-stoplight:
-                      id: uc32cpg2k5x68
                   message:
                     type: string
-                    x-stoplight:
-                      id: zp1goqu7fzjss
                 required:
                   - code
                   - data
                   - message
                 type: object
           description: OK
-      tags: []
+      tags: [ ]
       operationId: patch-team-member
       requestBody:
         required: true
@@ -2300,8 +2678,6 @@ paths:
                   $ref: "#/components/schemas/TeamMemberRoleType"
               type: object
       summary: Update Team Membership Info
-      x-stoplight:
-        id: 5kzla05sox4wy
   /notifications/{notificationId}:
     delete:
       parameters:
@@ -2317,15 +2693,7 @@ paths:
           content:
             application/json:
               schema:
-                properties:
-                  code:
-                    type: integer
-                  message:
-                    type: string
-                required:
-                  - code
-                  - message
-                type: object
+                $ref: "#/components/schemas/CommonResponse"
           description: OK
       tags: [ ]
       operationId: delete-notification
@@ -2333,7 +2701,7 @@ paths:
   /notifications:
     get:
       summary: List Notifications
-      tags: []
+      tags: [ ]
       parameters:
         - schema:
             type: string
@@ -2400,7 +2768,7 @@ paths:
   /notifications/read:
     post:
       summary: Mark Notifications as Read
-      tags: []
+      tags: [ ]
       requestBody:
         required: true
         content:
@@ -2483,7 +2851,7 @@ paths:
     post:
       operationId: create-project
       summary: Create Project
-      tags: []
+      tags: [ ]
       requestBody:
         required: true
         content:
@@ -2498,7 +2866,6 @@ paths:
                 - endDate
                 - teamId
                 - leaderId
-                - content
               properties:
                 name:
                   type: string
@@ -2532,17 +2899,19 @@ paths:
                   type: string
                 content:
                   type: string
-                externalCollaborators:
+                memberIds:
                   type: array
                   items:
-                    type: object
-                    properties:
-                      userId:
-                        type: integer
-                        format: int64
+                    type: integer
+                    format: int64
+                externalCollaboratorIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           content:
             application/json:
               schema:
@@ -2554,7 +2923,7 @@ paths:
                 properties:
                   code:
                     type: integer
-                    default: 0
+                    default: 201
                   message:
                     type: string
                     default: "success"
@@ -2566,8 +2935,15 @@ paths:
     get:
       operationId: get-projects
       summary: List Projects
-      tags: []
+      tags: [ ]
       parameters:
+        - name: team_id
+          in: query
+          description: 属于的小队 ID
+          required: true
+          schema:
+            type: integer
+            format: int64
         - name: parent_id
           in: query
           description: 父项目ID (可选)
@@ -2583,6 +2959,162 @@ paths:
         - name: member_id
           in: query
           description: 成员ID (可选)
+          schema:
+            type: integer
+            format: int64
+        - name: archived
+          in: query
+          description: 是否归档
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 200
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      projects:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Project"
+  /projects/{projectId}:
+    get:
+      operationId: get-project
+      summary: Query Project
+      tags: [ ]
+      parameters:
+        - name: projectId
+          in: path
+          description: 项目ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 200
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      project:
+                        $ref: "#/components/schemas/Project"
+    patch:
+      operationId: patch-project
+      summary: Update Project
+      tags: [ ]
+      parameters:
+        - name: projectId
+          in: path
+          description: 项目ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                colorCode:
+                  type: string
+                  pattern: "^#[0-9A-Fa-f]{6}$"
+                startDate:
+                  type: integer
+                  format: int64
+                  description: 项目开始时间戳(毫秒)
+                endDate:
+                  type: integer
+                  format: int64
+                  description: 项目结束时间戳(毫秒)
+                githubRepo:
+                  type: string
+                archived:
+                  type: boolean
+                  description: 是否归档
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 200
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      project:
+                        $ref: "#/components/schemas/Project"
+    delete:
+      operationId: delete-project
+      summary: Delete Project
+      tags: [ ]
+      parameters:
+        - name: projectId
+          in: path
+          description: 项目ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: No Content
+  /projects/{projectId}/members:
+    get:
+      operationId: get-project-members
+      summary: Enumerate Project Members
+      tags: [ ]
+      parameters:
+        - name: projectId
+          in: path
+          description: 项目ID
+          required: true
           schema:
             type: integer
             format: int64
@@ -2612,23 +3144,23 @@ paths:
                 properties:
                   code:
                     type: integer
-                    default: 0
+                    default: 200
                   message:
                     type: string
                     default: "success"
                   data:
                     type: object
                     properties:
-                      projects:
+                      members:
                         type: array
                         items:
-                          $ref: "#/components/schemas/Project"
+                          $ref: "#/components/schemas/ProjectMembership"
                       page:
                         $ref: "#/components/schemas/Page"
-  /projects/{projectId}/discussions:
     post:
-      summary: Create Discussion
-      tags: []
+      operationId: post-project-member
+      summary: Add Project Member
+      tags: [ ]
       parameters:
         - name: projectId
           in: path
@@ -2644,7 +3176,79 @@ paths:
             schema:
               type: object
               required:
+                - userId
+                - role
+              properties:
+                userId:
+                  type: integer
+                  format: int64
+                role:
+                  $ref: "#/components/schemas/ProjectMemberRole"
+                notes:
+                  type: string
+                  default: ""
+                  example: ""
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 201
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      member:
+                        $ref: "#/components/schemas/ProjectMembership"
+  /projects/{projectId}/members/{userId}:
+    delete:
+      operationId: delete-project-member
+      summary: Remove Project Member
+      tags: [ ]
+      parameters:
+        - name: projectId
+          in: path
+          description: 项目ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: userId
+          in: path
+          description: 用户ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: No Content
+  /discussions:
+    post:
+      operationId: create-discussion
+      summary: Create Discussion
+      tags: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
                 - content
+                - modelType
+                - modelId
               properties:
                 content:
                   type: string
@@ -2658,6 +3262,13 @@ paths:
                     type: integer
                     format: int64
                   description: 提及的用户ID (可选)
+                modelType:
+                  $ref: "#/components/schemas/DiscussableModelType"
+                  description: 模型类型
+                modelId:
+                  type: integer
+                  format: int64
+                  description: 模型ID
       responses:
         "200":
           description: OK
@@ -2682,38 +3293,26 @@ paths:
                       discussion:
                         $ref: "#/components/schemas/Discussion"
     get:
+      operationId: list-discussions
       summary: List Discussions
-      tags: []
+      tags: [ ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       parameters:
-        - name: projectId
-          in: path
-          description: 项目ID
-          required: true
+        - name: modelType
+          in: query
+          schema:
+            $ref: "#/components/schemas/DiscussableModelType"
+          description: 模型类型
+        - name: modelId
+          in: query
           schema:
             type: integer
             format: int64
-        - name: project_filter
+          description: 模型ID
+        - name: parent_id
           in: query
-          description: 项目过滤器
-          schema:
-            type: object
-            properties:
-              type:
-                type: string
-                enum: [projects, tree]
-              projectIds:
-                type: array
-                items:
-                  type: integer
-                  format: int64
-              rootProjectId:
-                type: integer
-                format: int64
-              includeRoot:
-                type: boolean
-        - name: before
-          in: query
-          description: 时间戳(毫秒)
+          description: 父讨论ID (可选)
           schema:
             type: integer
             format: int64
@@ -2729,6 +3328,18 @@ paths:
           schema:
             type: integer
             default: 20
+        - name: sort_by
+          in: query
+          description: '"createdAt" or "updatedAt"'
+          schema:
+            type: string
+            default: createdAt
+        - name: sort_order
+          in: query
+          description: '"asc" or "desc"'
+          schema:
+            type: string
+            default: desc
       responses:
         "200":
           description: OK
@@ -2756,18 +3367,88 @@ paths:
                           $ref: "#/components/schemas/Discussion"
                       page:
                         $ref: "#/components/schemas/Page"
-  /projects/{projectId}/discussions/{discussionId}/reactions:
-    post:
-      summary: React to Discussion
-      tags: []
+  /discussions/{discussionId}:
+    get:
+      operationId: get-discussion
+      summary: Query Discussion
+      tags: [ ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
       parameters:
-        - name: projectId
+        - name: discussionId
           in: path
-          description: 项目ID
+          description: 讨论ID
           required: true
           schema:
             type: integer
             format: int64
+        - name: page_start
+          in: query
+          description: 起始ID
+          schema:
+            type: integer
+            format: int64
+        - name: page_size
+          in: query
+          description: 每页数量 (默认20)
+          schema:
+            type: integer
+            default: 20
+        - name: sort_by
+          in: query
+          description: '"createdAt" or "updatedAt"'
+          schema:
+            type: string
+            default: createdAt
+        - name: sort_order
+          in: query
+          description: '"asc" or "desc"'
+          schema:
+            type: string
+            default: desc
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 200
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    required:
+                      - discussion
+                      - subDiscussions
+                    properties:
+                      discussion:
+                        $ref: "#/components/schemas/Discussion"
+                      subDiscussions:
+                        type: object
+                        required:
+                          - discussions
+                          - page
+                        properties:
+                          discussions:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/Discussion"
+                          page:
+                            $ref: "#/components/schemas/Page"
+    patch:
+      operationId: patch-discussion
+      summary: Update Discussion
+      tags: [ ]
+      parameters:
         - name: discussionId
           in: path
           description: 讨论ID
@@ -2781,11 +3462,155 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - emoji
               properties:
-                emoji:
+                content:
                   type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 200
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      discussion:
+                        $ref: "#/components/schemas/Discussion"
+    delete:
+      operationId: delete-discussion
+      summary: Delete Discussion
+      tags: [ ]
+      parameters:
+        - name: discussionId
+          in: path
+          description: 讨论ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: No Content
+  /discussions/{discussionId}/sub-discussions:
+    get:
+      operationId: list-sub-discussions
+      summary: List Sub-Discussions
+      tags: [ ]
+      x-handler-args:
+        - arg: "userInfo: org.rucca.cheese.auth.model.AuthUserInfo?"
+      parameters:
+        - name: discussionId
+          in: path
+          description: 讨论ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: page_start
+          in: query
+          description: 起始ID
+          schema:
+            type: integer
+            format: int64
+        - name: page_size
+          in: query
+          description: 每页数量 (默认20)
+          schema:
+            type: integer
+            default: 20
+        - name: sort_by
+          in: query
+          description: '"createdAt" or "updatedAt"'
+          schema:
+            type: string
+            default: createdAt
+        - name: sort_order
+          in: query
+          description: '"asc" or "desc"'
+          schema:
+            type: string
+            default: desc
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 200
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    properties:
+                      discussions:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Discussion"
+                      page:
+                        $ref: "#/components/schemas/Page"
+  /discussions/reactions:
+    get:
+      summary: Get all reaction types
+      operationId: getAllReactionTypes
+      tags:
+        - Reaction Types
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/CommonResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          reactionTypes:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/ReactionType"
+  /discussions/{discussionId}/reactions/{reactionTypeId}:
+    post:
+      operationId: react-to-discussion
+      summary: React to Discussion
+      tags: [ ]
+      parameters:
+        - name: discussionId
+          in: path
+          description: 讨论ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: reactionTypeId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: OK
@@ -2808,20 +3633,12 @@ paths:
                     type: object
                     properties:
                       reaction:
-                        type: object
-                        properties:
-                          emoji:
-                            type: string
-                          count:
-                            type: integer
-                          users:
-                            type: array
-                            items:
-                              $ref: "#/components/schemas/User"
-  /knowledge:
+                        $ref: "#/components/schemas/DiscussionReactionSummary"
+  /knowledges:
     post:
       summary: Create Knowledge Item
-      tags: []
+      tags: [ ]
+      operationId: knowledgePost
       requestBody:
         required: true
         content:
@@ -2832,21 +3649,32 @@ paths:
                 - name
                 - type
                 - content
+                - teamId
               properties:
                 name:
                   type: string
                 description:
                   type: string
                 type:
-                  type: string
-                  enum: [document, link, text, image]
+                  $ref: "#/components/schemas/KnowledgeType"
                 content:
                   type: string
-                projectIds:
-                  type: array
-                  items:
-                    type: integer
-                    format: int64
+                teamId:
+                  type: integer
+                  format: int64
+                  description: "知识条目所属的团队ID"
+                projectId:
+                  type: integer
+                  format: int64
+                  description: "相关的项目ID（可选）"
+                materialId:
+                  type: integer
+                  format: int64
+                  description: "来源 Material ID（可选）"
+                discussionId:
+                  type: integer
+                  format: int64
+                  description: "来源讨论ID（可选）"
                 labels:
                   type: array
                   items:
@@ -2876,45 +3704,61 @@ paths:
                         $ref: "#/components/schemas/Knowledge"
     get:
       summary: List Knowledge Items
-      tags: []
+      tags: [ ]
+      operationId: KnowledgeGet
       parameters:
-        - name: project_ids
+        - name: teamId
           in: query
-          description: 项目ID列表 (可选)
+          required: true
           schema:
-            type: array
-            items:
-              type: integer
-              format: int64
+            type: integer
+            format: int64
+        - name: projectId
+          in: query
+          schema:
+            type: integer
+            format: int64
         - name: type
           in: query
-          description: 类型 (可选)
+          description: Type (optional)
           schema:
             type: string
         - name: labels
           in: query
-          description: 标签列表 (可选)
+          description: Label list (optional)
           schema:
             type: array
             items:
               type: string
         - name: query
           in: query
-          description: 搜索关键词 (可选)
+          description: Search keyword (optional)
           schema:
             type: string
         - name: page_start
           in: query
-          description: 起始ID
+          description: Start ID (optional)
           schema:
             type: integer
             format: int64
         - name: page_size
           in: query
-          description: 每页数量 (默认20)
+          description: Page size (default 20)
           schema:
             type: integer
             default: 20
+        - name: sort_by
+          in: query
+          description: Sort by (optional)
+          schema:
+            type: string
+            default: createdAt
+        - name: sort_order
+          in: query
+          description: Sort order (optional)
+          schema:
+            type: string
+            default: desc
       responses:
         "200":
           description: OK
@@ -2936,19 +3780,332 @@ paths:
                   data:
                     type: object
                     properties:
-                      knowledge:
+                      knowledges:
                         type: array
                         items:
                           $ref: "#/components/schemas/Knowledge"
                       page:
                         $ref: "#/components/schemas/Page"
+  /knowledges/{knowledgeId}:
+    patch:
+      summary: Update Knowledge Item
+      tags: [ ]
+      operationId: updateKnowledge
+      parameters:
+        - name: knowledgeId
+          in: path
+          description: Knowledge Item ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                type:
+                  $ref: "#/components/schemas/KnowledgeType"
+                content:
+                  type: string
+                teamId:
+                  type: integer
+                  format: int64
+                  description: "知识条目所属的团队ID"
+                projectId:
+                  type: integer
+                  format: int64
+                  description: "相关的项目ID"
+                labels:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    required:
+                      - knowledge
+                    properties:
+                      knowledge:
+                        $ref: "#/components/schemas/Knowledge"
+    delete:
+      summary: Delete Knowledge Item
+      tags: [ ]
+      operationId: knowledgeDelete
+      parameters:
+        - name: knowledgeId
+          in: path
+          description: Knowledge Item ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: integer
+                    default: 200
+                  message:
+                    type: string
+    get:
+      summary: Get Single Knowledge Item
+      tags: [ ]
+      operationId: KnowledgeGetById
+      parameters:
+        - name: knowledgeId
+          in: path
+          description: Knowledge item ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Successful retrieval of a knowledge item
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    $ref: "#/components/schemas/Knowledge"
+        "404":
+          description: Knowledge item not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 404
+                  message:
+                    type: string
+                    example: "Knowledge item not found"
+  /knowledges/{knowledgeId}/upvote:
+    post:
+      summary: Upvote Knowledge Item
+      tags: [ ]
+      operationId: upvoteKnowledge
+      parameters:
+        - name: knowledgeId
+          in: path
+          description: Knowledge Item ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    required:
+                      - knowledge
+                    properties:
+                      knowledge:
+                        $ref: "#/components/schemas/Knowledge"
+    delete:
+      summary: Remove Upvote from Knowledge Item
+      tags: [ ]
+      operationId: removeUpvoteKnowledge
+      parameters:
+        - name: knowledgeId
+          in: path
+          description: Knowledge Item ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                  - data
+                properties:
+                  code:
+                    type: integer
+                    default: 0
+                  message:
+                    type: string
+                    default: "success"
+                  data:
+                    type: object
+                    required:
+                      - knowledge
+                    properties:
+                      knowledge:
+                        $ref: "#/components/schemas/Knowledge"
 components:
   schemas:
+    SpaceCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the category.
+          readOnly: true # ID is typically assigned by the server
+        name:
+          type: string
+          description: Name of the category. Must be unique within the space.
+          example: "Backend Development"
+        description:
+          type: string
+          nullable: true
+          description: Optional description for the category.
+          example: "Tasks related to server-side logic and databases."
+        displayOrder:
+          type: integer
+          description: Order in which the category should be displayed. Lower numbers typically come first.
+          default: 0
+          example: 10
+        createdAt:
+          type: integer
+          format: int64
+          description: Category creation timestamp (epoch milliseconds).
+          readOnly: true
+        updatedAt:
+          type: integer
+          format: int64
+          description: Category last update timestamp (epoch milliseconds).
+          readOnly: true
+        archivedAt:
+          type: integer
+          format: int64
+          nullable: true
+          description: Timestamp when the category was archived (epoch milliseconds). Null if not archived.
+      required:
+        - id
+        - name
+        - displayOrder
+        - createdAt
+        - updatedAt
+    UserIdentity:
+      title: UserIdentity
+      type: object
+      required:
+        - realName
+        - studentId
+        - grade
+        - major
+        - className
+      properties:
+        realName:
+          type: string
+        studentId:
+          type: string
+        grade:
+          type: string
+        major:
+          type: string
+        className:
+          type: string
+    UserIdentityAccessModuleType:
+      title: UserIdentityAccessModuleType
+      type: string
+      enum:
+        - TASK
+    UserIdentityAccessType:
+      title: UserIdentityAccessType
+      type: string
+      enum:
+        - VIEW
+        - EXPORT
+    UserIdentityAccessLog:
+      title: UserIdentityAccessLog
+      type: object
+      required:
+        - accessor
+        - accessTime
+        - accessType
+        - ipAddress
+      properties:
+        accessor:
+          $ref: "#/components/schemas/User"
+        accessModuleType:
+          $ref: "#/components/schemas/UserIdentityAccessModuleType"
+        accessEntityId:
+          type: integer
+          format: int64
+        accessEntityName:
+          type: string
+        accessTime:
+          type: integer
+          format: int64
+        accessType:
+          $ref: "#/components/schemas/UserIdentityAccessType"
+        ipAddress:
+          type: string
+    KnowledgeType:
+      type: string
+      enum: [ MATERIAL, LINK, TEXT, CODE ]
     Space:
       title: Space
       type: object
-      x-stoplight:
-        id: m94sek8uqj951
       required:
         - id
         - intro
@@ -2962,42 +4119,29 @@ components:
         - announcements
         - taskTemplates
         - classificationTopics
+        - defaultCategoryId
       properties:
         id:
           type: integer
           format: int64
-          x-stoplight:
-            id: 52nmixpoapf5m
         intro:
           type: string
-          x-stoplight:
-            id: 63zv59n5mly94
         description:
           type: string
         name:
           type: string
-          x-stoplight:
-            id: 5nbcfqkp85xhz
         avatarId:
           type: integer
-          x-stoplight:
-            id: nzf2cadgfyc4c
           format: int64
         admins:
           type: array
-          x-stoplight:
-            id: yb2e4v8o2lboq
           items:
             $ref: "#/components/schemas/SpaceAdmin"
         updatedAt:
           type: integer
-          x-stoplight:
-            id: farniiu4ivtrv
           format: int64
         createdAt:
           type: integer
-          x-stoplight:
-            id: ish0wypndvdar
           format: int64
         enableRank:
           type: boolean
@@ -3012,10 +4156,12 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Topic"
+        defaultCategoryId:
+          type: integer
+          format: int64
+          description: Default category ID for new content in this space.
     SpaceAdmin:
       title: SpaceAdmin
-      x-stoplight:
-        id: 01blazh0k7wdi
       type: object
       required:
         - role
@@ -3029,26 +4175,18 @@ components:
           $ref: "#/components/schemas/User"
         updatedAt:
           type: integer
-          x-stoplight:
-            id: farniiu4ivtrv
           format: int64
         createdAt:
           type: integer
-          x-stoplight:
-            id: ish0wypndvdar
           format: int64
     SpaceAdminRoleType:
       title: SpaceAdminRoleType
-      x-stoplight:
-        id: ccho6vgvtwdph
       enum:
         - OWNER
         - ADMIN
     Task:
       title: Task
       type: object
-      x-stoplight:
-        id: 3spbmywj9wzkf
       required:
         - id
         - name
@@ -3061,18 +4199,15 @@ components:
         - description
         - submissionSchema
         - submitters
+        - requireRealName
         - updatedAt
         - createdAt
       properties:
         id:
           type: integer
           format: int64
-          x-stoplight:
-            id: 34pdr2ppu7b1x
         name:
           type: string
-          x-stoplight:
-            id: rbj58vdb6mhrx
         submitterType:
           $ref: "#/components/schemas/TaskSubmitterType"
         defaultDeadline:
@@ -3087,44 +4222,32 @@ components:
           type: integer
         resubmittable:
           type: boolean
-          x-stoplight:
-            id: 02b68oosp6tei
         editable:
           type: boolean
-          x-stoplight:
-            id: 2tmxxqzvv73pw
         intro:
           type: string
         description:
           type: string
-          x-stoplight:
-            id: szwjs5c0ougvr
         space:
           $ref: "#/components/schemas/Space"
+        category:
+          $ref: "#/components/schemas/SpaceCategory"
         team:
           $ref: "#/components/schemas/Team"
         submissionSchema:
           type: array
-          x-stoplight:
-            id: 4wisk71l5hfjp
           items:
             $ref: "#/components/schemas/TaskSubmissionSchemaEntry"
         submitters:
           type: object
-          x-stoplight:
-            id: w0749edcukpmq
           required:
             - total
             - examples
           properties:
             total:
               type: integer
-              x-stoplight:
-                id: trv0atykejbu5
             examples:
               type: array
-              x-stoplight:
-                id: aje2w7sfdbvh5
               items:
                 type: object
                 required:
@@ -3132,26 +4255,23 @@ components:
                 properties:
                   avatarId:
                     type: integer
-                    x-stoplight:
-                      id: 2uhgeb0nk8kh6
                     format: int64
         updatedAt:
           type: integer
-          x-stoplight:
-            id: farniiu4ivtrv
           format: int64
         createdAt:
           type: integer
-          x-stoplight:
-            id: ish0wypndvdar
           format: int64
         joinable:
           type: boolean
           description: "Only has value when: 'queryJoinablity' == true"
-        joinableAsTeam:
+        joinableTeams:
           type: array
           items:
             $ref: "#/components/schemas/TeamSummary"
+        joinRejectReason:
+          type: string
+          description: The reason why the user cannot join the task
         submittable:
           type: boolean
           description: "Only has value when: 'querySubmitability' == true"
@@ -3167,43 +4287,33 @@ components:
           type: string
         joined:
           type: boolean
-        joinedAsTeam:
+        joinedTeams:
           type: array
           items:
             $ref: "#/components/schemas/TeamSummary"
-        joinedApproved:
-          type: boolean
-        joinedApprovedAsTeam:
-          type: array
-          items:
-            $ref: "#/components/schemas/TeamSummary"
-        joinedDisapproved:
-          type: boolean
-        joinedDisapprovedAsTeam:
-          type: array
-          items:
-            $ref: "#/components/schemas/TeamSummary"
-        joinedNotApprovedOrDisapproved:
-          type: boolean
-        joinedNotApprovedOrDisapprovedAsTeam:
-          type: array
-          items:
-            $ref: "#/components/schemas/TeamSummary"
+        userDeadline:
+          type: integer
+          format: int64
         topics:
           type: array
           items:
             $ref: "#/components/schemas/Topic"
+        requireRealName:
+          type: boolean
+          description: Whether the task requires real name information
+        minTeamSize:
+          type: integer
+          description: Minimum size of team that can join this task
+        maxTeamSize:
+          type: integer
+          description: Maximum size of team that can join this task
     TaskSubmitterType:
       title: TaskSubmitterType
-      x-stoplight:
-        id: dtoqyjd8a2bf7
       enum:
         - USER
         - TEAM
     TaskSubmissionSchemaEntry:
       title: TaskSubmissionSchemaEntry
-      x-stoplight:
-        id: kmliwrhewdbbp
       type: object
       required:
         - prompt
@@ -3211,14 +4321,10 @@ components:
       properties:
         prompt:
           type: string
-          x-stoplight:
-            id: ijaf5jbzth1jv
         type:
           $ref: "#/components/schemas/TaskSubmissionType"
     TaskSubmissionType:
       title: TaskSubmissionType
-      x-stoplight:
-        id: cagzlk1idchbo
       enum:
         - TEXT
         - FILE
@@ -3244,10 +4350,16 @@ components:
               type: integer
             comment:
               type: string
+    TaskSubmissionContent:
+      type: object
+      properties:
+        text:
+          type: string
+        attachmentId:
+          type: integer
+          format: int64
     TaskSubmission:
       title: TaskSubmission
-      x-stoplight:
-        id: 91u776sjgs8ok
       type: object
       required:
         - id
@@ -3292,16 +4404,12 @@ components:
           $ref: "#/components/schemas/TaskSubmissionType"
         contentText:
           type: string
-          x-stoplight:
-            id: 3jylp7lpjh288
         contentAttachment:
           $ref: "#/components/schemas/Attachment"
     Team:
       title: Team
       type: object
       x-internal: false
-      x-stoplight:
-        id: 3imsmwy6ayqfw
       required:
         - id
         - intro
@@ -3318,29 +4426,19 @@ components:
         id:
           type: integer
           format: int64
-          x-stoplight:
-            id: kp7arkckpma4u
         intro:
           type: string
-          x-stoplight:
-            id: c81sns2k5brz6
         description:
           type: string
         name:
           type: string
-          x-stoplight:
-            id: js77va9xsq4gg
         avatarId:
           type: integer
-          x-stoplight:
-            id: u7o0iiyxuow4g
           format: int64
         owner:
           $ref: "#/components/schemas/User"
         admins:
           type: object
-          x-stoplight:
-            id: ane2g1iuw01c1
           description: include owner
           required:
             - total
@@ -3348,46 +4446,47 @@ components:
           properties:
             total:
               type: integer
-              x-stoplight:
-                id: gc2m7py7hasis
             examples:
               type: array
-              x-stoplight:
-                id: lk6mqsfxsq91p
               items:
                 $ref: "#/components/schemas/User"
         updatedAt:
           type: integer
-          x-stoplight:
-            id: farniiu4ivtrv
           format: int64
         createdAt:
           type: integer
-          x-stoplight:
-            id: ish0wypndvdar
           format: int64
         members:
           type: object
-          x-stoplight:
-            id: vg4cqkvrcf2z2
           required:
             - total
             - examples
           properties:
             total:
               type: integer
-              x-stoplight:
-                id: jzp0itu9nnrat
             examples:
               type: array
-              x-stoplight:
-                id: 9ijkfpj25gbr7
               items:
                 $ref: "#/components/schemas/User"
         joined:
           type: boolean
         role:
           $ref: "#/components/schemas/TeamMemberRoleType"
+    TeamMemberRealNameStatus:
+      title: TeamMemberRealNameStatus
+      type: object
+      required:
+        - memberId
+        - hasRealNameInfo
+        - userName
+      properties:
+        memberId:
+          type: integer
+          format: int64
+        hasRealNameInfo:
+          type: boolean
+        userName:
+          type: string
     TeamSummary:
       title: TeamSummary
       type: object
@@ -3407,6 +4506,15 @@ components:
         avatarId:
           type: integer
           format: int64
+        allMembersVerified:
+          type: boolean
+        memberRealNameStatus:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamMemberRealNameStatus"
+        joinRejectReason:
+          type: string
+          description: The reason why the team cannot join the team
         updatedAt:
           type: integer
           format: int64
@@ -3441,6 +4549,49 @@ components:
           $ref: "#/components/schemas/ApproveType"
         realNameInfo:
           $ref: "#/components/schemas/TaskParticipantRealNameInfo"
+        applyReason:
+          type: string
+        personalAdvantage:
+          type: string
+        remark:
+          type: string
+    TaskParticipationIdentity:
+      title: TaskParticipationIdentity
+      type: object
+      required:
+        - id
+        - type
+        - memberId
+        - canSubmit
+        - approved
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          $ref: "#/components/schemas/TaskSubmitterType"
+        memberId:
+          type: integer
+          format: int64
+        teamName:
+          type: string
+        canSubmit:
+          type: boolean
+        approved:
+          $ref: "#/components/schemas/ApproveType"
+    TaskParticipationInfo:
+      title: TaskParticipationInfo
+      type: object
+      required:
+        - hasParticipation
+        - identities
+      properties:
+        hasParticipation:
+          type: boolean
+        identities:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskParticipationIdentity"
     TaskParticipantRealNameInfo:
       title: TaskParticipantRealNameInfo
       type: object
@@ -3450,11 +4601,6 @@ components:
         - grade
         - major
         - className
-        - email
-        - phone
-        - applyReason
-        - personalAdvantage
-        - remark
       properties:
         realName:
           type: string
@@ -3465,16 +4611,6 @@ components:
         major:
           type: string
         className:
-          type: string
-        email:
-          type: string
-        phone:
-          type: string
-        applyReason:
-          type: string
-        personalAdvantage:
-          type: string
-        remark:
           type: string
     TaskParticipantSummary:
       title: TaskParticipantSummary
@@ -3501,15 +4637,13 @@ components:
           $ref: "#/components/schemas/TeamMemberRoleType"
         user:
           $ref: "#/components/schemas/User"
+        hasRealNameInfo:
+          type: boolean
         updatedAt:
           type: integer
-          x-stoplight:
-            id: farniiu4ivtrv
           format: int64
         createdAt:
           type: integer
-          x-stoplight:
-            id: ish0wypndvdar
           format: int64
       required:
         - role
@@ -3518,8 +4652,6 @@ components:
         - createdAt
       title: TeamMember
       type: object
-      x-stoplight:
-        id: razh52jtnx59o
     ApproveType:
       description: approve status of task or taskmembership
       enum:
@@ -3742,7 +4874,7 @@ components:
       properties:
         section:
           type: string
-          enum: [knowledge_fields, learning_paths, methodology, team_tips]
+          enum: [ knowledge_fields, learning_paths, methodology, team_tips ]
         index:
           type: integer
           description: "章节中的具体条目索引(从0开始)"
@@ -3845,7 +4977,7 @@ components:
         - final_ref
     TaskAIAdviceGenerationStatus:
       type: string
-      enum: [NONE, PENDING, PROCESSING, COMPLETED, FAILED]
+      enum: [ NONE, PENDING, PROCESSING, COMPLETED, FAILED ]
     TaskAIAdviceConversation:
       type: object
       required:
@@ -3916,12 +5048,8 @@ components:
         - ADMIN
         - MEMBER
       type: string
-      x-stoplight:
-        id: 5f28hwh1gfr6u
     User:
       type: object
-      x-stoplight:
-        id: db1qnmy49o19b
       required:
         - avatarId
         - id
@@ -3953,8 +5081,6 @@ components:
     Page:
       type: object
       description: 分页信息
-      x-stoplight:
-        id: m5lb2tsqnpfrj
       required:
         - page_start
         - page_size
@@ -3982,6 +5108,9 @@ components:
           type: integer
           format: int64
           description: 下一页第一个 item 的 ID
+        total:
+          type: integer
+          description: 总 item 数量
     Attachment:
       type: object
       description: 附件
@@ -4150,7 +5279,7 @@ components:
         - endDate
         - team
         - leader
-        - content
+        - members
       properties:
         id:
           type: integer
@@ -4185,31 +5314,79 @@ components:
           type: string
         content:
           type: string
-        #        path:
-        #          type: array
-        #          items:
-        #            type: string
-        #          description: 项目路径
         createdAt:
           type: integer
           format: int64
         updatedAt:
           type: integer
           format: int64
+        members:
+          type: object
+          properties:
+            count:
+              type: integer
+            examples:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProjectMembership"
+        archived:
+          type: boolean
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+    ProjectMemberRole:
+      type: string
+      description: 项目成员角色
+      enum:
+        - LEADER
+        - MEMBER
+        - EXTERNAL
+    ProjectMembership:
+      type: object
+      required:
+        - id
+        - user
+        - role
+        - createdAt
+        - updatedAt
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        role:
+          $ref: "#/components/schemas/ProjectMemberRole"
+        notes:
+          type: string
+          description: 项目成员备注
+          default: ""
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+    DiscussableModelType:
+      type: string
+      description: 可被讨论的模型类型
+      enum: [ PROJECT ]
     Discussion:
       type: object
       required:
         - id
-        - projectId
         - content
         - senderId
+        - modelType
+        - modelId
       properties:
         id:
           type: integer
           format: int64
-        projectId:
+        modelType:
+          $ref: "#/components/schemas/DiscussableModelType"
+        modelId:
           type: integer
           format: int64
+          description: 模型ID
         content:
           type: string
         parentId:
@@ -4225,19 +5402,60 @@ components:
         reactions:
           type: array
           items:
-            type: object
-            properties:
-              emoji:
-                type: string
-              count:
-                type: integer
-              users:
-                type: array
-                items:
-                  $ref: "#/components/schemas/User"
+            $ref: "#/components/schemas/DiscussionReactionSummary"
+        subDiscussions:
+          type: object
+          properties:
+            count:
+              type: integer
+              format: int64
+            examples:
+              type: array
+              items:
+                $ref: "#/components/schemas/Discussion"
         createdAt:
           type: integer
           format: int64
+    Material:
+      type: object
+      description: 用户上传的资料（图片、视频、音频、文件等）
+      properties:
+        id:
+          type: integer
+          description: 资料 ID
+          format: int64
+        type:
+          type: string
+          description: 资料类型
+          enum:
+            - image
+            - video
+            - audio
+            - file
+        uploader:
+          $ref: "#/components/schemas/User"
+        created_at:
+          type: integer
+          description: 创建时间
+          format: int64
+        expires:
+          type: integer
+          description: 过期时间，永不过期则为 undefined
+          format: int64
+          nullable: true
+        download_count:
+          type: integer
+          description: 下载数
+          format: int64
+        url:
+          type: string
+          description: 资料下载 URL
+        meta:
+          oneOf:
+            - $ref: "#/components/schemas/ImageMeta"
+            - $ref: "#/components/schemas/VideoMeta"
+            - $ref: "#/components/schemas/AudioMeta"
+            - $ref: "#/components/schemas/FileMeta"
     Knowledge:
       type: object
       required:
@@ -4255,22 +5473,26 @@ components:
         description:
           type: string
         type:
-          type: string
-          enum:
-            - document
-            - link
-            - text
-            - image
+          $ref: "#/components/schemas/KnowledgeType"
         content:
           type: string
-        materialId:
+        material:
+          $ref: "#/components/schemas/Material"
+        teamId:
           type: integer
           format: int64
-        projectIds:
-          type: array
-          items:
-            type: integer
-            format: int64
+          description: "知识条目所属的团队ID"
+        projectId:
+          type: integer
+          format: int64
+          description: "相关的项目ID（可选）"
+        sourceType:
+          type: string
+          description: "知识来源类型：MANUAL或FROM_DISCUSSION"
+        discussionId:
+          type: integer
+          format: int64
+          description: "来源讨论ID（如果从讨论中添加）"
         labels:
           type: array
           items:
@@ -4310,6 +5532,64 @@ components:
           type: integer
         message:
           type: string
+    ReactionType:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        displayOrder:
+          type: integer
+          format: int32
+        isActive:
+          type: boolean
+      required:
+        - id
+        - code
+        - name
+        - displayOrder
+        - isActive
+    DiscussionReactionSummary:
+      type: object
+      properties:
+        reactionType:
+          $ref: "#/components/schemas/ReactionType"
+        count:
+          type: integer
+          format: int64
+        hasReacted:
+          type: boolean
+      required:
+        - reactionType
+        - count
+        - hasReacted
+    PatchTaskMembershipRequest:
+      type: object
+      properties:
+        deadline:
+          type: integer
+          format: int64
+        approved:
+          $ref: "#/components/schemas/ApproveType"
+        rejectReason:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        applyReason:
+          type: string
+        personalAdvantage:
+          type: string
+        remark:
+          type: string
   securitySchemes:
     bearerAuth:
       description: The access token is used in this way.
@@ -4317,8 +5597,6 @@ components:
       name: Authorization
       type: apiKey
 security:
-  - bearerAuth: []
+  - bearerAuth: [ ]
 x-components:
-  parameters: {}
-x-stoplight:
-  id: x4r8qoe9jcv7l
+  parameters: { }

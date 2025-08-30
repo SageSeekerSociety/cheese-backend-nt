@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
+import org.rucca.cheese.client.SpaceClient
 import org.rucca.cheese.client.TaskClient
 import org.rucca.cheese.client.TopicClient
 import org.rucca.cheese.client.UserClient
@@ -25,6 +26,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -39,12 +41,15 @@ class TaskTopicTest
 constructor(
     private val mockMvc: MockMvc,
     private val userClient: UserClient,
+    private val spaceClient: SpaceClient,
     private val topicClient: TopicClient,
     private val taskClient: TaskClient,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     lateinit var creator: UserClient.CreateUserResponse
     lateinit var creatorToken: String
+    private var spaceId: IdType = -1
+    private var defaultCategoryId: IdType = -1
     private var taskId: IdType = -1
     private val taskSubmissionSchema =
         listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE"))
@@ -60,12 +65,18 @@ constructor(
             val topicId = topicClient.createTopic(creatorToken, topicName)
             testTopics.add(Pair(topicId, topicName))
         }
+        // Create space
+        val spaceResult = spaceClient.createSpace(creatorToken)
+        spaceId = spaceResult.first
+        defaultCategoryId = spaceResult.second
         taskId =
             taskClient.createTask(
                 creatorToken,
                 submissionSchema = taskSubmissionSchema,
+                spaceId = spaceId,
                 topics = listOf(testTopics[0].first, testTopics[1].first),
             )
+        taskClient.approveTask(taskId, creatorToken)
     }
 
     @Test
@@ -144,6 +155,7 @@ constructor(
         val request =
             MockMvcRequestBuilders.get("/tasks")
                 .header("Authorization", "Bearer $creatorToken")
+                .param("space", "$spaceId")
                 .param("approved", "APPROVED")
                 .param("topics", testTopics[0].first.toString())
         mockMvc
@@ -158,6 +170,7 @@ constructor(
         val request =
             MockMvcRequestBuilders.get("/tasks")
                 .header("Authorization", "Bearer $creatorToken")
+                .param("space", "$spaceId")
                 .param("approved", "APPROVED")
                 .param("topics", testTopics[1].first.toString())
         mockMvc
@@ -173,6 +186,7 @@ constructor(
         val request =
             MockMvcRequestBuilders.get("/tasks")
                 .header("Authorization", "Bearer $creatorToken")
+                .param("space", "$spaceId")
                 .param("approved", "APPROVED")
                 .param("topics", testTopics[1].first.toString())
                 .param("topics", testTopics[3].first.toString())
@@ -189,6 +203,7 @@ constructor(
         val request =
             MockMvcRequestBuilders.get("/tasks")
                 .header("Authorization", "Bearer $creatorToken")
+                .param("space", "$spaceId")
                 .param("approved", "APPROVED")
                 .param("topics", testTopics[0].first.toString())
                 .param("topics", testTopics[3].first.toString())

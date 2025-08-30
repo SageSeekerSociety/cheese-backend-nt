@@ -13,10 +13,7 @@ import org.aspectj.lang.JoinPoint
 import org.aspectj.lang.annotation.Aspect
 import org.aspectj.lang.annotation.Before
 import org.aspectj.lang.reflect.MethodSignature
-import org.rucca.cheese.auth.annotation.AuthInfo
-import org.rucca.cheese.auth.annotation.Guard
-import org.rucca.cheese.auth.annotation.NoAuth
-import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.auth.annotation.*
 import org.rucca.cheese.auth.exception.DuplicatedAuthInfoKeyException
 import org.rucca.cheese.auth.exception.DuplicatedResourceIdAnnotationException
 import org.rucca.cheese.auth.exception.NoGuardOrNoAuthAnnotationException
@@ -33,6 +30,10 @@ class AuthorizationAspect(private val authorizationService: AuthorizationService
     )
     fun checkAuthorization(joinPoint: JoinPoint) {
         if (joinPoint.target.javaClass.name.startsWith("org.springframework.boot")) {
+            return
+        }
+
+        if (joinPoint.target.javaClass.isAnnotationPresent(UseNewAuth::class.java)) {
             return
         }
 

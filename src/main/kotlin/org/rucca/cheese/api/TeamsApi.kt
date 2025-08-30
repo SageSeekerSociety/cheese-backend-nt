@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.media.*
 import io.swagger.v3.oas.annotations.responses.*
 import io.swagger.v3.oas.annotations.security.*
 import javax.validation.Valid
-import org.rucca.cheese.model.DeleteTeam200ResponseDTO
+import org.rucca.cheese.model.CommonResponseDTO
 import org.rucca.cheese.model.GetMyTeams200ResponseDTO
 import org.rucca.cheese.model.GetTeam200ResponseDTO
 import org.rucca.cheese.model.GetTeamMembers200ResponseDTO
@@ -37,9 +37,8 @@ interface TeamsApi {
             [
                 ApiResponse(
                     responseCode = "200",
-                    description = "No Content",
-                    content =
-                        [Content(schema = Schema(implementation = DeleteTeam200ResponseDTO::class))],
+                    description = "OK",
+                    content = [Content(schema = Schema(implementation = CommonResponseDTO::class))],
                 )
             ],
         security = [SecurityRequirement(name = "bearerAuth")],
@@ -53,7 +52,7 @@ interface TeamsApi {
         @Parameter(description = "Team ID", required = true)
         @PathVariable("teamId")
         teamId: kotlin.Long
-    ): ResponseEntity<DeleteTeam200ResponseDTO> {
+    ): ResponseEntity<CommonResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }
 
@@ -172,7 +171,14 @@ interface TeamsApi {
     fun getTeamMembers(
         @Parameter(description = "Team ID", required = true)
         @PathVariable("teamId")
-        teamId: kotlin.Long
+        teamId: kotlin.Long,
+        @Parameter(
+            description = "Whether to query real name verification status of members",
+            schema = Schema(defaultValue = "false"),
+        )
+        @Valid
+        @RequestParam(value = "queryRealNameStatus", required = false, defaultValue = "false")
+        queryRealNameStatus: kotlin.Boolean,
     ): ResponseEntity<GetTeamMembers200ResponseDTO> {
         return ResponseEntity(HttpStatus.NOT_IMPLEMENTED)
     }

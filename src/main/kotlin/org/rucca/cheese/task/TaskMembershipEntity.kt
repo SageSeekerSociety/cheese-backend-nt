@@ -14,7 +14,7 @@ package org.rucca.cheese.task
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
-import java.util.Optional
+import java.util.*
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.BaseEntity
@@ -23,17 +23,20 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
 @Embeddable
-class TaskMembershipRealNameInfo(
-    @Column(nullable = false) val realName: String? = null,
-    @Column(nullable = false) val studentId: String? = null,
-    @Column(nullable = false) val grade: String? = null,
-    @Column(nullable = false) val major: String? = null,
-    @Column(nullable = false) val className: String? = null,
-    @Column(nullable = false) val email: String? = null,
-    @Column(nullable = false) val phone: String? = null,
-    @Column(nullable = false) val applyReason: String? = null,
-    @Column(nullable = false) val personalAdvantage: String? = null,
-    @Column(nullable = false) val remark: String? = null,
+class TeamMemberRealNameInfo(
+    @Column(name = "member_id", nullable = false) val memberId: IdType,
+    @Embedded val realNameInfo: RealNameInfo,
+)
+
+@Embeddable
+class RealNameInfo(
+    @Column(name = "real_name", nullable = true) val realName: String? = null,
+    @Column(name = "student_id", nullable = true) val studentId: String? = null,
+    @Column(name = "grade", nullable = true) val grade: String? = null,
+    @Column(name = "major", nullable = true) val major: String? = null,
+    @Column(name = "class_name", nullable = true) val className: String? = null,
+    @Column(name = "encrypted", nullable = true, columnDefinition = "BOOLEAN DEFAULT false")
+    val encrypted: Boolean = false,
 )
 
 @Entity
@@ -44,7 +47,24 @@ class TaskMembership(
     @Column(nullable = false) val memberId: IdType? = null,
     @Column(nullable = true) var deadline: LocalDateTime? = null,
     @Column(nullable = false) var approved: ApproveType? = null,
-    @Column(nullable = false) var realNameInfo: TaskMembershipRealNameInfo? = null,
+    @Column(name = "is_team", nullable = false) val isTeam: Boolean = false,
+
+    // For individual members
+    @Embedded var realNameInfo: RealNameInfo? = null,
+
+    // For team members
+    @ElementCollection
+    @CollectionTable(
+        name = "task_membership_team_members",
+        joinColumns = [JoinColumn(name = "task_membership_id")],
+    )
+    val teamMembersRealNameInfo: MutableList<TeamMemberRealNameInfo> = mutableListOf(),
+    @Column(name = "email", nullable = false) val email: String? = null,
+    @Column(name = "phone", nullable = false) val phone: String? = null,
+    @Column(name = "apply_reason", nullable = false) val applyReason: String? = null,
+    @Column(name = "personal_advantage", nullable = false) val personalAdvantage: String? = null,
+    @Column(name = "remark", nullable = false) val remark: String? = null,
+    @Column(nullable = true) var encryptionKeyId: String? = null,
 ) : BaseEntity()
 
 interface TaskMembershipRepository : JpaRepository<TaskMembership, IdType> {

@@ -18,6 +18,7 @@ import javax.validation.Valid
  * @param announcements
  * @param taskTemplates
  * @param classificationTopics
+ * @param defaultCategoryId Default category ID for new content in this space.
  * @param myRank Only has value when: 'queryJoinablity' == true && 'enableRank' == true
  */
 data class SpaceDTO(
@@ -59,6 +60,13 @@ data class SpaceDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("classificationTopics", required = true)
     val classificationTopics: kotlin.collections.List<TopicDTO>,
+    @Schema(
+        example = "null",
+        required = true,
+        description = "Default category ID for new content in this space.",
+    )
+    @get:JsonProperty("defaultCategoryId", required = true)
+    val defaultCategoryId: kotlin.Long,
     @Schema(
         example = "null",
         description = "Only has value when: 'queryJoinablity' == true && 'enableRank' == true",

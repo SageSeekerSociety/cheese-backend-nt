@@ -84,8 +84,7 @@ constructor(
             .perform(
                 MockMvcRequestBuilders.get("/projects")
                     .header("Authorization", "Bearer $userToken")
-                    .param("pageSize", "10")
-                    .param("pageStart", "0")
+                    .param("team_id", teamId.toString())
             )
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(MockMvcResultMatchers.jsonPath("$.data.projects").isArray)

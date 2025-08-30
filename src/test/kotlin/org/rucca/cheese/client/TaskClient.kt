@@ -40,8 +40,8 @@ class TaskClient(private val mockMvc: MockMvc, private val userClient: UserClien
         intro: String = "This is a test task.",
         description: String = "Description of task",
         submissionSchema: List<Pair<String, String>> = listOf(Pair("Text Entry", "TEXT")),
-        team: IdType? = null,
-        space: IdType? = null,
+        spaceId: IdType,
+        categoryId: IdType? = null,
         rank: Int? = null,
         topics: List<IdType> = emptyList(),
     ): IdType {
@@ -54,7 +54,7 @@ class TaskClient(private val mockMvc: MockMvc, private val userClient: UserClien
                 {
                   "name": "$name",
                   "submitterType": "$submitterType",
-                  "deadline": "$deadline",
+                  "deadline": ${deadline?.toString() ?: "null"},
                   "defaultDeadline": $defaultDeadline,
                   "resubmittable": $resubmittable,
                   "editable": $editable,
@@ -74,8 +74,8 @@ class TaskClient(private val mockMvc: MockMvc, private val userClient: UserClien
                             .joinToString(",\n")
                     }
                   ],
-                  "team": ${team ?: "null"},
-                  "space": ${space ?: "null"},
+                  "space": $spaceId,
+                  "categoryId": ${categoryId?.toString() ?: "null"},
                   "rank": ${rank ?: "null"},
                   "topics": [${topics.joinToString(",")}]
                 }
@@ -93,6 +93,7 @@ class TaskClient(private val mockMvc: MockMvc, private val userClient: UserClien
                 .andExpect(jsonPath("$.data.task.editable").value(editable))
                 .andExpect(jsonPath("$.data.task.intro").value(intro))
                 .andExpect(jsonPath("$.data.task.description").value(description))
+                .andExpect(jsonPath("$.data.task.space.id").value(spaceId))
         val json = JSONObject(response.andReturn().response.contentAsString)
         for (entry in submissionSchema) {
             val schema =
@@ -102,7 +103,7 @@ class TaskClient(private val mockMvc: MockMvc, private val userClient: UserClien
             assert(found!!.getString("type") == entry.second)
         }
         val taskId = json.getJSONObject("data").getJSONObject("task").getLong("id")
-        logger.info("Created task: $taskId")
+        logger.info("Created task: $taskId (Space: $spaceId, Category: ${categoryId ?: "default"})")
         return taskId
     }
 
@@ -124,7 +125,12 @@ class TaskClient(private val mockMvc: MockMvc, private val userClient: UserClien
             .andExpect(jsonPath("$.data.task.approved").value("APPROVED"))
     }
 
-    fun addParticipantUser(token: String, taskId: IdType, userId: IdType) {
+    fun addParticipantUser(
+        token: String,
+        taskId: IdType,
+        userId: IdType,
+        email: String = "test@example.com",
+    ): IdType {
         val request =
             MockMvcRequestBuilders.post("/tasks/${taskId}/participants")
                 .header("Authorization", "Bearer $token")
@@ -132,16 +138,38 @@ class TaskClient(private val mockMvc: MockMvc, private val userClient: UserClien
                 .contentType("application/json")
                 .content(
                     """
-                {}
+                { "email": "$email" }
             """
                 )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val json = JSONObject(response.andReturn().response.contentAsString)
+        return json.getJSONObject("data").getJSONObject("participant").getLong("id")
     }
 
-    fun approveTaskParticipant(token: String, taskId: IdType, memberId: IdType) {
+    fun addParticipantTeam(
+        token: String,
+        taskId: IdType,
+        teamId: IdType,
+        email: String = "test@example.com",
+    ): IdType {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants")
-                .queryParam("member", memberId.toString())
+            MockMvcRequestBuilders.post("/tasks/${taskId}/participants")
+                .header("Authorization", "Bearer $token")
+                .queryParam("member", teamId.toString())
+                .contentType("application/json")
+                .content(
+                    """
+                { "email": "$email" }
+            """
+                )
+        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val json = JSONObject(response.andReturn().response.contentAsString)
+        return json.getJSONObject("data").getJSONObject("participant").getLong("id")
+    }
+
+    fun approveTaskParticipant(token: String, taskId: IdType, participantMembershipId: IdType) {
+        val request =
+            MockMvcRequestBuilders.patch("/tasks/${taskId}/participants/$participantMembershipId")
                 .header("Authorization", "Bearer $token")
                 .contentType("application/json")
                 .content(
@@ -154,17 +182,20 @@ class TaskClient(private val mockMvc: MockMvc, private val userClient: UserClien
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(
-                jsonPath("$.data.participants[?(@.member.id == $memberId)].approved")
-                    .value("APPROVED")
-            )
+            .andExpect(jsonPath("$.data.taskMembership.approved").value("APPROVED"))
     }
 
-    fun submitTaskUser(token: String, taskId: IdType, userId: IdType, content: String): IdType {
+    fun submitTaskUser(
+        token: String,
+        taskId: IdType,
+        participantMembershipId: IdType,
+        content: String,
+    ): IdType {
         val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $token")
-                .param("member", userId.toString())
                 .contentType("application/json")
                 .content(content)
         val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)

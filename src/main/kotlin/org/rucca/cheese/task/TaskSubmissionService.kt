@@ -22,11 +22,15 @@ import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
 import org.rucca.cheese.common.pagination.repository.idSeekSpec
 import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.common.persistent.getProperty
 import org.rucca.cheese.model.PageDTO
 import org.rucca.cheese.model.TaskSubmissionContentEntryDTO
 import org.rucca.cheese.model.TaskSubmissionDTO
 import org.rucca.cheese.model.TaskSubmissionTypeDTO
-import org.rucca.cheese.task.error.*
+import org.rucca.cheese.task.error.TaskNotResubmittableError
+import org.rucca.cheese.task.error.TaskSubmissionNotEditableError
+import org.rucca.cheese.task.error.TaskSubmissionNotMatchSchemaError
+import org.rucca.cheese.task.error.TaskVersionNotSubmittedYetError
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserService
 import org.springframework.stereotype.Service
@@ -158,17 +162,17 @@ class TaskSubmissionService(
 
     fun submitTask(
         taskId: IdType,
-        memberId: IdType,
+        participantId: IdType,
         submitterId: IdType,
         submission: List<TaskSubmissionEntry>,
     ): TaskSubmissionDTO {
         validateSubmission(taskId, submission)
         val participant =
-            taskMembershipRepository.findByTaskIdAndMemberId(taskId, memberId).orElseThrow {
-                NotTaskParticipantYetError(taskId, memberId)
+            taskMembershipRepository.findById(participantId).orElseThrow {
+                NotFoundError("task membership", participantId)
             }
         val oldVersion =
-            taskSubmissionRepository.findVersionNumberByMembershipId(participant.id!!).orElse(0)
+            taskSubmissionRepository.findVersionNumberByMembershipId(participantId).orElse(0)
         if (oldVersion > 0 && !isTaskResubmittable(taskId)) {
             throw TaskNotResubmittableError(taskId)
         }
@@ -178,15 +182,15 @@ class TaskSubmissionService(
 
     fun modifySubmission(
         taskId: IdType,
-        memberId: IdType,
+        participantId: IdType,
         submitterId: IdType,
         version: Int,
         submission: List<TaskSubmissionEntry>,
     ): TaskSubmissionDTO {
         validateSubmission(taskId, submission)
         val participant =
-            taskMembershipRepository.findByTaskIdAndMemberId(taskId, memberId).orElseThrow {
-                NotTaskParticipantYetError(taskId, memberId)
+            taskMembershipRepository.findById(participantId).orElseThrow {
+                NotFoundError("task membership", participantId)
             }
         if (!isTaskEditable(taskId)) {
             throw TaskSubmissionNotEditableError(taskId)
@@ -218,7 +222,7 @@ class TaskSubmissionService(
                 val task =
                     taskRepository.findById(membership!!.task!!.id!!).orElseThrow {
                         RuntimeException(
-                            "Membership ${this.membership.id!!} refers to task ${membership.task.id} which does not exist"
+                            "Membership ${this.membership.id!!} refers to task ${membership.task!!.id} which does not exist"
                         )
                     }
                 task.submissionSchema!!
@@ -255,7 +259,7 @@ class TaskSubmissionService(
 
     fun enumerateSubmissions(
         taskId: IdType,
-        member: IdType?,
+        participantId: IdType?,
         allVersions: Boolean,
         queryReview: Boolean,
         reviewed: Boolean?,
@@ -281,7 +285,7 @@ class TaskSubmissionService(
                         query,
                         cb,
                         taskId,
-                        member,
+                        participantId,
                         allVersions,
                         reviewed,
                     )
@@ -310,7 +314,7 @@ class TaskSubmissionService(
         query: jakarta.persistence.criteria.CriteriaQuery<*>?,
         cb: jakarta.persistence.criteria.CriteriaBuilder,
         taskId: IdType,
-        member: IdType?,
+        participantId: IdType?,
         allVersions: Boolean,
         reviewed: Boolean?,
     ): jakarta.persistence.criteria.Predicate {
@@ -324,9 +328,12 @@ class TaskSubmissionService(
             )
         )
 
-        if (member != null) {
+        if (participantId != null) {
             predicates.add(
-                cb.equal(root.get<TaskMembership>("membership").get<IdType>("memberId"), member)
+                cb.equal(
+                    root.getProperty(TaskSubmission::membership).getProperty(TaskMembership::id),
+                    participantId,
+                )
             )
         }
 

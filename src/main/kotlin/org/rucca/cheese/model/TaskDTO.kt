@@ -19,26 +19,26 @@ import javax.validation.Valid
  * @param submitters
  * @param updatedAt
  * @param createdAt
+ * @param requireRealName Whether the task requires real name information
  * @param deadline
  * @param participantLimit
  * @param space
+ * @param category
  * @param team
  * @param joinable Only has value when: 'queryJoinablity' == true
- * @param joinableAsTeam
+ * @param joinableTeams
+ * @param joinRejectReason The reason why the user cannot join the task
  * @param submittable Only has value when: 'querySubmitability' == true
  * @param submittableAsTeam
  * @param rank
  * @param approved
  * @param rejectReason
  * @param joined
- * @param joinedAsTeam
- * @param joinedApproved
- * @param joinedApprovedAsTeam
- * @param joinedDisapproved
- * @param joinedDisapprovedAsTeam
- * @param joinedNotApprovedOrDisapproved
- * @param joinedNotApprovedOrDisapprovedAsTeam
+ * @param joinedTeams
+ * @param userDeadline
  * @param topics
+ * @param minTeamSize Minimum size of team that can join this task
+ * @param maxTeamSize Maximum size of team that can join this task
  */
 data class TaskDTO(
     @Schema(example = "null", required = true, description = "")
@@ -84,6 +84,13 @@ data class TaskDTO(
     @Schema(example = "null", required = true, description = "")
     @get:JsonProperty("createdAt", required = true)
     val createdAt: kotlin.Long,
+    @Schema(
+        example = "null",
+        required = true,
+        description = "Whether the task requires real name information",
+    )
+    @get:JsonProperty("requireRealName", required = true)
+    val requireRealName: kotlin.Boolean,
     @Schema(example = "null", description = "")
     @get:JsonProperty("deadline")
     val deadline: kotlin.Long? = null,
@@ -96,6 +103,10 @@ data class TaskDTO(
     val space: SpaceDTO? = null,
     @field:Valid
     @Schema(example = "null", description = "")
+    @get:JsonProperty("category")
+    val category: SpaceCategoryDTO? = null,
+    @field:Valid
+    @Schema(example = "null", description = "")
     @get:JsonProperty("team")
     val team: TeamDTO? = null,
     @Schema(example = "null", description = "Only has value when: 'queryJoinablity' == true")
@@ -103,8 +114,11 @@ data class TaskDTO(
     val joinable: kotlin.Boolean? = null,
     @field:Valid
     @Schema(example = "null", description = "")
-    @get:JsonProperty("joinableAsTeam")
-    val joinableAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null,
+    @get:JsonProperty("joinableTeams")
+    val joinableTeams: kotlin.collections.List<TeamSummaryDTO>? = null,
+    @Schema(example = "null", description = "The reason why the user cannot join the task")
+    @get:JsonProperty("joinRejectReason")
+    val joinRejectReason: kotlin.String? = null,
     @Schema(example = "null", description = "Only has value when: 'querySubmitability' == true")
     @get:JsonProperty("submittable")
     val submittable: kotlin.Boolean? = null,
@@ -127,33 +141,21 @@ data class TaskDTO(
     val joined: kotlin.Boolean? = null,
     @field:Valid
     @Schema(example = "null", description = "")
-    @get:JsonProperty("joinedAsTeam")
-    val joinedAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null,
+    @get:JsonProperty("joinedTeams")
+    val joinedTeams: kotlin.collections.List<TeamSummaryDTO>? = null,
     @Schema(example = "null", description = "")
-    @get:JsonProperty("joinedApproved")
-    val joinedApproved: kotlin.Boolean? = null,
-    @field:Valid
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("joinedApprovedAsTeam")
-    val joinedApprovedAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null,
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("joinedDisapproved")
-    val joinedDisapproved: kotlin.Boolean? = null,
-    @field:Valid
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("joinedDisapprovedAsTeam")
-    val joinedDisapprovedAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null,
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("joinedNotApprovedOrDisapproved")
-    val joinedNotApprovedOrDisapproved: kotlin.Boolean? = null,
-    @field:Valid
-    @Schema(example = "null", description = "")
-    @get:JsonProperty("joinedNotApprovedOrDisapprovedAsTeam")
-    val joinedNotApprovedOrDisapprovedAsTeam: kotlin.collections.List<TeamSummaryDTO>? = null,
+    @get:JsonProperty("userDeadline")
+    val userDeadline: kotlin.Long? = null,
     @field:Valid
     @Schema(example = "null", description = "")
     @get:JsonProperty("topics")
     val topics: kotlin.collections.List<TopicDTO>? = null,
+    @Schema(example = "null", description = "Minimum size of team that can join this task")
+    @get:JsonProperty("minTeamSize")
+    val minTeamSize: kotlin.Int? = null,
+    @Schema(example = "null", description = "Maximum size of team that can join this task")
+    @get:JsonProperty("maxTeamSize")
+    val maxTeamSize: kotlin.Int? = null,
 ) : Serializable {
 
     companion object {

@@ -10,12 +10,14 @@ package org.rucca.cheese.auth
 
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.common.persistent.IdType
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Controller
+@UseOldAuth
 class ExampleController {
     @GetMapping("/example2/1")
     @Guard("query", "example")

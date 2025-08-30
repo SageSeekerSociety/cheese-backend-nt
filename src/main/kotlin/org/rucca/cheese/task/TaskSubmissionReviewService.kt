@@ -68,12 +68,12 @@ class TaskSubmissionReviewService(
         ensureReviewNotExist(submissionId)
         val review =
             TaskSubmissionReview(
-                submission = TaskSubmission().apply { id = submissionId },
-                accepted = accepted,
-                score = score,
-                comment = comment,
-            )
-        taskSubmissionReviewRepository.save(review)
+                    submission = TaskSubmission().apply { id = submissionId },
+                    accepted = accepted,
+                    score = score,
+                    comment = comment,
+                )
+                .let { taskSubmissionReviewRepository.save(it) }
         return tryUpdateParticipantRank(review)
     }
 

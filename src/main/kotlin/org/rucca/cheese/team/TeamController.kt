@@ -9,25 +9,27 @@
 
 package org.rucca.cheese.team
 
-import javax.annotation.PostConstruct
+import jakarta.annotation.PostConstruct
 import org.rucca.cheese.api.TeamsApi
-import org.rucca.cheese.auth.AuthenticationService
 import org.rucca.cheese.auth.AuthorizationService
 import org.rucca.cheese.auth.AuthorizedAction
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.auth.annotation.Guard
 import org.rucca.cheese.auth.annotation.NoAuth
 import org.rucca.cheese.auth.annotation.ResourceId
+import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@UseOldAuth
 class TeamController(
     private val teamService: TeamService,
     private val authorizationService: AuthorizationService,
-    private val authenticationService: AuthenticationService,
+    private val jwtService: JwtService,
 ) : TeamsApi {
     @PostConstruct
     fun initialize() {
@@ -40,7 +42,7 @@ class TeamController(
             _: Map<String, Any?>?,
             _: IdGetter?,
             _: Any? ->
-            teamService.isTeamAdmin(
+            teamService.isTeamAtLeastAdmin(
                 resourceId ?: throw IllegalArgumentException("resourceId is null"),
                 userId,
             )
@@ -58,9 +60,9 @@ class TeamController(
     }
 
     @Guard("delete", "team")
-    override fun deleteTeam(@ResourceId teamId: Long): ResponseEntity<DeleteTeam200ResponseDTO> {
+    override fun deleteTeam(@ResourceId teamId: Long): ResponseEntity<CommonResponseDTO> {
         teamService.deleteTeam(teamId)
-        return ResponseEntity.ok(DeleteTeam200ResponseDTO(200, "OK"))
+        return ResponseEntity.ok(CommonResponseDTO(200, "OK"))
     }
 
     @NoAuth
@@ -114,7 +116,7 @@ class TeamController(
 
     @Guard("enumerate-my-teams", "team")
     override fun getMyTeams(): ResponseEntity<GetMyTeams200ResponseDTO> {
-        val teamDTOs = teamService.getTeamsOfUser(authenticationService.getCurrentUserId())
+        val teamDTOs = teamService.getTeamsOfUser(jwtService.getCurrentUserId())
         return ResponseEntity.ok(
             GetMyTeams200ResponseDTO(200, GetMyTeams200ResponseDataDTO(teamDTOs), "OK")
         )
@@ -122,11 +124,20 @@ class TeamController(
 
     @Guard("enumerate-members", "team")
     override fun getTeamMembers(
-        @ResourceId teamId: Long
+        @ResourceId teamId: Long,
+        queryRealNameStatus: Boolean,
     ): ResponseEntity<GetTeamMembers200ResponseDTO> {
-        val memberDTOs = teamService.getTeamMembers(teamId)
+        val (memberDTOs, allMembersVerified) =
+            teamService.getTeamMembers(teamId, queryRealNameStatus)
         return ResponseEntity.ok(
-            GetTeamMembers200ResponseDTO(200, GetTeamMembers200ResponseDataDTO(memberDTOs), "OK")
+            GetTeamMembers200ResponseDTO(
+                200,
+                GetTeamMembers200ResponseDataDTO(
+                    members = memberDTOs,
+                    allMembersVerified = allMembersVerified,
+                ),
+                "OK",
+            )
         )
     }
 
@@ -199,7 +210,7 @@ class TeamController(
                 intro = postTeamRequestDTO.intro,
                 description = postTeamRequestDTO.description,
                 avatarId = postTeamRequestDTO.avatarId,
-                ownerId = authenticationService.getCurrentUserId(),
+                ownerId = jwtService.getCurrentUserId(),
             )
         val teamDTO = teamService.getTeamDto(teamId)
         return ResponseEntity.ok(

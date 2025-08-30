@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
 import org.rucca.cheese.client.AttachmentClient
+import org.rucca.cheese.client.SpaceClient
 import org.rucca.cheese.client.TaskClient
 import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
@@ -25,6 +26,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.patch
+import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
@@ -38,6 +41,7 @@ class TaskSubmissionReviewTest
 constructor(
     private val mockMvc: MockMvc,
     private val userClient: UserClient,
+    private val spaceClient: SpaceClient,
     private val attachmentClient: AttachmentClient,
     private val taskClient: TaskClient,
 ) {
@@ -47,8 +51,11 @@ constructor(
     lateinit var participant: UserClient.CreateUserResponse
     lateinit var participantToken: String
     private var attachmentId: IdType = -1
+    private var spaceId: IdType = -1
+    private var categoryId: IdType = -1
     private var taskId: IdType = -1
     private var submissionId: IdType = -1
+    private var participantTaskMembershipId: IdType = -1
     private var submission = ""
 
     @BeforeAll
@@ -62,32 +69,48 @@ constructor(
             """
                         [
                           {
-                            "contentText": "This is a test submission."
+                            "text": "This is a test submission."
                           },
                           {
-                            "contentAttachmentId": $attachmentId
+                            "attachmentId": $attachmentId
                           }
                         ]
                     """
+
+        // Create space
+        val spaceResult = spaceClient.createSpace(creatorToken)
+        spaceId = spaceResult.first
+        categoryId = spaceResult.second
+
+        // Create task
         taskId =
             taskClient.createTask(
                 creatorToken,
                 submissionSchema =
                     listOf(Pair("Text Entry", "TEXT"), Pair("Attachment Entry", "FILE")),
+                spaceId = spaceId,
             )
-        taskClient.addParticipantUser(participantToken, taskId, participant.userId)
-        taskClient.approveTaskParticipant(creatorToken, taskId, participant.userId)
+        taskClient.approveTask(taskId, creatorToken)
+        participantTaskMembershipId =
+            taskClient.addParticipantUser(participantToken, taskId, participant.userId)
+        taskClient.approveTaskParticipant(creatorToken, taskId, participantTaskMembershipId)
         submissionId =
-            taskClient.submitTaskUser(participantToken, taskId, participant.userId, submission)
+            taskClient.submitTaskUser(
+                participantToken,
+                taskId,
+                participantTaskMembershipId,
+                submission,
+            )
     }
 
     @Test
     @Order(5)
     fun testGetSubmissionWithQueryReviewEnabledWhenNotReviewed() {
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participant.userId.toString())
                 .queryParam("queryReview", "true")
         mockMvc
             .perform(request)
@@ -104,9 +127,10 @@ constructor(
     @Order(6)
     fun testGetReviewedSubmissionWithQueryReviewEnabledWhenNotReviewed() {
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participant.userId.toString())
                 .queryParam("queryReview", "true")
                 .queryParam("reviewed", "true")
         mockMvc
@@ -119,9 +143,10 @@ constructor(
     @Order(7)
     fun testGetUnreviewedSubmissionWithQueryReviewEnabledWhenNotReviewed() {
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participant.userId.toString())
                 .queryParam("queryReview", "true")
                 .queryParam("reviewed", "false")
         mockMvc
@@ -139,7 +164,9 @@ constructor(
     @Order(10)
     fun testCreateReview() {
         val request =
-            MockMvcRequestBuilders.post("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -172,9 +199,11 @@ constructor(
 
     @Test
     @Order(20)
-    fun testCreateReviewAndGetPermissionDeniedError() {
+    fun testCreateReviewAndGetAccessDeniedError() {
         val request =
-            MockMvcRequestBuilders.post("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $participantToken")
                 .contentType("application/json")
                 .content(
@@ -189,16 +218,16 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError")
-            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("AccessDeniedError"))
     }
 
     @Test
     @Order(30)
     fun testCreateReviewAndGetTaskSubmissionAlreadyReviewedError() {
         val request =
-            MockMvcRequestBuilders.post("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -223,7 +252,9 @@ constructor(
     @Order(40)
     fun testUpdateReviewEmpty() {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.patch(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content("{}")
@@ -250,7 +281,9 @@ constructor(
     @Order(50)
     fun testUpdateReview() {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.patch(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -280,9 +313,11 @@ constructor(
 
     @Test
     @Order(60)
-    fun testUpdateReviewAndGetPermissionDeniedError() {
+    fun testUpdateReviewAndGetAccessDeniedError() {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.patch(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $participantToken")
                 .contentType("application/json")
                 .content(
@@ -297,18 +332,17 @@ constructor(
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError")
-            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("AccessDeniedError"))
     }
 
     @Test
     @Order(70)
     fun testGetSubmissionWithQueryReviewEnabled() {
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participant.userId.toString())
                 .queryParam("queryReview", "true")
         mockMvc
             .perform(request)
@@ -333,9 +367,10 @@ constructor(
     @Order(71)
     fun testGetReviewedSubmissionWithQueryReviewEnabled() {
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participant.userId.toString())
                 .queryParam("queryReview", "true")
                 .queryParam("reviewed", "true")
         mockMvc
@@ -361,9 +396,10 @@ constructor(
     @Order(72)
     fun testGetUnreviewedSubmissionWithQueryReviewEnabled() {
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participant.userId.toString())
                 .queryParam("queryReview", "true")
                 .queryParam("reviewed", "false")
         mockMvc
@@ -374,23 +410,25 @@ constructor(
 
     @Test
     @Order(75)
-    fun testDeleteReviewAndGetPermissionDeniedError() {
+    fun testDeleteReviewAndGetAccessDeniedError() {
         val request =
-            MockMvcRequestBuilders.delete("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.delete(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $participantToken")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError")
-            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("AccessDeniedError"))
     }
 
     @Test
     @Order(80)
     fun testDeleteReview() {
         val request =
-            MockMvcRequestBuilders.delete("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.delete(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
         mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
     }
@@ -399,9 +437,10 @@ constructor(
     @Order(90)
     fun testGetSubmissionWithQueryReviewEnabledAfterReviewDeleted() {
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participant.userId.toString())
                 .queryParam("queryReview", "true")
         mockMvc
             .perform(request)
@@ -418,7 +457,9 @@ constructor(
     @Order(100)
     fun testDeleteAgainAndGetTaskSubmissionNotReviewedYetError() {
         val request =
-            MockMvcRequestBuilders.delete("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.delete(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
         mockMvc
             .perform(request)
@@ -433,7 +474,9 @@ constructor(
     @Order(110)
     fun testUpdateAndGetTaskSubmissionNotReviewedYetError() {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.patch(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -458,7 +501,9 @@ constructor(
     @Order(130)
     fun testCreateReviewAgain() {
         val request =
-            MockMvcRequestBuilders.post("/tasks/submissions/$submissionId/review")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions/$submissionId/review"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -493,9 +538,10 @@ constructor(
     @Order(140)
     fun testGetSubmissionOnceAgain() {
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participant.userId.toString())
                 .queryParam("queryReview", "true")
         mockMvc
             .perform(request)
@@ -520,9 +566,10 @@ constructor(
     @Order(141)
     fun testGetReviewedSubmissionOnceAgain() {
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participant.userId.toString())
                 .queryParam("queryReview", "true")
                 .queryParam("reviewed", "true")
         mockMvc
@@ -548,9 +595,10 @@ constructor(
     @Order(142)
     fun testGetUnreviewedSubmissionOnceAgain() {
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantTaskMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .queryParam("member", participant.userId.toString())
                 .queryParam("queryReview", "true")
                 .queryParam("reviewed", "false")
         mockMvc

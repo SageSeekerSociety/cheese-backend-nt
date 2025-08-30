@@ -10,9 +10,9 @@ package org.rucca.cheese.auth
 
 import kotlin.test.assertEquals
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
 import org.springframework.beans.factory.annotation.Autowired
@@ -25,10 +25,7 @@ import org.springframework.test.context.ActiveProfiles
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AuthorizationServiceTest
 @Autowired
-constructor(
-    private val authorizationService: AuthorizationService,
-    private val userClient: UserClient,
-) {
+constructor(private val jwtService: JwtService, private val userClient: UserClient) {
     var userId: IdType = -1
     lateinit var token: String
 
@@ -41,7 +38,7 @@ constructor(
 
     @Test
     fun testVerify() {
-        val authorization = authorizationService.verify(token)
+        val authorization = jwtService.verify(token)
         assertEquals(userId, authorization.userId)
     }
 }

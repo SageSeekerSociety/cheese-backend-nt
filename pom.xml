@@ -6,14 +6,14 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.2</version>
+        <version>3.4.4</version>
         <relativePath/>
     </parent>
 
     <!-- Project Info -->
     <groupId>org.rucca</groupId>
     <artifactId>cheese</artifactId>
-    <version>0.10.1</version>
+    <version>0.13.0</version>
     <name>backend</name>
     <description>Backend for Cheese Web Application</description>
     <url/>
@@ -31,7 +31,8 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <kotlin.version>2.1.10</kotlin.version>
+        <kotlin.version>2.1.20</kotlin.version>
+        <serialization.version>1.8.0</serialization.version>
     </properties>
 
     <!-- Project Dependencies -->
@@ -114,12 +115,12 @@
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations</artifactId>
-            <version>2.2.28</version>
+            <version>2.2.29</version>
         </dependency>
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-models</artifactId>
-            <version>2.2.28</version>
+            <version>2.2.29</version>
         </dependency>
         <dependency>
             <groupId>com.ninja-squad</groupId>
@@ -166,7 +167,7 @@
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
-            <version>9.7.1</version>
+            <version>9.8</version>
         </dependency>
         <dependency>
             <groupId>top.huanchengfly.openai</groupId>
@@ -176,7 +177,7 @@
         <dependency>
             <groupId>io.ktor</groupId>
             <artifactId>ktor-client-java-jvm</artifactId>
-            <version>3.1.1</version>
+            <version>3.1.2</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -203,12 +204,17 @@
         <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
             <artifactId>kotlinx-coroutines-reactor</artifactId>
-            <version>1.8.0</version>
+            <version>1.10.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-serialization-json</artifactId>
+            <version>${serialization.version}</version>
         </dependency>
         <dependency>
             <groupId>io.hypersistence</groupId>
             <artifactId>hypersistence-utils-hibernate-63</artifactId>
-            <version>3.9.2</version>
+            <version>3.9.9</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -217,6 +223,14 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
     </dependencies>
 
@@ -237,9 +251,15 @@
                     <compilerPlugins>
                         <plugin>spring</plugin>
                         <plugin>jpa</plugin>
+                        <plugin>kotlinx-serialization</plugin>
                     </compilerPlugins>
                 </configuration>
                 <dependencies>
+                    <dependency>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-maven-noarg</artifactId>
+                        <version>${kotlin.version}</version>
+                    </dependency>
                     <dependency>
                         <groupId>org.jetbrains.kotlin</groupId>
                         <artifactId>kotlin-maven-allopen</artifactId>
@@ -247,8 +267,8 @@
                     </dependency>
                     <dependency>
                         <groupId>org.jetbrains.kotlin</groupId>
-                        <artifactId>kotlin-maven-noarg</artifactId>
-                        <version>2.1.10</version>
+                        <artifactId>kotlin-maven-serialization</artifactId>
+                        <version>${kotlin.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -266,6 +286,7 @@
                             <generatorName>kotlin-spring</generatorName>
                             <skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>
                             <modelNameSuffix>DTO</modelNameSuffix>
+                            <templateDirectory>./specs/template</templateDirectory>
                             <configOptions>
                                 <java8>true</java8>
                                 <interfaceOnly>true</interfaceOnly>
@@ -275,9 +296,17 @@
                                 <exceptionHandler>false</exceptionHandler>
                                 <serializableModel>true</serializableModel>
                             </configOptions>
+                            <importMappings>
+                                <importMapping>AuthUserInfo=org.rucca.cheese.auth.model.AuthUserInfo</importMapping>
+                            </importMappings>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>11.5.0</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -347,7 +376,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
+                <version>3.5.3</version>
                 <configuration>
                     <systemPropertyVariables>
                         <spring.jpa.hibernate.ddl-auto>update</spring.jpa.hibernate.ddl-auto>

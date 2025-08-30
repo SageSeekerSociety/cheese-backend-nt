@@ -1,8 +1,7 @@
 package org.rucca.cheese.notification
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import java.util.*
-import org.rucca.cheese.auth.AuthenticationService
+import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
@@ -18,7 +17,7 @@ import org.springframework.stereotype.Service
 open class NotificationService(
     private val notificationRepository: NotificationRepository,
     private val userService: UserService,
-    private val authenticateService: AuthenticationService,
+    private val authenticateService: JwtService,
     private val objectMapper: ObjectMapper,
 ) {
 
