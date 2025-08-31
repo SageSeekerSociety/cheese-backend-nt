@@ -9,6 +9,7 @@
 package org.rucca.cheese.api
 
 import kotlin.math.floor
+import org.json.JSONObject
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.rucca.cheese.client.SpaceClient

@@ -7,6 +7,7 @@ import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.TestInstance.Lifecycle
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamMemberRole
@@ -15,7 +16,6 @@ import org.rucca.cheese.team.TeamUserRelation
 import org.rucca.cheese.team.TeamUserRelationRepository
 import org.rucca.cheese.user.AvatarRepository
 import org.rucca.cheese.user.UserRepository
-import org.rucca.cheese.utils.UserCreatorService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -33,7 +33,7 @@ class KnowledgeTest
 @Autowired
 constructor(
     private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
+    private val userClient: UserClient,
     private val teamRepository: TeamRepository,
     private val teamUserRelationRepository: TeamUserRelationRepository,
     private val objectMapper: ObjectMapper,
@@ -55,9 +55,9 @@ constructor(
     @BeforeAll
     fun setup() {
         // 创建用户
-        val creator = userCreatorService.createUser()
+        val creator = userClient.createUser()
         userId = creator.userId
-        creatorToken = userCreatorService.login(creator.username, creator.password)
+        creatorToken = userClient.login(creator.username, creator.password)
 
         // 创建团队
         val team =

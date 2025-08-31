@@ -65,6 +65,9 @@ constructor(
     private var spaceId: IdType = -1
     private var attachmentId: IdType = -1
     private val taskIds = mutableListOf<IdType>()
+    private var participantMembershipId: IdType = -1
+    private var participant2MembershipId: IdType = -1
+    private var teamMembershipId: IdType = -1
     private val taskName = "Test Task (${floor(Math.random() * 10000000000).toLong()})"
     private val taskIntro = "This is a test task."
     private val taskDescription = "A lengthy text. ".repeat(1000)
@@ -209,6 +212,7 @@ constructor(
                   "name": "$name",
                   "submitterType": "$submitterType",
                   "deadline": "$deadline",
+                  "defaultDeadline": 30,
                   "resubmittable": $resubmittable,
                   "editable": $editable,
                   "intro": "$intro",
@@ -298,7 +302,7 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(
-                MockMvcResultMatchers.jsonPath("$.data.participant.approved").value("APPROVED")
+                MockMvcResultMatchers.jsonPath("$.data.taskMembership.approved").value("APPROVED")
             )
     }
 
@@ -354,7 +358,7 @@ constructor(
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
             team = teamId,
-            space = null,
+            space = spaceId,
         )
         createTask(
             name = "$taskName (5)",
@@ -366,7 +370,7 @@ constructor(
             description = taskDescription,
             submissionSchema = taskSubmissionSchema,
             team = null,
-            space = null,
+            space = spaceId,
         )
     }
 
@@ -410,10 +414,16 @@ constructor(
                 .contentType("application/json")
                 .content(
                     """
-                    {}
+                    {
+                        "email": "participant@test.com"
+                    }
                 """
                 )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val json = JSONObject(response.andReturn().response.contentAsString)
+        participantMembershipId =
+            json.getJSONObject("data").getJSONObject("participant").getLong("id")
+        logger.info("Created participant membership: $participantMembershipId")
     }
 
     @Test
@@ -426,10 +436,16 @@ constructor(
                 .contentType("application/json")
                 .content(
                     """
-                    {}
+                    {
+                        "email": "participant2@test.com"
+                    }
                 """
                 )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val json = JSONObject(response.andReturn().response.contentAsString)
+        participant2MembershipId =
+            json.getJSONObject("data").getJSONObject("participant").getLong("id")
+        logger.info("Created participant2 membership: $participant2MembershipId")
     }
 
     @Test
@@ -458,10 +474,15 @@ constructor(
                 .contentType("application/json")
                 .content(
                     """
-                    {}
+                    {
+                        "email": "team@test.com"
+                    }
                 """
                 )
-        mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val response = mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isOk)
+        val json = JSONObject(response.andReturn().response.contentAsString)
+        teamMembershipId = json.getJSONObject("data").getJSONObject("participant").getLong("id")
+        logger.info("Created team membership: $teamMembershipId")
     }
 
     @Test
@@ -486,15 +507,16 @@ constructor(
     fun testSubmitTaskUserPermissionDeniedError() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .param("member", participant.userId.toString())
                 .contentType("application/json")
                 .content(
                     """
                         [
                           {
-                            "contentText": "This is a test submission."
+                            "text": "This is a test submission."
                           }
                         ]
                     """
@@ -506,8 +528,9 @@ constructor(
     @Order(120)
     fun testApproveTaskParticipantUser2() {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
-                .queryParam("member", participant.userId.toString())
+            MockMvcRequestBuilders.patch(
+                    "/tasks/${taskIds[0]}/participants/$participantMembershipId"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -521,10 +544,7 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
-                        "$.data.participants[?(@.member.id == ${participant.userId})].approved"
-                    )
-                    .value("APPROVED")
+                MockMvcResultMatchers.jsonPath("$.data.taskMembership.approved").value("APPROVED")
             )
     }
 
@@ -548,8 +568,9 @@ constructor(
     @Order(125)
     fun testApproveTaskParticipantUser3() {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskIds[0]}/participants")
-                .queryParam("member", participant2.userId.toString())
+            MockMvcRequestBuilders.patch(
+                    "/tasks/${taskIds[0]}/participants/$participant2MembershipId"
+                )
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -563,10 +584,7 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
-                        "$.data.participants[?(@.member.id == ${participant2.userId})].approved"
-                    )
-                    .value("APPROVED")
+                MockMvcResultMatchers.jsonPath("$.data.taskMembership.approved").value("APPROVED")
             )
     }
 
@@ -574,8 +592,7 @@ constructor(
     @Order(128)
     fun testApproveTaskParticipantTeam2() {
         val request =
-            MockMvcRequestBuilders.patch("/tasks/${taskIds[1]}/participants")
-                .queryParam("member", teamId.toString())
+            MockMvcRequestBuilders.patch("/tasks/${taskIds[1]}/participants/$teamMembershipId")
                 .header("Authorization", "Bearer $creatorToken")
                 .contentType("application/json")
                 .content(
@@ -589,10 +606,7 @@ constructor(
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(
-                MockMvcResultMatchers.jsonPath(
-                        "$.data.participants[?(@.member.id == $teamId)].approved"
-                    )
-                    .value("APPROVED")
+                MockMvcResultMatchers.jsonPath("$.data.taskMembership.approved").value("APPROVED")
             )
     }
 
@@ -619,15 +633,16 @@ constructor(
     fun testSubmitTaskUser() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .param("member", participant.userId.toString())
                 .contentType("application/json")
                 .content(
                     """
                         [
                           {
-                            "contentText": "This is a test submission."
+                            "text": "This is a test submission."
                           }
                         ]
                     """
@@ -663,15 +678,16 @@ constructor(
     fun testSubmitTaskUser2() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participant2MembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken2")
-                .param("member", participant2.userId.toString())
                 .contentType("application/json")
                 .content(
                     """
                         [
                           {
-                            "contentText": "This is a test submission."
+                            "text": "This is a test submission."
                           }
                         ]
                     """
@@ -702,18 +718,17 @@ constructor(
     fun testSubmitTaskTeam() {
         val taskId = taskIds[1]
         val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.post("/tasks/$taskId/participants/$teamMembershipId/submissions")
                 .header("Authorization", "Bearer $teamCreatorToken")
-                .param("member", teamId.toString())
                 .contentType("application/json")
                 .content(
                     """
                         [
                           {
-                            "contentText": "This is a test submission."
+                            "text": "This is a test submission."
                           },
                           {
-                            "contentAttachmentId": $attachmentId
+                            "attachmentId": $attachmentId
                           }
                         ]
                     """
@@ -757,15 +772,16 @@ constructor(
     fun testSubmitAgainAndGetNotResubmittableError() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .param("member", participant.userId.toString())
                 .contentType("application/json")
                 .content(
                     """
                         [
                           {
-                            "contentText": "This is a test submission."
+                            "text": "This is a test submission."
                           }
                         ]
                     """
@@ -820,15 +836,16 @@ constructor(
     fun testResubmitTaskTeam() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.post("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.post(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .param("member", participant.userId.toString())
                 .contentType("application/json")
                 .content(
                     """
                         [
                           {
-                            "contentText": "This is a test submission. (Version 2)"
+                            "text": "This is a test submission. (Version 2)"
                           }
                         ]
                     """
@@ -864,15 +881,16 @@ constructor(
     fun testUpdateSubmissionAndGetNotEditableError() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.patch("/tasks/$taskId/submissions/1")
+            MockMvcRequestBuilders.patch(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions/1"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .param("member", participant.userId.toString())
                 .contentType("application/json")
                 .content(
                     """
                       [
                         {
-                          "contentText": "This is a test submission. (Version 1) (edited)"
+                          "text": "This is a test submission. (Version 1) (edited)"
                         }
                       ]
                     """
@@ -910,15 +928,16 @@ constructor(
     fun testUpdateSubmission() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.patch("/tasks/$taskId/submissions/2")
+            MockMvcRequestBuilders.patch(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions/2"
+                )
                 .header("Authorization", "Bearer $participantToken")
-                .param("member", participant.userId.toString())
                 .contentType("application/json")
                 .content(
                     """
                       [
                         {
-                          "contentText": "This is a test submission. (Version 2) (edited)"
+                          "text": "This is a test submission. (Version 2) (edited)"
                         }
                       ]
                     """
@@ -954,14 +973,14 @@ constructor(
     fun testGetSubmissionsUseIrrelevantUserAndGetPermissionDeniedError() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $irrelevantUserToken")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError")
-            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("AccessDeniedError"))
     }
 
     @Test
@@ -969,14 +988,14 @@ constructor(
     fun testGetSubmissionsUseParticipantAndGetPermissionDeniedError() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participant2MembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError")
-            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("AccessDeniedError"))
     }
 
     @Test
@@ -984,7 +1003,9 @@ constructor(
     fun testGetSubmissionsByDefault() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $creatorToken")
         mockMvc
             .perform(request)
@@ -1018,7 +1039,9 @@ constructor(
     fun testGetSubmissionsWithAllVersions() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions"
+                )
                 .param("allVersions", "true")
                 .header("Authorization", "Bearer $creatorToken")
         mockMvc
@@ -1058,15 +1081,14 @@ constructor(
     fun testGetSubmissionsUseParticipant2WithMemberIdAndGetPermissionDeniedError() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
-                .param("member", participant.userId.toString())
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken2")
         mockMvc
             .perform(request)
             .andExpect(MockMvcResultMatchers.status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.error.name").value("PermissionDeniedError")
-            )
+            .andExpect(MockMvcResultMatchers.jsonPath("$.error.name").value("AccessDeniedError"))
     }
 
     @Test
@@ -1074,8 +1096,9 @@ constructor(
     fun testGetSubmissionsUseParticipantWithMemberId() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
-                .param("member", participant.userId.toString())
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $participantToken")
         mockMvc
             .perform(request)
@@ -1115,8 +1138,9 @@ constructor(
     fun testGetSubmissionsWithMemberId() {
         val taskId = taskIds[0]
         val request =
-            MockMvcRequestBuilders.get("/tasks/$taskId/submissions")
-                .param("member", participant.userId.toString())
+            MockMvcRequestBuilders.get(
+                    "/tasks/$taskId/participants/$participantMembershipId/submissions"
+                )
                 .header("Authorization", "Bearer $creatorToken")
         mockMvc
             .perform(request)

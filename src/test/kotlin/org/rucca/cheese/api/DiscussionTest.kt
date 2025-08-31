@@ -7,11 +7,11 @@ import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
+import org.rucca.cheese.client.UserClient
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.discussion.ReactionType
 import org.rucca.cheese.discussion.ReactionTypeRepository
 import org.rucca.cheese.model.CreateProjectRequestDTO
-import org.rucca.cheese.utils.UserCreatorService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -31,13 +31,13 @@ class DiscussionTest
 @Autowired
 constructor(
     private val mockMvc: MockMvc,
-    private val userCreatorService: UserCreatorService,
+    private val userClient: UserClient,
     private val objectMapper: ObjectMapper,
     private val reactionTypeRepository: ReactionTypeRepository,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    lateinit var creator: UserCreatorService.CreateUserResponse
+    lateinit var creator: UserClient.CreateUserResponse
     lateinit var creatorToken: String
     // 存储创建的团队ID
     private var teamId: IdType = -1
@@ -120,8 +120,8 @@ constructor(
     @BeforeAll
     fun prepare() {
         // 创建用户
-        creator = userCreatorService.createUser()
-        creatorToken = userCreatorService.login(creator.username, creator.password)
+        creator = userClient.createUser()
+        creatorToken = userClient.login(creator.username, creator.password)
 
         // 创建团队
         teamId =
@@ -130,7 +130,7 @@ constructor(
                 teamName = "Test Team (${floor(Math.random() * 10000000000).toLong()})",
                 teamIntro = "This is a test team.",
                 teamDescription = "A lengthy text. ".repeat(1000),
-                teamAvatarId = userCreatorService.testAvatarId(),
+                teamAvatarId = userClient.testAvatarId(),
             )
 
         // 创建项目
