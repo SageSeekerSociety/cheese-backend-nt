@@ -103,8 +103,20 @@ constructor(
         val member1Response = userClient.createUser()
         val member2Response = userClient.createUser()
 
-        // Note: TeamClient doesn't have addMember method, would need to add if needed
-        // For now just create the team with owner
+        // Add members to the team
+        teamClient.addTeamMember(
+            webTestClient = webTestClient,
+            token = ownerToken,
+            teamId = teamId,
+            userId = member1Response.userId
+        )
+        
+        teamClient.addTeamAdmin(
+            webTestClient = webTestClient,
+            creatorToken = ownerToken,
+            teamId = teamId,
+            adminId = member2Response.userId
+        )
 
         println("========================================")
         println("Team created successfully!")
@@ -114,10 +126,10 @@ constructor(
         println("Owner:")
         println("  Username: ${ownerResponse.username}")
         println("  Password: ${ownerResponse.password}")
-        println("Member 1 (to be added manually):")
+        println("Member 1 (member role):")
         println("  Username: ${member1Response.username}")
         println("  Password: ${member1Response.password}")
-        println("Member 2 (to be added manually):")
+        println("Member 2 (admin role):")
         println("  Username: ${member2Response.username}")
         println("  Password: ${member2Response.password}")
         println("========================================")
@@ -138,6 +150,21 @@ constructor(
 
         // Create team
         val teamId = teamClient.createTeam(webTestClient = webTestClient, creatorToken = ownerToken)
+        
+        // Add members to team
+        teamClient.addTeamMember(
+            webTestClient = webTestClient,
+            token = ownerToken,
+            teamId = teamId,
+            userId = member1Response.userId
+        )
+        
+        teamClient.addTeamAdmin(
+            webTestClient = webTestClient,
+            creatorToken = ownerToken,
+            teamId = teamId,
+            adminId = member2Response.userId
+        )
 
         // Create task
         val taskId =
