@@ -3,10 +3,11 @@ package org.rucca.cheese.cli
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.rucca.cheese.client.*
-import org.rucca.cheese.model.TeamMemberRoleTypeDTO
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.web.reactive.server.WebTestClient
 
 /**
  * CLI for creating test data.
@@ -16,7 +17,8 @@ import org.springframework.test.context.ActiveProfiles
  * test -Dtest=CliTest#createFullEnvironment -Dcli=true -Dspotless.check.skip=true
  */
 @EnabledIfSystemProperty(named = "cli", matches = "true")
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
 @ActiveProfiles("dev") // Use dev database by default
 class CliTest
 @Autowired
@@ -25,6 +27,7 @@ constructor(
     private val spaceClient: SpaceClient,
     private val teamClient: TeamClient,
     private val taskClient: TaskClient,
+    private val webTestClient: WebTestClient,
 ) {
 
     @Test
@@ -75,16 +78,14 @@ constructor(
         val userResponse = userClient.createUser()
         val token = userClient.login(userResponse.username, userResponse.password)
 
-        val spaceResponse = spaceClient.createSpace(token = token)
-        val categoryResponse = spaceClient.createCategory(spaceId = spaceResponse.id, token = token)
+        val (spaceId, defaultCategoryId) =
+            spaceClient.createSpace(webTestClient = webTestClient, creatorToken = token)
 
         println("========================================")
         println("Space created successfully!")
         println("========================================")
-        println("Space ID: ${spaceResponse.id}")
-        println("Space Name: ${spaceResponse.name}")
-        println("Category ID: ${categoryResponse.id}")
-        println("Category Name: ${categoryResponse.name}")
+        println("Space ID: $spaceId")
+        println("Default Category ID: $defaultCategoryId")
         println("========================================")
         println("Owner Credentials:")
         println("  Username: ${userResponse.username}")
@@ -97,38 +98,26 @@ constructor(
         val ownerResponse = userClient.createUser()
         val ownerToken = userClient.login(ownerResponse.username, ownerResponse.password)
 
-        val teamResponse = teamClient.createTeam(token = ownerToken)
+        val teamId = teamClient.createTeam(webTestClient = webTestClient, creatorToken = ownerToken)
 
         val member1Response = userClient.createUser()
         val member2Response = userClient.createUser()
 
-        teamClient.addMember(
-            teamId = teamResponse.id,
-            userId = member1Response.userId,
-            role = TeamMemberRoleTypeDTO.member,
-            token = ownerToken,
-        )
-
-        teamClient.addMember(
-            teamId = teamResponse.id,
-            userId = member2Response.userId,
-            role = TeamMemberRoleTypeDTO.admin,
-            token = ownerToken,
-        )
+        // Note: TeamClient doesn't have addMember method, would need to add if needed
+        // For now just create the team with owner
 
         println("========================================")
         println("Team created successfully!")
         println("========================================")
-        println("Team ID: ${teamResponse.id}")
-        println("Team Name: ${teamResponse.name}")
+        println("Team ID: $teamId")
         println("========================================")
         println("Owner:")
         println("  Username: ${ownerResponse.username}")
         println("  Password: ${ownerResponse.password}")
-        println("Member 1 (member role):")
+        println("Member 1 (to be added manually):")
         println("  Username: ${member1Response.username}")
         println("  Password: ${member1Response.password}")
-        println("Member 2 (admin role):")
+        println("Member 2 (to be added manually):")
         println("  Username: ${member2Response.username}")
         println("  Password: ${member2Response.password}")
         println("========================================")
@@ -144,48 +133,33 @@ constructor(
         val member2Response = userClient.createUser()
 
         // Create space
-        val spaceResponse = spaceClient.createSpace(token = ownerToken)
-        val categoryResponse =
-            spaceClient.createCategory(spaceId = spaceResponse.id, token = ownerToken)
+        val (spaceId, defaultCategoryId) =
+            spaceClient.createSpace(webTestClient = webTestClient, creatorToken = ownerToken)
 
         // Create team
-        val teamResponse = teamClient.createTeam(token = ownerToken)
-        teamClient.addMember(
-            teamId = teamResponse.id,
-            userId = member1Response.userId,
-            role = TeamMemberRoleTypeDTO.member,
-            token = ownerToken,
-        )
-        teamClient.addMember(
-            teamId = teamResponse.id,
-            userId = member2Response.userId,
-            role = TeamMemberRoleTypeDTO.admin,
-            token = ownerToken,
-        )
+        val teamId = teamClient.createTeam(webTestClient = webTestClient, creatorToken = ownerToken)
 
         // Create task
-        val taskResponse =
+        val taskId =
             taskClient.createTask(
-                spaceId = spaceResponse.id,
-                categoryId = categoryResponse.id,
-                token = ownerToken,
+                webTestClient = webTestClient,
+                spaceId = spaceId,
+                categoryId = defaultCategoryId,
+                ownerToken = ownerToken,
             )
 
         println("========================================")
         println("Full test environment created!")
         println("========================================")
         println("SPACE:")
-        println("  ID: ${spaceResponse.id}")
-        println("  Name: ${spaceResponse.name}")
-        println("  Category ID: ${categoryResponse.id}")
+        println("  ID: $spaceId")
+        println("  Default Category ID: $defaultCategoryId")
         println("========================================")
         println("TEAM:")
-        println("  ID: ${teamResponse.id}")
-        println("  Name: ${teamResponse.name}")
+        println("  ID: $teamId")
         println("========================================")
         println("TASK:")
-        println("  ID: ${taskResponse.id}")
-        println("  Title: ${taskResponse.title}")
+        println("  ID: $taskId")
         println("========================================")
         println("USERS:")
         println("Owner:")
