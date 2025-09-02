@@ -42,7 +42,7 @@
         <hypersistence.version>3.10.3</hypersistence.version>
         <java-jwt.version>4.5.0</java-jwt.version>
 
-        <swagger-annotations.version>2.2.34</swagger-annotations.version>
+        <swagger-annotations.version>2.2.36</swagger-annotations.version>
         <openapi-client.version>4.0.5</openapi-client.version>
         <ktor.version>3.2.3</ktor.version>
     </properties>
