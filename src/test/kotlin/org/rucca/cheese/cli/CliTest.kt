@@ -145,7 +145,7 @@ constructor(
                 webTestClient = webTestClient,
                 spaceId = spaceId,
                 categoryId = defaultCategoryId,
-                ownerToken = ownerToken,
+                token = ownerToken,
             )
 
         println("========================================")
