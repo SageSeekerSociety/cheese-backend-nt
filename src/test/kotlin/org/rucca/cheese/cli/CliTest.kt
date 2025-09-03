@@ -108,14 +108,14 @@ constructor(
             webTestClient = webTestClient,
             token = ownerToken,
             teamId = teamId,
-            userId = member1Response.userId
+            userId = member1Response.userId,
         )
-        
+
         teamClient.addTeamAdmin(
             webTestClient = webTestClient,
             creatorToken = ownerToken,
             teamId = teamId,
-            adminId = member2Response.userId
+            adminId = member2Response.userId,
         )
 
         println("========================================")
@@ -150,20 +150,20 @@ constructor(
 
         // Create team
         val teamId = teamClient.createTeam(webTestClient = webTestClient, creatorToken = ownerToken)
-        
+
         // Add members to team
         teamClient.addTeamMember(
             webTestClient = webTestClient,
             token = ownerToken,
             teamId = teamId,
-            userId = member1Response.userId
+            userId = member1Response.userId,
         )
-        
+
         teamClient.addTeamAdmin(
             webTestClient = webTestClient,
             creatorToken = ownerToken,
             teamId = teamId,
-            adminId = member2Response.userId
+            adminId = member2Response.userId,
         )
 
         // Create task

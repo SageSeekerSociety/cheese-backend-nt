@@ -1,8 +1,9 @@
 package org.rucca.cheese.space.analytics
 
 import io.mockk.every
-import io.mockk.mockk
 import io.mockk.junit5.MockKExtension
+import io.mockk.mockk
+import java.time.LocalDateTime
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -12,7 +13,6 @@ import org.rucca.cheese.space.models.Space
 import org.rucca.cheese.space.models.SpaceCategory
 import org.rucca.cheese.task.*
 import org.rucca.cheese.user.User
-import java.time.LocalDateTime
 
 @ExtendWith(MockKExtension::class)
 class SpaceAnalyticsServiceTest {
@@ -33,17 +33,17 @@ class SpaceAnalyticsServiceTest {
         val spaceId = 1L
         val space = mockk<Space>()
         every { space.id } returns spaceId
-        
+
         val category1 = mockk<SpaceCategory>()
         every { category1.id } returns 1
         every { category1.name } returns "Category 1"
         every { category1.space } returns space
-        
+
         val category2 = mockk<SpaceCategory>()
         every { category2.id } returns 2
         every { category2.name } returns "Category 2"
         every { category2.space } returns space
-        
+
         val user = mockk<User>()
         every { user.id } returns 1
         every { user.username } returns "testuser"
@@ -56,7 +56,7 @@ class SpaceAnalyticsServiceTest {
         every { task1.createdAt } returns LocalDateTime.now()
         every { task1.approved } returns ApproveType.APPROVED
         every { task1.rank } returns 5
-        
+
         val task2 = mockk<Task>(relaxed = true)
         every { task2.id } returns 2L
         every { task2.name } returns "Task 2"
@@ -65,7 +65,7 @@ class SpaceAnalyticsServiceTest {
         every { task2.createdAt } returns LocalDateTime.now()
         every { task2.approved } returns ApproveType.NONE
         every { task2.rank } returns 15
-        
+
         val task3 = mockk<Task>(relaxed = true)
         every { task3.id } returns 3L
         every { task3.name } returns "Task 3"
@@ -85,7 +85,7 @@ class SpaceAnalyticsServiceTest {
         every { membership1.completionStatus } returns TaskCompletionStatus.SUCCESS
         every { membership1.realNameInfo } returns null
         every { membership1.email } returns "user1@test.com"
-        
+
         val membership2 = mockk<TaskMembership>(relaxed = true)
         every { membership2.id } returns 2L
         every { membership2.task } returns task1
@@ -94,7 +94,7 @@ class SpaceAnalyticsServiceTest {
         every { membership2.completionStatus } returns TaskCompletionStatus.PENDING_REVIEW
         every { membership2.realNameInfo } returns null
         every { membership2.email } returns "user2@test.com"
-        
+
         val membership3 = mockk<TaskMembership>(relaxed = true)
         every { membership3.id } returns 3L
         every { membership3.task } returns task2
@@ -107,35 +107,38 @@ class SpaceAnalyticsServiceTest {
         val memberships = listOf(membership1, membership2, membership3)
 
         every { taskRepository.findBySpaceId(spaceId) } returns tasks
-        every { taskMembershipRepository.findAllByTaskId(1L) } returns memberships.filter { it.task?.id == 1L }
-        every { taskMembershipRepository.findAllByTaskId(2L) } returns memberships.filter { it.task?.id == 2L }
+        every { taskMembershipRepository.findAllByTaskId(1L) } returns
+            memberships.filter { it.task?.id == 1L }
+        every { taskMembershipRepository.findAllByTaskId(2L) } returns
+            memberships.filter { it.task?.id == 2L }
         every { taskMembershipRepository.findAllByTaskId(3L) } returns emptyList()
 
         // When
-        val result = service.getSpaceTaskAnalytics(
-            spaceId = spaceId,
-            from = null,
-            to = null,
-            taskStatus = null,
-            categoryId = null,
-            publisherId = null,
-            realName = "",
-            successBy = ""
-        )
+        val result =
+            service.getSpaceTaskAnalytics(
+                spaceId = spaceId,
+                from = null,
+                to = null,
+                taskStatus = null,
+                categoryId = null,
+                publisherId = null,
+                realName = "",
+                successBy = "",
+            )
 
         // Then
         assertNotNull(result)
         assertNotNull(result.taskCategoryDistribution)
         assertEquals("Task Categories", result.taskCategoryDistribution?.name)
         assertEquals(2, result.taskCategoryDistribution?.items?.size) // 2 categories
-        
+
         assertNotNull(result.taskStatusDistribution)
         assertEquals("Task Status", result.taskStatusDistribution?.name)
         assertEquals(3, result.taskStatusDistribution?.items?.size) // 3 different statuses
 
         assertNotNull(result.participantStatusDistribution)
         assertEquals("Participant Status", result.participantStatusDistribution?.name)
-        
+
         assertNotNull(result.rankDistribution)
         assertEquals("Task Ranks", result.rankDistribution?.name)
         assertEquals(2, result.rankDistribution?.items?.size) // 2 tasks with ranks
@@ -148,15 +151,15 @@ class SpaceAnalyticsServiceTest {
         val now = LocalDateTime.now()
         val yesterday = now.minusDays(1)
         val tomorrow = now.plusDays(1)
-        
+
         val space = mockk<Space>()
         every { space.id } returns spaceId
-        
+
         val category = mockk<SpaceCategory>()
         every { category.id } returns 1
         every { category.name } returns "Category"
         every { category.space } returns space
-        
+
         val user = mockk<User>()
         every { user.id } returns 1
         every { user.username } returns "testuser"
@@ -169,7 +172,7 @@ class SpaceAnalyticsServiceTest {
         every { oldTask.createdAt } returns yesterday.minusDays(2)
         every { oldTask.approved } returns ApproveType.APPROVED
         every { oldTask.rank } returns null
-        
+
         val currentTask = mockk<Task>(relaxed = true)
         every { currentTask.id } returns 2L
         every { currentTask.name } returns "Current Task"
@@ -185,19 +188,26 @@ class SpaceAnalyticsServiceTest {
         every { taskMembershipRepository.findAllByTaskId(2L) } returns emptyList()
 
         // When - filter to only include today's task
-        val fromTime = yesterday.toLocalDate().atStartOfDay().toInstant(java.time.ZoneOffset.UTC).toEpochMilli()
-        val toTime = tomorrow.toLocalDate().atStartOfDay().toInstant(java.time.ZoneOffset.UTC).toEpochMilli()
-        
-        val result = service.getSpaceTaskAnalytics(
-            spaceId = spaceId,
-            from = fromTime,
-            to = toTime,
-            taskStatus = null,
-            categoryId = null,
-            publisherId = null,
-            realName = "",
-            successBy = ""
-        )
+        val fromTime =
+            yesterday
+                .toLocalDate()
+                .atStartOfDay()
+                .toInstant(java.time.ZoneOffset.UTC)
+                .toEpochMilli()
+        val toTime =
+            tomorrow.toLocalDate().atStartOfDay().toInstant(java.time.ZoneOffset.UTC).toEpochMilli()
+
+        val result =
+            service.getSpaceTaskAnalytics(
+                spaceId = spaceId,
+                from = fromTime,
+                to = toTime,
+                taskStatus = null,
+                categoryId = null,
+                publisherId = null,
+                realName = "",
+                successBy = "",
+            )
 
         // Then
         assertNotNull(result)
@@ -212,16 +222,16 @@ class SpaceAnalyticsServiceTest {
         val spaceId = 1L
         val space = mockk<Space>()
         every { space.id } returns spaceId
-        
+
         val category = mockk<SpaceCategory>()
         every { category.id } returns 1
         every { category.name } returns "Category"
         every { category.space } returns space
-        
+
         val publisher1 = mockk<User>()
         every { publisher1.id } returns 1
         every { publisher1.username } returns "publisher1"
-        
+
         val publisher2 = mockk<User>()
         every { publisher2.id } returns 2
         every { publisher2.username } returns "publisher2"
@@ -234,7 +244,7 @@ class SpaceAnalyticsServiceTest {
         every { task1.createdAt } returns LocalDateTime.now()
         every { task1.approved } returns ApproveType.APPROVED
         every { task1.rank } returns null
-        
+
         val task2 = mockk<Task>(relaxed = true)
         every { task2.id } returns 2L
         every { task2.name } returns "Task 2"
@@ -243,7 +253,7 @@ class SpaceAnalyticsServiceTest {
         every { task2.createdAt } returns LocalDateTime.now()
         every { task2.approved } returns ApproveType.APPROVED
         every { task2.rank } returns null
-        
+
         val task3 = mockk<Task>(relaxed = true)
         every { task3.id } returns 3L
         every { task3.name } returns "Task 3"
@@ -260,13 +270,13 @@ class SpaceAnalyticsServiceTest {
         every { membership1.task } returns task1
         every { membership1.memberId } returns 10
         every { membership1.completionStatus } returns TaskCompletionStatus.SUCCESS
-        
+
         val membership2 = mockk<TaskMembership>(relaxed = true)
         every { membership2.id } returns 2L
         every { membership2.task } returns task1
         every { membership2.memberId } returns 11
         every { membership2.completionStatus } returns TaskCompletionStatus.SUCCESS
-        
+
         val membership3 = mockk<TaskMembership>(relaxed = true)
         every { membership3.id } returns 3L
         every { membership3.task } returns task3
@@ -276,9 +286,11 @@ class SpaceAnalyticsServiceTest {
         val memberships = listOf(membership1, membership2, membership3)
 
         every { taskRepository.findBySpaceId(spaceId) } returns tasks
-        every { taskMembershipRepository.findAllByTaskId(1L) } returns memberships.filter { it.task?.id == 1L }
+        every { taskMembershipRepository.findAllByTaskId(1L) } returns
+            memberships.filter { it.task?.id == 1L }
         every { taskMembershipRepository.findAllByTaskId(2L) } returns emptyList()
-        every { taskMembershipRepository.findAllByTaskId(3L) } returns memberships.filter { it.task?.id == 3L }
+        every { taskMembershipRepository.findAllByTaskId(3L) } returns
+            memberships.filter { it.task?.id == 3L }
 
         // When
         val result = service.getPublishersParticipation(spaceId, "")
@@ -286,7 +298,7 @@ class SpaceAnalyticsServiceTest {
         // Then
         assertNotNull(result)
         assertEquals(2, result.size) // 2 publishers
-        
+
         val publisher1Stats = result.find { it.publisherId == 1L }
         assertNotNull(publisher1Stats)
         assertEquals("publisher1", publisher1Stats?.publisherName)
@@ -308,12 +320,12 @@ class SpaceAnalyticsServiceTest {
         val spaceId = 1L
         val space = mockk<Space>()
         every { space.id } returns spaceId
-        
+
         val category = mockk<SpaceCategory>()
         every { category.id } returns 1
         every { category.name } returns "Category"
         every { category.space } returns space
-        
+
         val user = mockk<User>()
         every { user.id } returns 1
         every { user.username } returns "testuser"
@@ -339,17 +351,18 @@ class SpaceAnalyticsServiceTest {
         every { taskMembershipRepository.findAllByTaskId(1L) } returns listOf(membership)
 
         // When
-        val csv = service.exportParticipants(
-            spaceId = spaceId,
-            format = "csv",
-            from = null,
-            to = null,
-            taskStatus = null,
-            categoryId = null,
-            publisherId = null,
-            realName = "",
-            successBy = ""
-        )
+        val csv =
+            service.exportParticipants(
+                spaceId = spaceId,
+                format = "csv",
+                from = null,
+                to = null,
+                taskStatus = null,
+                categoryId = null,
+                publisherId = null,
+                realName = "",
+                successBy = "",
+            )
 
         // Then
         assertNotNull(csv)
@@ -363,12 +376,12 @@ class SpaceAnalyticsServiceTest {
         val spaceId = 1L
         val space = mockk<Space>()
         every { space.id } returns spaceId
-        
+
         val category = mockk<SpaceCategory>()
         every { category.id } returns 1
         every { category.name } returns "Test Category"
         every { category.space } returns space
-        
+
         val user = mockk<User>()
         every { user.id } returns 1
         every { user.username } returns "publisher1"
@@ -389,7 +402,7 @@ class SpaceAnalyticsServiceTest {
         every { membership1.approved } returns ApproveType.APPROVED
         every { membership1.completionStatus } returns TaskCompletionStatus.SUCCESS
         every { membership1.email } returns "test1@example.com"
-        
+
         val membership2 = mockk<TaskMembership>(relaxed = true)
         every { membership2.id } returns 2L
         every { membership2.task } returns task
@@ -397,7 +410,7 @@ class SpaceAnalyticsServiceTest {
         every { membership2.approved } returns ApproveType.DISAPPROVED
         every { membership2.completionStatus } returns TaskCompletionStatus.FAILED
         every { membership2.email } returns "test2@example.com"
-        
+
         val membership3 = mockk<TaskMembership>(relaxed = true)
         every { membership3.id } returns 3L
         every { membership3.task } returns task
@@ -412,22 +425,27 @@ class SpaceAnalyticsServiceTest {
         every { taskMembershipRepository.findAllByTaskId(1L) } returns memberships
 
         // When
-        val csv = service.exportParticipants(
-            spaceId = spaceId,
-            format = "summary",
-            from = null,
-            to = null,
-            taskStatus = null,
-            categoryId = null,
-            publisherId = null,
-            realName = "",
-            successBy = ""
-        )
+        val csv =
+            service.exportParticipants(
+                spaceId = spaceId,
+                format = "summary",
+                from = null,
+                to = null,
+                taskStatus = null,
+                categoryId = null,
+                publisherId = null,
+                realName = "",
+                successBy = "",
+            )
 
         // Then
         assertNotNull(csv)
         println("CSV Content: $csv") // Debug output
-        assertTrue(csv.contains("Task ID,Task Title,Category,Creator,Total Participants,Approved,Rejected,Pending"))
+        assertTrue(
+            csv.contains(
+                "Task ID,Task Title,Category,Creator,Total Participants,Approved,Rejected,Pending"
+            )
+        )
         assertTrue(csv.contains("1,\"Test Task\",\"Test Category\",\"publisher1\",3,1,1,1"))
     }
 
@@ -435,21 +453,22 @@ class SpaceAnalyticsServiceTest {
     fun `getSpaceTaskAnalytics should handle empty data`() {
         // Given
         val spaceId = 1L
-        
+
         // Return empty lists
         every { taskRepository.findBySpaceId(spaceId) } returns emptyList()
 
         // When
-        val result = service.getSpaceTaskAnalytics(
-            spaceId = spaceId,
-            from = null,
-            to = null,
-            taskStatus = null,
-            categoryId = null,
-            publisherId = null,
-            realName = "",
-            successBy = ""
-        )
+        val result =
+            service.getSpaceTaskAnalytics(
+                spaceId = spaceId,
+                from = null,
+                to = null,
+                taskStatus = null,
+                categoryId = null,
+                publisherId = null,
+                realName = "",
+                successBy = "",
+            )
 
         // Then
         assertNotNull(result)
@@ -469,21 +488,21 @@ class SpaceAnalyticsServiceTest {
         val spaceId = 1L
         val space = mockk<Space>()
         every { space.id } returns spaceId
-        
+
         val category1 = mockk<SpaceCategory>()
         every { category1.id } returns 1
         every { category1.name } returns "Category 1"
         every { category1.space } returns space
-        
+
         val category2 = mockk<SpaceCategory>()
         every { category2.id } returns 2
         every { category2.name } returns "Category 2"
         every { category2.space } returns space
-        
+
         val user1 = mockk<User>()
         every { user1.id } returns 1
         every { user1.username } returns "user1"
-        
+
         val user2 = mockk<User>()
         every { user2.id } returns 2
         every { user2.username } returns "user2"
@@ -497,7 +516,7 @@ class SpaceAnalyticsServiceTest {
         every { task1.createdAt } returns LocalDateTime.now()
         every { task1.approved } returns ApproveType.APPROVED
         every { task1.rank } returns 5
-        
+
         val task2 = mockk<Task>(relaxed = true)
         every { task2.id } returns 2L
         every { task2.name } returns "Task 2"
@@ -512,16 +531,17 @@ class SpaceAnalyticsServiceTest {
         every { taskMembershipRepository.findAllByTaskId(any()) } returns emptyList()
 
         // When - filter by category and publisher
-        val result = service.getSpaceTaskAnalytics(
-            spaceId = spaceId,
-            from = null,
-            to = null,
-            taskStatus = null,
-            categoryId = 1L,  // Filter by category 1
-            publisherId = 1L,  // Filter by user 1
-            realName = "",
-            successBy = ""
-        )
+        val result =
+            service.getSpaceTaskAnalytics(
+                spaceId = spaceId,
+                from = null,
+                to = null,
+                taskStatus = null,
+                categoryId = 1L, // Filter by category 1
+                publisherId = 1L, // Filter by user 1
+                realName = "",
+                successBy = "",
+            )
 
         // Then - should only include task1
         assertNotNull(result)
@@ -538,19 +558,19 @@ class SpaceAnalyticsServiceTest {
         val spaceId = 1L
         val space = mockk<Space>()
         every { space.id } returns spaceId
-        
+
         val category = mockk<SpaceCategory>()
         every { category.id } returns 1
-        every { category.name } returns "Category \"with\" quotes"  // Name with quotes
+        every { category.name } returns "Category \"with\" quotes" // Name with quotes
         every { category.space } returns space
-        
+
         val user = mockk<User>()
         every { user.id } returns 1
-        every { user.username } returns "user,with,commas"  // Name with commas
+        every { user.username } returns "user,with,commas" // Name with commas
 
         val task = mockk<Task>(relaxed = true)
         every { task.id } returns 1L
-        every { task.name } returns "Task \"Special\", Test"  // Name with quotes and commas
+        every { task.name } returns "Task \"Special\", Test" // Name with quotes and commas
         every { task.category } returns category
         every { task.creator } returns user
         every { task.createdAt } returns LocalDateTime.now()
@@ -561,22 +581,29 @@ class SpaceAnalyticsServiceTest {
         every { taskMembershipRepository.findAllByTaskId(1L) } returns emptyList()
 
         // When
-        val csv = service.exportParticipants(
-            spaceId = spaceId,
-            format = "summary",
-            from = null,
-            to = null,
-            taskStatus = null,
-            categoryId = null,
-            publisherId = null,
-            realName = "",
-            successBy = ""
-        )
+        val csv =
+            service.exportParticipants(
+                spaceId = spaceId,
+                format = "summary",
+                from = null,
+                to = null,
+                taskStatus = null,
+                categoryId = null,
+                publisherId = null,
+                realName = "",
+                successBy = "",
+            )
 
         // Then - verify proper escaping
         assertNotNull(csv)
-        assertTrue(csv.contains("Task ID,Task Title,Category,Creator,Total Participants,Approved,Rejected,Pending"))
+        assertTrue(
+            csv.contains(
+                "Task ID,Task Title,Category,Creator,Total Participants,Approved,Rejected,Pending"
+            )
+        )
         // Should properly escape special characters
-        assertTrue(csv.contains("\"Task \"\"Special\"\", Test\"") || csv.contains("Task \"Special\", Test"))
+        assertTrue(
+            csv.contains("\"Task \"\"Special\"\", Test\"") || csv.contains("Task \"Special\", Test")
+        )
     }
 }
