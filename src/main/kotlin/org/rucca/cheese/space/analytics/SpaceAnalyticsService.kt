@@ -1,6 +1,7 @@
 package org.rucca.cheese.space.analytics
 
 import org.rucca.cheese.common.helper.toEpochMilli
+import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.task.TaskCompletionStatus
@@ -34,8 +35,8 @@ class SpaceAnalyticsService(
                 (from == null || task.createdAt.toEpochMilli() >= from) &&
                     (to == null || task.createdAt.toEpochMilli() <= to) &&
                     (categoryId == null || task.category.id?.toLong() == categoryId) &&
-                    (publisherId == null || task.creator.id?.toLong() == publisherId)
-                // Note: Task doesn't have a status field, using approved status instead
+                    (publisherId == null || task.creator.id?.toLong() == publisherId) &&
+                    (taskStatus.isNullOrEmpty() || task.approved.name == taskStatus)
             }
 
         // Task Category Distribution
@@ -53,12 +54,20 @@ class SpaceAnalyticsService(
             )
 
         // Get all memberships for filtered tasks
-        val taskIds = filteredTasks.map { it.id }
-        val memberships =
+        val taskIds = filteredTasks.mapNotNull { it.id }
+        val allMemberships =
             if (taskIds.isNotEmpty()) {
-                taskIds.flatMap { taskMembershipRepository.findAllByTaskId(it!!) }
+                taskIds.flatMap { taskId -> taskMembershipRepository.findAllByTaskId(taskId) }
             } else {
                 emptyList()
+            }
+
+        // Apply realName filter
+        val memberships =
+            when (realName) {
+                "with" -> allMemberships.filter { it.realNameInfo?.realName?.isNotBlank() == true }
+                "without" -> allMemberships.filter { it.realNameInfo?.realName?.isBlank() != false }
+                else -> allMemberships // "all" or empty
             }
 
         // Participant Status Distribution
@@ -73,9 +82,9 @@ class SpaceAnalyticsService(
             createDistribution(
                 "Task Ranks",
                 filteredTasks
-                    .filter { it.rank != null }
-                    .groupBy {
-                        when (it.rank!!) {
+                    .mapNotNull { task -> task.rank?.let { rank -> rank to task } }
+                    .groupBy { (rank, _) ->
+                        when (rank) {
                             in 1..10 -> "Top 10"
                             in 11..50 -> "11-50"
                             in 51..100 -> "51-100"
@@ -187,17 +196,26 @@ class SpaceAnalyticsService(
             .mapNotNull { (publisher, tasks) ->
                 if (publisher == null) return@mapNotNull null
 
-                val taskIds = tasks.map { it.id }
+                val taskIds = tasks.mapNotNull { it.id }
                 val memberships =
                     if (taskIds.isNotEmpty()) {
-                        taskIds.flatMap { taskMembershipRepository.findAllByTaskId(it!!) }
+                        taskIds.flatMap { taskId ->
+                            taskMembershipRepository.findAllByTaskId(taskId)
+                        }
                     } else {
                         emptyList()
                     }
 
-                val successMemberships =
-                    memberships.filter { it.completionStatus == TaskCompletionStatus.SUCCESS }
-                val completedUsers = successMemberships.mapNotNull { it.memberId }.distinct()
+                // Calculate completed users based on successBy parameter
+                val completedMemberships =
+                    when (successBy) {
+                        "approve" -> memberships.filter { it.approved == ApproveType.APPROVED }
+                        else ->
+                            memberships.filter {
+                                it.completionStatus == TaskCompletionStatus.SUCCESS
+                            }
+                    }
+                val completedUsers = completedMemberships.mapNotNull { it.memberId }.distinct()
 
                 PublisherParticipationDTO(
                     publisherId = publisher.id?.toLong() ?: 0,
@@ -232,10 +250,10 @@ class SpaceAnalyticsService(
                     (publisherId == null || task.creator?.id?.toLong() == publisherId)
             }
 
-        val taskIds = filteredTasks.map { it.id }
+        val taskIds = filteredTasks.mapNotNull { it.id }
         val memberships =
             if (taskIds.isNotEmpty()) {
-                taskIds.flatMap { taskMembershipRepository.findAllByTaskId(it!!) }
+                taskIds.flatMap { taskId -> taskMembershipRepository.findAllByTaskId(taskId) }
             } else {
                 emptyList()
             }
