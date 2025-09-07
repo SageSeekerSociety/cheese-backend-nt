@@ -24,6 +24,7 @@ import org.rucca.cheese.auth.spring.UseOldAuth
 import org.rucca.cheese.common.persistent.IdGetter
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.space.analytics.SpaceAnalyticsService
 import org.rucca.cheese.space.option.SpaceQueryOptions
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
@@ -35,6 +36,7 @@ class SpaceController(
     private val spaceService: SpaceService,
     private val authorizationService: AuthorizationService,
     private val jwtService: JwtService,
+    private val spaceAnalyticsService: SpaceAnalyticsService,
 ) : SpacesApi {
     @PostConstruct
     fun initialize() {
@@ -354,5 +356,81 @@ class SpaceController(
                 "OK",
             )
         )
+    }
+
+    @Guard("query", "space")
+    override suspend fun getSpaceTaskAnalytics(
+        @ResourceId spaceId: Long,
+        from: Long?,
+        to: Long?,
+        taskStatus: String?,
+        categoryId: Long?,
+        publisherId: Long?,
+        realName: String,
+        successBy: String,
+    ): ResponseEntity<GetSpaceTaskAnalytics200ResponseDTO> {
+        val analytics =
+            withContext(Dispatchers.IO) {
+                spaceAnalyticsService.getSpaceTaskAnalytics(
+                    spaceId,
+                    from,
+                    to,
+                    taskStatus,
+                    categoryId,
+                    publisherId,
+                    realName,
+                    successBy,
+                )
+            }
+        return ResponseEntity.ok(
+            GetSpaceTaskAnalytics200ResponseDTO(code = 200, data = analytics, message = "OK")
+        )
+    }
+
+    @Guard("query", "space")
+    override suspend fun getPublishersParticipation(
+        @ResourceId spaceId: Long,
+        successBy: String,
+    ): ResponseEntity<GetPublishersParticipation200ResponseDTO> {
+        val participation =
+            withContext(Dispatchers.IO) {
+                spaceAnalyticsService.getPublishersParticipation(spaceId, successBy)
+            }
+        return ResponseEntity.ok(
+            GetPublishersParticipation200ResponseDTO(
+                code = 200,
+                data = participation,
+                message = "OK",
+            )
+        )
+    }
+
+    @Guard("query", "space")
+    override suspend fun exportSpaceParticipants(
+        @ResourceId spaceId: Long,
+        format: String,
+        from: Long?,
+        to: Long?,
+        taskStatus: String?,
+        categoryId: Long?,
+        publisherId: Long?,
+        realName: String,
+        successBy: String,
+    ): ResponseEntity<String> {
+        val csv =
+            withContext(Dispatchers.IO) {
+                spaceAnalyticsService.exportParticipants(
+                    spaceId,
+                    format,
+                    from,
+                    to,
+                    taskStatus,
+                    categoryId,
+                    publisherId,
+                    realName,
+                    successBy,
+                )
+            }
+        return ResponseEntity.ok(csv)
     }
 }

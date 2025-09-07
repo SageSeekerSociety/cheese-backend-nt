@@ -26,15 +26,15 @@ class TeamMembershipApplicationResolver(
 
     override fun supportedEntityType(): String = "team_membership_application"
 
-    override suspend fun resolve(ids: Set<String>): Map<String, ResolvableEntityInfo?> {
-        if (ids.isEmpty()) return emptyMap()
+    override suspend fun resolve(entityIds: Set<String>): Map<String, ResolvableEntityInfo?> {
+        if (entityIds.isEmpty()) return emptyMap()
 
-        val longIds = ids.mapNotNull { it.toLongOrNull() }.toSet()
+        val longIds = entityIds.mapNotNull { it.toLongOrNull() }.toSet()
         if (longIds.isEmpty()) {
             log.warn(
                 "No valid Long IDs found in the set for team_membership_application resolution."
             )
-            return ids.associateWith { null } // Return null for all requested string IDs
+            return entityIds.associateWith { null } // Return null for all requested string IDs
         }
 
         log.debug("Resolving team application statuses for IDs: {}", longIds)
@@ -59,6 +59,6 @@ class TeamMembershipApplicationResolver(
             }
 
         // Add null entries for IDs that were requested but not found
-        return ids.associateWith { resultMap[it] }
+        return entityIds.associateWith { resultMap[it] }
     }
 }

@@ -882,6 +882,164 @@ paths:
                 userId:
                   type: integer
                   format: int64
+  /spaces/{spaceId}/analytics/tasks:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      summary: Get Space Task Analytics
+      operationId: getSpaceTaskAnalytics
+      tags: [ Spaces ]
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: integer
+            format: int64
+          description: Start timestamp for filtering tasks
+        - name: to
+          in: query
+          schema:
+            type: integer
+            format: int64
+          description: End timestamp for filtering tasks
+        - name: taskStatus
+          in: query
+          schema:
+            type: string
+            enum: [ NONE, APPROVED, REJECTED ]
+          description: Filter by task approval status
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+            format: int64
+          description: Filter by category ID
+        - name: publisherId
+          in: query
+          schema:
+            type: integer
+            format: int64
+          description: Filter by publisher ID
+        - name: realName
+          in: query
+          schema:
+            type: string
+            enum: [ all, with, without ]
+            default: all
+          description: Filter by real name status
+        - name: successBy
+          in: query
+          schema:
+            type: string
+            enum: [ completion, approve ]
+            default: completion
+          description: Define success criteria
+      responses:
+        "200":
+          description: Task analytics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/SpaceTaskAnalytics"
+                  message:
+                    type: string
+  /spaces/{spaceId}/publishers/participation:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      summary: Get Publishers Participation
+      operationId: getPublishersParticipation
+      tags: [ Spaces ]
+      parameters:
+        - name: successBy
+          in: query
+          schema:
+            type: string
+            enum: [ completion, approve ]
+            default: completion
+          description: Define success criteria
+      responses:
+        "200":
+          description: Publishers participation data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublisherParticipation"
+                  message:
+                    type: string
+  /spaces/{spaceId}/participants/export:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      summary: Export Space Participants
+      operationId: exportSpaceParticipants
+      tags: [ Spaces ]
+      parameters:
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [ csv ]
+          description: Export format
+        - name: from
+          in: query
+          schema:
+            type: integer
+            format: int64
+          description: Start timestamp
+        - name: to
+          in: query
+          schema:
+            type: integer
+            format: int64
+          description: End timestamp
+        - name: taskStatus
+          in: query
+          schema:
+            type: string
+            enum: [ NONE, APPROVED, REJECTED ]
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: publisherId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: realName
+          in: query
+          schema:
+            type: string
+            enum: [ all, with, without ]
+            default: all
+        - name: successBy
+          in: query
+          schema:
+            type: string
+            enum: [ completion, approve ]
+            default: completion
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
   /tasks/{taskId}:
     parameters:
       - $ref: '#/components/parameters/TaskId'
@@ -5740,6 +5898,71 @@ components:
           type: string
         remark:
           type: string
+    SpaceTaskAnalytics:
+      type: object
+      description: Task analytics data for a space
+      properties:
+        taskCategoryDistribution:
+          $ref: "#/components/schemas/Distribution"
+        taskStatusDistribution:
+          $ref: "#/components/schemas/Distribution"
+        participantStatusDistribution:
+          $ref: "#/components/schemas/Distribution"
+        rankDistribution:
+          $ref: "#/components/schemas/Distribution"
+        successStudentStatistics:
+          $ref: "#/components/schemas/StudentStatistics"
+        unsuccessStudentStatistics:
+          $ref: "#/components/schemas/StudentStatistics"
+    Distribution:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [ DISCRETE, CONTINUOUS ]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DistributionItem"
+    DistributionItem:
+      type: object
+      properties:
+        label:
+          type: string
+        count:
+          type: integer
+        percentage:
+          type: number
+          format: double
+    StudentStatistics:
+      type: object
+      properties:
+        totalStudents:
+          type: integer
+        totalStudentsWithRealName:
+          type: integer
+        gradeDistribution:
+          $ref: "#/components/schemas/Distribution"
+        majorDistribution:
+          $ref: "#/components/schemas/Distribution"
+        classNameDistribution:
+          $ref: "#/components/schemas/Distribution"
+    PublisherParticipation:
+      type: object
+      properties:
+        publisherId:
+          type: integer
+          format: int64
+        publisherName:
+          type: string
+        participants:
+          type: integer
+        completedUsers:
+          type: integer
+        taskCount:
+          type: integer
   parameters:
     UserId:
       name: userId

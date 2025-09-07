@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class EncryptionService(
     private val encryptionKeyRepository: EncryptionKeyRepository,
-    @Value("\${cheese.encryption.master-key}") private val masterKey: String,
+    @param:Value("\${cheese.encryption.master-key}") private val masterKey: String,
 ) {
     private val logger = LoggerFactory.getLogger(EncryptionService::class.java)
     private val algorithm = "AES/ECB/PKCS5Padding"

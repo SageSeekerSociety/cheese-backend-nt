@@ -218,16 +218,17 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
             override fun toPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                cb: CriteriaBuilder,
+                criteriaBuilder: CriteriaBuilder,
             ): Predicate {
-                return baseSpec.toPredicate(root, query, cb) ?: cb.conjunction()
+                return baseSpec.toPredicate(root, query, criteriaBuilder)
+                    ?: criteriaBuilder.conjunction()
             }
 
             @Suppress("UNCHECKED_CAST")
             override fun toCursorPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                cb: CriteriaBuilder,
+                criteriaBuilder: CriteriaBuilder,
                 cursor: SimpleCursor<T, *>?,
             ): Predicate? {
                 if (cursor == null) return null
@@ -237,8 +238,8 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                 val path = JpaUtils.getPath<Comparable<Any>>(root, cursorPath) // Use helper
 
                 return when (direction) {
-                    Sort.Direction.ASC -> cb.greaterThanOrEqualTo(path, cursorValue)
-                    Sort.Direction.DESC -> cb.lessThanOrEqualTo(path, cursorValue)
+                    Sort.Direction.ASC -> criteriaBuilder.greaterThanOrEqualTo(path, cursorValue)
+                    Sort.Direction.DESC -> criteriaBuilder.lessThanOrEqualTo(path, cursorValue)
                 }
             }
 
@@ -264,15 +265,16 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
             override fun toPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                cb: CriteriaBuilder,
+                criteriaBuilder: CriteriaBuilder,
             ): Predicate {
-                return baseSpec.toPredicate(root, query, cb) ?: cb.conjunction()
+                return baseSpec.toPredicate(root, query, criteriaBuilder)
+                    ?: criteriaBuilder.conjunction()
             }
 
             override fun toCursorPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                cb: CriteriaBuilder,
+                criteriaBuilder: CriteriaBuilder,
                 cursor: TypedCompositeCursor<T>?,
             ): Predicate? {
                 if (cursor == null) return null
@@ -301,9 +303,12 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                             val prevValue = cursorValues[prevPropPath] // Get value using path
                             if (prevValue == null) {
                                 // If previous cursor value is null, equality check is IS NULL
-                                cb.isNull(JpaUtils.getPath<Any>(root, prevPropPath))
+                                criteriaBuilder.isNull(JpaUtils.getPath<Any>(root, prevPropPath))
                             } else {
-                                cb.equal(JpaUtils.getPath<Any>(root, prevPropPath), prevValue)
+                                criteriaBuilder.equal(
+                                    JpaUtils.getPath<Any>(root, prevPropPath),
+                                    prevValue,
+                                )
                             }
                             // Note: If a previous required cursor value is missing entirely from
                             // cursorValues map,
@@ -314,21 +319,18 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                     // Comparison condition for the current sort property
                     val currentPath =
                         JpaUtils.getPath<Comparable<Any>>(root, propPath) // Use helper
-                    val compPredicate =
-                        try {
-                            when (direction) {
-                                Sort.Direction.ASC ->
-                                    cb.greaterThan(currentPath, cursorValue as Comparable<Any>)
-                                Sort.Direction.DESC ->
-                                    cb.lessThan(currentPath, cursorValue as Comparable<Any>)
+                    val comparableValue =
+                        cursorValue as? Comparable<Any>
+                            ?: run {
+                                // Skip this branch if value is not comparable
+                                continue
                             }
-                        } catch (e: ClassCastException) {
-                            // Handle case where cursor value is not comparable (should not happen
-                            // if used correctly)
-                            throw IllegalArgumentException(
-                                "Property '$propPath' value in cursor is not comparable.",
-                                e,
-                            )
+                    val compPredicate =
+                        when (direction) {
+                            Sort.Direction.ASC ->
+                                criteriaBuilder.greaterThan(currentPath, comparableValue)
+                            Sort.Direction.DESC ->
+                                criteriaBuilder.lessThan(currentPath, comparableValue)
                         }
 
                     // Combine equal predicates and comparison predicate
@@ -336,7 +338,7 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                         if (equalPredicates.isEmpty()) {
                             compPredicate
                         } else {
-                            cb.and(*equalPredicates.toTypedArray(), compPredicate)
+                            criteriaBuilder.and(*equalPredicates.toTypedArray(), compPredicate)
                         }
                     predicates.add(combined)
                 }
@@ -348,9 +350,9 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                     sortProperties.mapNotNull { (propPath, _) ->
                         val value = cursorValues[propPath]
                         if (value == null) {
-                            cb.isNull(JpaUtils.getPath<Any>(root, propPath))
+                            criteriaBuilder.isNull(JpaUtils.getPath<Any>(root, propPath))
                         } else {
-                            cb.equal(JpaUtils.getPath<Any>(root, propPath), value)
+                            criteriaBuilder.equal(JpaUtils.getPath<Any>(root, propPath), value)
                         }
                     }
 
@@ -359,10 +361,11 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                         allEqualPredicates.size == sortProperties.size
                 ) {
                     // Only add if all sort properties could be evaluated for equality
-                    predicates.add(cb.and(*allEqualPredicates.toTypedArray()))
+                    predicates.add(criteriaBuilder.and(*allEqualPredicates.toTypedArray()))
                 }
 
-                return if (predicates.isEmpty()) null else cb.or(*predicates.toTypedArray())
+                return if (predicates.isEmpty()) null
+                else criteriaBuilder.or(*predicates.toTypedArray())
             }
 
             override fun getSort(): Sort {
