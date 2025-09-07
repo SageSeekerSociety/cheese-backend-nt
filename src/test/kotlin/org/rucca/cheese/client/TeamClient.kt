@@ -65,34 +65,63 @@ class TeamClient(private val userClient: UserClient) {
         return teamId
     }
 
-    /** Adds a member to a team. */
+    /** Adds a member to a team using invitation flow. */
     fun addTeamMember(
         webTestClient: WebTestClient,
         token: String,
         teamId: IdType,
         userId: IdType,
         role: TeamMemberRoleTypeDTO = TeamMemberRoleTypeDTO.MEMBER,
+        userToken: String? = null,
     ) {
-        val requestDTO = PostTeamMemberRequestDTO(role = role, userId = userId)
+        // Step 1: Create invitation
+        val invitationRequestDTO = TeamInvitationCreateDTO(userId = userId, role = role)
 
-        webTestClient
-            .post()
-            .uri("/teams/$teamId/members")
-            .header("Authorization", "Bearer $token")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestDTO)
-            .exchange()
-            .expectStatus()
-            .isOk()
+        val invitationResponse =
+            webTestClient
+                .post()
+                .uri("/teams/$teamId/invitations")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(invitationRequestDTO)
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody<CreateTeamInvitation201ResponseDTO>()
+                .returnResult()
+                .responseBody!!
+
+        val invitationId = invitationResponse.data.invitation.id
+        logger.info("Created invitation: $invitationId for user $userId to team $teamId")
+
+        // Step 2: Accept invitation (if userToken provided)
+        if (userToken != null) {
+            webTestClient
+                .post()
+                .uri("/users/me/team-invitations/$invitationId/accept")
+                .header("Authorization", "Bearer $userToken")
+                .exchange()
+                .expectStatus()
+                .isNoContent()
+            logger.info("User $userId accepted invitation $invitationId")
+        }
     }
 
-    /** Adds an admin to a team. */
+    /** Adds an admin to a team using invitation flow. */
     fun addTeamAdmin(
         webTestClient: WebTestClient,
         creatorToken: String,
         teamId: IdType,
         adminId: IdType,
+        adminToken: String? = null,
     ) {
-        addTeamMember(webTestClient, creatorToken, teamId, adminId, TeamMemberRoleTypeDTO.ADMIN)
+        addTeamMember(
+            webTestClient,
+            creatorToken,
+            teamId,
+            adminId,
+            TeamMemberRoleTypeDTO.ADMIN,
+            adminToken,
+        )
     }
 }

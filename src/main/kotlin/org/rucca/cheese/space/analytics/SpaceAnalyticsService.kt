@@ -7,6 +7,7 @@ import org.rucca.cheese.model.*
 import org.rucca.cheese.task.TaskCompletionStatus
 import org.rucca.cheese.task.TaskMembershipRepository
 import org.rucca.cheese.task.TaskRepository
+import org.rucca.cheese.user.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional
 class SpaceAnalyticsService(
     private val taskRepository: TaskRepository,
     private val taskMembershipRepository: TaskMembershipRepository,
+    private val userRepository: UserRepository,
 ) {
     fun getSpaceTaskAnalytics(
         spaceId: IdType,
@@ -47,11 +49,11 @@ class SpaceAnalyticsService(
             )
 
         // Task Status Distribution (using approved status)
-        val statusDistribution =
-            createDistribution(
-                "Task Status",
-                filteredTasks.groupBy { it.approved.name }.mapValues { it.value.size },
-            )
+        val taskStatusCounts = mutableMapOf("NONE" to 0, "APPROVED" to 0, "DISAPPROVED" to 0)
+        filteredTasks
+            .groupBy { it.approved.name }
+            .forEach { (status, tasks) -> taskStatusCounts[status] = tasks.size }
+        val statusDistribution = createDistribution("Task Status", taskStatusCounts)
 
         // Get all memberships for filtered tasks
         val taskIds = filteredTasks.mapNotNull { it.id }
@@ -71,11 +73,12 @@ class SpaceAnalyticsService(
             }
 
         // Participant Status Distribution
+        val participantStatusCounts = mutableMapOf("NONE" to 0, "APPROVED" to 0, "DISAPPROVED" to 0)
+        memberships
+            .groupBy { it.approved?.name ?: "NONE" }
+            .forEach { (status, members) -> participantStatusCounts[status] = members.size }
         val participantStatusDistribution =
-            createDistribution(
-                "Participant Status",
-                memberships.groupBy { it.approved?.name ?: "NONE" }.mapValues { it.value.size },
-            )
+            createDistribution("Participant Status", participantStatusCounts)
 
         // Rank Distribution (if tasks have ranks)
         val rankDistribution =
@@ -135,47 +138,97 @@ class SpaceAnalyticsService(
         // Note: Need to handle both user and team members
         val totalMembers = memberIds.size
 
-        // Create placeholder distributions (would need actual user profile data)
+        // Count unique members with real name (not total memberships)
+        val membersWithRealName =
+            memberships
+                .filter { it.realNameInfo?.realName?.isNotBlank() == true }
+                .mapNotNull { it.memberId }
+                .distinct()
+                .size
+
+        // Calculate actual distributions from real data
+        // If no real data exists, return empty distributions instead of fake data
         val gradeDistribution =
             DistributionDTO(
-                name = "$type Student Grades",
+                name = "$type Participant Grades",
                 type = DistributionDTO.Type.DISCRETE,
                 items =
-                    listOf(
-                        DistributionItemDTO("Freshman", totalMembers / 4, 25.0),
-                        DistributionItemDTO("Sophomore", totalMembers / 4, 25.0),
-                        DistributionItemDTO("Junior", totalMembers / 4, 25.0),
-                        DistributionItemDTO("Senior", totalMembers / 4, 25.0),
-                    ),
+                    if (totalMembers > 0) {
+                        val gradesWithData = memberships.mapNotNull { it.realNameInfo?.grade }
+                        val gradeCounts = gradesWithData.groupingBy { it }.eachCount()
+                        val totalWithGrade = gradesWithData.size
+
+                        if (totalWithGrade > 0) {
+                            gradeCounts.map { (grade, count) ->
+                                DistributionItemDTO(
+                                    label = grade,
+                                    count = count,
+                                    percentage = (count * 100.0 / totalWithGrade),
+                                )
+                            }
+                        } else {
+                            emptyList()
+                        }
+                    } else {
+                        emptyList()
+                    },
             )
 
         val majorDistribution =
             DistributionDTO(
-                name = "$type Student Majors",
+                name = "$type Participant Majors",
                 type = DistributionDTO.Type.DISCRETE,
                 items =
-                    listOf(
-                        DistributionItemDTO("Computer Science", totalMembers / 3, 33.3),
-                        DistributionItemDTO("Engineering", totalMembers / 3, 33.3),
-                        DistributionItemDTO("Other", totalMembers / 3, 33.4),
-                    ),
+                    if (totalMembers > 0) {
+                        val majorsWithData = memberships.mapNotNull { it.realNameInfo?.major }
+                        val majorCounts = majorsWithData.groupingBy { it }.eachCount()
+                        val totalWithMajor = majorsWithData.size
+
+                        if (totalWithMajor > 0) {
+                            majorCounts.map { (major, count) ->
+                                DistributionItemDTO(
+                                    label = major,
+                                    count = count,
+                                    percentage = (count * 100.0 / totalWithMajor),
+                                )
+                            }
+                        } else {
+                            emptyList()
+                        }
+                    } else {
+                        emptyList()
+                    },
             )
 
         val classDistribution =
             DistributionDTO(
-                name = "$type Student Classes",
+                name = "$type Participant Classes",
                 type = DistributionDTO.Type.DISCRETE,
                 items =
-                    listOf(
-                        DistributionItemDTO("Class A", totalMembers / 2, 50.0),
-                        DistributionItemDTO("Class B", totalMembers / 2, 50.0),
-                    ),
+                    if (totalMembers > 0) {
+                        val classesWithData = memberships.mapNotNull { it.realNameInfo?.className }
+                        val classCounts = classesWithData.groupingBy { it }.eachCount()
+                        val totalWithClass = classesWithData.size
+
+                        if (totalWithClass > 0) {
+                            classCounts.map { (className, count) ->
+                                DistributionItemDTO(
+                                    label = className,
+                                    count = count,
+                                    percentage = (count * 100.0 / totalWithClass),
+                                )
+                            }
+                        } else {
+                            emptyList()
+                        }
+                    } else {
+                        emptyList()
+                    },
             )
 
         return StudentStatisticsDTO(
             totalStudents = totalMembers,
-            totalStudentsWithRealName =
-                memberships.count { it.realNameInfo?.realName?.isNotBlank() == true },
+            totalStudentsWithRealName = membersWithRealName,
             gradeDistribution = gradeDistribution,
             majorDistribution = majorDistribution,
             classNameDistribution = classDistribution,
@@ -189,43 +242,37 @@ class SpaceAnalyticsService(
         // Get all tasks in the space
         val allTasks = taskRepository.findBySpaceId(spaceId)
 
-        // Group tasks by publisher (creator)
-        val tasksByPublisher = allTasks.groupBy { it.creator }
+        // Return task details instead of publisher aggregation
+        return allTasks
+            .map { task ->
+                val taskId = task.id ?: 0L
+                val memberships = taskMembershipRepository.findAllByTaskId(taskId)
 
-        return tasksByPublisher
-            .mapNotNull { (publisher, tasks) ->
-                if (publisher == null) return@mapNotNull null
+                // Count approved participants
+                val approvedCount = memberships.count { it.approved == ApproveType.APPROVED }
 
-                val taskIds = tasks.mapNotNull { it.id }
-                val memberships =
-                    if (taskIds.isNotEmpty()) {
-                        taskIds.flatMap { taskId ->
-                            taskMembershipRepository.findAllByTaskId(taskId)
-                        }
+                // Count completed submissions
+                val completedCount =
+                    memberships.count { it.completionStatus == TaskCompletionStatus.SUCCESS }
+
+                // Calculate success rate
+                val successRate =
+                    if (approvedCount > 0) {
+                        (completedCount.toDouble() / approvedCount * 100)
                     } else {
-                        emptyList()
+                        0.0
                     }
 
-                // Calculate completed users based on successBy parameter
-                val completedMemberships =
-                    when (successBy) {
-                        "approve" -> memberships.filter { it.approved == ApproveType.APPROVED }
-                        else ->
-                            memberships.filter {
-                                it.completionStatus == TaskCompletionStatus.SUCCESS
-                            }
-                    }
-                val completedUsers = completedMemberships.mapNotNull { it.memberId }.distinct()
-
+                // Using PublisherParticipationDTO temporarily - should create TaskDetailsDTO
                 PublisherParticipationDTO(
-                    publisherId = publisher.id?.toLong() ?: 0,
-                    publisherName = publisher.username,
-                    participants = memberships.size,
-                    completedUsers = completedUsers.size,
-                    taskCount = tasks.size,
+                    publisherId = task.id ?: 0,
+                    publisherName = task.name,
+                    participants = approvedCount,
+                    completedUsers = completedCount,
+                    taskCount = task.rank ?: 0, // Using taskCount field for rank temporarily
                 )
             }
-            .sortedByDescending { it.taskCount }
+            .sortedByDescending { it.completedUsers }
     }
 
     fun exportParticipants(
@@ -264,26 +311,49 @@ class SpaceAnalyticsService(
         when (format.lowercase()) {
             "csv",
             "participants" -> {
-                // Export participant details
-                csvBuilder.append("Task ID,Task Title,Member ID,Status,Completion Status,Email\n")
+                // Export participant details with more comprehensive data
+                csvBuilder.append(
+                    "Task ID,Task Title,Category,Task Rank,Task Creator,Created At,Deadline,Member ID,Username,Real Name,Student ID,Grade,Major,Class,Phone,Email,Apply Reason,Reject Reason,Approval Status,Completion Status,Is Team,Join Date\n"
+                )
 
                 memberships.forEach { membership ->
                     val task = filteredTasks.find { it.id == membership.task?.id }
                     val status = membership.approved?.name ?: "NONE"
                     val completionStatus = membership.completionStatus.name
+                    // Get user info from repository
+                    val member =
+                        membership.memberId?.let {
+                            userRepository.findById(it.toInt()).orElse(null)
+                        }
 
                     csvBuilder.append("${task?.id ?: ""},")
                     csvBuilder.append("\"${task?.name ?: ""}\",")
+                    csvBuilder.append("\"${task?.category?.name ?: ""}\",")
+                    csvBuilder.append("${task?.rank ?: ""},")
+                    csvBuilder.append("\"${task?.creator?.username ?: ""}\",")
+                    csvBuilder.append("${task?.createdAt ?: ""},")
+                    csvBuilder.append("${task?.deadline ?: ""},")
                     csvBuilder.append("${membership.memberId ?: ""},")
+                    csvBuilder.append("\"${member?.username ?: ""}\",")
+                    csvBuilder.append("\"${membership.realNameInfo?.realName ?: ""}\",")
+                    csvBuilder.append("\"${membership.realNameInfo?.studentId ?: ""}\",")
+                    csvBuilder.append("\"${membership.realNameInfo?.grade ?: ""}\",")
+                    csvBuilder.append("\"${membership.realNameInfo?.major ?: ""}\",")
+                    csvBuilder.append("\"${membership.realNameInfo?.className ?: ""}\",")
+                    csvBuilder.append("\"${membership.phone ?: ""}\",")
+                    csvBuilder.append("\"${membership.email ?: ""}\",")
+                    csvBuilder.append("\"${membership.applyReason ?: ""}\",")
+                    csvBuilder.append("\"${membership.rejectReason ?: ""}\",")
                     csvBuilder.append("$status,")
                     csvBuilder.append("$completionStatus,")
-                    csvBuilder.append("\"${membership.email ?: ""}\"\n")
+                    csvBuilder.append("${membership.isTeam},")
+                    csvBuilder.append("${membership.createdAt}\n")
                 }
             }
             "summary" -> {
                 // Export summary by task
                 csvBuilder.append(
-                    "Task ID,Task Title,Category,Creator,Total Participants,Approved,Rejected,Pending\n"
+                    "Task ID,Task Title,Category,Rank,Creator,Created At,Deadline,Total Participants,Approved,Rejected,Pending,Completed,Task Status\n"
                 )
 
                 filteredTasks.forEach { task ->
@@ -292,15 +362,24 @@ class SpaceAnalyticsService(
                     val rejected = taskMemberships.count { it.approved?.name == "DISAPPROVED" }
                     val pending =
                         taskMemberships.count { it.approved?.name == "NONE" || it.approved == null }
+                    val completed =
+                        taskMemberships.count {
+                            it.completionStatus == TaskCompletionStatus.SUCCESS
+                        }
 
                     csvBuilder.append("${task.id},")
                     csvBuilder.append("\"${task.name}\",")
                     csvBuilder.append("\"${task.category.name}\",")
+                    csvBuilder.append("${task.rank ?: ""},")
                     csvBuilder.append("\"${task.creator.username}\",")
+                    csvBuilder.append("${task.createdAt},")
+                    csvBuilder.append("${task.deadline ?: ""},")
                     csvBuilder.append("${taskMemberships.size},")
                     csvBuilder.append("$approved,")
                     csvBuilder.append("$rejected,")
-                    csvBuilder.append("$pending\n")
+                    csvBuilder.append("$pending,")
+                    csvBuilder.append("$completed,")
+                    csvBuilder.append("${task.approved.name}\n")
                 }
             }
             else -> {
