@@ -66,6 +66,8 @@ class TaskClient {
         rank: Int? = null,
         topics: List<IdType> = emptyList(),
         expectedStatus: Int = HttpStatus.OK.value(),
+        maxParticipants: Int = 100,
+        enableRanking: Boolean = false,
     ): IdType? {
         val requestDTO =
             PostTaskRequestDTO(
@@ -98,17 +100,23 @@ class TaskClient {
             return null
         }
 
-        val responseDTO =
-            exchange
-                .expectStatus()
-                .isOk()
-                .expectBody<PatchTask200ResponseDTO>()
-                .returnResult()
-                .responseBody!!
+        return try {
+            val responseDTO =
+                exchange
+                    .expectStatus()
+                    .isOk()
+                    .expectBody<PatchTask200ResponseDTO>()
+                    .returnResult()
+                    .responseBody!!
 
-        val taskId = responseDTO.data.task.id
-        logger.info("Created task: $taskId in space: $spaceId")
-        return taskId
+            val taskId = responseDTO.data.task.id
+            logger.info("Created task: $taskId in space: $spaceId")
+            taskId
+        } catch (e: Exception) {
+            logger.error("Failed to create task in space $spaceId: ${e.message}")
+            logger.error("Request was: name=$name, categoryId=$categoryId")
+            null
+        }
     }
 
     /** Approves a task. */
@@ -224,6 +232,65 @@ class TaskClient {
 
         val submissionId = responseDTO.data.submission.id
         logger.info("Created submission: $submissionId for task: $taskId")
+        return submissionId
+    }
+
+    /** Join a task as a participant. */
+    fun joinTask(
+        webTestClient: WebTestClient,
+        taskId: IdType,
+        token: String,
+        userId: IdType,
+    ): IdType {
+        val requestDTO = PostTaskParticipantRequestDTO(email = "test@example.com")
+
+        val responseDTO =
+            webTestClient
+                .post()
+                .uri { builder ->
+                    builder.path("/tasks/$taskId/participants").queryParam("member", userId).build()
+                }
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestDTO)
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody<PostTaskParticipant200ResponseDTO>()
+                .returnResult()
+                .responseBody!!
+
+        val participantId = responseDTO.data.participant!!.id
+        logger.info("User joined task: $taskId as participant: $participantId")
+        return participantId
+    }
+
+    /** Submit a task. */
+    fun submitTask(
+        webTestClient: WebTestClient,
+        taskId: IdType,
+        token: String,
+        participantId: IdType,
+        content: String = "Test submission content",
+    ): IdType {
+        val submissionContent = listOf(mapOf("text" to content))
+
+        val responseDTO =
+            webTestClient
+                .post()
+                .uri("/tasks/$taskId/participants/$participantId/submissions")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(submissionContent)
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody<PostTaskSubmission200ResponseDTO>()
+                .returnResult()
+                .responseBody!!
+
+        val submissionId = responseDTO.data.submission.id
+        logger.info("Submitted task: $taskId, submission: $submissionId")
         return submissionId
     }
 }

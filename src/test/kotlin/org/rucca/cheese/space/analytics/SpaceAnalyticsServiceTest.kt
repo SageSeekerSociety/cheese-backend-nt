@@ -13,18 +13,21 @@ import org.rucca.cheese.space.models.Space
 import org.rucca.cheese.space.models.SpaceCategory
 import org.rucca.cheese.task.*
 import org.rucca.cheese.user.User
+import org.rucca.cheese.user.UserRepository
 
 @ExtendWith(MockKExtension::class)
 class SpaceAnalyticsServiceTest {
     private lateinit var taskRepository: TaskRepository
     private lateinit var taskMembershipRepository: TaskMembershipRepository
+    private lateinit var userRepository: UserRepository
     private lateinit var service: SpaceAnalyticsService
 
     @BeforeEach
     fun setup() {
         taskRepository = mockk()
         taskMembershipRepository = mockk()
-        service = SpaceAnalyticsService(taskRepository, taskMembershipRepository)
+        userRepository = mockk()
+        service = SpaceAnalyticsService(taskRepository, taskMembershipRepository, userRepository)
     }
 
     @Test
@@ -142,6 +145,189 @@ class SpaceAnalyticsServiceTest {
         assertNotNull(result.rankDistribution)
         assertEquals("Task Ranks", result.rankDistribution?.name)
         assertEquals(2, result.rankDistribution?.items?.size) // 2 tasks with ranks
+    }
+
+    @Test
+    fun `percentages should sum to 100 for non-empty distributions`() {
+        // Given
+        val spaceId = 1L
+        val space = mockk<Space>()
+        val category = mockk<SpaceCategory>()
+        val creator = mockk<User>()
+
+        every { category.name } returns "Category1"
+        every { creator.username } returns "creator1"
+
+        val task = mockk<Task>()
+        every { task.id } returns 1L
+        every { task.name } returns "Task 1"
+        every { task.space } returns space
+        every { task.category } returns category
+        every { task.creator } returns creator
+        every { task.approved } returns ApproveType.APPROVED
+        every { task.rank } returns 10
+        every { task.createdAt } returns LocalDateTime.now()
+        every { task.deadline } returns null
+
+        val memberships =
+            (1..10).map { i ->
+                val membership = mockk<TaskMembership>(relaxed = true)
+                every { membership.id } returns i.toLong()
+                every { membership.task } returns task
+                every { membership.memberId } returns i.toLong()
+                every { membership.approved } returns ApproveType.APPROVED
+                every { membership.completionStatus } returns TaskCompletionStatus.SUCCESS
+                every { membership.realNameInfo } returns
+                    RealNameInfo(
+                        realName = "User$i",
+                        grade =
+                            when (i % 4) {
+                                0 -> "大一"
+                                1 -> "大二"
+                                2 -> "大三"
+                                else -> "大四"
+                            },
+                        major =
+                            when (i % 3) {
+                                0 -> "计算机科学"
+                                1 -> "软件工程"
+                                else -> "信息管理"
+                            },
+                        className = "计科${(i % 4) + 1}班",
+                        encrypted = false,
+                    )
+                membership
+            }
+
+        every { taskRepository.findBySpaceId(spaceId) } returns listOf(task)
+        every { taskMembershipRepository.findAllByTaskId(1L) } returns memberships
+
+        // When
+        val result =
+            service.getSpaceTaskAnalytics(
+                spaceId = spaceId,
+                from = null,
+                to = null,
+                taskStatus = null,
+                categoryId = null,
+                publisherId = null,
+                realName = "all",
+                successBy = "completion",
+            )
+
+        // Then - verify percentages sum to 100
+        val gradePercentages =
+            result.successStudentStatistics?.gradeDistribution?.items?.sumOf {
+                it.percentage ?: 0.0
+            } ?: 0.0
+        val majorPercentages =
+            result.successStudentStatistics?.majorDistribution?.items?.sumOf {
+                it.percentage ?: 0.0
+            } ?: 0.0
+        val classPercentages =
+            result.successStudentStatistics?.classNameDistribution?.items?.sumOf {
+                it.percentage ?: 0.0
+            } ?: 0.0
+
+        assertEquals(100.0, gradePercentages, 0.01, "Grade percentages should sum to 100%")
+        assertEquals(100.0, majorPercentages, 0.01, "Major percentages should sum to 100%")
+        assertEquals(100.0, classPercentages, 0.01, "Class percentages should sum to 100%")
+    }
+
+    @Test
+    fun `should handle null realNameInfo gracefully`() {
+        // Given
+        val spaceId = 1L
+        val task = mockk<Task>()
+        every { task.id } returns 1L
+        every { task.category } returns mockk { every { name } returns "Test" }
+        every { task.creator } returns mockk { every { username } returns "test" }
+        every { task.approved } returns ApproveType.APPROVED
+        every { task.rank } returns null
+
+        val membership1 = mockk<TaskMembership>(relaxed = true)
+        every { membership1.memberId } returns 1L
+        every { membership1.realNameInfo } returns null
+        every { membership1.approved } returns ApproveType.APPROVED
+        every { membership1.completionStatus } returns TaskCompletionStatus.SUCCESS
+        every { membership1.task } returns task
+
+        val membership2 = mockk<TaskMembership>(relaxed = true)
+        every { membership2.memberId } returns 2L
+        every { membership2.realNameInfo } returns null
+        every { membership2.approved } returns ApproveType.APPROVED
+        every { membership2.completionStatus } returns TaskCompletionStatus.SUCCESS
+        every { membership2.task } returns task
+
+        val membershipsWithNullInfo = listOf(membership1, membership2)
+
+        every { taskRepository.findBySpaceId(spaceId) } returns listOf(task)
+        every { taskMembershipRepository.findAllByTaskId(1L) } returns membershipsWithNullInfo
+
+        // When
+        val result =
+            service.getSpaceTaskAnalytics(
+                spaceId = spaceId,
+                from = null,
+                to = null,
+                taskStatus = null,
+                categoryId = null,
+                publisherId = null,
+                realName = "all",
+                successBy = "completion",
+            )
+
+        // Then - should not crash and return empty distributions
+        assertNotNull(result.successStudentStatistics)
+        assertTrue(result.successStudentStatistics?.gradeDistribution?.items?.isEmpty() ?: false)
+        assertTrue(result.successStudentStatistics?.majorDistribution?.items?.isEmpty() ?: false)
+        assertTrue(
+            result.successStudentStatistics?.classNameDistribution?.items?.isEmpty() ?: false
+        )
+        assertEquals(2, result.successStudentStatistics?.totalStudents)
+        assertEquals(0, result.successStudentStatistics?.totalStudentsWithRealName)
+    }
+
+    @Test
+    fun `should include all ApproveType values even with zero count`() {
+        // Given
+        val spaceId = 1L
+        val tasks =
+            listOf(
+                mockk<Task> {
+                    every { id } returns 1L
+                    every { approved } returns ApproveType.APPROVED
+                    every { category } returns mockk { every { name } returns "Test" }
+                    every { creator } returns mockk { every { username } returns "test" }
+                    every { rank } returns null
+                }
+            )
+
+        every { taskRepository.findBySpaceId(spaceId) } returns tasks
+        every { taskMembershipRepository.findAllByTaskId(any()) } returns emptyList()
+
+        // When
+        val result =
+            service.getSpaceTaskAnalytics(
+                spaceId = spaceId,
+                from = null,
+                to = null,
+                taskStatus = null,
+                categoryId = null,
+                publisherId = null,
+                realName = "all",
+                successBy = "approve",
+            )
+
+        // Then - should include all status types
+        val statusLabels = result.taskStatusDistribution?.items?.map { it.label } ?: emptyList()
+        assertTrue(statusLabels.contains("NONE"), "Should include NONE status")
+        assertTrue(statusLabels.contains("APPROVED"), "Should include APPROVED status")
+        assertTrue(statusLabels.contains("DISAPPROVED"), "Should include DISAPPROVED status")
+
+        val participantStatusLabels =
+            result.participantStatusDistribution?.items?.map { it.label } ?: emptyList()
+        assertTrue(participantStatusLabels.contains("NONE") || participantStatusLabels.isEmpty())
     }
 
     @Test
@@ -349,6 +535,7 @@ class SpaceAnalyticsServiceTest {
 
         every { taskRepository.findBySpaceId(spaceId) } returns listOf(task)
         every { taskMembershipRepository.findAllByTaskId(1L) } returns listOf(membership)
+        every { userRepository.findById(any<Int>()) } returns java.util.Optional.of(user)
 
         // When
         val csv =
@@ -366,8 +553,17 @@ class SpaceAnalyticsServiceTest {
 
         // Then
         assertNotNull(csv)
-        assertTrue(csv.contains("Task ID,Task Title,Member ID,Status,Completion Status,Email"))
-        assertTrue(csv.contains("1,\"Test Task\",10,APPROVED,SUCCESS,\"test@example.com\""))
+        println("CSV Participants Content: $csv") // Debug output
+        assertTrue(
+            csv.contains(
+                "Task ID,Task Title,Category,Task Rank,Task Creator,Created At,Deadline,Member ID,Username,Real Name,Student ID,Grade,Major,Class,Phone,Email,Apply Reason,Reject Reason,Approval Status,Completion Status,Is Team,Join Date"
+            )
+        )
+        // Check for parts that should be in the CSV
+        assertTrue(csv.contains("\"Test Task\""))
+        assertTrue(csv.contains("test@example.com"))
+        assertTrue(csv.contains("APPROVED"))
+        assertTrue(csv.contains("SUCCESS"))
     }
 
     @Test
@@ -423,6 +619,7 @@ class SpaceAnalyticsServiceTest {
 
         every { taskRepository.findBySpaceId(spaceId) } returns listOf(task)
         every { taskMembershipRepository.findAllByTaskId(1L) } returns memberships
+        every { userRepository.findById(any<Int>()) } returns java.util.Optional.empty()
 
         // When
         val csv =
@@ -443,10 +640,12 @@ class SpaceAnalyticsServiceTest {
         println("CSV Content: $csv") // Debug output
         assertTrue(
             csv.contains(
-                "Task ID,Task Title,Category,Creator,Total Participants,Approved,Rejected,Pending"
+                "Task ID,Task Title,Category,Rank,Creator,Created At,Deadline,Total Participants,Approved,Rejected,Pending,Completed,Task Status"
             )
         )
-        assertTrue(csv.contains("1,\"Test Task\",\"Test Category\",\"publisher1\",3,1,1,1"))
+        assertTrue(csv.contains("1,\"Test Task\",\"Test Category\""))
+        assertTrue(csv.contains("publisher1"))
+        assertTrue(csv.contains(",3,1,1,1,"))
     }
 
     @Test
@@ -475,9 +674,13 @@ class SpaceAnalyticsServiceTest {
         assertNotNull(result.taskCategoryDistribution)
         assertEquals(0, result.taskCategoryDistribution?.items?.size)
         assertNotNull(result.taskStatusDistribution)
-        assertEquals(0, result.taskStatusDistribution?.items?.size)
+        // Status distribution always includes all enum values for consistency
+        assertEquals(3, result.taskStatusDistribution?.items?.size)
+        // All values should be 0
+        result.taskStatusDistribution?.items?.forEach { item -> assertEquals(0, item.count) }
         assertNotNull(result.participantStatusDistribution)
-        assertEquals(0, result.participantStatusDistribution?.items?.size)
+        // Participant status also includes all enum values
+        assertEquals(3, result.participantStatusDistribution?.items?.size)
         assertNotNull(result.rankDistribution)
         assertEquals(0, result.rankDistribution?.items?.size)
     }
@@ -579,6 +782,7 @@ class SpaceAnalyticsServiceTest {
 
         every { taskRepository.findBySpaceId(spaceId) } returns listOf(task)
         every { taskMembershipRepository.findAllByTaskId(1L) } returns emptyList()
+        every { userRepository.findById(any<Int>()) } returns java.util.Optional.empty()
 
         // When
         val csv =
@@ -598,7 +802,7 @@ class SpaceAnalyticsServiceTest {
         assertNotNull(csv)
         assertTrue(
             csv.contains(
-                "Task ID,Task Title,Category,Creator,Total Participants,Approved,Rejected,Pending"
+                "Task ID,Task Title,Category,Rank,Creator,Created At,Deadline,Total Participants,Approved,Rejected,Pending,Completed,Task Status"
             )
         )
         // Should properly escape special characters

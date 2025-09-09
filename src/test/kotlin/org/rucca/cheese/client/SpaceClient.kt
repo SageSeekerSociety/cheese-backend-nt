@@ -80,9 +80,10 @@ class SpaceClient(private val userClient: UserClient) {
         webTestClient: WebTestClient,
         token: String,
         spaceId: IdType,
-        categoryName: String,
+        name: String,
+        description: String = "Category description",
     ): IdType {
-        val requestDTO = CreateSpaceCategoryRequestDTO(name = categoryName)
+        val requestDTO = CreateSpaceCategoryRequestDTO(name = name, description = description)
 
         val responseDTO =
             webTestClient
@@ -93,7 +94,7 @@ class SpaceClient(private val userClient: UserClient) {
                 .bodyValue(requestDTO)
                 .exchange()
                 .expectStatus()
-                .isOk()
+                .isCreated()
                 .expectBody<CreateSpaceCategory201ResponseDTO>()
                 .returnResult()
                 .responseBody!!
