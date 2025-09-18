@@ -383,6 +383,7 @@ class TaskController(
                 name = postTaskRequestDTO.name,
                 submitterType =
                     taskService.convertTaskSubmitterType(postTaskRequestDTO.submitterType),
+                registrationStartAt = postTaskRequestDTO.registrationStartAt?.toLocalDateTime(),
                 deadline = postTaskRequestDTO.deadline?.toLocalDateTime(),
                 participantLimit = postTaskRequestDTO.participantLimit,
                 defaultDeadline = postTaskRequestDTO.defaultDeadline ?: 30,

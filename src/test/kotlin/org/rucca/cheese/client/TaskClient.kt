@@ -54,6 +54,7 @@ class TaskClient {
         token: String,
         name: String = testTaskName(),
         submitterType: TaskSubmitterType = TaskSubmitterType.USER,
+        registrationStartAt: Long? = null,
         deadline: Long? = testTaskDeadline(),
         defaultDeadline: Long? = testTaskDefaultDeadline(),
         resubmittable: Boolean = true,
@@ -73,6 +74,7 @@ class TaskClient {
             PostTaskRequestDTO(
                 name = name,
                 submitterType = submitterType.toDTO(),
+                registrationStartAt = registrationStartAt,
                 deadline = deadline,
                 defaultDeadline = defaultDeadline,
                 resubmittable = resubmittable,

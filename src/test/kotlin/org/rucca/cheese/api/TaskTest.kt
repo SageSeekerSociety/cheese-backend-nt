@@ -14,6 +14,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.math.floor
 import org.junit.jupiter.api.*
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.rucca.cheese.common.persistent.IdType
@@ -368,6 +369,7 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
         token: String = creatorToken,
         name: String,
         submitterType: TaskSubmitterType,
+        registrationStartAt: Long? = null,
         deadline: Long?,
         defaultDeadline: Long?,
         resubmittable: Boolean,
@@ -383,6 +385,7 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
             PostTaskRequestDTO(
                 name = name,
                 submitterType = submitterType.toDTO(),
+                registrationStartAt = registrationStartAt,
                 deadline = deadline,
                 defaultDeadline = defaultDeadline,
                 resubmittable = resubmittable,
@@ -433,6 +436,7 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
             // used
             assertNotNull(task.creator.id, message = "Task creator ID should not be null")
             assertEquals(deadline, task.deadline)
+            assertEquals(registrationStartAt, task.registrationStartAt)
             assertEquals(defaultDeadline, task.defaultDeadline)
             assertEquals(resubmittable, task.resubmittable)
             assertEquals(editable, task.editable)
@@ -1483,6 +1487,121 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
                     message = "Deadline should be null after patch",
                 )
             }
+    }
+
+    @Test
+    @Order(46)
+    fun `Task - Registration start time gates participation`() {
+        val zone = ZoneId.systemDefault()
+        val registrationStart =
+            LocalDateTime.now().plusDays(2).atZone(zone).toInstant().toEpochMilli()
+        val registrationDeadline =
+            LocalDateTime.now().plusDays(10).atZone(zone).toInstant().toEpochMilli()
+
+        val taskId =
+            createTask(
+                token = creatorToken,
+                name = "$taskNamePrefix (Registration Start Gate)",
+                submitterType = TaskSubmitterType.USER,
+                registrationStartAt = registrationStart,
+                deadline = registrationDeadline,
+                defaultDeadline = taskDefaultDeadline,
+                resubmittable = true,
+                editable = true,
+                intro = taskIntro,
+                description = taskDescription,
+                submissionSchema = taskSubmissionSchema,
+                spaceId = spaceId,
+                categoryId = defaultCategoryId,
+            ) ?: fail("Task creation with registration start should succeed")
+
+        approveTask(taskId, spaceAdminToken)
+
+        val initialResponse =
+            webTestClient
+                .get()
+                .uri { builder ->
+                    builder.path("/tasks/$taskId").queryParam("queryJoinability", "true").build()
+                }
+                .header("Authorization", "Bearer $participantToken")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<GetTask200ResponseDTO>()
+                .returnResult()
+                .responseBody ?: fail("Task response should not be null")
+
+        val initialEligibility = initialResponse.data.task.participationEligibility
+        Assertions.assertNotNull(
+            initialEligibility,
+            "Participation eligibility should be present when requested",
+        )
+        val userEligibility = initialEligibility!!.user
+        Assertions.assertNotNull(
+            userEligibility,
+            "User eligibility should be available for USER task",
+        )
+        assertFalse(
+            userEligibility!!.eligible,
+            "User should be ineligible before registration start time",
+        )
+        Assertions.assertNotNull(
+            userEligibility.reasons?.find {
+                it.code == EligibilityRejectReasonCodeDTO.REGISTRATION_NOT_STARTED
+            },
+            "Expected registration start restriction reason when start time is in the future",
+        )
+
+        val clearStartRequest = PatchTaskRequestDTO(hasRegistrationStart = false)
+        val patchedTask =
+            webTestClient
+                .patch()
+                .uri("/tasks/$taskId")
+                .header("Authorization", "Bearer $creatorToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(clearStartRequest)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<PatchTask200ResponseDTO>()
+                .returnResult()
+                .responseBody
+                ?.data
+                ?.task ?: fail("Patched task payload should be returned")
+
+        Assertions.assertNull(
+            patchedTask.registrationStartAt,
+            "Registration start should be cleared after patch",
+        )
+
+        val postPatchResponse =
+            webTestClient
+                .get()
+                .uri { builder ->
+                    builder.path("/tasks/$taskId").queryParam("queryJoinability", "true").build()
+                }
+                .header("Authorization", "Bearer $participantToken")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<GetTask200ResponseDTO>()
+                .returnResult()
+                .responseBody ?: fail("Task response after clearing start should not be null")
+
+        val postEligibility = postPatchResponse.data.task.participationEligibility
+        Assertions.assertNotNull(
+            postEligibility,
+            "Participation eligibility should still be returned",
+        )
+        val postUserEligibility = postEligibility!!.user
+        Assertions.assertNotNull(
+            postUserEligibility,
+            "User eligibility should be available after clearing start",
+        )
+        assertTrue(
+            postUserEligibility!!.eligible,
+            "User should become eligible once registration start is cleared",
+        )
     }
 
     // --- Enumeration Tests ---
