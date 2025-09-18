@@ -8,11 +8,14 @@ import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.convert
 import org.rucca.cheese.model.*
+import org.rucca.cheese.model.TaskSubmitterTypeDTO.TEAM
+import org.rucca.cheese.model.TaskSubmitterTypeDTO.USER
 import org.rucca.cheese.task.*
 import org.rucca.cheese.task.error.NotTaskParticipantYetError
 import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.user.services.UserService
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -30,6 +33,20 @@ class TaskMembershipViewService(
     // Helper to get Task
     private fun getTask(taskId: IdType): Task {
         return taskRepository.findById(taskId).orElseThrow { NotFoundError("task", taskId) }
+    }
+
+    fun getTaskParticipantsSummary(task: Task): TaskParticipantsDTO {
+        val taskId = task.id!!
+        val total = taskMembershipRepository.countByTaskIdAndApproved(taskId, ApproveType.APPROVED)
+        val pageable = PageRequest.of(0, 3)
+        val participants =
+            taskMembershipRepository.findAllByTaskIdAndApproved(
+                taskId,
+                ApproveType.APPROVED,
+                pageable,
+            )
+        val exampleDTOs = participants.map { getParticipantSummary(task, it, false) }
+        return TaskParticipantsDTO(total = total, examples = exampleDTOs)
     }
 
     /** Assembles the detailed TaskMembershipDTO for a single participant */

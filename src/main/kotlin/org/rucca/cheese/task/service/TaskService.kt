@@ -75,6 +75,7 @@ class TaskService(
     private val taskTopicsService: TaskTopicsService,
     private val taskMembershipService: TaskMembershipService,
     private val taskMembershipEligibilityService: TaskMembershipEligibilityService,
+    private val taskMembershipViewService: TaskMembershipViewService,
     private val userRealNameService: UserRealNameService,
     private val entityPatcher: EntityPatcher,
     private val topicService: TopicService,
@@ -275,7 +276,7 @@ class TaskService(
                             convertTaskSubmissionEntryType(it.type!!),
                         )
                     },
-            submitters = getTaskSubmittersSummary(this.id!!),
+            participants = taskMembershipViewService.getTaskParticipantsSummary(this),
             updatedAt = this.updatedAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             createdAt = this.createdAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
             participationEligibility = participationEligibilityDto,
@@ -530,17 +531,6 @@ class TaskService(
     fun getTaskSpaceId(taskId: IdType): IdType? {
         val task = getTask(taskId)
         return task.space.id
-    }
-
-    fun getTaskSubmittersSummary(taskId: IdType): TaskSubmittersDTO {
-        val submitters = taskMembershipRepository.findByTaskIdWhereMemberHasSubmitted(taskId)
-        val examples = submitters.sortedBy { it.updatedAt }.reversed().take(3)
-        val exampleDTOs =
-            when (getTaskSumbitterType(taskId)) {
-                USER -> examples.map { userService.getUserAvatarId(it.memberId!!) }
-                TEAM -> examples.map { teamService.getTeamAvatarId(it.memberId!!) }
-            }.map { TaskSubmittersExamplesInnerDTO(it) }
-        return TaskSubmittersDTO(total = submitters.size, examples = exampleDTOs)
     }
 
     fun enumerateTasks(
