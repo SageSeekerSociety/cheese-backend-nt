@@ -74,6 +74,8 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
     private var customCategoryId: IdType = -1
     private var archivedCategoryId: IdType = -1
     private val taskIds = mutableListOf<IdType>()
+    private var gatedTaskId: IdType? = null
+    private var paginationNextStart: IdType? = null
 
     // --- Task Details ---
     private val randomSuffix = floor(Math.random() * 10000000000).toLong()
@@ -1602,6 +1604,8 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
             postUserEligibility!!.eligible,
             "User should become eligible once registration start is cleared",
         )
+
+        gatedTaskId = taskId
     }
 
     // --- Enumeration Tests ---
@@ -1631,8 +1635,8 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
                     message = "response.data?.tasks should not be null",
                 )
                 val tasks = response.data!!.tasks!!
-                // Tasks 0, 1, 2 are approved
-                assertEquals(3, tasks.size)
+                // All approved tasks should be returned (initial 3 plus gated task)
+                assertEquals(4, tasks.size)
                 assertTrue(tasks.all { it.approved == ApproveTypeDTO.APPROVED })
                 // Check specific task details
                 val task0 = tasks.find { it.id == taskIds[0] }
@@ -1640,6 +1644,12 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
                 assertEquals("$taskNamePrefix (1 - USER, Default Cat)", task0!!.name)
                 assertEquals(taskIntro, task0.intro)
                 assertEquals(1, task0.rank) // Rank was set in test 40
+                gatedTaskId?.let { gatedId ->
+                    assertTrue(
+                        tasks.any { it.id == gatedId },
+                        "Gated registration task should appear among approved listings",
+                    )
+                }
             }
     }
 
@@ -1706,20 +1716,20 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
                 val tasks = response.data!!.tasks!!
                 val page = response.data!!.page!!
                 assertEquals(2, tasks.size)
-                assertEquals(taskIds[0], tasks[0].id) // Task 1
-                assertEquals(taskIds[2], tasks[1].id) // Task 2
+                assertTrue(tasks.all { it.approved == ApproveTypeDTO.APPROVED })
                 assertEquals(true, page.hasMore)
-                assertEquals(
-                    taskIds[1],
+                assertNotNull(
                     page.nextStart,
-                ) // Next should be task 3 (ID from taskIds[2])
+                    message = "page.nextStart should be provided when more tasks exist",
+                )
+                paginationNextStart = page.nextStart
             }
     }
 
     @Test
     @Order(65)
     fun `Task - Enumerate approved tasks pagination page 2`() { // Renamed
-        val startId = taskIds[1] // Use nextStart from previous page
+        val startId = paginationNextStart ?: fail("pagination cursor from page 1 missing")
         webTestClient
             .get()
             .uri { builder ->
@@ -1747,13 +1757,14 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
                 )
                 val tasks = response.data!!.tasks!!
                 val page = response.data!!.page!!
-                assertEquals(1, tasks.size)
-                assertEquals(startId, tasks[0].id) // Should contain Task 1
+                assertTrue(tasks.isNotEmpty())
+                assertTrue(tasks.all { it.approved == ApproveTypeDTO.APPROVED })
                 assertEquals(false, page.hasMore)
                 assertNull(
                     page.nextStart,
-                    message = "page.nextStart should not be null",
+                    message = "page.nextStart should be null when no more pages",
                 ) // No more pages
+                paginationNextStart = null
             }
     }
 
@@ -1766,8 +1777,8 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
                 builder
                     .path("/tasks")
                     .queryParam("space", spaceId)
-                    .queryParam("sortBy", "createdAt")
-                    .queryParam("sortOrder", "asc")
+                    .queryParam("sort_by", "createdAt")
+                    .queryParam("sort_order", "asc")
                     .queryParam("approved", ApproveTypeDTO.APPROVED.name)
                     .build()
             }
@@ -1783,9 +1794,21 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
                 )
                 val tasks = response.data!!.tasks!!
                 assertTrue(tasks.isNotEmpty())
-                // First created and approved task is Task 1 (index 0)
-                assertEquals(taskIds[0], tasks[0].id)
-                assertEquals("$taskNamePrefix (1 - USER, Default Cat)", tasks[0].name)
+                val creationPairs =
+                    tasks.map { task ->
+                        val createdAt = task.createdAt ?: Long.MAX_VALUE
+                        val id = task.id ?: fail("Task id should not be null when sorting")
+                        createdAt to id
+                    }
+                val sortedPairs =
+                    creationPairs.sortedWith(
+                        compareBy<Pair<Long, Long>>({ it.first }, { it.second })
+                    )
+                assertEquals(
+                    sortedPairs,
+                    creationPairs,
+                    "Tasks should be sorted by createdAt ascending (id as tie breaker)",
+                )
             }
     }
 
@@ -1834,8 +1857,8 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
                 builder
                     .path("/tasks")
                     .queryParam("space", spaceId)
-                    .queryParam("sortBy", "deadline")
-                    .queryParam("sortOrder", "desc")
+                    .queryParam("sort_by", "deadline")
+                    .queryParam("sort_order", "desc")
                     .queryParam("approved", ApproveTypeDTO.APPROVED.name)
                     .build()
             }

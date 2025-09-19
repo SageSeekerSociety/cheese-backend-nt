@@ -836,7 +836,8 @@ class TaskService(
         // Create cursor spec with sort by the requested property but using ID as cursor
         val cursorSpec =
             taskRepository
-                .idSeekSpec(Task::id, sortProperty, direction)
+                .idSeekSpec(Task::id, sortProperty)
+                .direction(direction)
                 .specification(specification)
                 .build()
 

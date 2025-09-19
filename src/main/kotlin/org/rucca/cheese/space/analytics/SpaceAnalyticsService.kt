@@ -1,10 +1,10 @@
 package org.rucca.cheese.space.analytics
 
 import org.rucca.cheese.common.helper.toEpochMilli
-import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.task.TaskCompletionStatus
+import org.rucca.cheese.task.TaskMembership
 import org.rucca.cheese.task.TaskMembershipRepository
 import org.rucca.cheese.task.TaskRepository
 import org.rucca.cheese.user.UserRepository
@@ -239,40 +239,32 @@ class SpaceAnalyticsService(
         spaceId: IdType,
         successBy: String,
     ): List<PublisherParticipationDTO> {
-        // Get all tasks in the space
+        // Get all tasks in the space grouped by publisher
         val allTasks = taskRepository.findBySpaceId(spaceId)
 
-        // Return task details instead of publisher aggregation
         return allTasks
-            .map { task ->
-                val taskId = task.id ?: 0L
-                val memberships = taskMembershipRepository.findAllByTaskId(taskId)
+            .groupBy { task -> task.creator?.id?.toLong() }
+            .map { (publisherId, publisherTasks) ->
+                val memberships =
+                    publisherTasks.flatMap { task ->
+                        val taskId = task.id ?: return@flatMap emptyList<TaskMembership>()
+                        taskMembershipRepository.findAllByTaskId(taskId)
+                    }
 
-                // Count approved participants
-                val approvedCount = memberships.count { it.approved == ApproveType.APPROVED }
-
-                // Count completed submissions
+                val participantCount = memberships.size
                 val completedCount =
                     memberships.count { it.completionStatus == TaskCompletionStatus.SUCCESS }
 
-                // Calculate success rate
-                val successRate =
-                    if (approvedCount > 0) {
-                        (completedCount.toDouble() / approvedCount * 100)
-                    } else {
-                        0.0
-                    }
-
-                // Using PublisherParticipationDTO temporarily - should create TaskDetailsDTO
                 PublisherParticipationDTO(
-                    publisherId = task.id ?: 0,
-                    publisherName = task.name,
-                    participants = approvedCount,
+                    publisherId = publisherId ?: 0L,
+                    publisherName =
+                        publisherTasks.firstNotNullOfOrNull { it.creator?.username } ?: "",
+                    participants = participantCount,
                     completedUsers = completedCount,
-                    taskCount = task.rank ?: 0, // Using taskCount field for rank temporarily
+                    taskCount = publisherTasks.size,
                 )
             }
-            .sortedByDescending { it.completedUsers }
+            .sortedByDescending { it.completedUsers ?: 0 }
     }
 
     fun exportParticipants(
