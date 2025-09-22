@@ -20,6 +20,7 @@ class Task(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id", nullable = false)
     val creator: User,
+    @Column(nullable = true) var registrationStartAt: LocalDateTime? = null,
     @Column(nullable = true) var deadline: LocalDateTime? = null,
     @Column(nullable = true) var participantLimit: Int? = null,
     @Column(nullable = false) var defaultDeadline: Long,
@@ -63,6 +64,7 @@ class Task(
         checkCategorySpaceConsistency()
         validateTeamSizeConstraints()
         validateLockingPolicy()
+        validateRegistrationWindow()
     }
 
     /** Validates team size constraints based on the submitter type. */
@@ -114,6 +116,16 @@ class Task(
                 "Team locking policy (${teamLockingPolicy}) is only applicable for tasks with submitterType TEAM."
             )
             // Or silently reset: this.teamLockingPolicy = TeamMembershipLockPolicy.NO_LOCK
+        }
+    }
+
+    private fun validateRegistrationWindow() {
+        val start = registrationStartAt
+        val end = deadline
+        if (start != null && end != null && start.isAfter(end)) {
+            throw BadRequestError(
+                "registrationStartAt ($start) must be before the registration deadline ($end)."
+            )
         }
     }
 }

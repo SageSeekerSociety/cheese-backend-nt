@@ -1165,6 +1165,11 @@ paths:
                   type: string
                 hasDeadline:
                   type: boolean
+                hasRegistrationStart:
+                  type: boolean
+                registrationStartAt:
+                  type: integer
+                  format: int64
                 deadline:
                   type: integer
                   format: int64
@@ -1647,6 +1652,10 @@ paths:
                   type: string
                 submitterType:
                   $ref: "#/components/schemas/TaskSubmitterType"
+                registrationStartAt:
+                  type: integer
+                  format: int64
+                  description: Epoch milliseconds when registration opens. If omitted, registration starts immediately.
                 deadline:
                   type: integer
                   format: int64
@@ -4215,6 +4224,7 @@ components:
         - PARTICIPANT_LIMIT_REACHED
         - TASK_NOT_APPROVED
         - DEADLINE_PASSED
+        - REGISTRATION_NOT_STARTED
         - USER_NOT_FOUND
         - USER_ACCOUNT_ISSUE
         - USER_MISSING_REAL_NAME
@@ -4329,6 +4339,9 @@ components:
           format: int64
         creator:
           $ref: "#/components/schemas/User"
+        registrationStartAt:
+          type: integer
+          format: int64
         deadline:
           type: integer
           format: int64

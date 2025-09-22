@@ -1,5 +1,7 @@
 package org.rucca.cheese.task.service
 
+import java.time.Instant
+import java.time.ZoneId
 import org.rucca.cheese.common.config.ApplicationConfig
 import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.error.BaseError
@@ -67,6 +69,8 @@ class TaskMembershipEligibilityService(
                 )
             )
         }
+
+        checkRegistrationStart(task, reasons)
 
         if (applicationConfig.enforceTaskParticipantLimitCheck && task.participantLimit != null) {
             val currentApprovedCount =
@@ -143,6 +147,8 @@ class TaskMembershipEligibilityService(
                 )
             )
         }
+
+        checkRegistrationStart(task, reasons)
 
         if (!teamService.existsTeam(teamId)) {
             reasons.add(
@@ -335,6 +341,29 @@ class TaskMembershipEligibilityService(
         logger.debug("Pre-approval checks passed for task {} and member {}", task.id, memberId)
     }
 
+    private fun checkRegistrationStart(
+        task: Task,
+        reasons: MutableList<EligibilityRejectReasonInfoDTO>,
+    ) {
+        val startAt = task.registrationStartAt ?: return
+        val taskId = task.id ?: return
+        val zone = ZoneId.systemDefault()
+        val registrationOpensAt = startAt.atZone(zone).toInstant()
+        if (Instant.now().isBefore(registrationOpensAt)) {
+            reasons.add(
+                createRejectReason(
+                    EligibilityRejectReasonCodeDTO.REGISTRATION_NOT_STARTED,
+                    "Task registration opens at ${registrationOpensAt.atZone(zone)}.",
+                    mapOf(
+                        "taskId" to taskId,
+                        "registrationStartAt" to registrationOpensAt.toEpochMilli(),
+                        "registrationStartAtZone" to zone.id,
+                    ),
+                )
+            )
+        }
+    }
+
     /** Ensures approving a participant won't exceed the limit */
     fun ensureTaskParticipantNotReachedLimit(taskId: IdType) {
         if (applicationConfig.enforceTaskParticipantLimitCheck) {
@@ -506,6 +535,12 @@ class TaskMembershipEligibilityService(
                 val actual = getDetail(reason.details, "actualRank", 0)
                 val required = getDetail(reason.details, "requiredRank", 0)
                 YourTeamMemberRankIsNotHighEnoughError(userId, actual, required)
+            }
+            EligibilityRejectReasonCodeDTO.REGISTRATION_NOT_STARTED -> {
+                val startAt = getDetail(reason.details, "registrationStartAt", 0L)
+                val zoneId =
+                    getDetail(reason.details, "registrationStartAtZone", ZoneId.systemDefault().id)
+                TaskRegistrationNotStartedError(taskId, startAt, zoneId)
             }
             else -> ForbiddenError(reason.message, reason.details ?: emptyMap())
         }

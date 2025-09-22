@@ -257,6 +257,11 @@ class TaskService(
             name = this.name,
             submitterType = convertTaskSubmitterType(this.submitterType),
             creator = userService.getUserDto(this.creator.id!!.toLong()),
+            registrationStartAt =
+                this.registrationStartAt
+                    ?.atZone(ZoneId.systemDefault())
+                    ?.toInstant()
+                    ?.toEpochMilli(),
             deadline = this.deadline?.atZone(ZoneId.systemDefault())?.toInstant()?.toEpochMilli(),
             participantLimit = this.participantLimit,
             defaultDeadline = this.defaultDeadline,
@@ -314,6 +319,7 @@ class TaskService(
     fun createTask(
         name: String,
         submitterType: TaskSubmitterType,
+        registrationStartAt: LocalDateTime?,
         deadline: LocalDateTime?,
         participantLimit: Int?,
         defaultDeadline: Long,
@@ -356,6 +362,7 @@ class TaskService(
                     name = name,
                     submitterType = submitterType,
                     creator = userService.getUserReference(creatorId),
+                    registrationStartAt = registrationStartAt,
                     deadline = deadline,
                     participantLimit = participantLimit,
                     defaultDeadline = defaultDeadline,
@@ -454,6 +461,10 @@ class TaskService(
                     entity.deadline = value.toLocalDateTime()
                 }
 
+                handle(PatchTaskRequestDTO::registrationStartAt) { entity, value ->
+                    entity.registrationStartAt = value.toLocalDateTime()
+                }
+
                 // Handle TaskSubmissionSchema update (includes conversion)
                 handle(PatchTaskRequestDTO::submissionSchema) { entity, schemaEntries ->
                     entity.submissionSchema =
@@ -505,6 +516,10 @@ class TaskService(
 
         if (patchDto.hasParticipantLimit == false) {
             updatedTask.participantLimit = null // Explicitly set participant limit to null
+        }
+
+        if (patchDto.hasRegistrationStart == false) {
+            updatedTask.registrationStartAt = null
         }
 
         // --- Save the entity ---
@@ -821,7 +836,8 @@ class TaskService(
         // Create cursor spec with sort by the requested property but using ID as cursor
         val cursorSpec =
             taskRepository
-                .idSeekSpec(Task::id, sortProperty, direction)
+                .idSeekSpec(Task::id, sortProperty)
+                .direction(direction)
                 .specification(specification)
                 .build()
 
