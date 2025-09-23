@@ -14,6 +14,12 @@ interface TaskMembershipRepository : JpaRepository<TaskMembership, IdType> {
 
     fun findAllByTaskIdAndApproved(taskId: IdType, approved: ApproveType): List<TaskMembership>
 
+    fun findAllByTaskIdAndApproved(
+        taskId: IdType,
+        approved: ApproveType,
+        pageable: Pageable,
+    ): List<TaskMembership>
+
     fun findByTaskIdAndMemberId(taskId: IdType, memberId: IdType): Optional<TaskMembership>
 
     fun existsByTaskIdAndMemberId(taskId: IdType, memberId: IdType): Boolean

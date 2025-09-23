@@ -4322,7 +4322,7 @@ components:
         - intro
         - description
         - submissionSchema
-        - submitters
+        - participants
         - requireRealName
         - updatedAt
         - createdAt
@@ -4365,7 +4365,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskSubmissionSchemaEntry"
-        submitters:
+        participants:
           type: object
           required:
             - total
@@ -4376,13 +4376,7 @@ components:
             examples:
               type: array
               items:
-                type: object
-                required:
-                  - avatarId
-                properties:
-                  avatarId:
-                    type: integer
-                    format: int64
+                $ref: "#/components/schemas/TaskParticipantSummary"
         updatedAt:
           type: integer
           format: int64
