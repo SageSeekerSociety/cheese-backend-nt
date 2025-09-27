@@ -13,6 +13,7 @@ package org.rucca.cheese.task.controller
 
 import jakarta.servlet.http.HttpServletResponse
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.hibernate.query.SortDirection
@@ -196,7 +197,7 @@ class TaskController(
         @AuthContext("queryOwner") owner: Long?,
         @AuthContext("queryJoined") joined: Boolean?,
         topics: List<Long>?,
-        pageStart: Long?,
+        pageStart: String?,
         pageSize: Int,
         sortBy: String,
         sortOrder: String,

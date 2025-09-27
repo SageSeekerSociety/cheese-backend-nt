@@ -6,6 +6,8 @@ import org.rucca.cheese.common.pagination.model.CursorPage
 import org.rucca.cheese.common.pagination.model.SimpleCursor
 import org.rucca.cheese.common.pagination.spec.IdSeekSpecification
 import org.rucca.cheese.common.pagination.spec.IdSeekSpecificationBuilder
+import org.rucca.cheese.common.persistent.spec.SpecContext
+import org.rucca.cheese.common.persistent.spec.spec
 import org.springframework.data.domain.Sort
 
 /**
@@ -33,6 +35,12 @@ fun <T, ID, P : Comparable<P>> CursorPagingRepository<T, ID>.idSeekSpec(
         entityFinder = entityFinder,
     )
 }
+
+inline fun <reified T : Any, ID, P : Comparable<P>> IdSeekSpecificationBuilder<T, ID, P>
+    .specification(
+    crossinline block: SpecContext<T>.() -> Unit
+): IdSeekSpecificationBuilder<T, ID, P> where ID : Serializable, ID : Comparable<ID> =
+    this.specification(spec<T>(block))
 
 /**
  * Find entities using nullable ID-based seek pagination.

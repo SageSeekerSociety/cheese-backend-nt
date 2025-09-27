@@ -1503,7 +1503,7 @@ paths:
                         items:
                           $ref: "#/components/schemas/Task"
                       page:
-                        $ref: "#/components/schemas/Page"
+                        $ref: "#/components/schemas/EncodedCursorPage"
                   message:
                     type: string
       parameters:
@@ -1545,7 +1545,7 @@ paths:
           in: query
           name: topics
           description: Only show tasks with at least one of these topics
-        - $ref: "#/components/parameters/PageStart"
+        - $ref: "#/components/parameters/EncodedCursorPageStart"
         - $ref: "#/components/parameters/PageSize"
         - schema:
             type: string
