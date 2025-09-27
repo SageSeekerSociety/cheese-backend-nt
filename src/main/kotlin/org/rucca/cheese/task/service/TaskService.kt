@@ -11,7 +11,6 @@
 
 package org.rucca.cheese.task.service
 
-import jakarta.persistence.criteria.*
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.hibernate.query.SortDirection
@@ -21,15 +20,19 @@ import org.rucca.cheese.common.error.ForbiddenError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.error.PreconditionFailedError
 import org.rucca.cheese.common.helper.EntityPatcher
-import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toLocalDateTime
+import org.rucca.cheese.common.pagination.model.TypedCompositeCursor
 import org.rucca.cheese.common.pagination.model.toPageDTO
-import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
-import org.rucca.cheese.common.pagination.repository.idSeekSpec
+import org.rucca.cheese.common.pagination.spec.compositeCursorSpec
 import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.convert
+import org.rucca.cheese.common.persistent.spec.WhereContext
+import org.rucca.cheese.common.persistent.spec.div
+import org.rucca.cheese.common.persistent.spec.paradeCursorSpecification
+import org.rucca.cheese.common.persistent.spec.paradeSearch
+import org.rucca.cheese.common.persistent.spec.spec
 import org.rucca.cheese.model.*
 import org.rucca.cheese.model.TaskSubmitterTypeDTO.TEAM
 import org.rucca.cheese.model.TaskSubmitterTypeDTO.USER
@@ -53,9 +56,7 @@ import org.rucca.cheese.user.User
 import org.rucca.cheese.user.services.UserRealNameService
 import org.rucca.cheese.user.services.UserService
 import org.slf4j.LoggerFactory
-import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate
-import org.springframework.data.elasticsearch.core.SearchHitSupport
-import org.springframework.data.elasticsearch.core.query.Criteria
+import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -68,7 +69,6 @@ class TaskService(
     private val taskMembershipRepository: TaskMembershipRepository,
     private val taskSubmissionService: TaskSubmissionService,
     private val taskSubmissionRepository: TaskSubmissionRepository,
-    private val elasticsearchTemplate: ElasticsearchTemplate,
     private val spaceRepository: SpaceRepository,
     private val spaceCategoryRepository: SpaceCategoryRepository,
     private val spaceService: SpaceService,
@@ -553,337 +553,180 @@ class TaskService(
         enumerateOptions: TaskEnumerateOptions,
         keywords: String?,
         pageSize: Int,
-        pageStart: IdType?,
+        pageStart: String?,
         sortBy: TasksSortBy,
         sortOrder: SortDirection,
         queryOptions: TaskQueryOptions,
-    ): Pair<List<TaskDTO>, PageDTO> {
-        if (keywords == null) {
+    ): Pair<List<TaskDTO>, EncodedCursorPageDTO> {
+        val effectivePageSize = pageSize.coerceIn(1, 100)
+
+        if (keywords.isNullOrBlank()) {
             return enumerateTasksUseDatabase(
                 currentUserId,
                 enumerateOptions,
-                pageSize,
-                pageStart,
-                sortBy,
-                sortOrder,
-                queryOptions,
-            )
-        } else {
-            return enumerateTasksUseElasticSearch(
-                currentUserId,
-                enumerateOptions,
-                keywords,
-                pageSize,
+                effectivePageSize,
                 pageStart,
                 sortBy,
                 sortOrder,
                 queryOptions,
             )
         }
+
+        return enumerateTasksUsePgSearch(
+            currentUserId,
+            enumerateOptions,
+            keywords,
+            effectivePageSize,
+            pageStart,
+            sortBy,
+            sortOrder,
+            queryOptions,
+        )
     }
 
-    /**
-     * Creates a JPA Specification for filtering tasks based on various criteria.
-     *
-     * SQL Example:
-     * ```
-     * SELECT t.* FROM task t
-     * WHERE t.space_id = ? AND t.team_id = ? AND t.approved = ?
-     *   AND t.creator_id = ?
-     *   AND EXISTS (
-     *     SELECT 1 FROM task_topics_relation ttr
-     *     WHERE ttr.task_id = t.id AND ttr.topic_id IN (?, ?, ?)
-     *   )
-     *   AND -- joined predicate (see createJoinedPredicate)
-     * ```
-     */
+    /** Creates a JPA Specification for filtering tasks based on various criteria. */
     private fun createTaskSpecification(
         options: TaskEnumerateOptions,
         currentUserId: IdType,
-    ): Specification<Task> {
-        return Specification { root, query, cb ->
-            val predicates = mutableListOf<Predicate>()
+    ): Specification<Task> =
+        spec<Task> {
+            options.joined?.let { distinct() }
 
-            // Space filter
-            options.space.let {
-                predicates.add(cb.equal(root.get<Space>("space").get<IdType>("id"), it))
-            }
+            where {
+                Task::space / Space::id eq options.space
+                Task::category / SpaceCategory::id eq options.categoryId
+                Task::approved eq options.approved
+                Task::creator / User::id eq options.owner?.toInt()
 
-            // Category filter
-            options.categoryId?.let {
-                predicates.add(cb.equal(root.get<SpaceCategory>("category").get<IdType>("id"), it))
-            }
+                options.topics
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { topics ->
+                        exists<TaskTopicsRelation> {
+                            col(TaskTopicsRelation::task / Task::id) eq parent(Task::id)
+                            TaskTopicsRelation::topic / Topic::id inList topics.map { it.toInt() }
+                        }
+                    }
 
-            // Approved status filter
-            options.approved?.let {
-                predicates.add(cb.equal(root.get<ApproveType>("approved"), it))
-            }
-
-            // Owner filter
-            options.owner?.let {
-                predicates.add(cb.equal(root.get<User>("creator").get<IdType>("id"), it))
-            }
-
-            // Topics filter
-            options.topics?.let { topics ->
-                if (topics.isNotEmpty()) {
-                    val subquery = query!!.subquery(TaskTopicsRelation::class.java)
-                    val subroot = subquery.from(TaskTopicsRelation::class.java)
-                    subquery
-                        .select(subroot)
-                        .where(
-                            cb.equal(
-                                subroot.get<Task>("task").get<IdType>("id"),
-                                root.get<IdType>("id"),
-                            ),
-                            subroot.get<Topic>("topic").get<Int>("id").`in`(topics),
-                        )
-                    predicates.add(cb.exists(subquery))
+                options.joined?.let { joined ->
+                    fun WhereContext<Task>.applyJoinedLogic() {
+                        or {
+                            and {
+                                Task::submitterType eq TaskSubmitterType.USER
+                                exists<TaskMembership> {
+                                    col(TaskMembership::task / Task::id) eq parent(Task::id)
+                                    col(TaskMembership::memberId) eq currentUserId
+                                }
+                            }
+                            and {
+                                Task::submitterType eq TaskSubmitterType.TEAM
+                                exists<TeamUserRelation> {
+                                    col(TeamUserRelation::user / User::id) eq currentUserId.toInt()
+                                    exists<TaskMembership> {
+                                        col(TaskMembership::task / Task::id) eq parent(Task::id)
+                                        col(TaskMembership::memberId) eq
+                                            parent(TeamUserRelation::team / Team::id)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (joined) applyJoinedLogic() else not { applyJoinedLogic() }
                 }
             }
-
-            options.joined?.let { joined ->
-                predicates.add(createJoinedPredicate(root, query!!, cb, currentUserId, joined))
-            }
-
-            // Combine all predicates
-            if (predicates.isEmpty()) {
-                null
-            } else {
-                cb.and(*predicates.toTypedArray())
-            }
         }
-    }
-
-    /**
-     * Creates a predicate for filtering tasks by whether the current user has joined them. Handles
-     * both USER and TEAM type submitters with appropriate logic for each.
-     *
-     * SQL Example:
-     * ```
-     * -- For joined=true
-     * (
-     *   -- User joined directly (see createUserJoinedPredicate)
-     *   OR
-     *   -- User joined via team (see createTeamJoinedPredicate)
-     * )
-     *
-     * -- For joined=false
-     * NOT (
-     *   -- User joined directly OR User joined via team
-     * )
-     * ```
-     */
-    private fun createJoinedPredicate(
-        root: Root<Task>,
-        query: CriteriaQuery<*>,
-        cb: CriteriaBuilder,
-        currentUserId: IdType,
-        joined: Boolean,
-    ): Predicate {
-        if (!query.isDistinct) {
-            query.distinct(true)
-        }
-
-        // For USER type submitters, check TaskMembership directly
-        val userJoinedPredicate = createUserJoinedPredicate(root, query, cb, currentUserId)
-
-        // For TEAM type submitters, need to check if user is in a team that joined the task
-        val teamJoinedPredicate = createTeamJoinedPredicate(root, query, cb, currentUserId)
-
-        // Combine with OR for any join type
-        val joinedPredicate = cb.or(userJoinedPredicate, teamJoinedPredicate)
-
-        // Return the appropriate predicate based on the joined flag
-        return if (joined) {
-            joinedPredicate
-        } else {
-            cb.not(joinedPredicate)
-        }
-    }
-
-    /**
-     * Creates a predicate for USER type task submissions. Checks if the user has directly joined
-     * the task.
-     *
-     * SQL Example:
-     * ```
-     * t.submitter_type = 'USER' AND EXISTS (
-     *   SELECT 1 FROM task_membership tm
-     *   WHERE tm.task_id = t.id AND tm.member_id = ?
-     * )
-     * ```
-     */
-    private fun createUserJoinedPredicate(
-        root: Root<Task>,
-        query: CriteriaQuery<*>,
-        cb: CriteriaBuilder,
-        userId: IdType,
-    ): Predicate {
-        // Check USER type and direct membership
-        val isUserType =
-            cb.equal(root.get<TaskSubmitterType>("submitterType"), TaskSubmitterType.USER)
-
-        // Subquery to check if user directly joined the task
-        val directMembershipSubquery = query.subquery(TaskMembership::class.java)
-        val membershipRoot = directMembershipSubquery.from(TaskMembership::class.java)
-
-        directMembershipSubquery
-            .select(membershipRoot)
-            .where(
-                cb.equal(
-                    membershipRoot.get<Task>("task").get<IdType>("id"),
-                    root.get<IdType>("id"),
-                ),
-                cb.equal(membershipRoot.get<IdType>("memberId"), userId),
-            )
-
-        // User can only join USER type tasks directly
-        return cb.and(isUserType, cb.exists(directMembershipSubquery))
-    }
-
-    /**
-     * Creates a predicate for TEAM type task submissions. Checks if the user is a member of any
-     * team that has joined the task.
-     *
-     * SQL Example:
-     * ```
-     * t.submitter_type = 'TEAM' AND EXISTS (
-     *   SELECT 1 FROM team_user_relation tur
-     *   JOIN team te ON tur.team_id = te.id
-     *   WHERE tur.user_id = ?
-     *   AND EXISTS (
-     *     SELECT 1 FROM task_membership tm
-     *     WHERE tm.task_id = t.id AND tm.member_id = te.id
-     *   )
-     * )
-     * ```
-     */
-    private fun createTeamJoinedPredicate(
-        root: Root<Task>,
-        query: CriteriaQuery<*>,
-        cb: CriteriaBuilder,
-        userId: IdType,
-    ): Predicate {
-        // Check TEAM type
-        val isTeamType =
-            cb.equal(root.get<TaskSubmitterType>("submitterType"), TaskSubmitterType.TEAM)
-
-        // Subquery to check if user joined through a team
-        val teamMembershipSubquery = query.subquery(TeamUserRelation::class.java)
-        val relationRoot = teamMembershipSubquery.from(TeamUserRelation::class.java)
-        val teamMembershipJoin = relationRoot.join<TeamUserRelation, Team>("team", JoinType.INNER)
-
-        // Need another subquery to check if the team joined the task
-        val taskTeamSubquery = teamMembershipSubquery.subquery(TaskMembership::class.java)
-        val taskMembershipRoot = taskTeamSubquery.from(TaskMembership::class.java)
-
-        taskTeamSubquery
-            .select(taskMembershipRoot)
-            .where(
-                cb.equal(
-                    taskMembershipRoot.get<Task>("task").get<IdType>("id"),
-                    root.get<IdType>("id"),
-                ),
-                cb.equal(
-                    taskMembershipRoot.get<IdType>("memberId"),
-                    teamMembershipJoin.get<IdType>("id"),
-                ),
-            )
-
-        teamMembershipSubquery
-            .select(relationRoot)
-            .where(
-                cb.equal(relationRoot.get<User>("user").get<IdType>("id"), userId),
-                cb.exists(taskTeamSubquery),
-            )
-
-        // User can only join TEAM type tasks through a team
-        return cb.and(isTeamType, cb.exists(teamMembershipSubquery))
-    }
 
     fun enumerateTasksUseDatabase(
         currentUserId: IdType,
         options: TaskEnumerateOptions,
         pageSize: Int,
-        pageStart: IdType?,
+        pageStart: String?,
         sortBy: TasksSortBy,
         sortOrder: SortDirection,
         queryOptions: TaskQueryOptions,
-    ): Pair<List<TaskDTO>, PageDTO> {
+    ): Pair<List<TaskDTO>, EncodedCursorPageDTO> {
         val sortProperty =
             when (sortBy) {
                 TasksSortBy.CREATED_AT -> Task::createdAt
                 TasksSortBy.UPDATED_AT -> Task::updatedAt
-                TasksSortBy.DEADLINE -> Task::updatedAt
+                TasksSortBy.DEADLINE -> Task::deadline
             }
 
         val direction = sortOrder.toJpaDirection()
-
-        // Create a specification for filtering tasks
         val specification = createTaskSpecification(options, currentUserId)
 
-        // Create cursor spec with sort by the requested property but using ID as cursor
         val cursorSpec =
             taskRepository
-                .idSeekSpec(Task::id, sortProperty)
-                .direction(direction)
+                .compositeCursorSpec(sortProperty, Task::id)
+                .sortBy(sortProperty to direction, Task::id to Sort.Direction.ASC)
                 .specification(specification)
                 .build()
 
-        // Execute the query with cursor pagination
-        val (content, pageInfo) =
-            taskRepository.findAllWithIdCursor(cursorSpec, pageStart, pageSize)
+        val cursor = decodeTaskCursor(pageStart)
+        val page = taskRepository.findAllWithCursor(cursorSpec, cursor, pageSize)
 
-        return Pair(
-            content.map { it.toTaskDTO(queryOptions, currentUserId = currentUserId) },
-            pageInfo.toPageDTO(),
-        )
+        val dtos = page.content.map { it.toTaskDTO(queryOptions, currentUserId = currentUserId) }
+        return Pair(dtos, page.pageInfo.toPageDTO())
     }
 
-    fun enumerateTasksUseElasticSearch(
+    fun enumerateTasksUsePgSearch(
         currentUserId: IdType,
         options: TaskEnumerateOptions,
         keywords: String,
         pageSize: Int,
-        pageStart: IdType?,
+        pageStart: String?,
         sortBy: TasksSortBy,
         sortOrder: SortDirection,
         queryOptions: TaskQueryOptions,
-    ): Pair<List<TaskDTO>, PageDTO> {
-        val criteria = Criteria("name").matches(keywords)
-        val query = org.springframework.data.elasticsearch.core.query.CriteriaQuery(criteria)
-        val hints = elasticsearchTemplate.search(query, TaskElasticSearch::class.java)
-        val result =
-            (SearchHitSupport.unwrapSearchHits(hints) as List<*>).filterIsInstance<
-                TaskElasticSearch
-            >()
-        var entities =
-            taskRepository.findAllById(result.map { it.id }).filter { it.space.id == options.space }
-        if (options.approved != null) entities = entities.filter { it.approved == options.approved }
-        if (options.owner != null)
-            entities = entities.filter { it.creator.id == options.owner.toInt() }
-        if (options.joined != null)
-            entities =
-                entities.filter {
-                    taskMembershipService.getJoined(it.id!!, currentUserId).first == options.joined
-                }
-        if (options.topics != null)
-            entities =
-                entities.filter { task ->
-                    val topics = taskTopicsService.getTaskTopicIds(task.id!!)
-                    options.topics.intersect(topics.toSet()).isNotEmpty()
-                }
-        val (tasks, page) =
-            PageHelper.pageFromAll(
-                entities,
-                pageStart,
+    ): Pair<List<TaskDTO>, EncodedCursorPageDTO> {
+        val sanitizedKeywords = keywords.trim()
+        if (sanitizedKeywords.isEmpty()) {
+            return enumerateTasksUseDatabase(
+                currentUserId,
+                options,
                 pageSize,
-                { it.id!! },
-                { id -> throw NotFoundError("task", id) },
+                pageStart,
+                sortBy,
+                sortOrder,
+                queryOptions,
             )
-        val dtos = tasks.map { getTaskDto(it.id!!, queryOptions, currentUserId = currentUserId) }
-        return Pair(dtos, page)
+        }
+
+        val specification = createTaskSpecification(options, currentUserId)
+        val direction =
+            if (sortOrder == SortDirection.ASCENDING) Sort.Direction.ASC else Sort.Direction.DESC
+
+        val searchQuery = paradeSearch {
+            bool {
+                should { match(Task::name, sanitizedKeywords) boost 2 }
+                should { match(Task::intro, sanitizedKeywords) }
+            }
+        }
+
+        val cursorSpec =
+            paradeCursorSpecification(
+                domainClass = Task::class.java,
+                idProperty = Task::id,
+                searchQuery = searchQuery,
+                additionalSpec = specification,
+                direction = direction,
+            )
+
+        val cursor = decodeTaskCursor(pageStart)
+        val page = taskRepository.findAllWithCursor(cursorSpec, cursor, pageSize)
+
+        val dtos = page.content.map { it.toTaskDTO(queryOptions, currentUserId = currentUserId) }
+        return Pair(dtos, page.pageInfo.toPageDTO())
+    }
+
+    private fun decodeTaskCursor(cursor: String?): TypedCompositeCursor<Task>? {
+        if (cursor.isNullOrBlank()) return null
+
+        return try {
+            TypedCompositeCursor.decode(cursor)
+        } catch (ex: Exception) {
+            logger.debug("Failed to decode task cursor '{}': {}", cursor, ex.message)
+            null
+        }
     }
 
     fun deleteTask(taskId: IdType, currentUserId: IdType) {
@@ -999,6 +842,7 @@ class TaskService(
                         )
                     }
                 }
+
                 TaskSubmitterType.TEAM -> {
                     val teamsWithMissingMembers =
                         approvedMemberships

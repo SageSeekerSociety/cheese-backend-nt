@@ -57,8 +57,13 @@ class RankTest @Autowired constructor(private val userCreatorService: UserCreato
     private var spaceAvatarId = userCreatorService.testAvatarId()
     private var spaceId: IdType = -1
     private val taskName = "Test Task ($randomSuffix)"
-    private val taskIntro = "This is a test task."
-    private val taskDescription = "Description of task"
+    private val taskIntro =
+        "Hello, Cheese! Hello, Cheese! Hello, Cheese! Hello, Cheese! Hello, Cheese!"
+    private val taskDescription =
+        """
+            {"type":"doc","content":[{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]}]}
+        """
+            .trimIndent()
     private val taskDeadline = LocalDateTime.now().plusDays(7).toEpochMilli()
     // taskMembershipDeadline seems unused in prepare(), removed for now
     // private val taskMembershipDeadline = LocalDateTime.now().plusMonths(1).toEpochMilli()
