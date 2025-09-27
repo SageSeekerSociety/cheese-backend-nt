@@ -45,6 +45,10 @@
         <swagger-annotations.version>2.2.36</swagger-annotations.version>
         <openapi-client.version>4.0.5</openapi-client.version>
         <ktor.version>3.2.3</ktor.version>
+
+        <flyway.locations>classpath:db/migration</flyway.locations>
+        <flyway.schemas>public</flyway.schemas>
+        <flyway.encoding>UTF-8</flyway.encoding>
     </properties>
 
     <dependencyManagement>
@@ -235,6 +239,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-jpamodelgen</artifactId>
+            <version>6.6.26.Final</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <!-- Build Configuration -->
@@ -274,6 +284,29 @@
                         <version>${kotlin.version}</version>
                     </dependency>
                 </dependencies>
+                <executions>
+                    <!-- 先跑 KAPT，再编译 -->
+                    <execution>
+                        <id>kapt</id>
+                        <goals>
+                            <goal>kapt</goal>
+                        </goals>
+                        <configuration>
+                            <sourceDirs>
+                                <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
+                                <sourceDir>${project.basedir}/src/main/java</sourceDir>
+                            </sourceDirs>
+                            <annotationProcessorPaths>
+                                <annotationProcessorPath>
+                                    <groupId>org.hibernate.orm</groupId>
+                                    <artifactId>hibernate-jpamodelgen</artifactId>
+                                </annotationProcessorPath>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+
+                    <!-- 你的 compile / test-compile 执行照常 -->
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.openapitools</groupId>
@@ -313,6 +346,24 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>11.11.2</version>
+
+                <configuration>
+                    <url>${flyway.url}</url>
+                    <user>${flyway.user}</user>
+                    <password>${flyway.password}</password>
+
+                    <locations>
+                        <location>${flyway.locations}</location>
+                    </locations>
+                    <schemas>
+                        <schema>${flyway.schemas}</schema>
+                    </schemas>
+
+                    <!-- 可选：把 Spring 的迁移开关对齐 -->
+                    <baselineOnMigrate>${flyway.baselineOnMigrate}</baselineOnMigrate>
+                    <cleanDisabled>${flyway.cleanDisabled}</cleanDisabled>
+                    <validateOnMigrate>${flyway.validateOnMigrate}</validateOnMigrate>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -349,7 +400,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.46.1</version>
+                <version>3.0.0</version>
                 <configuration>
                     <java>
                         <googleJavaFormat/>
@@ -361,7 +412,7 @@
                             <blockIndent>4</blockIndent>
                             <continuationIndent>4</continuationIndent>
                             <removeUnusedImports>true</removeUnusedImports>
-                            <manageTrailingCommas>true</manageTrailingCommas>
+                            <trailingCommaManagementStrategy>COMPLETE</trailingCommaManagementStrategy>
                         </ktfmt>
                     </kotlin>
                     <pom>
@@ -435,4 +486,49 @@
         <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
     </build>
 
+    <profiles>
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <flyway.url>jdbc:postgresql://localhost:5432/postgres</flyway.url>
+                <flyway.user>postgres</flyway.user>
+                <flyway.password>postgres</flyway.password>
+
+                <flyway.baselineOnMigrate>false</flyway.baselineOnMigrate>
+                <flyway.cleanDisabled>true</flyway.cleanDisabled>
+                <flyway.validateOnMigrate>true</flyway.validateOnMigrate>
+            </properties>
+        </profile>
+
+        <!-- test -->
+        <profile>
+            <id>test</id>
+            <properties>
+                <flyway.url>jdbc:postgresql://localhost:5433/postgres</flyway.url>
+                <flyway.user>postgres</flyway.user>
+                <flyway.password>postgres</flyway.password>
+
+                <flyway.baselineOnMigrate>false</flyway.baselineOnMigrate>
+                <flyway.cleanDisabled>false</flyway.cleanDisabled>
+                <flyway.validateOnMigrate>true</flyway.validateOnMigrate>
+            </properties>
+        </profile>
+
+        <!-- prod -->
+        <profile>
+            <id>prod</id>
+            <properties>
+                <flyway.url>jdbc:postgresql://${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}?currentSchema=${env.DB_SCHEMA}</flyway.url>
+                <flyway.user>${env.DB_USER}</flyway.user>
+                <flyway.password>${env.DB_PASSWORD}</flyway.password>
+
+                <flyway.baselineOnMigrate>true</flyway.baselineOnMigrate>
+                <flyway.cleanDisabled>true</flyway.cleanDisabled>
+                <flyway.validateOnMigrate>true</flyway.validateOnMigrate>
+            </properties>
+        </profile>
+    </profiles>
 </project>
