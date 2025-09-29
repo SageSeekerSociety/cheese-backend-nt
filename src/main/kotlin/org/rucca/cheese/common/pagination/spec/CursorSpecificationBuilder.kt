@@ -247,8 +247,8 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                 val path = JpaUtils.getPath<Comparable<Any>>(root, cursorPath) // Use helper
 
                 return when (direction) {
-                    Sort.Direction.ASC -> criteriaBuilder.greaterThanOrEqualTo(path, cursorValue)
-                    Sort.Direction.DESC -> criteriaBuilder.lessThanOrEqualTo(path, cursorValue)
+                    Sort.Direction.ASC -> criteriaBuilder.greaterThan(path, cursorValue)
+                    Sort.Direction.DESC -> criteriaBuilder.lessThan(path, cursorValue)
                 }
             }
 
@@ -536,7 +536,7 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
 }
 
 inline fun <reified T : Any, C : Cursor<T>> CursorSpecificationBuilder<T, C>.specification(
-    crossinline block: SpecContext<T>.() -> Unit
+    noinline block: SpecContext<T>.() -> Unit
 ): CursorSpecificationBuilder<T, C> {
     return this.specification(spec<T>(block))
 }
