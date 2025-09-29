@@ -11,15 +11,17 @@ import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
 import java.io.Serializable
 import kotlin.math.nextTowards
+import kotlin.reflect.KProperty1
 import org.rucca.cheese.common.pagination.model.Cursor
 import org.rucca.cheese.common.pagination.model.CursorPage
 import org.rucca.cheese.common.pagination.model.CursorPageInfo
 import org.rucca.cheese.common.pagination.model.TypedCompositeCursor
+import org.rucca.cheese.common.pagination.model.doubleValue
 import org.rucca.cheese.common.pagination.spec.CursorProjectionSupport
 import org.rucca.cheese.common.pagination.spec.CursorSpecification
 import org.rucca.cheese.common.pagination.util.CursorQueryUtils
 import org.rucca.cheese.common.pagination.util.JpaUtils
-import org.rucca.cheese.common.persistent.spec.ParadeCursorSpecification
+import org.rucca.cheese.common.query.internal.pagination.RelevanceCursorSupport
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.repository.support.JpaEntityInformation
 import org.springframework.data.jpa.repository.support.SimpleJpaRepository
@@ -67,7 +69,7 @@ class CursorPagingRepositoryImpl<T, ID>(
         cursor: C?,
         pageSize: Int,
     ): CursorPage<T, C> {
-        // === 第一臂：主查询 (score < :s) ===
+        // Main arm: regular query
         val cq: CriteriaQuery<Tuple> = cb.createTupleQuery()
         val root = cq.from(domainClass)
 
@@ -76,7 +78,6 @@ class CursorPagingRepositoryImpl<T, ID>(
         val finalPredicate = cursorPredicate?.let { cb.and(basePredicate, it) } ?: basePredicate
         cq.where(finalPredicate)
 
-        // 为第一个查询构建投影
         val projection = projectionSupport.buildProjection(root, cq, cb)
         CursorQueryUtils.applyProjection(cq, root, projection.additionalSelections)
         val orders = projectionSupport.toJpaOrders(root, cb)
@@ -89,60 +90,56 @@ class CursorPagingRepositoryImpl<T, ID>(
 
         var allTuples = mainArmTuples
 
-        // === 第二臂：同分补齐查询 (当第一臂结果不足且有游标时触发) ===
+        // Tie-breaker arm: only if needed
         if (mainArmTuples.size <= pageSize && cursor != null) {
             val typedCursor = cursor as? TypedCompositeCursor<T>
-            val paradeSpec = cursorSpec as? ParadeCursorSpecification<T, ID>
+            val relevanceSpec = cursorSpec as? RelevanceCursorSupport<T>
 
-            if (typedCursor != null && paradeSpec != null) {
-                val cursorScoreString =
-                    typedCursor.values[paradeSpec.scoreAlias]?.unwrap() as? String
-                val cursorIdValue = typedCursor.values[paradeSpec.idProperty.name]?.unwrap() as? ID
+            if (typedCursor != null && relevanceSpec != null) {
+                @Suppress("UNCHECKED_CAST")
+                val idProperty = relevanceSpec.idProperty as? KProperty1<T, ID?>
+                val cursorScore = typedCursor.values[relevanceSpec.scoreAlias]?.doubleValue
 
-                if (cursorScoreString != null && cursorIdValue != null) {
-                    val cursorScore = cursorScoreString.toDouble()
+                if (idProperty != null && cursorScore != null) {
+                    val cursorIdValue = typedCursor.values[idProperty.name]?.unwrap() as? ID
 
-                    val cqTieBreaker: CriteriaQuery<Tuple> = cb.createTupleQuery()
-                    val rootTieBreaker = cqTieBreaker.from(domainClass)
+                    if (cursorIdValue != null) {
+                        val cqTieBreaker: CriteriaQuery<Tuple> = cb.createTupleQuery()
+                        val rootTieBreaker = cqTieBreaker.from(domainClass)
 
-                    val basePredicateTieBreaker =
-                        cursorSpec.toPredicate(rootTieBreaker, cqTieBreaker, cb)
-                    val scoreExpr = paradeSpec.scoreExpression(rootTieBreaker, cb)
-                    val scorePredicate = approximatelyEqual(scoreExpr, cursorScore, cb)
-                    val idPredicate =
-                        cb.greaterThan(
-                            rootTieBreaker.get(paradeSpec.idProperty.name),
-                            cursorIdValue,
+                        val basePredicateTieBreaker =
+                            cursorSpec.toPredicate(rootTieBreaker, cqTieBreaker, cb)
+                        val scoreExpr = relevanceSpec.scoreExpression(rootTieBreaker, cb)
+                        val scorePredicate = approximatelyEqual(scoreExpr, cursorScore, cb)
+                        val idPredicate =
+                            cb.greaterThan(rootTieBreaker.get(idProperty.name), cursorIdValue)
+                        cqTieBreaker.where(
+                            cb.and(basePredicateTieBreaker, scorePredicate, idPredicate)
                         )
-                    cqTieBreaker.where(cb.and(basePredicateTieBreaker, scorePredicate, idPredicate))
 
-                    // ================== 关键修复 START ==================
-                    // 为第二条查询重新构建投影，获取绑定到新 root 的 Selection 和 Order
-                    val projectionTieBreaker =
-                        projectionSupport.buildProjection(rootTieBreaker, cqTieBreaker, cb)
-                    CursorQueryUtils.applyProjection(
-                        cqTieBreaker,
-                        rootTieBreaker,
-                        projectionTieBreaker.additionalSelections,
-                    )
-                    val ordersTieBreaker = projectionSupport.toJpaOrders(rootTieBreaker, cb)
-                    if (ordersTieBreaker.isNotEmpty()) {
-                        cqTieBreaker.orderBy(ordersTieBreaker)
+                        val projectionTieBreaker =
+                            projectionSupport.buildProjection(rootTieBreaker, cqTieBreaker, cb)
+                        CursorQueryUtils.applyProjection(
+                            cqTieBreaker,
+                            rootTieBreaker,
+                            projectionTieBreaker.additionalSelections,
+                        )
+                        val ordersTieBreaker = projectionSupport.toJpaOrders(rootTieBreaker, cb)
+                        if (ordersTieBreaker.isNotEmpty()) {
+                            cqTieBreaker.orderBy(ordersTieBreaker)
+                        }
+
+                        val tieBreakerQuery =
+                            em.createQuery(cqTieBreaker).apply { maxResults = pageSize + 1 }
+                        val tieBreakerTuples = executeQuery(tieBreakerQuery)
+
+                        allTuples =
+                            (mainArmTuples + tieBreakerTuples).distinctBy { it.get(0, domainClass) }
                     }
-                    // ================== 关键修复 END ==================
-
-                    val tieBreakerQuery =
-                        em.createQuery(cqTieBreaker).apply { maxResults = pageSize + 1 }
-                    val tieBreakerTuples = executeQuery(tieBreakerQuery)
-
-                    // 合并结果时要去重，因为可能有重叠
-                    allTuples =
-                        (mainArmTuples + tieBreakerTuples).distinctBy { it.get(0, domainClass) }
                 }
             }
         }
 
-        // === 处理合并后的结果 ===
         val hasNext = allTuples.size > pageSize
         val pageTuples = if (hasNext) allTuples.subList(0, pageSize) else allTuples
 

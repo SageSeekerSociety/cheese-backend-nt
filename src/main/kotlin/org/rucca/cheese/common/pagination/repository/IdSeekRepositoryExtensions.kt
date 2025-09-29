@@ -37,10 +37,8 @@ fun <T, ID, P : Comparable<P>> CursorPagingRepository<T, ID>.idSeekSpec(
 }
 
 inline fun <reified T : Any, ID, P : Comparable<P>> IdSeekSpecificationBuilder<T, ID, P>
-    .specification(
-    crossinline block: SpecContext<T>.() -> Unit
-): IdSeekSpecificationBuilder<T, ID, P> where ID : Serializable, ID : Comparable<ID> =
-    this.specification(spec<T>(block))
+    .specification(noinline block: SpecContext<T>.() -> Unit): IdSeekSpecificationBuilder<T, ID, P>
+    where ID : Serializable, ID : Comparable<ID> = this.specification(spec<T>(block))
 
 /**
  * Find entities using nullable ID-based seek pagination.
