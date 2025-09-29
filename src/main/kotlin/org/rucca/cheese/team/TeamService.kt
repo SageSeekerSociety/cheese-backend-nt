@@ -16,10 +16,14 @@ import org.rucca.cheese.common.error.ConflictError
 import org.rucca.cheese.common.error.ForbiddenError
 import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
-import org.rucca.cheese.common.helper.PageHelper
 import org.rucca.cheese.common.helper.toEpochMilli
+import org.rucca.cheese.common.pagination.model.TypedCompositeCursor
+import org.rucca.cheese.common.pagination.model.toPageDTO
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.common.query.dsl.queryFor
+import org.rucca.cheese.common.query.model.QueryObject
+import org.rucca.cheese.common.query.runtime.findWithQueryObject
 import org.rucca.cheese.model.*
 import org.rucca.cheese.task.TaskCompletionStatus
 import org.rucca.cheese.task.TaskMembershipRepository
@@ -33,10 +37,7 @@ import org.rucca.cheese.user.services.UserRealNameService
 import org.rucca.cheese.user.services.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate
-import org.springframework.data.elasticsearch.core.SearchHitSupport
-import org.springframework.data.elasticsearch.core.query.Criteria
-import org.springframework.data.elasticsearch.core.query.CriteriaQuery
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -56,7 +57,6 @@ class TeamService(
     private val teamUserRelationRepository: TeamUserRelationRepository,
     private val taskMembershipRepository: TaskMembershipRepository,
     private val userService: UserService,
-    private val elasticsearchTemplate: ElasticsearchTemplate,
     private val userRealNameService: UserRealNameService,
 ) {
     private val logger = LoggerFactory.getLogger(TeamService::class.java)
@@ -140,29 +140,63 @@ class TeamService(
     fun enumerateTeams(
         userId: IdType,
         query: String,
-        pageStart: IdType?,
+        pageStart: String?,
         pageSize: Int,
-    ): Pair<List<TeamDTO>, PageDTO> {
-        val id = query.toLongOrNull()
-        if (id != null) {
-            return Pair(listOf(getTeamDto(id, userId)), PageDTO(id, 1, hasMore = false))
+    ): Pair<List<TeamDTO>, EncodedCursorPageDTO> {
+        val sanitized = query.trim().takeIf { it.isNotEmpty() }
+        val effectivePageSize = pageSize.coerceIn(1, 100)
+
+        val queryObject = buildTeamQueryObject(sanitized)
+        val cursor = decodeTeamCursor(pageStart)
+        val page = teamRepository.findWithQueryObject(queryObject, cursor, effectivePageSize)
+        val dtos = page.content.map { getTeamDto(it.id!!, userId) }
+
+        return Pair(dtos, page.pageInfo.toPageDTO())
+    }
+
+    private fun buildTeamQueryObject(keywords: String?): QueryObject<Team> {
+        val idFilter = keywords?.toLongOrNull()
+
+        return queryFor<Team> {
+            id(Team::id)
+
+            filters { idFilter?.let { Team::id eq it } }
+
+            if (idFilter != null) {
+                sort { by(Team::id, Sort.Direction.ASC) }
+            } else {
+                keywords?.let { kw ->
+                    search {
+                        bool {
+                            should { match(Team::name, kw) boost 2 }
+                            should { match(Team::intro, kw) }
+                        }
+                    }
+
+                    sort {
+                        relevance(Sort.Direction.DESC)
+                        by(Team::id, Sort.Direction.ASC)
+                    }
+                }
+                    ?: run {
+                        sort {
+                            by(Team::updatedAt, Sort.Direction.DESC)
+                            by(Team::id, Sort.Direction.ASC)
+                        }
+                    }
+            }
         }
-        val criteria = Criteria("name").matches(query)
-        val hints =
-            elasticsearchTemplate.search(CriteriaQuery(criteria), TeamElasticSearch::class.java)
-        val result =
-            (SearchHitSupport.unwrapSearchHits(hints) as List<*>).filterIsInstance<
-                TeamElasticSearch
-            >()
-        val (teams, page) =
-            PageHelper.pageFromAll(
-                result,
-                pageStart,
-                pageSize,
-                { it.id!! },
-                { id -> throw NotFoundError("team", id) },
-            )
-        return Pair(teams.map { getTeamDto(it.id!!, userId) }, page)
+    }
+
+    private fun decodeTeamCursor(cursor: String?): TypedCompositeCursor<Team>? {
+        if (cursor.isNullOrBlank()) return null
+
+        return try {
+            TypedCompositeCursor.decode(cursor)
+        } catch (ex: Exception) {
+            logger.debug("Failed to decode team cursor '{}': {}", cursor, ex.message)
+            null
+        }
     }
 
     fun getTeamsOfUser(userId: IdType): List<TeamDTO> {

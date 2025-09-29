@@ -1,20 +1,18 @@
--- V20250925133946__Add_BM25_Index_To_Task.sql
+-- V20251015121500__Add_BM25_Index_To_Team.sql
 -- =========================================================
--- Migration: Create BM25 index for full-text & filters on `task`
--- Why      : Replace ES with ParadeDB(pg_search), enable Chinese search
--- Fields   : name/intro for text search;
---            bool/datetime/ids for pushdown filtering
+-- Migration: Create BM25 index for team search (ParadeDB)
+-- Why      : Move team search off Elasticsearch and enable pg_search usage
+-- Fields   : name/intro/description for text relevance; updated_at/deleted_at for filtering
 -- =========================================================
 
-CREATE INDEX IF NOT EXISTS idx_task_search
-    ON public.task
+CREATE INDEX IF NOT EXISTS idx_team_search
+    ON public.team
     USING bm25 (
-    id,                 -- key_field (must be first & unique)
-    name,
-    intro,
-    space_id, category_id,
-    require_real_name, resubmittable, editable,
-    registration_start_at, deadline, approved, deleted_at
+        id,
+        name,
+        intro,
+        updated_at,
+        deleted_at
     )
 WITH (
     key_field='id',
@@ -27,4 +25,4 @@ WITH (
                             "tokenizer":{"type":"ngram","min_gram":2,"max_gram":3,"prefix_only":false}}
         }'
 )
-    WHERE deleted_at IS NULL;
+WHERE deleted_at IS NULL;

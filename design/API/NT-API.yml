@@ -2649,7 +2649,7 @@ paths:
                         items:
                           $ref: "#/components/schemas/Team"
                       page:
-                        $ref: "#/components/schemas/Page"
+                        $ref: "#/components/schemas/EncodedCursorPage"
                   message:
                     type: string
           description: OK
@@ -2662,7 +2662,7 @@ paths:
           name: query
           description: ID or Search Term
           allowEmptyValue: true
-        - $ref: "#/components/parameters/PageStart"
+        - $ref: "#/components/parameters/EncodedCursorPageStart"
         - $ref: "#/components/parameters/PageSize"
   /teams/{teamId}/members:
     parameters:
