@@ -899,101 +899,53 @@ constructor(
 
     @Test
     @Order(75)
-    fun `test enumerate spaces default pagination and sorting`() { // Renamed
-        webTestClient
-            .get()
-            .uri { builder -> builder.path("/spaces").queryParam("pageSize", 5).build() }
-            .header("Authorization", "Bearer $creatorToken")
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody<GetSpaces200ResponseDTO>() // Expect the list response DTO
-            .value { response ->
-                assertNotNull(response.data?.spaces, message = "Spaces data should not be null")
-                assertNotNull(response.data?.page, message = "Page data should not be null")
-                val spaces = response.data!!.spaces!!
-                val page = response.data!!.page!!
+    fun `test pagination flow with cursor and sorting`() {
+        // --- SCENARIO 1: Test sorting by 'updatedAt' descending ---
 
-                assertEquals(5, spaces.size)
-                // Default sort is likely by creation date descending in many systems
-                // Verify based on IDs created in test 20
-                assertEquals(spaceIdOfLast, spaces[0].id)
-                assertEquals("$originalSpaceName 04", spaces[0].name)
-                assertEquals(spaceIdOfBeforeLast, spaces[1].id)
-                assertEquals("$originalSpaceName 03", spaces[1].name)
-                assertEquals(spaceIdOfSecond, spaces[3].id) // Check a few spots
-                assertEquals("$originalSpaceName 01", spaces[3].name)
-                assertEquals(spaceId, spaces[4].id)
-                assertEquals(spaceName, spaces[4].name) // The one potentially updated
+        // Step 1.1: Fetch the first page (pageSize=2), sorted by updatedAt desc.
+        // The most recently updated space is 'spaceId' (from test @Order(60)).
+        // The next most recent is the last one created, 'spaceIdOfLast'.
+        val firstPageResponse =
+            webTestClient
+                .get()
+                .uri { builder ->
+                    builder
+                        .path("/spaces")
+                        .queryParam("sort_by", "updatedAt")
+                        .queryParam("sort_order", "desc")
+                        .queryParam("pageSize", 2)
+                        .build()
+                }
+                .header("Authorization", "Bearer $creatorToken")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<GetSpaces200ResponseDTO>()
+                .returnResult()
+                .responseBody!!
 
-                assertEquals(
-                    spaceIdOfLast,
-                    page.pageStart,
-                    "pageStart should be the ID of the first item in the list",
-                )
-                assertEquals(5, page.pageSize)
-                assertTrue(page.hasMore, "hasMore should be true as more spaces exist")
-                assertNotNull(page.nextStart, message = "nextStart should not be null")
-                // nextStart should be the ID of the *last* item in the current page if using cursor
-                // pagination based on ID
-                // assertEquals(spaceId, page.nextStart) // Verify this based on your pagination
-                // implementation
-            }
-    }
+        val firstPageSpaces = firstPageResponse.data!!.spaces!!
+        val firstPageInfo = firstPageResponse.data!!.page!!
 
-    @Test
-    @Order(76)
-    fun `test enumerate spaces sort by updatedAt desc no start`() { // Renamed
-        webTestClient
-            .get()
-            .uri { builder ->
-                builder
-                    .path("/spaces")
-                    .queryParam("sort_by", "updatedAt")
-                    .queryParam("sort_order", "desc")
-                    .queryParam("pageSize", 4)
-                    .build()
-            }
-            .header("Authorization", "Bearer $creatorToken")
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody<GetSpaces200ResponseDTO>()
-            .value { response ->
-                assertNotNull(response.data?.spaces, message = "Spaces data should not be null")
-                assertNotNull(response.data?.page, message = "Page data should not be null")
-                val spaces = response.data!!.spaces
-                val page = response.data!!.page
+        // Assertions for the first page
+        assertEquals(2, firstPageSpaces.size, "Page 1 (updatedAt desc) should have 2 items")
+        assertEquals(spaceId, firstPageSpaces[0].id, "Page 1, Item 1 should be the updated space")
+        assertEquals(
+            spaceIdOfLast,
+            firstPageSpaces[1].id,
+            "Page 1, Item 2 should be the last created space",
+        )
+        assertTrue(firstPageInfo.hasMore, "Should have more pages after page 1")
 
-                assertEquals(4, spaces!!.size)
-                // Space 'spaceId' was updated most recently in test 60
-                assertEquals(spaceId, spaces[0].id)
-                assertEquals(spaceName, spaces[0].name) // Check updated name
-                // The rest were created later but not updated
-                //                assertEquals(spaceIdOfLast, spaces[1].id)
-                assertEquals("$originalSpaceName 04", spaces[1].name)
-                //                assertEquals(spaceIdOfBeforeLast, spaces[2].id)
-                assertEquals("$originalSpaceName 03", spaces[2].name)
-                //                assertEquals(spaceIdOfSecond, spaces[3].id) // This one was
-                // created just after spaceId
-                assertEquals("$originalSpaceName 02", spaces[3].name)
+        // Store the cursor for the next request
+        val nextCursor = firstPageInfo.nextStart
+        assertEquals(
+            spaceIdOfLast,
+            nextCursor,
+            "nextStart cursor should be the ID of the last item on page 1",
+        )
 
-                assertEquals(
-                    spaceId,
-                    page!!.pageStart,
-                    "pageStart should be the ID of the first item",
-                )
-                assertEquals(4, page.pageSize)
-                assertTrue(page.hasMore)
-                assertNotNull(page.nextStart, message = "nextStart should not be null")
-                // nextStart should be the ID of the last item in this page
-                assertEquals(spaceIdOfSecond, page.nextStart)
-            }
-    }
-
-    @Test
-    @Order(77)
-    fun `test enumerate spaces sort by updatedAt desc with start`() { // Renamed
+        // Step 1.2: Use the cursor to fetch the second page.
         webTestClient
             .get()
             .uri { builder ->
@@ -1001,11 +953,11 @@ constructor(
                     .path("/spaces")
                     .queryParam(
                         "pageStart",
-                        spaceIdOfLast,
-                    ) // Start after this ID (exclusive) if cursor based
+                        nextCursor,
+                    ) // Use the cursor from the previous response
                     .queryParam("sort_by", "updatedAt")
-                    .queryParam("sort_order", "desc") // Keep same sort
-                    .queryParam("pageSize", 1)
+                    .queryParam("sort_order", "desc")
+                    .queryParam("pageSize", 2)
                     .build()
             }
             .header("Authorization", "Bearer $creatorToken")
@@ -1014,21 +966,56 @@ constructor(
             .isOk
             .expectBody<GetSpaces200ResponseDTO>()
             .value { response ->
-                assertNotNull(response.data?.spaces, message = "Spaces data should not be null")
-                assertNotNull(response.data?.page, message = "Page data should not be null")
-                val spaces = response.data!!.spaces
-                val page = response.data!!.page
+                val secondPageSpaces = response.data!!.spaces!!
 
-                assertEquals(1, spaces!!.size)
-                assertEquals("$originalSpaceName 04", spaces[0].name)
+                // Assertions for the second page
+                assertEquals(
+                    2,
+                    secondPageSpaces.size,
+                    "Page 2 (updatedAt desc) should have 2 items",
+                )
+                assertEquals(
+                    spaceIdOfBeforeLast,
+                    secondPageSpaces[0].id,
+                    "Page 2, Item 1 is incorrect",
+                )
 
-                assertEquals(spaceIdOfLast, page!!.pageStart)
-                assertEquals(1, page.pageSize)
-                assertTrue(page.hasMore)
-                assertNotNull(page.nextStart, message = "nextStart should not be null")
-                // The next one after spaceIdOfLast in the updatedAt desc order is
-                // spaceIdOfBeforeLast
-                assertEquals(spaceIdOfBeforeLast, page.nextStart)
+                // The next item created before 'spaceIdOfBeforeLast' was '...02', which we didn't
+                // store the ID for,
+                // but the one before that is 'spaceIdOfSecond'. Let's check the second item.
+                // NOTE: This assertion depends on the ID of the "...02" space being between
+                // spaceIdOfBeforeLast and spaceIdOfSecond.
+                // A more robust test would store all created IDs in a list.
+                // For now, we assume the next known ID is correct.
+                val space02Id = spaceIdOfBeforeLast - 1 // Inferring ID based on sequential creation
+                assertEquals(space02Id, secondPageSpaces[1].id, "Page 2, Item 2 is incorrect")
+
+                // IMPORTANT: Assert that the previous page's items are not present
+                assertFalse(
+                    secondPageSpaces.any { it.id == spaceId || it.id == spaceIdOfLast },
+                    "Second page should not contain items from the first page",
+                )
+            }
+
+        // --- SCENARIO 2 (Optional but good): Test default sorting (createdAt desc) ---
+
+        // Fetch the first page with default sorting
+        webTestClient
+            .get()
+            .uri { builder -> builder.path("/spaces").queryParam("pageSize", 3).build() }
+            .header("Authorization", "Bearer $creatorToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<GetSpaces200ResponseDTO>()
+            .value { response ->
+                val spaces = response.data!!.spaces!!
+                assertEquals(3, spaces.size)
+                // Default is createdAt desc, so newest (largest ID) comes first.
+                assertEquals(spaceIdOfLast, spaces[0].id)
+                assertEquals(spaceIdOfBeforeLast, spaces[1].id)
+                // The third one is the unnamed "...02" space
+                assertEquals(spaceIdOfBeforeLast - 1, spaces[2].id)
             }
     }
 

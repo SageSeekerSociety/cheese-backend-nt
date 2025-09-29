@@ -1,6 +1,7 @@
 package org.rucca.cheese.knowledge
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.KnowledgeApi

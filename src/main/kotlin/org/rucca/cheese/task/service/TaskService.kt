@@ -23,16 +23,18 @@ import org.rucca.cheese.common.helper.EntityPatcher
 import org.rucca.cheese.common.helper.toLocalDateTime
 import org.rucca.cheese.common.pagination.model.TypedCompositeCursor
 import org.rucca.cheese.common.pagination.model.toPageDTO
-import org.rucca.cheese.common.pagination.spec.compositeCursorSpec
 import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.common.persistent.convert
-import org.rucca.cheese.common.persistent.spec.WhereContext
 import org.rucca.cheese.common.persistent.spec.div
-import org.rucca.cheese.common.persistent.spec.paradeCursorSpecification
-import org.rucca.cheese.common.persistent.spec.paradeSearch
-import org.rucca.cheese.common.persistent.spec.spec
+import org.rucca.cheese.common.query.dsl.queryFor
+import org.rucca.cheese.common.query.internal.spec.FullFilteringScope
+import org.rucca.cheese.common.query.internal.spec.col
+import org.rucca.cheese.common.query.internal.spec.exists
+import org.rucca.cheese.common.query.internal.spec.parent
+import org.rucca.cheese.common.query.model.QueryObject
+import org.rucca.cheese.common.query.runtime.findWithQueryObject
 import org.rucca.cheese.model.*
 import org.rucca.cheese.model.TaskSubmitterTypeDTO.TEAM
 import org.rucca.cheese.model.TaskSubmitterTypeDTO.USER
@@ -57,7 +59,6 @@ import org.rucca.cheese.user.services.UserRealNameService
 import org.rucca.cheese.user.services.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
-import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -559,40 +560,47 @@ class TaskService(
         queryOptions: TaskQueryOptions,
     ): Pair<List<TaskDTO>, EncodedCursorPageDTO> {
         val effectivePageSize = pageSize.coerceIn(1, 100)
-
-        if (keywords.isNullOrBlank()) {
-            return enumerateTasksUseDatabase(
-                currentUserId,
-                enumerateOptions,
-                effectivePageSize,
-                pageStart,
-                sortBy,
-                sortOrder,
-                queryOptions,
+        val sanitizedKeywords = keywords?.trim()?.takeIf { it.isNotEmpty() }
+        val queryObject =
+            buildTaskQueryObject(
+                currentUserId = currentUserId,
+                options = enumerateOptions,
+                keywords = sanitizedKeywords,
+                sortBy = sortBy,
+                sortOrder = sortOrder,
             )
-        }
 
-        return enumerateTasksUsePgSearch(
-            currentUserId,
-            enumerateOptions,
-            keywords,
-            effectivePageSize,
-            pageStart,
-            sortBy,
-            sortOrder,
-            queryOptions,
+        return executeTaskQuery(
+            queryObject = queryObject,
+            pageSize = effectivePageSize,
+            pageStart = pageStart,
+            queryOptions = queryOptions,
+            currentUserId = currentUserId,
         )
     }
 
-    /** Creates a JPA Specification for filtering tasks based on various criteria. */
-    private fun createTaskSpecification(
-        options: TaskEnumerateOptions,
+    private fun buildTaskQueryObject(
         currentUserId: IdType,
-    ): Specification<Task> =
-        spec<Task> {
-            options.joined?.let { distinct() }
+        options: TaskEnumerateOptions,
+        keywords: String?,
+        sortBy: TasksSortBy,
+        sortOrder: SortDirection,
+    ): QueryObject<Task> {
+        val sanitizedKeywords = keywords?.trim()?.takeIf { it.isNotEmpty() }
+        val propertyDirection = sortOrder.toJpaDirection()
+        val sortProperty =
+            when (sortBy) {
+                TasksSortBy.CREATED_AT -> Task::createdAt
+                TasksSortBy.UPDATED_AT -> Task::updatedAt
+                TasksSortBy.DEADLINE -> Task::deadline
+            }
 
-            where {
+        return queryFor<Task> {
+            id(Task::id)
+
+            options.joined?.let { configure { distinct() } }
+
+            filters {
                 Task::space / Space::id eq options.space
                 Task::category / SpaceCategory::id eq options.categoryId
                 Task::approved eq options.approved
@@ -601,27 +609,27 @@ class TaskService(
                 options.topics
                     ?.takeIf { it.isNotEmpty() }
                     ?.let { topics ->
-                        exists<TaskTopicsRelation> {
+                        exists {
                             col(TaskTopicsRelation::task / Task::id) eq parent(Task::id)
                             TaskTopicsRelation::topic / Topic::id inList topics.map { it.toInt() }
                         }
                     }
 
                 options.joined?.let { joined ->
-                    fun WhereContext<Task>.applyJoinedLogic() {
+                    fun FullFilteringScope<Task>.applyJoinedLogic() {
                         or {
                             and {
                                 Task::submitterType eq TaskSubmitterType.USER
-                                exists<TaskMembership> {
+                                exists {
                                     col(TaskMembership::task / Task::id) eq parent(Task::id)
                                     col(TaskMembership::memberId) eq currentUserId
                                 }
                             }
                             and {
                                 Task::submitterType eq TaskSubmitterType.TEAM
-                                exists<TeamUserRelation> {
+                                exists {
                                     col(TeamUserRelation::user / User::id) eq currentUserId.toInt()
-                                    exists<TaskMembership> {
+                                    exists {
                                         col(TaskMembership::task / Task::id) eq parent(Task::id)
                                         col(TaskMembership::memberId) eq
                                             parent(TeamUserRelation::team / Team::id)
@@ -633,87 +641,41 @@ class TaskService(
                     if (joined) applyJoinedLogic() else not { applyJoinedLogic() }
                 }
             }
-        }
 
-    fun enumerateTasksUseDatabase(
-        currentUserId: IdType,
-        options: TaskEnumerateOptions,
-        pageSize: Int,
-        pageStart: String?,
-        sortBy: TasksSortBy,
-        sortOrder: SortDirection,
-        queryOptions: TaskQueryOptions,
-    ): Pair<List<TaskDTO>, EncodedCursorPageDTO> {
-        val sortProperty =
-            when (sortBy) {
-                TasksSortBy.CREATED_AT -> Task::createdAt
-                TasksSortBy.UPDATED_AT -> Task::updatedAt
-                TasksSortBy.DEADLINE -> Task::deadline
+            sanitizedKeywords?.let { kw ->
+                search {
+                    bool {
+                        should { match(Task::name, kw) boost 2 }
+                        should { match(Task::intro, kw) }
+                    }
+                }
+
+                sort {
+                    val relevanceDirection =
+                        if (sortOrder == SortDirection.ASCENDING) Sort.Direction.ASC
+                        else Sort.Direction.DESC
+                    relevance(relevanceDirection)
+                    by(Task::id, Sort.Direction.ASC)
+                }
             }
-
-        val direction = sortOrder.toJpaDirection()
-        val specification = createTaskSpecification(options, currentUserId)
-
-        val cursorSpec =
-            taskRepository
-                .compositeCursorSpec(sortProperty, Task::id)
-                .sortBy(sortProperty to direction, Task::id to Sort.Direction.ASC)
-                .specification(specification)
-                .build()
-
-        val cursor = decodeTaskCursor(pageStart)
-        val page = taskRepository.findAllWithCursor(cursorSpec, cursor, pageSize)
-
-        val dtos = page.content.map { it.toTaskDTO(queryOptions, currentUserId = currentUserId) }
-        return Pair(dtos, page.pageInfo.toPageDTO())
+                ?: run {
+                    sort {
+                        by(sortProperty, propertyDirection)
+                        by(Task::id, Sort.Direction.ASC)
+                    }
+                }
+        }
     }
 
-    fun enumerateTasksUsePgSearch(
-        currentUserId: IdType,
-        options: TaskEnumerateOptions,
-        keywords: String,
+    private fun executeTaskQuery(
+        queryObject: QueryObject<Task>,
         pageSize: Int,
         pageStart: String?,
-        sortBy: TasksSortBy,
-        sortOrder: SortDirection,
         queryOptions: TaskQueryOptions,
+        currentUserId: IdType,
     ): Pair<List<TaskDTO>, EncodedCursorPageDTO> {
-        val sanitizedKeywords = keywords.trim()
-        if (sanitizedKeywords.isEmpty()) {
-            return enumerateTasksUseDatabase(
-                currentUserId,
-                options,
-                pageSize,
-                pageStart,
-                sortBy,
-                sortOrder,
-                queryOptions,
-            )
-        }
-
-        val specification = createTaskSpecification(options, currentUserId)
-        val direction =
-            if (sortOrder == SortDirection.ASCENDING) Sort.Direction.ASC else Sort.Direction.DESC
-
-        val searchQuery = paradeSearch {
-            bool {
-                should { match(Task::name, sanitizedKeywords) boost 2 }
-                should { match(Task::intro, sanitizedKeywords) }
-            }
-        }
-
-        val cursorSpec =
-            paradeCursorSpecification(
-                domainClass = Task::class.java,
-                idProperty = Task::id,
-                searchQuery = searchQuery,
-                additionalSpec = specification,
-                direction = direction,
-            )
-
         val cursor = decodeTaskCursor(pageStart)
-        val page = taskRepository.findAllWithCursor(cursorSpec, cursor, pageSize)
-
+        val page = taskRepository.findWithQueryObject(queryObject, cursor, pageSize)
         val dtos = page.content.map { it.toTaskDTO(queryOptions, currentUserId = currentUserId) }
         return Pair(dtos, page.pageInfo.toPageDTO())
     }

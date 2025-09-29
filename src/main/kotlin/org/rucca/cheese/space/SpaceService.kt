@@ -20,11 +20,12 @@ import org.rucca.cheese.common.error.NameAlreadyExistsError
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.EntityPatcher
 import org.rucca.cheese.common.helper.toEpochMilli
+import org.rucca.cheese.common.pagination.model.SimpleCursor
 import org.rucca.cheese.common.pagination.model.toPageDTO
-import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
-import org.rucca.cheese.common.pagination.repository.idSeekSpec
-import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.common.query.dsl.queryFor
+import org.rucca.cheese.common.query.model.CursorMode
+import org.rucca.cheese.common.query.runtime.findWithQueryObject
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.error.AlreadyBeSpaceAdminError
 import org.rucca.cheese.space.error.NotSpaceAdminYetError
@@ -522,17 +523,33 @@ class SpaceService(
         pageStart: Long?,
         queryOptions: SpaceQueryOptions,
     ): Pair<List<SpaceDTO>, PageDTO> {
-        val direction = sortOrder.toJpaDirection()
-
         val sortProperty =
             when (sortBy) {
                 SpacesSortBy.CREATED_AT -> Space::createdAt
                 SpacesSortBy.UPDATED_AT -> Space::updatedAt
             }
 
-        val cursorSpec = spaceRepository.idSeekSpec(Space::id, sortProperty, direction).build()
+        val queryObject =
+            queryFor<Space> {
+                id(Space::id)
+                sort {
+                    val direction =
+                        when (sortOrder) {
+                            SortDirection.ASCENDING ->
+                                org.springframework.data.domain.Sort.Direction.ASC
+                            SortDirection.DESCENDING ->
+                                org.springframework.data.domain.Sort.Direction.DESC
+                        }
+                    by(sortProperty, direction)
+                }
+                paginate {
+                    cursorMode = CursorMode.ID_SEEK
+                    this.pageSize = pageSize
+                }
+            }
 
-        val result = spaceRepository.findAllWithIdCursor(cursorSpec, pageStart, pageSize)
+        val cursor = pageStart?.let { SimpleCursor.of<Space, Long>(it) }
+        val result = spaceRepository.findWithQueryObject(queryObject, cursor, pageSize)
 
         return Pair(
             result.content.map { it.toSpaceDTO(queryOptions, currentUserId = userId) },

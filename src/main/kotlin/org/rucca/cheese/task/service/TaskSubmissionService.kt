@@ -17,13 +17,19 @@ import org.rucca.cheese.attachment.Attachment
 import org.rucca.cheese.attachment.AttachmentService
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.toEpochMilli
+import org.rucca.cheese.common.pagination.model.SimpleCursor
 import org.rucca.cheese.common.pagination.model.toPageDTO
-import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
-import org.rucca.cheese.common.pagination.repository.idSeekSpec
-import org.rucca.cheese.common.pagination.repository.specification
 import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.common.persistent.spec.div
+import org.rucca.cheese.common.query.dsl.queryFor
+import org.rucca.cheese.common.query.internal.spec.col
+import org.rucca.cheese.common.query.internal.spec.div
+import org.rucca.cheese.common.query.internal.spec.exists
+import org.rucca.cheese.common.query.internal.spec.notExists
+import org.rucca.cheese.common.query.internal.spec.parent
+import org.rucca.cheese.common.query.internal.spec.subquery
+import org.rucca.cheese.common.query.model.CursorMode
+import org.rucca.cheese.common.query.runtime.findWithQueryObject
 import org.rucca.cheese.model.*
 import org.rucca.cheese.task.*
 import org.rucca.cheese.task.error.TaskNotResubmittableError
@@ -294,49 +300,57 @@ class TaskSubmissionService(
 
         val direction = sortOrder.toJpaDirection()
 
-        val cursorSpec =
-            taskSubmissionRepository
-                .idSeekSpec(TaskSubmission::id, sortByProperty, direction)
-                .specification {
-                    where {
-                        TaskSubmission::membership / TaskMembership::task / Task::id eq taskId
+        val effectivePageSize = pageSize
 
-                        participantId?.let { TaskSubmission::membership / TaskMembership::id eq it }
+        val queryObject =
+            queryFor<TaskSubmission> {
+                id(TaskSubmission::id)
 
-                        whereIf(!allVersions) {
-                            TaskSubmission::version eq
-                                subquery<TaskSubmission, Int> {
-                                    selectExpr(TaskSubmission::version.max())
-                                    where {
-                                        col(TaskSubmission::membership) eq
-                                            parent(TaskSubmission::membership)
-                                    }
-                                }
-                        }
+                filters {
+                    TaskSubmission::membership / TaskMembership::task / Task::id eq taskId
 
-                        whereIf(reviewed != null) {
-                            if (reviewed == true) {
-                                exists<TaskSubmissionReview> {
-                                    col(TaskSubmissionReview::submission) eq parentFromP
+                    participantId?.let { TaskSubmission::membership / TaskMembership::id eq it }
+
+                    whereIf(!allVersions) {
+                        TaskSubmission::version eq
+                            subquery {
+                                selectExpr(TaskSubmission::version.max())
+                                where {
+                                    col(TaskSubmission::membership / TaskMembership::id) eq
+                                        parent(TaskSubmission::membership / TaskMembership::id)
                                 }
-                            } else {
-                                notExists<TaskSubmissionReview> {
-                                    col(TaskSubmissionReview::submission) eq parentFromP
-                                }
+                            }
+                    }
+
+                    whereIf(reviewed != null) {
+                        if (reviewed == true) {
+                            exists {
+                                col(TaskSubmissionReview::submission / TaskSubmission::id) eq
+                                    parent(TaskSubmission::id)
+                            }
+                        } else {
+                            notExists {
+                                col(TaskSubmissionReview::submission / TaskSubmission::id) eq
+                                    parent(TaskSubmission::id)
                             }
                         }
                     }
                 }
-                .build()
 
-        // Execute query with cursor pagination
-        val cursorPage =
-            taskSubmissionRepository.findAllWithIdCursor(cursorSpec, pageStart, pageSize)
+                sort { by(sortByProperty, direction) }
 
-        // Convert results to DTOs and return
-        val submissions =
-            cursorPage.content.map { it.toTaskSubmissionDTO(queryReview = queryReview) }
-        val pageInfo = cursorPage.pageInfo.toPageDTO()
+                paginate {
+                    cursorMode = CursorMode.ID_SEEK
+                    this.pageSize = effectivePageSize
+                }
+            }
+
+        val cursor = pageStart?.let { SimpleCursor.of<TaskSubmission, IdType>(it) }
+        val page =
+            taskSubmissionRepository.findWithQueryObject(queryObject, cursor, effectivePageSize)
+
+        val submissions = page.content.map { it.toTaskSubmissionDTO(queryReview = queryReview) }
+        val pageInfo = page.pageInfo.toPageDTO()
         return Pair(submissions, pageInfo)
     }
 
