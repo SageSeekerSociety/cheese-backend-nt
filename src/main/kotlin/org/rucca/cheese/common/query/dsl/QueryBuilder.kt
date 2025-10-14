@@ -1,6 +1,5 @@
 package org.rucca.cheese.common.query.dsl
 
-import java.io.Serializable
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import org.rucca.cheese.common.query.internal.search.QueryBuilderScope
@@ -36,7 +35,7 @@ inline fun <reified T : Any> queryFor(
 }
 
 class QueryObjectBuilder<T : Any>(private val entityClass: KClass<T>) {
-    private var idProperty: KProperty1<T, out Serializable?>? = null
+    private var idProperty: KProperty1<T, Comparable<*>?>? = null
     private val filterBlocks = mutableListOf<SpecContext<T>.() -> Unit>()
     private var searchClause: SearchClause<T>? = null
     private val groupByProperties = mutableListOf<KProperty1<T, *>>()
@@ -44,7 +43,7 @@ class QueryObjectBuilder<T : Any>(private val entityClass: KClass<T>) {
     private val sortDescriptors = mutableListOf<SortDescriptor<T>>()
     private var paginationConfig: PaginationConfig = PaginationConfig()
 
-    fun id(property: KProperty1<T, out Serializable?>) {
+    fun id(property: KProperty1<T, Comparable<*>?>) {
         check(idProperty == null) { "QueryObject id() may only be configured once" }
         idProperty = property
     }
@@ -101,15 +100,15 @@ class QueryObjectBuilder<T : Any>(private val entityClass: KClass<T>) {
     }
 
     private fun buildFilterSpecification(
-        idProperty: KProperty1<T, out Serializable?>
+        idProperty: KProperty1<T, Comparable<*>?>
     ): Specification<T> = createSpecification(idProperty, filterBlocks) ?: emptySpecification()
 
     private fun buildHavingSpecification(
-        idProperty: KProperty1<T, out Serializable?>
+        idProperty: KProperty1<T, Comparable<*>?>
     ): Specification<T>? = createSpecification(idProperty, havingBlocks)
 
     private fun createSpecification(
-        idProperty: KProperty1<T, out Serializable?>,
+        idProperty: KProperty1<T, Comparable<*>?>,
         blocks: List<SpecContext<T>.() -> Unit>,
     ): Specification<T>? {
         if (blocks.isEmpty()) return null

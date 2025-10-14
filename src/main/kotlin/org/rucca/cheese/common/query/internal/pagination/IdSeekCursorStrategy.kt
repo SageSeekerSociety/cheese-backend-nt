@@ -17,7 +17,7 @@ internal class IdSeekCursorStrategy<T : Any, ID>(private val entityResolver: (ID
 
     override fun build(
         entityClass: Class<T>,
-        idProperty: KProperty1<T, out Serializable?>,
+        idProperty: KProperty1<T, Comparable<*>?>,
         sorts: List<SortDescriptor<T>>,
         baseSpecification: Specification<T>,
     ): CursorSpecification<T, SimpleCursor<T, ID>> {
@@ -76,6 +76,8 @@ internal class IdSeekCursorStrategy<T : Any, ID>(private val entityResolver: (ID
                 }
 
             return when (direction) {
+                // ASC (PostgreSQL default: NULLS LAST) — after a NULL-valued row, stay within NULL
+                // group; there is nothing "beyond" NULLs.
                 Sort.Direction.ASC -> {
                     if (sortValue != null) {
                         @Suppress("UNCHECKED_CAST")
@@ -88,12 +90,11 @@ internal class IdSeekCursorStrategy<T : Any, ID>(private val entityResolver: (ID
                             ),
                         )
                     } else {
-                        criteriaBuilder.or(
-                            criteriaBuilder.isNotNull(sortPath),
-                            criteriaBuilder.and(criteriaBuilder.isNull(sortPath), tieBreaker),
-                        )
+                        criteriaBuilder.and(criteriaBuilder.isNull(sortPath), tieBreaker)
                     }
                 }
+                // DESC (PostgreSQL default: NULLS FIRST) — after a NULL-valued row, include
+                // remaining NULLs by tie-breaker and then all non-NULLs.
                 Sort.Direction.DESC -> {
                     if (sortValue != null) {
                         @Suppress("UNCHECKED_CAST")
@@ -106,14 +107,23 @@ internal class IdSeekCursorStrategy<T : Any, ID>(private val entityResolver: (ID
                             ),
                         )
                     } else {
-                        criteriaBuilder.and(criteriaBuilder.isNull(sortPath), tieBreaker)
+                        criteriaBuilder.or(
+                            criteriaBuilder.and(criteriaBuilder.isNull(sortPath), tieBreaker),
+                            criteriaBuilder.isNotNull(sortPath),
+                        )
                     }
                 }
             }
         }
 
-        override fun getSort(): Sort =
-            Sort.by(direction, sortProperty.name).and(Sort.by(direction, idProperty.name))
+        override fun getSort(): Sort {
+            val primary =
+                Sort.Order(direction, sortProperty.name).let {
+                    if (direction == Sort.Direction.ASC) it.nullsLast() else it.nullsFirst()
+                }
+            val tieBreak = Sort.Order(direction, idProperty.name)
+            return Sort.by(primary, tieBreak)
+        }
 
         override fun extractCursor(entity: T): SimpleCursor<T, ID>? {
             val id = idProperty.get(entity) ?: return null

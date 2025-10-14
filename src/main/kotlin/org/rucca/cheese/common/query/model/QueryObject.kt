@@ -1,6 +1,5 @@
 package org.rucca.cheese.common.query.model
 
-import java.io.Serializable
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import org.springframework.data.jpa.domain.Specification
@@ -11,7 +10,7 @@ import org.springframework.data.jpa.domain.Specification
  */
 data class QueryObject<T : Any>(
     val entityClass: KClass<T>,
-    val idProperty: KProperty1<T, out Serializable?>,
+    val idProperty: KProperty1<T, Comparable<*>?>,
     val filter: Specification<T>,
     val search: SearchClause<T>?,
     val groups: List<KProperty1<T, *>>,

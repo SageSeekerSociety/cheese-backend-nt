@@ -29,7 +29,7 @@ object QueryObjectRuntime {
 
     private fun <T : Any> combineSpecifications(
         query: QueryObject<T>,
-        idProperty: KProperty1<T, out Serializable?>,
+        idProperty: KProperty1<T, Comparable<*>?>,
     ): Specification<T> {
         var combined: Specification<T> = query.filter
         query.search?.let { clause ->
@@ -42,7 +42,7 @@ object QueryObjectRuntime {
 
     private fun <T : Any> effectiveSorts(
         query: QueryObject<T>,
-        idProperty: KProperty1<T, out Serializable?>,
+        idProperty: KProperty1<T, Comparable<*>?>,
     ): List<SortDescriptor<T>> {
         if (query.sorts.isNotEmpty()) return query.sorts
         return listOf(PropertySort(property = idProperty, direction = Sort.Direction.ASC))

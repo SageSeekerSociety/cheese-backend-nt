@@ -5,7 +5,6 @@ import jakarta.persistence.criteria.CriteriaQuery
 import jakarta.persistence.criteria.Path
 import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
-import java.io.Serializable
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -20,7 +19,7 @@ import org.springframework.data.jpa.domain.Specification
 class PropertyBasedCursorStrategy<T : Any> : CursorStrategy<T, TypedCompositeCursor<T>> {
     override fun build(
         entityClass: Class<T>,
-        idProperty: KProperty1<T, out Serializable?>,
+        idProperty: KProperty1<T, Comparable<*>?>,
         sorts: List<SortDescriptor<T>>,
         baseSpecification: Specification<T>,
     ): CursorSpecification<T, TypedCompositeCursor<T>> {
@@ -35,7 +34,7 @@ class PropertyBasedCursorStrategy<T : Any> : CursorStrategy<T, TypedCompositeCur
 
     private fun buildSortSpecs(
         propertySorts: List<PropertySort<T>>,
-        idProperty: KProperty1<T, out Serializable?>,
+        idProperty: KProperty1<T, Comparable<*>?>,
     ): List<PropertySortSpec<T>> {
         val aliasCounts = mutableMapOf<String, Int>()
         val specs = mutableListOf<PropertySortSpec<T>>()
@@ -78,7 +77,7 @@ private data class PropertySortSpec<T : Any>(
 )
 
 private class PropertyCursorSpecification<T : Any>(
-    private val idProperty: KProperty1<T, out Serializable?>,
+    private val idProperty: KProperty1<T, Comparable<*>?>,
     private val sortSpecs: List<PropertySortSpec<T>>,
     private val baseSpecification: Specification<T>,
 ) : CursorSpecification<T, TypedCompositeCursor<T>> {
@@ -111,18 +110,26 @@ private class PropertyCursorSpecification<T : Any>(
             val rawValue = values[spec.alias]
             @Suppress("UNCHECKED_CAST")
             val path = root.get<Comparable<Any?>>(spec.property.name) as Path<Comparable<Any?>>
-
             if (rawValue == null || rawValue.unwrap() == null) {
-                val nullPredicate = criteriaBuilder.isNull(path)
-                if (equalityChain.isEmpty()) {
-                    predicates += nullPredicate
-                } else {
-                    predicates += criteriaBuilder.and(*equalityChain.toTypedArray(), nullPredicate)
+                val nullsFirst =
+                    when (spec.nullHandling) {
+                        Sort.NullHandling.NULLS_FIRST -> true
+                        Sort.NullHandling.NULLS_LAST -> false
+                        // For Postgres defaults: NULLS_LAST on ASC, NULLS_FIRST on DESC
+                        null,
+                        Sort.NullHandling.NATIVE -> spec.direction == Sort.Direction.DESC
+                    }
+                // When nulls sort first, rows after the null boundary are any non-null values
+                val advance: Predicate? = if (nullsFirst) criteriaBuilder.isNotNull(path) else null
+                if (advance != null) {
+                    predicates +=
+                        if (equalityChain.isEmpty()) advance
+                        else criteriaBuilder.and(*equalityChain.toTypedArray(), advance)
                 }
-                equalityChain += nullPredicate
+                // Retain an equality on NULL so deeper specs can still advance
+                equalityChain += criteriaBuilder.isNull(path)
                 return@forEach
             }
-
             val value =
                 convertCursorValueToPropertyType(rawValue, spec.property) as? Comparable<Any?>
                     ?: return@forEach
@@ -137,10 +144,6 @@ private class PropertyCursorSpecification<T : Any>(
                 predicates += criteriaBuilder.and(*equalityChain.toTypedArray(), comparison)
             }
             equalityChain += criteriaBuilder.equal(path, value)
-        }
-
-        if (equalityChain.isNotEmpty()) {
-            predicates += criteriaBuilder.and(*equalityChain.toTypedArray())
         }
 
         return if (predicates.isEmpty()) null else criteriaBuilder.or(*predicates.toTypedArray())
