@@ -3,6 +3,7 @@ package org.rucca.cheese.notification.services
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import org.rucca.cheese.auth.JwtService
 import org.rucca.cheese.common.error.NotFoundError
@@ -11,6 +12,7 @@ import org.rucca.cheese.common.pagination.model.TypedCompositeCursor
 import org.rucca.cheese.common.pagination.model.toPageDTO
 import org.rucca.cheese.common.pagination.spec.CursorSpecificationBuilder
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.common.persistent.spec.spec
 import org.rucca.cheese.model.EncodedCursorPageDTO
 import org.rucca.cheese.model.NotificationDTO
 import org.rucca.cheese.notification.models.Notification
@@ -22,7 +24,6 @@ import org.rucca.cheese.notification.resolver.ResolvableEntityInfo
 import org.rucca.cheese.notification.resolver.toDTO
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
-import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -61,14 +62,14 @@ class NotificationQueryService(
         // Specification to filter notifications for the user, type, read status, and finalized
         // state
         val spec =
-            Specification<Notification> { root, _, cb ->
-                val predicates = mutableListOf(cb.equal(root.get<Long>("receiverId"), userId))
-                type?.let { predicates.add(cb.equal(root.get<NotificationType>("type"), it)) }
-                read?.let { predicates.add(cb.equal(root.get<Boolean>("read"), it)) }
-                predicates.add(
-                    cb.equal(root.get<Boolean>("finalized"), true)
-                ) // Only show finalized notifications
-                cb.and(*predicates.toTypedArray())
+            spec<Notification> {
+                where {
+                    Notification::receiverId eq userId
+                    Notification::finalized eq true // Only show finalized notifications
+
+                    type?.let { Notification::type eq it }
+                    read?.let { Notification::read eq it }
+                }
             }
 
         // Cursor specification for sorting (newest first)

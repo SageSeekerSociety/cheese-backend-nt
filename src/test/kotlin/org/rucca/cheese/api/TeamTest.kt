@@ -12,6 +12,8 @@ import kotlin.math.floor
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
+import org.rucca.cheese.common.pagination.model.TypedCompositeCursor
+import org.rucca.cheese.common.pagination.model.longValue
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.utils.UserCreatorService
@@ -293,7 +295,18 @@ class TeamTest @Autowired constructor(private val userCreatorService: UserCreato
         assertNotNull(page.pageStart, message = "pageStart missing")
         assertNotNull(page.pageSize, message = "pageSize missing")
         assertNotNull(page.hasMore, message = "hasMore missing")
+        decodeCursorId(page.pageStart)?.let { cursorId ->
+            if (teams.isNotEmpty()) {
+                assertEquals(teams[0].id, cursorId, "pageStart cursor should point to first team")
+            }
+        }
         // Assert specific page details if needed based on query params
+    }
+
+    private fun decodeCursorId(cursor: String?): Long? {
+        if (cursor.isNullOrBlank()) return null
+        return runCatching { TypedCompositeCursor.decode<Any>(cursor).values["id"]?.longValue }
+            .getOrNull()
     }
 
     @Test
@@ -346,30 +359,61 @@ class TeamTest @Autowired constructor(private val userCreatorService: UserCreato
     @Test
     @Order(23)
     fun `Team - Enumerate teams filtered by name with pagination`() { // Renamed
-        webTestClient
-            .get()
-            .uri { builder ->
-                builder
-                    .path("/teams")
-                    .queryParam("query", teamName)
-                    .queryParam("pageStart", teamId) // Start at the team itself
-                    .queryParam("pageSize", 1)
-                    .build()
+        val firstResponse =
+            webTestClient
+                .get()
+                .uri { builder ->
+                    builder
+                        .path("/teams")
+                        .queryParam("query", teamName)
+                        .queryParam("pageSize", 1)
+                        .build()
+                }
+                .header("Authorization", "Bearer $creatorToken")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<GetTeams200ResponseDTO>()
+                .returnResult()
+                .responseBody!!
+
+        assertTeamEnumeration(firstResponse, 1, teamId)
+        assertEquals(1, firstResponse.data!!.page!!.pageSize)
+        assertEquals(teamId, decodeCursorId(firstResponse.data!!.page!!.pageStart))
+
+        val nextCursor = firstResponse.data!!.page!!.nextStart
+        if (!nextCursor.isNullOrBlank()) {
+            val nextResponse =
+                webTestClient
+                    .get()
+                    .uri { builder ->
+                        builder
+                            .path("/teams")
+                            .queryParam("query", teamName)
+                            .queryParam("pageStart", nextCursor)
+                            .queryParam("pageSize", 1)
+                            .build()
+                    }
+                    .header("Authorization", "Bearer $creatorToken")
+                    .exchange()
+                    .expectStatus()
+                    .isOk
+                    .expectBody<GetTeams200ResponseDTO>()
+                    .returnResult()
+                    .responseBody!!
+
+            assertNotNull(nextResponse.data?.page) {
+                "Pagination info should be present for next page"
             }
-            .header("Authorization", "Bearer $creatorToken")
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody<GetTeams200ResponseDTO>()
-            .value { response ->
-                assertTeamEnumeration(
-                    response,
-                    1,
+            // Ensure we don't get stuck on the same item when advancing with cursor
+            decodeCursorId(nextResponse.data!!.page!!.pageStart)?.let { cursorId ->
+                assertNotEquals(
                     teamId,
-                ) // Should still find the team if pageStart is inclusive cursor
-                assertEquals(1, response!!.data.page!!.pageSize)
-                assertEquals(teamId, response.data.page!!.pageStart)
+                    cursorId,
+                    "Next page cursor should advance past the initial team",
+                )
             }
+        }
     }
 
     @Test

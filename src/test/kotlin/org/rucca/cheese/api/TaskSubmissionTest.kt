@@ -74,8 +74,13 @@ constructor(
     private val taskIds = mutableListOf<IdType>()
     private val randomSuffix = floor(Math.random() * 10000000000).toLong()
     private val taskName = "Test Task ($randomSuffix)"
-    private val taskIntro = "This is a test task."
-    private val taskDescription = "A lengthy text. ".repeat(1000)
+    private val taskIntro =
+        "Hello, Cheese! Hello, Cheese! Hello, Cheese! Hello, Cheese! Hello, Cheese!"
+    private val taskDescription =
+        """
+            {"type":"doc","content":[{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]}]}
+        """
+            .trimIndent()
     private val taskDeadline =
         LocalDateTime.now().plusDays(7).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
@@ -576,8 +581,9 @@ constructor(
         val updatedDeadline = taskDeadline + 1000000000L // Use L suffix for Long
         val updatedResubmittable = false
         val updatedEditable = false
-        val updatedIntro = "This is an updated test task."
-        val updatedDescription = "$taskDescription (updated)"
+        val updatedIntro = "Hello, Cheese! ".repeat(10).trim()
+        val updatedDesc =
+            """{"type":"doc","content":[{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]}]}"""
         val updatedSchema =
             listOf(
                 TaskSubmissionSchemaEntryDTO(
@@ -595,7 +601,7 @@ constructor(
                 resubmittable = updatedResubmittable,
                 editable = updatedEditable,
                 intro = updatedIntro,
-                description = updatedDescription,
+                description = updatedDesc,
                 submissionSchema = updatedSchema,
                 rank = updatedRank,
                 // Specify hasDeadline=true if needed by DTO/API, otherwise Long? handles it
@@ -622,7 +628,7 @@ constructor(
                 assertEquals(updatedResubmittable, task.resubmittable)
                 assertEquals(updatedEditable, task.editable)
                 assertEquals(updatedIntro, task.intro)
-                assertEquals(updatedDescription, task.description)
+                assertEquals(updatedDesc, task.description)
                 assertEquals(updatedRank, task.rank)
                 assertNotNull(
                     task.submissionSchema,

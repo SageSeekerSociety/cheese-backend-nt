@@ -54,8 +54,13 @@ class TaskTopicTest {
     // --- Task Details ---
     private val randomSuffix = floor(Math.random() * 10000000000).toLong()
     private val taskName = "Test Task ($randomSuffix)"
-    private val taskIntro = "This is a test task."
-    private val taskDescription = "This is a test task."
+    private val taskIntro =
+        "Hello, Cheese! Hello, Cheese! Hello, Cheese! Hello, Cheese! Hello, Cheese!"
+    private val taskDescription =
+        """
+            {"type":"doc","content":[{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]}]}
+        """
+            .trimIndent()
     private val taskDeadline =
         LocalDateTime.now().plusDays(7).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 

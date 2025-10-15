@@ -17,12 +17,19 @@ import org.rucca.cheese.attachment.Attachment
 import org.rucca.cheese.attachment.AttachmentService
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.helper.toEpochMilli
+import org.rucca.cheese.common.pagination.model.SimpleCursor
 import org.rucca.cheese.common.pagination.model.toPageDTO
-import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
-import org.rucca.cheese.common.pagination.repository.idSeekSpec
 import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.common.persistent.getProperty
+import org.rucca.cheese.common.query.dsl.queryFor
+import org.rucca.cheese.common.query.internal.spec.col
+import org.rucca.cheese.common.query.internal.spec.div
+import org.rucca.cheese.common.query.internal.spec.exists
+import org.rucca.cheese.common.query.internal.spec.notExists
+import org.rucca.cheese.common.query.internal.spec.parent
+import org.rucca.cheese.common.query.internal.spec.subquery
+import org.rucca.cheese.common.query.model.CursorMode
+import org.rucca.cheese.common.query.runtime.findWithQueryObject
 import org.rucca.cheese.model.*
 import org.rucca.cheese.task.*
 import org.rucca.cheese.task.error.TaskNotResubmittableError
@@ -293,94 +300,58 @@ class TaskSubmissionService(
 
         val direction = sortOrder.toJpaDirection()
 
-        val cursorSpec =
-            taskSubmissionRepository
-                .idSeekSpec(TaskSubmission::id, sortByProperty, direction)
-                .specification { root, query, cb ->
-                    createSubmissionSpecification(
-                        root,
-                        query,
-                        cb,
-                        taskId,
-                        participantId,
-                        allVersions,
-                        reviewed,
-                    )
+        val effectivePageSize = pageSize
+
+        val queryObject =
+            queryFor<TaskSubmission> {
+                id(TaskSubmission::id)
+
+                filters {
+                    TaskSubmission::membership / TaskMembership::task / Task::id eq taskId
+
+                    participantId?.let { TaskSubmission::membership / TaskMembership::id eq it }
+
+                    whereIf(!allVersions) {
+                        TaskSubmission::version eq
+                            subquery {
+                                selectExpr(TaskSubmission::version.max())
+                                where {
+                                    col(TaskSubmission::membership / TaskMembership::id) eq
+                                        parent(TaskSubmission::membership / TaskMembership::id)
+                                }
+                            }
+                    }
+
+                    whereIf(reviewed != null) {
+                        if (reviewed == true) {
+                            exists {
+                                col(TaskSubmissionReview::submission / TaskSubmission::id) eq
+                                    parent(TaskSubmission::id)
+                            }
+                        } else {
+                            notExists {
+                                col(TaskSubmissionReview::submission / TaskSubmission::id) eq
+                                    parent(TaskSubmission::id)
+                            }
+                        }
+                    }
                 }
-                .build()
 
-        // Execute query with cursor pagination
-        val cursorPage =
-            taskSubmissionRepository.findAllWithIdCursor(cursorSpec, pageStart, pageSize)
+                sort { by(sortByProperty, direction) }
 
-        // Convert results to DTOs and return
-        val submissions =
-            cursorPage.content.map { it.toTaskSubmissionDTO(queryReview = queryReview) }
-        val pageInfo = cursorPage.pageInfo.toPageDTO()
+                paginate {
+                    cursorMode = CursorMode.ID_SEEK
+                    this.pageSize = effectivePageSize
+                }
+            }
+
+        val cursor = pageStart?.let { SimpleCursor.of<TaskSubmission, IdType>(it) }
+        val page =
+            taskSubmissionRepository.findWithQueryObject(queryObject, cursor, effectivePageSize)
+
+        val submissions = page.content.map { it.toTaskSubmissionDTO(queryReview = queryReview) }
+        val pageInfo = page.pageInfo.toPageDTO()
         return Pair(submissions, pageInfo)
-    }
-
-    /**
-     * Creates a JPA Specification for task submission queries with flexible filtering options.
-     *
-     * Builds predicates for filtering submissions by task, member, version, and review status. Uses
-     * subqueries for complex filtering conditions like "latest version only" and "reviewed status".
-     */
-    private fun createSubmissionSpecification(
-        root: jakarta.persistence.criteria.Root<TaskSubmission>,
-        query: jakarta.persistence.criteria.CriteriaQuery<*>?,
-        cb: jakarta.persistence.criteria.CriteriaBuilder,
-        taskId: IdType,
-        participantId: IdType?,
-        allVersions: Boolean,
-        reviewed: Boolean?,
-    ): jakarta.persistence.criteria.Predicate {
-        val predicates: MutableList<jakarta.persistence.criteria.Predicate> = mutableListOf()
-
-        // Add base predicates
-        predicates.add(
-            cb.equal(
-                root.get<TaskMembership>("membership").get<IdType>("task").get<IdType>("id"),
-                taskId,
-            )
-        )
-
-        if (participantId != null) {
-            predicates.add(
-                cb.equal(
-                    root.getProperty(TaskSubmission::membership).getProperty(TaskMembership::id),
-                    participantId,
-                )
-            )
-        }
-
-        // Handle version filtering
-        if (!allVersions) {
-            val subquery = query!!.subquery(Int::class.java)
-            val subRoot = subquery.from(TaskSubmission::class.java)
-            subquery
-                .select(cb.max(subRoot.get<Int>("version")))
-                .where(
-                    cb.equal(
-                        subRoot.get<TaskMembership>("membership"),
-                        root.get<TaskMembership>("membership"),
-                    )
-                )
-            predicates.add(cb.equal(root.get<Int>("version"), subquery))
-        }
-
-        // Handle review filtering
-        if (reviewed != null) {
-            val subquery = query!!.subquery(Boolean::class.java)
-            val subRoot = subquery.from(TaskSubmissionReview::class.java)
-            subquery
-                .select(cb.literal(true))
-                .where(cb.equal(subRoot.get<TaskSubmission>("submission"), root))
-            if (reviewed) predicates.add(cb.exists(subquery))
-            else predicates.add(cb.not(cb.exists(subquery)))
-        }
-
-        return cb.and(*predicates.toTypedArray())
     }
 
     private fun getTask(taskId: IdType): Task {

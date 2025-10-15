@@ -75,13 +75,18 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
     private var archivedCategoryId: IdType = -1
     private val taskIds = mutableListOf<IdType>()
     private var gatedTaskId: IdType? = null
-    private var paginationNextStart: IdType? = null
+    private var paginationNextStart: String? = null
 
     // --- Task Details ---
     private val randomSuffix = floor(Math.random() * 10000000000).toLong()
     private val taskNamePrefix = "Test Task ($randomSuffix)"
-    private val taskIntro = "This is a test task."
-    private val taskDescription = "A lengthy text. ".repeat(100)
+    private val taskIntro =
+        "Hello, Cheese! Hello, Cheese! Hello, Cheese! Hello, Cheese! Hello, Cheese!"
+    private val taskDescription =
+        """
+            {"type":"doc","content":[{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]}]}
+        """
+            .trimIndent()
     private val taskDeadline =
         LocalDateTime.now().plusDays(7).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
     private val taskDefaultDeadline = 30L
@@ -1365,8 +1370,9 @@ class TaskTest @Autowired constructor(private val userCreatorService: UserCreato
     fun `Task - Update with full request (including category)`() { // Renamed
         val taskId = taskIds[0]
         val updatedName = "$taskNamePrefix (1 - Updated Full)"
-        val updatedIntro = "This is an updated test task."
-        val updatedDesc = "$taskDescription (updated)"
+        val updatedIntro = "Hello, Cheese! ".repeat(10).trim()
+        val updatedDesc =
+            """{"type":"doc","content":[{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]},{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","marks":[{"type":"textStyle","attrs":{"fontFamily":"Roboto, sans-serif","fontSize":"14px","color":"rgb(53, 53, 53)"}}],"text":"Hello, Cheese!"}]}]}"""
         val newDeadline = taskDeadline + 1000000000
         val newDefaultDeadline = taskDefaultDeadline + 1
         val updatedRank = 1

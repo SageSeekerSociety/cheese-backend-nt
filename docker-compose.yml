@@ -46,7 +46,8 @@ services:
       - cheese_network
 
   postgres:
-    image: pgvector/pgvector:pg16
+    image: paradedb/paradedb:v0.18.8-pg16
+    command: ["-c", "shared_preload_libraries=pg_cron,pg_search"]
     container_name: postgres
     environment:
       - TZ=Asia/Shanghai
@@ -64,9 +65,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres-init.sh:/docker-entrypoint-initdb.d/postgres-init.sh
+      - ./scripts/init/00-extensions.sql:/docker-entrypoint-initdb.d/00-extensions.sql:ro
+
 
   postgres_test:
-    image: pgvector/pgvector:pg16
+    image: paradedb/paradedb:v0.18.8-pg16
+    command: ["-c", "shared_preload_libraries=pg_cron,pg_search"]
     container_name: postgres_test
     environment:
       - TZ=Asia/Shanghai
@@ -83,7 +87,8 @@ services:
       - cheese_network
     volumes:
       - postgres_data_test:/var/lib/postgresql/data
-      - ./postgres-init.sh:/docker-entrypoint-initdb.d/postgres-init.sh
+      - ./postgres-init.sh:/docker-entrypoint-initdb.d/postgres-init.sh:ro
+      - ./scripts/init/00-extensions.sql:/docker-entrypoint-initdb.d/00-extensions.sql:ro
 
   # Valkey is a Redis-compatible key-value store
   valkey:

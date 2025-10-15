@@ -15,9 +15,8 @@ import org.springframework.data.repository.NoRepositoryBean
  * @param ID The entity ID type
  */
 @NoRepositoryBean
-interface CursorPagingRepository<T, ID> : JpaRepository<T, ID>, JpaSpecificationExecutor<T> where
-ID : Serializable,
-ID : Comparable<ID> {
+interface CursorPagingRepository<T, ID> : JpaRepository<T, ID>, JpaSpecificationExecutor<T>
+    where ID : Serializable, ID : Comparable<ID> {
 
     /**
      * Find entities using cursor-based pagination.

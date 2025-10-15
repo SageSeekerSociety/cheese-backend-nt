@@ -15,14 +15,14 @@ import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
 import org.rucca.cheese.common.pagination.repository.idSeekSpec
 import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.common.persistent.getProperty
+import org.rucca.cheese.common.persistent.spec.div
+import org.rucca.cheese.common.persistent.spec.spec
 import org.rucca.cheese.knowledge.KnowledgeService
 import org.rucca.cheese.model.*
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.services.UserService
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.context.ApplicationContext
-import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -163,34 +163,16 @@ class DiscussionService(
         val direction = sortOrder.toJpaDirection()
 
         val spec =
-            Specification.where<Discussion>(null)
-                .and(
-                    modelType?.let {
-                        Specification.where { root, _, cb ->
-                            cb.equal(root.get<DiscussableModelType>("modelType"), it)
+            spec<Discussion> {
+                where {
+                    modelType?.let { Discussion::modelType eq it }
+                    modelId?.let { Discussion::modelId eq it }
+                    whereIf(parentId == null) { Discussion::parent.isNull } orElse
+                        {
+                            Discussion::parent / Discussion::id eq parentId
                         }
-                    }
-                )
-                .and(
-                    modelId?.let {
-                        Specification.where { root, _, cb ->
-                            cb.equal(root.get<IdType>("modelId"), it)
-                        }
-                    }
-                )
-                .and(
-                    if (parentId == null)
-                        Specification.where { root, _, cb ->
-                            cb.isNull(root.getProperty(Discussion::parent))
-                        }
-                    else
-                        Specification.where { root, _, cb ->
-                            cb.equal(
-                                root.getProperty(Discussion::parent).getProperty(Discussion::id),
-                                parentId,
-                            )
-                        }
-                )
+                }
+            }
 
         val sortProperty =
             when (sortBy) {

@@ -8,12 +8,10 @@ import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.BaseEntity
 import org.rucca.cheese.space.models.Space
 import org.rucca.cheese.space.models.SpaceCategory
-import org.rucca.cheese.task.listener.TaskElasticSearchSyncListener
 import org.rucca.cheese.user.User
 
 @Entity
 @SQLRestriction("deleted_at IS NULL")
-@EntityListeners(TaskElasticSearchSyncListener::class)
 class Task(
     @Column(nullable = false) var name: String,
     @Column(nullable = false) val submitterType: TaskSubmitterType,

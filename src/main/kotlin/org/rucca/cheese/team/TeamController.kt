@@ -70,7 +70,7 @@ class TeamController(
     @Auth("team:enumerate:team") // Requires SystemRole.USER (login)
     override suspend fun getTeams(
         query: String,
-        pageStart: Long?,
+        pageStart: String?,
         pageSize: Int,
     ): ResponseEntity<GetTeams200ResponseDTO> {
         val (teamDTOs, page) =

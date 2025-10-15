@@ -181,8 +181,17 @@ logging:
       rucca:
         cheese:
           auth: DEBUG
-#          task: DEBUG
-#          notification: DEBUG
+      hibernate:
+        SQL: DEBUG
+#         type:
+#           descriptor:
+#             jdbc: TRACE
+#         orm:
+# #          results: TRACE
+#           jdbc:
+#             extract: TRACE
+#             bind: TRACE
+
 
 ---
 
