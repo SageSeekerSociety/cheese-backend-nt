@@ -12,6 +12,7 @@ package org.rucca.cheese.space
 import jakarta.annotation.PostConstruct
 import java.net.URI
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.SpacesApi
@@ -26,6 +27,7 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.analytics.SpaceAnalyticsService
 import org.rucca.cheese.space.option.SpaceQueryOptions
+import org.rucca.cheese.task.service.TaskTopicsService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
@@ -37,6 +39,7 @@ class SpaceController(
     private val authorizationService: AuthorizationService,
     private val jwtService: JwtService,
     private val spaceAnalyticsService: SpaceAnalyticsService,
+    private val taskTopicsService: TaskTopicsService,
 ) : SpacesApi {
     @PostConstruct
     fun initialize() {
@@ -432,5 +435,35 @@ class SpaceController(
                 )
             }
         return ResponseEntity.ok(csv)
+    }
+
+    @Guard("query", "space")
+    override suspend fun getSpaceTopics(
+        spaceId: Long,
+        keyword: String?,
+        sort: String,
+        limit: Int,
+    ): ResponseEntity<GetSpaceTopics200ResponseDTO> {
+        val safeLimit = limit.coerceAtMost(50)
+
+        // 1. 如果有 keyword，优先走搜索逻辑 (Search)
+        if (!keyword.isNullOrBlank()) {
+            val data = taskTopicsService.searchSpaceTopics(spaceId, keyword, safeLimit)
+            return ResponseEntity.ok(
+                GetSpaceTopics200ResponseDTO(200, GetSpaceTopics200ResponseDataDTO(data), "OK")
+            )
+        }
+
+        // 2. 如果没有 keyword，且 sort=popularity，走热门逻辑 (Hot)
+        //        if (sort == "popularity") {
+        //            val data = taskTopicsService.getSpaceHotTopics(spaceId, safeLimit)
+        //            return RestResult.success(data)
+        //        }
+
+        // 默认情况 返回热门
+        val data = taskTopicsService.getSpaceHotTopics(spaceId, safeLimit)
+        return ResponseEntity.ok(
+            GetSpaceTopics200ResponseDTO(200, GetSpaceTopics200ResponseDataDTO(data), "OK")
+        )
     }
 }

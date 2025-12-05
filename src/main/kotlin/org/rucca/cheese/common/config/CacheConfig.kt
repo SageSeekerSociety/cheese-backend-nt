@@ -15,6 +15,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer
 class CacheConfig {
     companion object {
         const val USER_DTO_CACHE = "user_dto"
+        const val SPACE_HOT_TOPICS_CACHE = "space_hot_topics"
     }
 
     @Bean
@@ -37,6 +38,7 @@ class CacheConfig {
                 "userRoles" to defaultCacheConfig.entryTtl(Duration.ofMinutes(15)),
                 "projectMemberRole" to defaultCacheConfig.entryTtl(Duration.ofMinutes(15)),
                 USER_DTO_CACHE to defaultCacheConfig.entryTtl(Duration.ofHours(1)),
+                SPACE_HOT_TOPICS_CACHE to defaultCacheConfig.entryTtl(Duration.ofMinutes(10)),
             )
 
         return RedisCacheManager.builder(redisConnectionFactory)

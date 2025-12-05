@@ -1,6 +1,7 @@
 package org.rucca.cheese.team
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import org.rucca.cheese.common.config.ApplicationConfig
 import org.rucca.cheese.notification.resolver.EntityInfoResolver

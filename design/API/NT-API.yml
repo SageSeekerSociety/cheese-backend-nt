@@ -668,6 +668,66 @@ paths:
                       - category
                   message:
                     type: string
+  /spaces/{spaceId}/topics:
+    parameters:
+      - $ref: '#/components/parameters/SpaceId'
+    get:
+      summary: List or search topics in a space
+      description: >-
+        Retrieves a list of topics associated with the specified space.
+        Supports filtering by keyword and sorting by popularity (hot topics).
+        Only returns topics associated with non-deleted tasks in the space.
+      operationId: getSpaceTopics
+      tags: [ Spaces ]
+      parameters:
+        - name: keyword
+          in: query
+          description: >-
+            Filter topics by name (fuzzy search).
+            If provided, the API performs a search using the optimized text index.
+          required: false
+          schema:
+            type: string
+            example: "Java"
+        - name: sort
+          in: query
+          description: >-
+            Sorting criteria.
+            'popularity' returns topics with the most associated tasks (Hot Topics).
+            'name' returns topics sorted alphabetically (default if no keyword).
+            If a keyword is provided, results are implicitly sorted by relevance/match.
+          required: false
+          schema:
+            type: string
+            enum: [popularity, name]
+            default: name
+        - name: limit
+          in: query
+          description: The maximum number of results to return.
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      spaces:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Topic"
+                  message:
+                    type: string
   /spaces:
     get:
       summary: Enumerate Spaces
