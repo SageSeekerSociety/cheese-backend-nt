@@ -660,6 +660,7 @@ class TaskService(
             }
                 ?: run {
                     sort {
+                        by(Task::stateWeight, Sort.Direction.ASC)
                         by(sortProperty, propertyDirection)
                         by(Task::id, Sort.Direction.ASC)
                     }

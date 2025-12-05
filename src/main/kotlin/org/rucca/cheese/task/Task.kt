@@ -2,6 +2,7 @@ package org.rucca.cheese.task
 
 import jakarta.persistence.*
 import java.time.LocalDateTime
+import org.hibernate.annotations.Formula
 import org.hibernate.annotations.SQLRestriction
 import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.persistent.ApproveType
@@ -56,6 +57,17 @@ class Task(
     @Column(nullable = false, columnDefinition = "VARCHAR(50) default 'NO_LOCK'")
     var teamLockingPolicy: TeamMembershipLockPolicy = TeamMembershipLockPolicy.NO_LOCK,
 ) : BaseEntity() {
+    @Formula(
+        """
+        (CASE 
+            WHEN deadline IS NOT NULL AND deadline < CURRENT_TIMESTAMP THEN 2 
+            WHEN registration_start_at IS NOT NULL AND registration_start_at > CURRENT_TIMESTAMP THEN 1 
+            ELSE 0 
+        END)
+    """
+    )
+    val stateWeight: Int = 0
+
     @PrePersist
     @PreUpdate
     fun validateEntityState() {
