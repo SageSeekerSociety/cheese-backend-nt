@@ -12,6 +12,8 @@ import org.springframework.data.jpa.repository.Query
 interface TaskMembershipRepository : JpaRepository<TaskMembership, IdType> {
     fun findAllByTaskId(taskId: IdType): List<TaskMembership>
 
+    fun findAllByTaskIdIn(taskIds: Collection<IdType>): List<TaskMembership>
+
     fun findAllByTaskIdAndApproved(taskId: IdType, approved: ApproveType): List<TaskMembership>
 
     fun findAllByTaskIdAndApproved(

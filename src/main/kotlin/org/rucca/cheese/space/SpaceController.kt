@@ -362,31 +362,137 @@ class SpaceController(
     }
 
     @Guard("query", "space")
+    override suspend fun getSpaceAnalyticsOverview(
+        @ResourceId spaceId: Long,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        publisherId: Long?,
+        taskApproved: String?,
+        groupBy: String,
+    ): ResponseEntity<GetSpaceAnalyticsOverview200ResponseDTO> {
+        val overview =
+            withContext(Dispatchers.IO) {
+                spaceAnalyticsService.getSpaceAnalyticsOverview(
+                    spaceId = spaceId,
+                    from = from,
+                    to = to,
+                    categoryId = categoryId,
+                    publisherId = publisherId,
+                    taskApproved = taskApproved,
+                    groupBy = groupBy,
+                )
+            }
+        return ResponseEntity.ok(
+            GetSpaceAnalyticsOverview200ResponseDTO(code = 200, data = overview, message = "OK")
+        )
+    }
+
+    @Guard("query", "space")
     override suspend fun getSpaceTaskAnalytics(
         @ResourceId spaceId: Long,
         from: Long?,
         to: Long?,
-        taskStatus: String?,
         categoryId: Long?,
         publisherId: Long?,
-        realName: String,
-        successBy: String,
+        taskApproved: String?,
+        hasPendingReview: Boolean?,
+        hasPendingApproval: Boolean?,
+        sortBy: String,
+        sortOrder: String,
     ): ResponseEntity<GetSpaceTaskAnalytics200ResponseDTO> {
         val analytics =
             withContext(Dispatchers.IO) {
                 spaceAnalyticsService.getSpaceTaskAnalytics(
-                    spaceId,
-                    from,
-                    to,
-                    taskStatus,
-                    categoryId,
-                    publisherId,
-                    realName,
-                    successBy,
+                    spaceId = spaceId,
+                    from = from,
+                    to = to,
+                    categoryId = categoryId,
+                    publisherId = publisherId,
+                    taskApproved = taskApproved,
+                    hasPendingReview = hasPendingReview,
+                    hasPendingApproval = hasPendingApproval,
+                    sortBy = sortBy,
+                    sortOrder = sortOrder,
                 )
             }
         return ResponseEntity.ok(
             GetSpaceTaskAnalytics200ResponseDTO(code = 200, data = analytics, message = "OK")
+        )
+    }
+
+    @Guard("query", "space")
+    override suspend fun getSpaceAnalyticsPublishers(
+        @ResourceId spaceId: Long,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        taskApproved: String?,
+        sortBy: String,
+        sortOrder: String,
+    ): ResponseEntity<GetSpaceAnalyticsPublishers200ResponseDTO> {
+        val publishers =
+            withContext(Dispatchers.IO) {
+                spaceAnalyticsService.getSpaceAnalyticsPublishers(
+                    spaceId = spaceId,
+                    from = from,
+                    to = to,
+                    categoryId = categoryId,
+                    taskApproved = taskApproved,
+                    sortBy = sortBy,
+                    sortOrder = sortOrder,
+                )
+            }
+        return ResponseEntity.ok(
+            GetSpaceAnalyticsPublishers200ResponseDTO(code = 200, data = publishers, message = "OK")
+        )
+    }
+
+    @Guard("query", "space")
+    override suspend fun getSpaceAnalyticsParticipants(
+        @ResourceId spaceId: Long,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        publisherId: Long?,
+        taskApproved: String?,
+        participationApproved: String?,
+        completionStatus: String?,
+        realName: String,
+        groupBy: String,
+    ): ResponseEntity<GetSpaceAnalyticsParticipants200ResponseDTO> {
+        val participants =
+            withContext(Dispatchers.IO) {
+                spaceAnalyticsService.getSpaceAnalyticsParticipants(
+                    spaceId = spaceId,
+                    from = from,
+                    to = to,
+                    categoryId = categoryId,
+                    publisherId = publisherId,
+                    taskApproved = taskApproved,
+                    participationApproved = participationApproved,
+                    completionStatus = completionStatus,
+                    realName = realName,
+                    groupBy = groupBy,
+                )
+            }
+        return ResponseEntity.ok(
+            GetSpaceAnalyticsParticipants200ResponseDTO(
+                code = 200,
+                data = participants,
+                message = "OK",
+            )
+        )
+    }
+
+    @Guard("query", "space")
+    override suspend fun getSpaceAnalyticsAlerts(
+        @ResourceId spaceId: Long
+    ): ResponseEntity<GetSpaceAnalyticsAlerts200ResponseDTO> {
+        val alerts =
+            withContext(Dispatchers.IO) { spaceAnalyticsService.getSpaceAnalyticsAlerts(spaceId) }
+        return ResponseEntity.ok(
+            GetSpaceAnalyticsAlerts200ResponseDTO(code = 200, data = alerts, message = "OK")
         )
     }
 
@@ -432,6 +538,83 @@ class SpaceController(
                     publisherId,
                     realName,
                     successBy,
+                )
+            }
+        return ResponseEntity.ok(csv)
+    }
+
+    @Guard("query", "space")
+    override suspend fun exportSpaceAnalyticsParticipants(
+        @ResourceId spaceId: Long,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        publisherId: Long?,
+        taskApproved: String?,
+        participationApproved: String?,
+        completionStatus: String?,
+        realName: String,
+    ): ResponseEntity<String> {
+        val csv =
+            withContext(Dispatchers.IO) {
+                spaceAnalyticsService.exportSpaceAnalyticsParticipants(
+                    spaceId = spaceId,
+                    from = from,
+                    to = to,
+                    categoryId = categoryId,
+                    publisherId = publisherId,
+                    taskApproved = taskApproved,
+                    participationApproved = participationApproved,
+                    completionStatus = completionStatus,
+                    realName = realName,
+                )
+            }
+        return ResponseEntity.ok(csv)
+    }
+
+    @Guard("query", "space")
+    override suspend fun exportSpaceAnalyticsTasks(
+        @ResourceId spaceId: Long,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        publisherId: Long?,
+        taskApproved: String?,
+        hasPendingReview: Boolean?,
+        hasPendingApproval: Boolean?,
+    ): ResponseEntity<String> {
+        val csv =
+            withContext(Dispatchers.IO) {
+                spaceAnalyticsService.exportSpaceAnalyticsTasks(
+                    spaceId = spaceId,
+                    from = from,
+                    to = to,
+                    categoryId = categoryId,
+                    publisherId = publisherId,
+                    taskApproved = taskApproved,
+                    hasPendingReview = hasPendingReview,
+                    hasPendingApproval = hasPendingApproval,
+                )
+            }
+        return ResponseEntity.ok(csv)
+    }
+
+    @Guard("query", "space")
+    override suspend fun exportSpaceAnalyticsPublishers(
+        @ResourceId spaceId: Long,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        taskApproved: String?,
+    ): ResponseEntity<String> {
+        val csv =
+            withContext(Dispatchers.IO) {
+                spaceAnalyticsService.exportSpaceAnalyticsPublishers(
+                    spaceId = spaceId,
+                    from = from,
+                    to = to,
+                    categoryId = categoryId,
+                    taskApproved = taskApproved,
                 )
             }
         return ResponseEntity.ok(csv)

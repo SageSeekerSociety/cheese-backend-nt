@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query
 interface TaskSubmissionRepository : CursorPagingRepository<TaskSubmission, IdType> {
     fun findAllByMembershipId(membershipId: IdType): List<TaskSubmission>
 
+    fun findAllByMembershipIdIn(membershipIds: Collection<IdType>): List<TaskSubmission>
+
     fun findAllByMembershipIdAndVersion(membershipId: IdType, version: Int): List<TaskSubmission>
 
     @Query("SELECT MAX(ts.version) FROM TaskSubmission ts WHERE ts.membership.id = :membershipId")

@@ -1,12 +1,18 @@
 package org.rucca.cheese.space.analytics
 
+import java.time.DayOfWeek
+import java.time.LocalDateTime
+import java.time.ZoneId
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
+import org.rucca.cheese.task.Task
 import org.rucca.cheese.task.TaskCompletionStatus
 import org.rucca.cheese.task.TaskMembership
 import org.rucca.cheese.task.TaskMembershipRepository
 import org.rucca.cheese.task.TaskRepository
+import org.rucca.cheese.task.TaskSubmissionRepository
+import org.rucca.cheese.task.TaskSubmissionReviewRepository
 import org.rucca.cheese.user.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -16,105 +22,187 @@ import org.springframework.transaction.annotation.Transactional
 class SpaceAnalyticsService(
     private val taskRepository: TaskRepository,
     private val taskMembershipRepository: TaskMembershipRepository,
+    private val taskSubmissionRepository: TaskSubmissionRepository,
+    private val taskSubmissionReviewRepository: TaskSubmissionReviewRepository,
     private val userRepository: UserRepository,
+    private val queryService: SpaceAnalyticsQueryService =
+        SpaceAnalyticsQueryService(
+            taskRepository = taskRepository,
+            taskMembershipRepository = taskMembershipRepository,
+            taskSubmissionRepository = taskSubmissionRepository,
+            taskSubmissionReviewRepository = taskSubmissionReviewRepository,
+        ),
 ) {
+    private data class TaskAnalyticsAggregate(
+        val task: Task,
+        val memberships: List<TaskMembership>,
+        val submittedParticipantCount: Int,
+        val pendingParticipantApprovalCount: Int,
+        val approvedParticipantCount: Int,
+        val rejectedParticipantCount: Int,
+        val pendingReviewCount: Int,
+        val resubmittableCount: Int,
+        val successfulParticipantCount: Int,
+        val failedParticipantCount: Int,
+    ) {
+        val participantCount: Int = memberships.size
+        val submissionConversionRate: Double =
+            if (approvedParticipantCount == 0) 0.0
+            else submittedParticipantCount.toDouble() / approvedParticipantCount.toDouble()
+        val successRate: Double =
+            if (participantCount == 0) 0.0
+            else successfulParticipantCount.toDouble() / participantCount.toDouble()
+    }
+
+    fun getSpaceAnalyticsOverview(
+        spaceId: IdType,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        publisherId: Long?,
+        taskApproved: String?,
+        groupBy: String,
+    ): SpaceAnalyticsOverviewDTO =
+        queryService.getOverview(
+            spaceId = spaceId,
+            from = from,
+            to = to,
+            categoryId = categoryId,
+            publisherId = publisherId,
+            taskApproved = taskApproved,
+            groupBy = groupBy,
+        )
+
     fun getSpaceTaskAnalytics(
         spaceId: IdType,
         from: Long?,
         to: Long?,
-        taskStatus: String?,
         categoryId: Long?,
         publisherId: Long?,
-        realName: String,
-        successBy: String,
-    ): SpaceTaskAnalyticsDTO {
-        // Get all tasks in the space with optional filters
-        val allTasks = taskRepository.findBySpaceId(spaceId)
-
-        // Apply filters
-        val filteredTasks =
-            allTasks.filter { task ->
-                (from == null || task.createdAt.toEpochMilli() >= from) &&
-                    (to == null || task.createdAt.toEpochMilli() <= to) &&
-                    (categoryId == null || task.category.id?.toLong() == categoryId) &&
-                    (publisherId == null || task.creator.id?.toLong() == publisherId) &&
-                    (taskStatus.isNullOrEmpty() || task.approved.name == taskStatus)
-            }
-
-        // Task Category Distribution
-        val categoryDistribution =
-            createDistribution(
-                "Task Categories",
-                filteredTasks.groupBy { it.category.name }.mapValues { it.value.size },
-            )
-
-        // Task Status Distribution (using approved status)
-        val taskStatusCounts = mutableMapOf("NONE" to 0, "APPROVED" to 0, "DISAPPROVED" to 0)
-        filteredTasks
-            .groupBy { it.approved.name }
-            .forEach { (status, tasks) -> taskStatusCounts[status] = tasks.size }
-        val statusDistribution = createDistribution("Task Status", taskStatusCounts)
-
-        // Get all memberships for filtered tasks
-        val taskIds = filteredTasks.mapNotNull { it.id }
-        val allMemberships =
-            if (taskIds.isNotEmpty()) {
-                taskIds.flatMap { taskId -> taskMembershipRepository.findAllByTaskId(taskId) }
-            } else {
-                emptyList()
-            }
-
-        // Apply realName filter
-        val memberships =
-            when (realName) {
-                "with" -> allMemberships.filter { it.realNameInfo?.realName?.isNotBlank() == true }
-                "without" -> allMemberships.filter { it.realNameInfo?.realName?.isBlank() != false }
-                else -> allMemberships // "all" or empty
-            }
-
-        // Participant Status Distribution
-        val participantStatusCounts = mutableMapOf("NONE" to 0, "APPROVED" to 0, "DISAPPROVED" to 0)
-        memberships
-            .groupBy { it.approved?.name ?: "NONE" }
-            .forEach { (status, members) -> participantStatusCounts[status] = members.size }
-        val participantStatusDistribution =
-            createDistribution("Participant Status", participantStatusCounts)
-
-        // Rank Distribution (if tasks have ranks)
-        val rankDistribution =
-            createDistribution(
-                "Task Ranks",
-                filteredTasks
-                    .mapNotNull { task -> task.rank?.let { rank -> rank to task } }
-                    .groupBy { (rank, _) ->
-                        when (rank) {
-                            in 1..10 -> "Top 10"
-                            in 11..50 -> "11-50"
-                            in 51..100 -> "51-100"
-                            else -> "100+"
-                        }
-                    }
-                    .mapValues { it.value.size },
-            )
-
-        // Student Statistics (simplified - would need more user profile data)
-        val successMemberships =
-            memberships.filter { it.completionStatus == TaskCompletionStatus.SUCCESS }
-        val unsuccessMemberships =
-            memberships.filter { it.completionStatus != TaskCompletionStatus.SUCCESS }
-
-        val successStats = createStudentStatistics(successMemberships, "Success")
-        val unsuccessStats = createStudentStatistics(unsuccessMemberships, "Unsuccess")
-
-        return SpaceTaskAnalyticsDTO(
-            taskCategoryDistribution = categoryDistribution,
-            taskStatusDistribution = statusDistribution,
-            participantStatusDistribution = participantStatusDistribution,
-            rankDistribution = rankDistribution,
-            successStudentStatistics = successStats,
-            unsuccessStudentStatistics = unsuccessStats,
+        taskApproved: String?,
+        hasPendingReview: Boolean?,
+        hasPendingApproval: Boolean?,
+        sortBy: String,
+        sortOrder: String,
+    ): SpaceTaskAnalyticsDTO =
+        queryService.getTasks(
+            spaceId = spaceId,
+            from = from,
+            to = to,
+            categoryId = categoryId,
+            publisherId = publisherId,
+            taskApproved = taskApproved,
+            hasPendingReview = hasPendingReview,
+            hasPendingApproval = hasPendingApproval,
+            sortBy = sortBy,
+            sortOrder = sortOrder,
         )
-    }
+
+    fun getSpaceAnalyticsPublishers(
+        spaceId: IdType,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        taskApproved: String?,
+        sortBy: String,
+        sortOrder: String,
+    ): SpaceAnalyticsPublishersDTO =
+        queryService.getPublishers(
+            spaceId = spaceId,
+            from = from,
+            to = to,
+            categoryId = categoryId,
+            taskApproved = taskApproved,
+            sortBy = sortBy,
+            sortOrder = sortOrder,
+        )
+
+    fun getSpaceAnalyticsParticipants(
+        spaceId: IdType,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        publisherId: Long?,
+        taskApproved: String?,
+        participationApproved: String?,
+        completionStatus: String?,
+        realName: String,
+        groupBy: String,
+    ): SpaceAnalyticsParticipantsDTO =
+        queryService.getParticipants(
+            spaceId = spaceId,
+            from = from,
+            to = to,
+            categoryId = categoryId,
+            publisherId = publisherId,
+            taskApproved = taskApproved,
+            participationApproved = participationApproved,
+            completionStatus = completionStatus,
+            realName = realName,
+            groupBy = groupBy,
+        )
+
+    fun getSpaceAnalyticsAlerts(spaceId: IdType): SpaceAnalyticsAlertsDTO =
+        queryService.getAlerts(spaceId)
+
+    fun exportSpaceAnalyticsParticipants(
+        spaceId: IdType,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        publisherId: Long?,
+        taskApproved: String?,
+        participationApproved: String?,
+        completionStatus: String?,
+        realName: String,
+    ): String =
+        queryService.exportParticipantsCsv(
+            spaceId = spaceId,
+            from = from,
+            to = to,
+            categoryId = categoryId,
+            publisherId = publisherId,
+            taskApproved = taskApproved,
+            participationApproved = participationApproved,
+            completionStatus = completionStatus,
+            realName = realName,
+        )
+
+    fun exportSpaceAnalyticsTasks(
+        spaceId: IdType,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        publisherId: Long?,
+        taskApproved: String?,
+        hasPendingReview: Boolean?,
+        hasPendingApproval: Boolean?,
+    ): String =
+        queryService.exportTasksCsv(
+            spaceId = spaceId,
+            from = from,
+            to = to,
+            categoryId = categoryId,
+            publisherId = publisherId,
+            taskApproved = taskApproved,
+            hasPendingReview = hasPendingReview,
+            hasPendingApproval = hasPendingApproval,
+        )
+
+    fun exportSpaceAnalyticsPublishers(
+        spaceId: IdType,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        taskApproved: String?,
+    ): String =
+        queryService.exportPublishersCsv(
+            spaceId = spaceId,
+            from = from,
+            to = to,
+            categoryId = categoryId,
+            taskApproved = taskApproved,
+        )
 
     private fun createDistribution(name: String, data: Map<String, Int>): DistributionDTO {
         val total = data.values.sum()
@@ -128,6 +216,50 @@ class SpaceAnalyticsService(
             }
 
         return DistributionDTO(name = name, type = DistributionDTO.Type.DISCRETE, items = items)
+    }
+
+    private fun filterTasks(
+        spaceId: IdType,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        publisherId: Long?,
+        taskApproved: String?,
+    ): List<Task> =
+        taskRepository.findBySpaceId(spaceId).filter { task ->
+            (from == null || task.createdAt.toEpochMilli() >= from) &&
+                (to == null || task.createdAt.toEpochMilli() <= to) &&
+                (categoryId == null || task.category.id?.toLong() == categoryId) &&
+                (publisherId == null || task.creator.id?.toLong() == publisherId) &&
+                (taskApproved.isNullOrBlank() || task.approved.name == taskApproved)
+        }
+
+    private fun studentCountOf(membership: TaskMembership): Int =
+        if (membership.isTeam) membership.teamMembersRealNameInfo.size else 1
+
+    private fun safeRate(numerator: Int, denominator: Int): Double =
+        if (denominator == 0) 0.0 else numerator.toDouble() / denominator.toDouble()
+
+    private fun buildTimeSeries(
+        timestamps: List<LocalDateTime>,
+        groupBy: String,
+    ): List<TimeSeriesPointDTO> =
+        timestamps
+            .groupingBy { bucketStart(it, groupBy) }
+            .eachCount()
+            .toSortedMap()
+            .map { (bucket, count) -> TimeSeriesPointDTO(bucket = bucket, count = count) }
+
+    private fun bucketStart(timestamp: LocalDateTime, groupBy: String): Long {
+        val zoneId = ZoneId.systemDefault()
+        val date =
+            when (groupBy.lowercase()) {
+                "week" -> timestamp.toLocalDate().with(DayOfWeek.MONDAY)
+                "month" -> timestamp.toLocalDate().withDayOfMonth(1)
+                else -> timestamp.toLocalDate()
+            }
+
+        return date.atStartOfDay(zoneId).toInstant().toEpochMilli()
     }
 
     private fun createStudentStatistics(
