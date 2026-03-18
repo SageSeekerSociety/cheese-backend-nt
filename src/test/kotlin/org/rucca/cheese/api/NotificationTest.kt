@@ -2,8 +2,6 @@ package org.rucca.cheese.api
 
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.*
-import java.nio.file.Files
-import java.nio.file.Path
 import java.time.Instant
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -32,6 +30,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.client.MockMvcWebTestClient
+import org.yaml.snakeyaml.Yaml
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
@@ -101,27 +100,39 @@ class NotificationTest {
     }
 
     private fun readNotificationTypeEnumValues(): List<String> {
-        val lines = Files.readAllLines(Path.of("design/API/NT-API.yml"))
-        val notificationTypeIndex = lines.indexOfFirst { it.trim() == "NotificationType:" }
-        assertThat(notificationTypeIndex)
-            .describedAs("NotificationType schema must exist in components.schemas")
-            .isGreaterThanOrEqualTo(0)
+        val yaml = Yaml()
+        val document = yaml.load<Any>(java.io.File("design/API/NT-API.yml").inputStream())
+        val root = requireMap(document, "root")
+        val components = requireMap(root["components"], "components")
+        val schemas = requireMap(components["schemas"], "components.schemas")
+        val notificationTypeSchema =
+            requireMap(schemas["NotificationType"], "components.schemas.NotificationType")
+        val enumValues =
+            requireList(
+                notificationTypeSchema["enum"],
+                "components.schemas.NotificationType.enum",
+            )
 
-        val enumIndex =
-            lines.withIndex().indexOfFirst { (index, line) ->
-                index > notificationTypeIndex && line.trim() == "enum:"
-            }
-        assertThat(enumIndex)
-            .describedAs("NotificationType schema must define an enum block")
-            .isGreaterThan(notificationTypeIndex)
+        return enumValues.map { value ->
+            assertThat(value)
+                .describedAs("NotificationType enum values must be strings")
+                .isInstanceOf(String::class.java)
+            value as String
+        }
+    }
 
-        return lines
-            .drop(enumIndex + 1)
-            .takeWhile { line ->
-                val trimmed = line.trim()
-                trimmed.isNotEmpty() && line.startsWith("        - ")
-            }
-            .map { it.trim().removePrefix("- ").trim() }
+    private fun requireMap(value: Any?, path: String): Map<*, *> {
+        assertThat(value)
+            .describedAs("$path must exist")
+            .isInstanceOf(Map::class.java)
+        return value as Map<*, *>
+    }
+
+    private fun requireList(value: Any?, path: String): List<*> {
+        assertThat(value)
+            .describedAs("$path must exist")
+            .isInstanceOf(List::class.java)
+        return value as List<*>
     }
 
     private fun createSampleNotificationDTO(
