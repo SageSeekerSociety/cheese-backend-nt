@@ -306,11 +306,13 @@ class TaskController(
         @AuthContext("deadline", "deadline")
         patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO,
     ): ResponseEntity<GetTaskParticipant200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
         val participant =
             withContext(Dispatchers.IO) {
                 taskMembershipService.updateTaskMembership(
                     participantId,
                     patchTaskMembershipRequestDTO,
+                    currentUserId,
                 )
             }
         return ResponseEntity.ok(
@@ -330,11 +332,13 @@ class TaskController(
         @AuthContext("deadline", "deadline")
         patchTaskMembershipRequestDTO: PatchTaskMembershipRequestDTO,
     ): ResponseEntity<PatchTaskMembershipByMember200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
         withContext(Dispatchers.IO) {
             taskMembershipService.updateTaskMembership(
                 taskId,
                 member,
                 patchTaskMembershipRequestDTO,
+                currentUserId,
             )
         }
         val participants =
@@ -426,6 +430,7 @@ class TaskController(
         @AuthContext("deadline", field = "deadline")
         postTaskParticipantRequestDTO: PostTaskParticipantRequestDTO,
     ): ResponseEntity<PostTaskParticipant200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
         val approved =
             if (postTaskParticipantRequestDTO.deadline != null) ApproveType.APPROVED
             else ApproveType.NONE
@@ -436,6 +441,7 @@ class TaskController(
                     member,
                     postTaskParticipantRequestDTO.deadline?.toLocalDateTime(),
                     approved,
+                    currentUserId,
                     postTaskParticipantRequestDTO.email,
                     postTaskParticipantRequestDTO.phone,
                     postTaskParticipantRequestDTO.applyReason,
@@ -488,6 +494,7 @@ class TaskController(
                 accepted = postTaskSubmissionReviewRequestDTO.accepted,
                 score = postTaskSubmissionReviewRequestDTO.score,
                 comment = postTaskSubmissionReviewRequestDTO.comment,
+                currentUserId = jwtService.getCurrentUserId(),
             )
         val submissionDTO = taskSubmissionService.getSubmissionDTO(submissionId, queryReview = true)
         return ResponseEntity.ok(
@@ -515,6 +522,7 @@ class TaskController(
                 taskSubmissionReviewService.updateReviewAccepted(
                     submissionId = submissionId,
                     accepted = patchTaskSubmissionReviewRequestDTO.accepted,
+                    currentUserId = jwtService.getCurrentUserId(),
                 )
         }
         if (patchTaskSubmissionReviewRequestDTO.score != null) {

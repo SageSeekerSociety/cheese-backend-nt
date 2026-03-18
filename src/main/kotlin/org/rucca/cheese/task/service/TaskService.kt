@@ -81,6 +81,7 @@ class TaskService(
     private val entityPatcher: EntityPatcher,
     private val topicService: TopicService,
     private val authorizationQueryService: AuthorizationQueryService,
+    private val taskNotificationService: TaskNotificationService,
 ) {
     private val logger = LoggerFactory.getLogger(TaskService::class.java)
 
@@ -384,6 +385,24 @@ class TaskService(
                     teamLockingPolicy = teamMembershipLockPolicy,
                 )
             )
+
+        val creatorName = userService.getUserDto(creatorId).username
+        val payload =
+            taskNotificationService.buildTaskPayload(
+                taskId = task.id!!,
+                taskName = task.name,
+                spaceId = spaceId,
+                spaceName = spaceEntity.name,
+                actorId = creatorId,
+                actorName = creatorName,
+                extraFields = mapOf("taskCreatorId" to creatorId, "taskCreatorName" to creatorName),
+            )
+        taskNotificationService.publishToSpaceOwners(
+            spaceId = spaceId,
+            type = org.rucca.cheese.notification.models.NotificationType.TASK_PENDING_APPROVAL,
+            payload = payload,
+            actorId = creatorId,
+        )
         return task.id!!
     }
 
@@ -404,9 +423,32 @@ class TaskService(
 
         task.approved = ApproveType.NONE
         task.rejectReason = ""
-        return taskRepository
-            .save(task)
-            .toTaskDTO(TaskQueryOptions(querySpace = true, queryTopics = true), currentUserId)
+        val savedTask = taskRepository.save(task)
+        val actorName = userService.getUserDto(currentUserId).username
+        val payload =
+            taskNotificationService.buildTaskPayload(
+                taskId = savedTask.id!!,
+                taskName = savedTask.name,
+                spaceId = savedTask.space.id!!,
+                spaceName = spaceService.getSpaceDto(savedTask.space.id!!).name,
+                actorId = currentUserId,
+                actorName = actorName,
+                extraFields =
+                    mapOf(
+                        "taskCreatorId" to savedTask.creator.id!!.toLong(),
+                        "taskCreatorName" to actorName,
+                    ),
+            )
+        taskNotificationService.publishToSpaceOwners(
+            spaceId = savedTask.space.id!!,
+            type = org.rucca.cheese.notification.models.NotificationType.TASK_RESUBMITTED,
+            payload = payload,
+            actorId = currentUserId,
+        )
+        return savedTask.toTaskDTO(
+            TaskQueryOptions(querySpace = true, queryTopics = true),
+            currentUserId,
+        )
     }
 
     /**
@@ -431,6 +473,7 @@ class TaskService(
         )
 
         val task = getTask(taskId)
+        val previousApprovedStatus = task.approved
 
         // Validate and fetch the new category if provided
         val newCategory =
@@ -527,10 +570,55 @@ class TaskService(
         // --- Save the entity ---
         // Persist all accumulated changes with a single save operation.
         val savedTask = taskRepository.save(updatedTask)
+        publishTaskApprovalNotifications(savedTask, previousApprovedStatus, currentUserId)
 
         // --- Return Result ---
         // Fetch the comprehensive DTO based on the final saved state.
         return savedTask.toTaskDTO(TaskQueryOptions.MAXIMUM, currentUserId)
+    }
+
+    private fun publishTaskApprovalNotifications(
+        savedTask: Task,
+        previousApprovedStatus: ApproveType,
+        actorId: IdType,
+    ) {
+        if (savedTask.approved == previousApprovedStatus) {
+            return
+        }
+
+        val type =
+            when (savedTask.approved) {
+                ApproveType.APPROVED ->
+                    org.rucca.cheese.notification.models.NotificationType.TASK_APPROVED
+                ApproveType.DISAPPROVED ->
+                    org.rucca.cheese.notification.models.NotificationType.TASK_REJECTED
+                else -> return
+            }
+
+        val actorName = userService.getUserDto(actorId).username
+        val taskCreatorId = savedTask.creator.id!!.toLong()
+        val taskCreatorName = userService.getUserDto(taskCreatorId).username
+        val payload =
+            taskNotificationService.buildTaskPayload(
+                taskId = savedTask.id!!,
+                taskName = savedTask.name,
+                spaceId = savedTask.space.id!!,
+                spaceName = spaceService.getSpaceDto(savedTask.space.id!!).name,
+                actorId = actorId,
+                actorName = actorName,
+                extraFields =
+                    buildMap {
+                        put("taskCreatorId", taskCreatorId)
+                        put("taskCreatorName", taskCreatorName)
+                        put("rejectReason", savedTask.rejectReason ?: "")
+                    },
+            )
+        taskNotificationService.publishNotification(
+            recipientIds = setOf(taskCreatorId),
+            type = type,
+            payload = payload,
+            actorId = actorId,
+        )
     }
 
     enum class TasksSortBy {

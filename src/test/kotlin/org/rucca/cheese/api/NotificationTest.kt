@@ -108,10 +108,7 @@ class NotificationTest {
         val notificationTypeSchema =
             requireMap(schemas["NotificationType"], "components.schemas.NotificationType")
         val enumValues =
-            requireList(
-                notificationTypeSchema["enum"],
-                "components.schemas.NotificationType.enum",
-            )
+            requireList(notificationTypeSchema["enum"], "components.schemas.NotificationType.enum")
 
         return enumValues.map { value ->
             assertThat(value)
@@ -122,16 +119,12 @@ class NotificationTest {
     }
 
     private fun requireMap(value: Any?, path: String): Map<*, *> {
-        assertThat(value)
-            .describedAs("$path must exist")
-            .isInstanceOf(Map::class.java)
+        assertThat(value).describedAs("$path must exist").isInstanceOf(Map::class.java)
         return value as Map<*, *>
     }
 
     private fun requireList(value: Any?, path: String): List<*> {
-        assertThat(value)
-            .describedAs("$path must exist")
-            .isInstanceOf(List::class.java)
+        assertThat(value).describedAs("$path must exist").isInstanceOf(List::class.java)
         return value as List<*>
     }
 

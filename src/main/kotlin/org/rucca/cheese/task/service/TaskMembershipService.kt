@@ -31,6 +31,9 @@ class TaskMembershipService(
     private val eventPublisher: ApplicationEventPublisher,
     private val userRealNameService: UserRealNameService,
     private val encryptionService: EncryptionService,
+    private val userService: org.rucca.cheese.user.services.UserService,
+    private val teamService: org.rucca.cheese.team.TeamService,
+    private val taskNotificationService: TaskNotificationService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -96,6 +99,7 @@ class TaskMembershipService(
         memberId: IdType,
         deadline: LocalDateTime?,
         approved: ApproveType,
+        currentUserId: IdType,
         email: String?,
         phone: String?,
         applyReason: String?,
@@ -220,6 +224,7 @@ class TaskMembershipService(
             "Published status update event after creating membership {}",
             savedMembership.id!!,
         )
+        publishMembershipCreatedNotification(savedMembership, currentUserId)
 
         // 5. Return DTO (Delegate)
         return viewService.getTaskMembershipDTO(taskId, savedMembership.memberId!!)
@@ -230,9 +235,11 @@ class TaskMembershipService(
         taskId: IdType,
         memberId: IdType,
         patchDto: PatchTaskMembershipRequestDTO,
+        currentUserId: IdType,
     ): TaskMembershipDTO {
         val participant = getTaskMembershipInternal(taskId = taskId, memberId = memberId)
-        val updatedParticipant = performMembershipUpdateInternal(participant, patchDto)
+        val updatedParticipant =
+            performMembershipUpdateInternal(participant, patchDto, currentUserId)
         // Delegate DTO retrieval
         return viewService.getTaskMembershipDTO(
             updatedParticipant.task!!.id!!,
@@ -244,9 +251,11 @@ class TaskMembershipService(
     fun updateTaskMembership(
         participantId: IdType,
         patchDto: PatchTaskMembershipRequestDTO,
+        currentUserId: IdType,
     ): TaskMembershipDTO {
         val participant = getTaskMembershipInternal(participantId = participantId)
-        val updatedParticipant = performMembershipUpdateInternal(participant, patchDto)
+        val updatedParticipant =
+            performMembershipUpdateInternal(participant, patchDto, currentUserId)
         // Delegate DTO retrieval
         return viewService.getTaskMembershipDTO(
             updatedParticipant.task!!.id!!,
@@ -258,6 +267,7 @@ class TaskMembershipService(
     private fun performMembershipUpdateInternal(
         participant: TaskMembership,
         patchDto: PatchTaskMembershipRequestDTO,
+        currentUserId: IdType,
     ): TaskMembership { // Return entity for potential chaining if needed
         val task =
             participant.task
@@ -337,6 +347,7 @@ class TaskMembershipService(
             "Published status update event after updating membership {}",
             savedParticipant.id!!,
         )
+        publishMembershipStatusNotification(savedParticipant, previousApprovedStatus, currentUserId)
 
         // 7. Post-Save Actions (Delegate)
         if (
@@ -431,5 +442,97 @@ class TaskMembershipService(
     fun createMissingTeamSnapshotsForAllTasks():
         TaskMembershipSnapshotService.SnapshotCreationResult {
         return snapshotService.createMissingTeamSnapshotsForAllTasks()
+    }
+
+    private fun publishMembershipCreatedNotification(membership: TaskMembership, actorId: IdType) {
+        val task = membership.task ?: return
+        val actorName = userService.getUserDto(actorId).username
+        val payload = buildMembershipPayload(task, membership, actorId, actorName)
+
+        when (membership.approved) {
+            ApproveType.NONE ->
+                taskNotificationService.publishNotification(
+                    recipientIds = setOf(task.creator.id!!.toLong()),
+                    type =
+                        org.rucca.cheese.notification.models.NotificationType
+                            .TASK_PARTICIPANT_APPLIED,
+                    payload = payload,
+                    actorId = actorId,
+                )
+            ApproveType.APPROVED ->
+                taskNotificationService.publishToParticipantOrTeamOwners(
+                    memberId = membership.memberId!!,
+                    isTeam = membership.isTeam,
+                    type =
+                        org.rucca.cheese.notification.models.NotificationType
+                            .TASK_PARTICIPANT_APPROVED,
+                    payload = payload,
+                    actorId = actorId,
+                )
+            else -> Unit
+        }
+    }
+
+    private fun publishMembershipStatusNotification(
+        membership: TaskMembership,
+        previousApprovedStatus: ApproveType?,
+        actorId: IdType,
+    ) {
+        val newStatus = membership.approved ?: return
+        if (newStatus == previousApprovedStatus) {
+            return
+        }
+
+        val type =
+            when (newStatus) {
+                ApproveType.APPROVED ->
+                    org.rucca.cheese.notification.models.NotificationType.TASK_PARTICIPANT_APPROVED
+                ApproveType.DISAPPROVED ->
+                    org.rucca.cheese.notification.models.NotificationType.TASK_PARTICIPANT_REJECTED
+                else -> return
+            }
+
+        val actorName = userService.getUserDto(actorId).username
+        val payload =
+            buildMembershipPayload(membership.task ?: return, membership, actorId, actorName)
+        taskNotificationService.publishToParticipantOrTeamOwners(
+            memberId = membership.memberId!!,
+            isTeam = membership.isTeam,
+            type = type,
+            payload = payload,
+            actorId = actorId,
+        )
+    }
+
+    private fun buildMembershipPayload(
+        task: Task,
+        membership: TaskMembership,
+        actorId: IdType,
+        actorName: String,
+    ): Map<String, Any> {
+        val memberId = membership.memberId!!
+        val participantType = if (membership.isTeam) "team" else "user"
+        val participantName =
+            if (membership.isTeam) teamService.getTeamSummaryDTO(memberId).name
+            else userService.getUserDto(memberId).username
+        return taskNotificationService.buildMembershipPayload(
+            taskId = task.id!!,
+            taskName = task.name,
+            spaceId = task.space.id!!,
+            spaceName = task.space.name!!,
+            membershipId = membership.id!!,
+            participantId = memberId,
+            participantName = participantName,
+            participantType = participantType,
+            teamId = memberId.takeIf { membership.isTeam },
+            teamName = participantName.takeIf { membership.isTeam },
+            actorId = actorId,
+            actorName = actorName,
+            extraFields =
+                buildMap {
+                    put("applyReason", membership.applyReason ?: "")
+                    put("rejectReason", membership.rejectReason ?: "")
+                },
+        )
     }
 }
