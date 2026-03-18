@@ -134,6 +134,18 @@ cheese:
       REACTION: [IN_APP]          # Only In-App for reactions by default
       PROJECT_INVITE: [IN_APP, EMAIL]
       DEADLINE_REMIND: [IN_APP, EMAIL]
+      TASK_PENDING_APPROVAL: [IN_APP, EMAIL]
+      TASK_APPROVED: [IN_APP, EMAIL]
+      TASK_REJECTED: [IN_APP, EMAIL]
+      TASK_RESUBMITTED: [IN_APP, EMAIL]
+      TASK_PARTICIPANT_APPLIED: [IN_APP, EMAIL]
+      TASK_PARTICIPANT_APPROVED: [IN_APP, EMAIL]
+      TASK_PARTICIPANT_REJECTED: [IN_APP, EMAIL]
+      TASK_PARTICIPANT_AUTO_REJECTED: [IN_APP, EMAIL]
+      TASK_SUBMISSION_CREATED: [IN_APP, EMAIL]
+      TASK_SUBMISSION_UPDATED: [IN_APP, EMAIL]
+      TASK_SUBMISSION_APPROVED: [IN_APP, EMAIL]
+      TASK_SUBMISSION_REJECTED: [IN_APP, EMAIL]
     aggregatable-types: [REACTION] # Make reactions aggregatable
     aggregation-window: PT10M      # 10-minute window for reactions
     aggregation-max-actors-in-title: 2

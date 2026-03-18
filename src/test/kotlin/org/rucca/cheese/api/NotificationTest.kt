@@ -2,6 +2,8 @@ package org.rucca.cheese.api
 
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.*
+import java.nio.file.Files
+import java.nio.file.Path
 import java.time.Instant
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -14,6 +16,8 @@ import org.rucca.cheese.auth.core.PermissionEvaluator
 import org.rucca.cheese.auth.core.ResourceType
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.model.*
+import org.rucca.cheese.notification.config.NotificationProperties
+import org.rucca.cheese.notification.models.NotificationChannel
 import org.rucca.cheese.notification.models.NotificationType
 import org.rucca.cheese.notification.models.toDTO
 import org.rucca.cheese.notification.models.toEnum
@@ -41,6 +45,8 @@ class NotificationTest {
 
     @Autowired private lateinit var userCreatorService: UserCreatorService
 
+    @Autowired private lateinit var notificationProperties: NotificationProperties
+
     @MockkBean private lateinit var notificationQueryService: NotificationQueryService
 
     @MockkBean private lateinit var permissionEvaluator: PermissionEvaluator
@@ -60,6 +66,62 @@ class NotificationTest {
         val userDetails = userCreatorService.createUser()
         userToken = userCreatorService.login(userDetails.username, userDetails.password)
         currentUserId = userDetails.userId
+    }
+
+    @Test
+    fun `task notification contract should include backend enum openapi schema and channel mappings`() {
+        val expectedTaskTypes =
+            listOf(
+                NotificationType.TASK_PENDING_APPROVAL,
+                NotificationType.TASK_APPROVED,
+                NotificationType.TASK_REJECTED,
+                NotificationType.TASK_RESUBMITTED,
+                NotificationType.TASK_PARTICIPANT_APPLIED,
+                NotificationType.TASK_PARTICIPANT_APPROVED,
+                NotificationType.TASK_PARTICIPANT_REJECTED,
+                NotificationType.TASK_PARTICIPANT_AUTO_REJECTED,
+                NotificationType.TASK_SUBMISSION_CREATED,
+                NotificationType.TASK_SUBMISSION_UPDATED,
+                NotificationType.TASK_SUBMISSION_APPROVED,
+                NotificationType.TASK_SUBMISSION_REJECTED,
+            )
+
+        assertThat(NotificationType.entries.map { it.name })
+            .containsAll(expectedTaskTypes.map { it.name })
+
+        val openApiNotificationTypeEnumValues = readNotificationTypeEnumValues()
+
+        assertThat(openApiNotificationTypeEnumValues).containsAll(expectedTaskTypes.map { it.name })
+
+        expectedTaskTypes.forEach { type ->
+            assertThat(notificationProperties.typeChannels[type])
+                .describedAs("channel mapping for $type")
+                .containsExactly(NotificationChannel.IN_APP, NotificationChannel.EMAIL)
+        }
+    }
+
+    private fun readNotificationTypeEnumValues(): List<String> {
+        val lines = Files.readAllLines(Path.of("design/API/NT-API.yml"))
+        val notificationTypeIndex = lines.indexOfFirst { it.trim() == "NotificationType:" }
+        assertThat(notificationTypeIndex)
+            .describedAs("NotificationType schema must exist in components.schemas")
+            .isGreaterThanOrEqualTo(0)
+
+        val enumIndex =
+            lines.withIndex().indexOfFirst { (index, line) ->
+                index > notificationTypeIndex && line.trim() == "enum:"
+            }
+        assertThat(enumIndex)
+            .describedAs("NotificationType schema must define an enum block")
+            .isGreaterThan(notificationTypeIndex)
+
+        return lines
+            .drop(enumIndex + 1)
+            .takeWhile { line ->
+                val trimmed = line.trim()
+                trimmed.isNotEmpty() && line.startsWith("        - ")
+            }
+            .map { it.trim().removePrefix("- ").trim() }
     }
 
     private fun createSampleNotificationDTO(
