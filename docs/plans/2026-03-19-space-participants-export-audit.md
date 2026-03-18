@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Define audit model changes
+## Task 1: Define audit model changes
 
 **Files:**
 - Modify: `src/main/kotlin/org/rucca/cheese/user/models/UserRealNameAccessLog.kt`
@@ -42,7 +42,7 @@ git add src/main/kotlin/org/rucca/cheese/user/models/UserRealNameAccessLog.kt sr
 git commit -m "feat: add space export audit model support"
 ```
 
-### Task 2: Audit participants export
+## Task 2: Audit participants export
 
 **Files:**
 - Modify: `src/main/kotlin/org/rucca/cheese/space/analytics/SpaceAnalyticsService.kt`
@@ -80,7 +80,7 @@ git add src/main/kotlin/org/rucca/cheese/space/analytics/SpaceAnalyticsService.k
 git commit -m "feat: audit participants export"
 ```
 
-### Task 3: Cover the HTTP contract and document behavior
+## Task 3: Cover the HTTP contract and document behavior
 
 **Files:**
 - Modify: `src/test/kotlin/org/rucca/cheese/api/SpaceAnalyticsTest.kt`
@@ -111,4 +111,3 @@ Expected: PASS.
 git add src/test/kotlin/org/rucca/cheese/api/SpaceAnalyticsTest.kt docs/space-admin-analytics-frontend.md
 git commit -m "docs: note participants export auditing"
 ```
-

@@ -48,15 +48,22 @@ class SpaceAnalyticsServiceTest {
         every {
             taskMembershipSnapshotService.getRealNameInfoForTeamMemberSnapshot(any(), any())
         } answers { secondArg<TeamMemberRealNameInfo>().realNameInfo.convert() }
+        val queryService =
+            SpaceAnalyticsQueryService(
+                taskRepository = taskRepository,
+                taskMembershipRepository = taskMembershipRepository,
+                taskSubmissionRepository = taskSubmissionRepository,
+                taskSubmissionReviewRepository = taskSubmissionReviewRepository,
+                taskMembershipSnapshotService = taskMembershipSnapshotService,
+            )
         service =
             SpaceAnalyticsService(
                 taskRepository,
                 taskMembershipRepository,
-                taskSubmissionRepository,
-                taskSubmissionReviewRepository,
                 userRepository,
                 taskMembershipSnapshotService,
                 userRealNameService,
+                queryService,
             )
     }
 
@@ -354,7 +361,7 @@ class SpaceAnalyticsServiceTest {
         val pendingReview = mockk<TaskMembership>(relaxed = true)
         every { pendingReview.id } returns 12L
         every { pendingReview.task } returns task1
-        every { pendingReview.approved } returns ApproveType.NONE
+        every { pendingReview.approved } returns ApproveType.APPROVED
         every { pendingReview.completionStatus } returns TaskCompletionStatus.PENDING_REVIEW
 
         val rejected = mockk<TaskMembership>(relaxed = true)
@@ -443,15 +450,15 @@ class SpaceAnalyticsServiceTest {
         assertEquals("Category 1", firstTask?.category?.name)
         assertEquals(ApproveTypeDTO.APPROVED, firstTask?.approved)
         assertEquals(3, firstTask?.participantCount)
-        assertEquals(1, firstTask?.pendingParticipantApprovalCount)
-        assertEquals(1, firstTask?.approvedParticipantCount)
+        assertEquals(0, firstTask?.pendingParticipantApprovalCount)
+        assertEquals(2, firstTask?.approvedParticipantCount)
         assertEquals(1, firstTask?.rejectedParticipantCount)
         assertEquals(2, firstTask?.submittedParticipantCount)
         assertEquals(1, firstTask?.pendingReviewCount)
         assertEquals(0, firstTask?.resubmittableCount)
         assertEquals(1, firstTask?.successfulParticipantCount)
         assertEquals(1, firstTask?.failedParticipantCount)
-        assertEquals(2.0, firstTask?.submissionConversionRate)
+        assertEquals(1.0, firstTask?.submissionConversionRate)
         assertEquals(1.0 / 3.0, firstTask?.successRate ?: 0.0, 0.0001)
         assertEquals(
             task1.deadline?.atZone(java.time.ZoneId.systemDefault())?.toInstant()?.toEpochMilli(),
@@ -834,8 +841,6 @@ class SpaceAnalyticsServiceTest {
             SpaceAnalyticsService(
                 taskRepository,
                 taskMembershipRepository,
-                taskSubmissionRepository,
-                taskSubmissionReviewRepository,
                 userRepository,
                 taskMembershipSnapshotService,
                 userRealNameService,

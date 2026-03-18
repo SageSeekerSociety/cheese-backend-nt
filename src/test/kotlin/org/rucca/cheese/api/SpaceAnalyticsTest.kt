@@ -2,7 +2,7 @@ package org.rucca.cheese.api
 
 import java.time.LocalDateTime
 import java.time.ZoneId
-import kotlin.math.floor
+import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -45,7 +45,7 @@ constructor(private val userCreatorService: UserCreatorService) {
     private lateinit var participant: UserCreatorService.CreateUserResponse
     private lateinit var participantToken: String
 
-    private val randomSuffix = floor(Math.random() * 10000000000).toLong()
+    private val randomSuffix = Random.nextLong(10_000_000_000L)
 
     @BeforeAll
     fun prepare() {
@@ -922,9 +922,12 @@ constructor(private val userCreatorService: UserCreatorService) {
             Thread.sleep(100)
         }
 
-        assertNotNull(latestAnalytics)
-        assertTrue(condition(latestAnalytics!!.publishers.orEmpty()))
-        return latestAnalytics
+        assertTrue(
+            latestAnalytics != null && condition(latestAnalytics.publishers.orEmpty()),
+            "Timed out waiting for publisher analytics to satisfy condition. " +
+                "Latest publishers=${latestAnalytics?.publishers.orEmpty()}",
+        )
+        return latestAnalytics!!
     }
 
     private fun markTaskCreatedDaysAgo(taskId: IdType, daysAgo: Long) {

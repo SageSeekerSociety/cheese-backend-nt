@@ -9,7 +9,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.space.models.Space
 import org.rucca.cheese.space.models.SpaceCategory
@@ -250,5 +252,23 @@ class SpaceAnalyticsQueryServiceTest {
         verify(atLeast = 1) {
             taskMembershipSnapshotService.getRealNameInfoFromMembership(membership)
         }
+    }
+
+    @Test
+    fun `getOverview should reject invalid taskApproved values`() {
+        val error =
+            assertThrows<BadRequestError> {
+                queryService.getOverview(
+                    spaceId = 1L,
+                    from = null,
+                    to = null,
+                    categoryId = null,
+                    publisherId = null,
+                    taskApproved = "approved",
+                    groupBy = "day",
+                )
+            }
+
+        assertEquals("Invalid taskApproved: approved", error.message)
     }
 }

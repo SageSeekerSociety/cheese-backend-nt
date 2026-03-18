@@ -4,6 +4,8 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
+import org.rucca.cheese.common.error.BadRequestError
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.ApproveType
 import org.rucca.cheese.common.persistent.IdType
@@ -40,7 +42,9 @@ import org.rucca.cheese.task.TaskSubmissionReview
 import org.rucca.cheese.task.TaskSubmissionReviewRepository
 import org.rucca.cheese.task.TeamMemberRealNameInfo
 import org.rucca.cheese.task.service.TaskMembershipSnapshotService
+import org.springframework.stereotype.Service
 
+@Service
 class SpaceAnalyticsQueryService(
     private val taskRepository: TaskRepository,
     private val taskMembershipRepository: TaskMembershipRepository,
@@ -52,6 +56,7 @@ class SpaceAnalyticsQueryService(
         const val STALLED_TASK_THRESHOLD_DAYS = 14L
         const val OVERDUE_UNREVIEWED_SUBMISSION_THRESHOLD_DAYS = 7L
         const val INACTIVE_PUBLISHER_THRESHOLD_DAYS = 30L
+        val ANALYTICS_ZONE_ID: ZoneId = ZoneOffset.UTC
     }
 
     private data class TaskAnalyticsAggregate(
@@ -789,7 +794,7 @@ class SpaceAnalyticsQueryService(
             to = to?.let(::toLocalDateTime),
             categoryId = categoryId,
             publisherId = publisherId,
-            approved = taskApproved?.takeUnless(String::isBlank)?.let(ApproveType::valueOf),
+            approved = taskApproved?.takeUnless(String::isBlank)?.let(::parseApproveType),
         )
 
     private fun loadMembershipsByTaskId(tasks: List<Task>): Map<IdType, List<TaskMembership>> {
@@ -932,6 +937,10 @@ class SpaceAnalyticsQueryService(
     private fun safeRate(numerator: Int, denominator: Int): Double =
         if (denominator == 0) 0.0 else numerator.toDouble() / denominator.toDouble()
 
+    private fun parseApproveType(value: String): ApproveType =
+        runCatching { ApproveType.valueOf(value) }
+            .getOrElse { throw BadRequestError("Invalid taskApproved: $value") }
+
     private fun latestSubmissionOf(
         membership: TaskMembership,
         submissionsByMembershipId: Map<IdType, List<org.rucca.cheese.task.TaskSubmission>>,
@@ -963,9 +972,9 @@ class SpaceAnalyticsQueryService(
                 else -> timestamp.toLocalDate()
             }
 
-        return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        return date.atStartOfDay(ANALYTICS_ZONE_ID).toInstant().toEpochMilli()
     }
 
     private fun toLocalDateTime(epochMilli: Long): LocalDateTime =
-        LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMilli), ZoneId.systemDefault())
+        LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMilli), ANALYTICS_ZONE_ID)
 }

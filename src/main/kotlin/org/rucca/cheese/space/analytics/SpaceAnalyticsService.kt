@@ -1,18 +1,12 @@
 package org.rucca.cheese.space.analytics
 
-import java.time.DayOfWeek
-import java.time.LocalDateTime
-import java.time.ZoneId
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
-import org.rucca.cheese.task.Task
 import org.rucca.cheese.task.TaskCompletionStatus
 import org.rucca.cheese.task.TaskMembership
 import org.rucca.cheese.task.TaskMembershipRepository
 import org.rucca.cheese.task.TaskRepository
-import org.rucca.cheese.task.TaskSubmissionRepository
-import org.rucca.cheese.task.TaskSubmissionReviewRepository
 import org.rucca.cheese.task.TeamMemberRealNameInfo
 import org.rucca.cheese.task.service.TaskMembershipSnapshotService
 import org.rucca.cheese.user.UserRepository
@@ -27,41 +21,11 @@ import org.springframework.transaction.annotation.Transactional
 class SpaceAnalyticsService(
     private val taskRepository: TaskRepository,
     private val taskMembershipRepository: TaskMembershipRepository,
-    private val taskSubmissionRepository: TaskSubmissionRepository,
-    private val taskSubmissionReviewRepository: TaskSubmissionReviewRepository,
     private val userRepository: UserRepository,
     private val taskMembershipSnapshotService: TaskMembershipSnapshotService,
     private val userRealNameService: UserRealNameService,
-    private val queryService: SpaceAnalyticsQueryService =
-        SpaceAnalyticsQueryService(
-            taskRepository = taskRepository,
-            taskMembershipRepository = taskMembershipRepository,
-            taskSubmissionRepository = taskSubmissionRepository,
-            taskSubmissionReviewRepository = taskSubmissionReviewRepository,
-            taskMembershipSnapshotService = taskMembershipSnapshotService,
-        ),
+    private val queryService: SpaceAnalyticsQueryService,
 ) {
-    private data class TaskAnalyticsAggregate(
-        val task: Task,
-        val memberships: List<TaskMembership>,
-        val submittedParticipantCount: Int,
-        val pendingParticipantApprovalCount: Int,
-        val approvedParticipantCount: Int,
-        val rejectedParticipantCount: Int,
-        val pendingReviewCount: Int,
-        val resubmittableCount: Int,
-        val successfulParticipantCount: Int,
-        val failedParticipantCount: Int,
-    ) {
-        val participantCount: Int = memberships.size
-        val submissionConversionRate: Double =
-            if (approvedParticipantCount == 0) 0.0
-            else submittedParticipantCount.toDouble() / approvedParticipantCount.toDouble()
-        val successRate: Double =
-            if (participantCount == 0) 0.0
-            else successfulParticipantCount.toDouble() / participantCount.toDouble()
-    }
-
     fun getSpaceAnalyticsOverview(
         spaceId: IdType,
         from: Long?,
@@ -243,50 +207,6 @@ class SpaceAnalyticsService(
             }
 
         return DistributionDTO(name = name, type = DistributionDTO.Type.DISCRETE, items = items)
-    }
-
-    private fun filterTasks(
-        spaceId: IdType,
-        from: Long?,
-        to: Long?,
-        categoryId: Long?,
-        publisherId: Long?,
-        taskApproved: String?,
-    ): List<Task> =
-        taskRepository.findBySpaceId(spaceId).filter { task ->
-            (from == null || task.createdAt.toEpochMilli() >= from) &&
-                (to == null || task.createdAt.toEpochMilli() <= to) &&
-                (categoryId == null || task.category.id?.toLong() == categoryId) &&
-                (publisherId == null || task.creator.id?.toLong() == publisherId) &&
-                (taskApproved.isNullOrBlank() || task.approved.name == taskApproved)
-        }
-
-    private fun studentCountOf(membership: TaskMembership): Int =
-        if (membership.isTeam) membership.teamMembersRealNameInfo.size else 1
-
-    private fun safeRate(numerator: Int, denominator: Int): Double =
-        if (denominator == 0) 0.0 else numerator.toDouble() / denominator.toDouble()
-
-    private fun buildTimeSeries(
-        timestamps: List<LocalDateTime>,
-        groupBy: String,
-    ): List<TimeSeriesPointDTO> =
-        timestamps
-            .groupingBy { bucketStart(it, groupBy) }
-            .eachCount()
-            .toSortedMap()
-            .map { (bucket, count) -> TimeSeriesPointDTO(bucket = bucket, count = count) }
-
-    private fun bucketStart(timestamp: LocalDateTime, groupBy: String): Long {
-        val zoneId = ZoneId.systemDefault()
-        val date =
-            when (groupBy.lowercase()) {
-                "week" -> timestamp.toLocalDate().with(DayOfWeek.MONDAY)
-                "month" -> timestamp.toLocalDate().withDayOfMonth(1)
-                else -> timestamp.toLocalDate()
-            }
-
-        return date.atStartOfDay(zoneId).toInstant().toEpochMilli()
     }
 
     private fun createStudentStatistics(
