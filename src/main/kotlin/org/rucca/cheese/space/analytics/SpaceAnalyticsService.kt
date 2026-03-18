@@ -153,6 +153,7 @@ class SpaceAnalyticsService(
     fun getSpaceAnalyticsAlerts(spaceId: IdType): SpaceAnalyticsAlertsDTO =
         queryService.getAlerts(spaceId)
 
+    @Transactional
     fun exportSpaceAnalyticsParticipants(
         accessorId: IdType,
         spaceId: IdType,
