@@ -39,12 +39,14 @@ import org.rucca.cheese.task.TaskSubmissionRepository
 import org.rucca.cheese.task.TaskSubmissionReview
 import org.rucca.cheese.task.TaskSubmissionReviewRepository
 import org.rucca.cheese.task.TeamMemberRealNameInfo
+import org.rucca.cheese.task.service.TaskMembershipSnapshotService
 
 class SpaceAnalyticsQueryService(
     private val taskRepository: TaskRepository,
     private val taskMembershipRepository: TaskMembershipRepository,
     private val taskSubmissionRepository: TaskSubmissionRepository,
     private val taskSubmissionReviewRepository: TaskSubmissionReviewRepository,
+    private val taskMembershipSnapshotService: TaskMembershipSnapshotService,
 ) {
     private companion object {
         const val STALLED_TASK_THRESHOLD_DAYS = 14L
@@ -876,13 +878,15 @@ class SpaceAnalyticsQueryService(
 
     private fun studentProfilesOf(membership: TaskMembership): List<StudentProfile> =
         if (membership.isTeam) {
-            membership.teamMembersRealNameInfo.map(::toStudentProfile)
+            membership.teamMembersRealNameInfo.map { teamMember ->
+                toStudentProfile(membership, teamMember)
+            }
         } else {
             listOf(toStudentProfile(membership))
         }
 
     private fun toStudentProfile(membership: TaskMembership): StudentProfile {
-        val realNameInfo = membership.realNameInfo
+        val realNameInfo = taskMembershipSnapshotService.getRealNameInfoFromMembership(membership)
         return StudentProfile(
             realName = realNameInfo?.realName,
             studentId = realNameInfo?.studentId,
@@ -892,14 +896,23 @@ class SpaceAnalyticsQueryService(
         )
     }
 
-    private fun toStudentProfile(teamMember: TeamMemberRealNameInfo): StudentProfile =
-        StudentProfile(
-            realName = teamMember.realNameInfo.realName,
-            studentId = teamMember.realNameInfo.studentId,
-            grade = teamMember.realNameInfo.grade,
-            major = teamMember.realNameInfo.major,
-            className = teamMember.realNameInfo.className,
+    private fun toStudentProfile(
+        membership: TaskMembership,
+        teamMember: TeamMemberRealNameInfo,
+    ): StudentProfile {
+        val realNameInfo =
+            taskMembershipSnapshotService.getRealNameInfoForTeamMemberSnapshot(
+                membership,
+                teamMember,
+            )
+        return StudentProfile(
+            realName = realNameInfo.realName,
+            studentId = realNameInfo.studentId,
+            grade = realNameInfo.grade,
+            major = realNameInfo.major,
+            className = realNameInfo.className,
         )
+    }
 
     private fun csvRow(vararg values: Any?): String = values.joinToString(",") { csvCell(it) }
 

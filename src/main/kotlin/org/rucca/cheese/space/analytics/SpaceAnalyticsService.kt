@@ -13,6 +13,7 @@ import org.rucca.cheese.task.TaskMembershipRepository
 import org.rucca.cheese.task.TaskRepository
 import org.rucca.cheese.task.TaskSubmissionRepository
 import org.rucca.cheese.task.TaskSubmissionReviewRepository
+import org.rucca.cheese.task.service.TaskMembershipSnapshotService
 import org.rucca.cheese.user.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -25,12 +26,14 @@ class SpaceAnalyticsService(
     private val taskSubmissionRepository: TaskSubmissionRepository,
     private val taskSubmissionReviewRepository: TaskSubmissionReviewRepository,
     private val userRepository: UserRepository,
+    private val taskMembershipSnapshotService: TaskMembershipSnapshotService,
     private val queryService: SpaceAnalyticsQueryService =
         SpaceAnalyticsQueryService(
             taskRepository = taskRepository,
             taskMembershipRepository = taskMembershipRepository,
             taskSubmissionRepository = taskSubmissionRepository,
             taskSubmissionReviewRepository = taskSubmissionReviewRepository,
+            taskMembershipSnapshotService = taskMembershipSnapshotService,
         ),
 ) {
     private data class TaskAnalyticsAggregate(
@@ -444,6 +447,7 @@ class SpaceAnalyticsService(
                     val task = filteredTasks.find { it.id == membership.task?.id }
                     val status = membership.approved?.name ?: "NONE"
                     val completionStatus = membership.completionStatus.name
+                    val realNameInfo = firstStudentRealNameInfoOf(membership)
                     // Get user info from repository
                     val member =
                         membership.memberId?.let {
@@ -459,11 +463,11 @@ class SpaceAnalyticsService(
                     csvBuilder.append("${task?.deadline ?: ""},")
                     csvBuilder.append("${membership.memberId ?: ""},")
                     csvBuilder.append("\"${member?.username ?: ""}\",")
-                    csvBuilder.append("\"${membership.realNameInfo?.realName ?: ""}\",")
-                    csvBuilder.append("\"${membership.realNameInfo?.studentId ?: ""}\",")
-                    csvBuilder.append("\"${membership.realNameInfo?.grade ?: ""}\",")
-                    csvBuilder.append("\"${membership.realNameInfo?.major ?: ""}\",")
-                    csvBuilder.append("\"${membership.realNameInfo?.className ?: ""}\",")
+                    csvBuilder.append("\"${realNameInfo?.realName ?: ""}\",")
+                    csvBuilder.append("\"${realNameInfo?.studentId ?: ""}\",")
+                    csvBuilder.append("\"${realNameInfo?.grade ?: ""}\",")
+                    csvBuilder.append("\"${realNameInfo?.major ?: ""}\",")
+                    csvBuilder.append("\"${realNameInfo?.className ?: ""}\",")
                     csvBuilder.append("\"${membership.phone ?: ""}\",")
                     csvBuilder.append("\"${membership.email ?: ""}\",")
                     csvBuilder.append("\"${membership.applyReason ?: ""}\",")
@@ -535,4 +539,18 @@ class SpaceAnalyticsService(
 
         return csvBuilder.toString()
     }
+
+    private fun firstStudentRealNameInfoOf(
+        membership: TaskMembership
+    ): TaskParticipantRealNameInfoDTO? =
+        if (membership.isTeam) {
+            membership.teamMembersRealNameInfo.firstOrNull()?.let { teamMember ->
+                taskMembershipSnapshotService.getRealNameInfoForTeamMemberSnapshot(
+                    membership,
+                    teamMember,
+                )
+            }
+        } else {
+            taskMembershipSnapshotService.getRealNameInfoFromMembership(membership)
+        }
 }

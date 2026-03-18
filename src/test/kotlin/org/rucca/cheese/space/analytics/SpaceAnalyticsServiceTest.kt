@@ -13,6 +13,7 @@ import org.rucca.cheese.model.ApproveTypeDTO
 import org.rucca.cheese.space.models.Space
 import org.rucca.cheese.space.models.SpaceCategory
 import org.rucca.cheese.task.*
+import org.rucca.cheese.task.service.TaskMembershipSnapshotService
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserRepository
 
@@ -23,6 +24,7 @@ class SpaceAnalyticsServiceTest {
     private lateinit var taskSubmissionRepository: TaskSubmissionRepository
     private lateinit var taskSubmissionReviewRepository: TaskSubmissionReviewRepository
     private lateinit var userRepository: UserRepository
+    private lateinit var taskMembershipSnapshotService: TaskMembershipSnapshotService
     private lateinit var service: SpaceAnalyticsService
 
     @BeforeEach
@@ -32,6 +34,14 @@ class SpaceAnalyticsServiceTest {
         taskSubmissionRepository = mockk()
         taskSubmissionReviewRepository = mockk()
         userRepository = mockk()
+        taskMembershipSnapshotService = mockk()
+        every { taskMembershipSnapshotService.getRealNameInfoFromMembership(any()) } answers
+            {
+                firstArg<TaskMembership>().realNameInfo?.convert()
+            }
+        every {
+            taskMembershipSnapshotService.getRealNameInfoForTeamMemberSnapshot(any(), any())
+        } answers { secondArg<TeamMemberRealNameInfo>().realNameInfo.convert() }
         service =
             SpaceAnalyticsService(
                 taskRepository,
@@ -39,6 +49,7 @@ class SpaceAnalyticsServiceTest {
                 taskSubmissionRepository,
                 taskSubmissionReviewRepository,
                 userRepository,
+                taskMembershipSnapshotService,
             )
     }
 
@@ -733,6 +744,80 @@ class SpaceAnalyticsServiceTest {
         assertTrue(csv.contains("test@example.com"))
         assertTrue(csv.contains("APPROVED"))
         assertTrue(csv.contains("SUCCESS"))
+    }
+
+    @Test
+    fun `exportParticipants should use decrypted real name snapshots`() {
+        val spaceId = 1L
+        val space = mockk<Space>()
+        every { space.id } returns spaceId
+
+        val category = mockk<SpaceCategory>()
+        every { category.id } returns 1
+        every { category.name } returns "Category"
+        every { category.space } returns space
+
+        val user = mockk<User>()
+        every { user.id } returns 1
+        every { user.username } returns "testuser"
+
+        val task = mockk<Task>(relaxed = true)
+        every { task.id } returns 1L
+        every { task.name } returns "Test Task"
+        every { task.category } returns category
+        every { task.creator } returns user
+        every { task.createdAt } returns LocalDateTime.now()
+        every { task.approved } returns ApproveType.APPROVED
+        every { task.rank } returns null
+
+        val membership = mockk<TaskMembership>(relaxed = true)
+        every { membership.id } returns 1L
+        every { membership.task } returns task
+        every { membership.memberId } returns 10
+        every { membership.approved } returns ApproveType.APPROVED
+        every { membership.completionStatus } returns TaskCompletionStatus.SUCCESS
+        every { membership.email } returns "test@example.com"
+        every { membership.isTeam } returns false
+        every { membership.realNameInfo } returns
+            RealNameInfo(
+                realName = "cipher-name",
+                studentId = "cipher-student-id",
+                grade = "cipher-grade",
+                major = "cipher-major",
+                className = "cipher-class",
+                encrypted = true,
+            )
+        every { taskMembershipSnapshotService.getRealNameInfoFromMembership(membership) } returns
+            RealNameInfo(
+                    realName = "Alice",
+                    studentId = "20260001",
+                    grade = "2026",
+                    major = "CS",
+                    className = "CS-1",
+                    encrypted = false,
+                )
+                .convert()
+
+        every { taskRepository.findBySpaceId(spaceId) } returns listOf(task)
+        every { taskMembershipRepository.findAllByTaskId(1L) } returns listOf(membership)
+        every { userRepository.findById(any<Int>()) } returns java.util.Optional.of(user)
+
+        val csv =
+            service.exportParticipants(
+                spaceId = spaceId,
+                format = "csv",
+                from = null,
+                to = null,
+                taskStatus = null,
+                categoryId = null,
+                publisherId = null,
+                realName = "",
+                successBy = "",
+            )
+
+        assertTrue(csv.contains("Alice"))
+        assertTrue(csv.contains("20260001"))
+        assertFalse(csv.contains("cipher-name"))
     }
 
     @Test

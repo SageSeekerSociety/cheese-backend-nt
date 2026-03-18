@@ -13,6 +13,8 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.task.TaskSubmitterType
 import org.rucca.cheese.task.toDTO
+import org.rucca.cheese.user.models.KeyPurpose
+import org.rucca.cheese.user.services.EncryptionService
 import org.rucca.cheese.utils.UserCreatorService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -35,6 +37,7 @@ class SpaceAnalyticsTest
 constructor(private val userCreatorService: UserCreatorService) {
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var jdbcTemplate: JdbcTemplate
+    @Autowired private lateinit var encryptionService: EncryptionService
 
     private lateinit var webTestClient: WebTestClient
     private lateinit var spaceOwner: UserCreatorService.CreateUserResponse
@@ -603,6 +606,76 @@ constructor(private val userCreatorService: UserCreatorService) {
         assertTrue(publishersCsv.contains(spaceOwner.username))
     }
 
+    @Test
+    fun `space analytics participants and exports should decrypt encrypted real name snapshots`() {
+        val (spaceId, defaultCategoryId) =
+            createSpace(
+                creatorToken = ownerToken,
+                spaceName = "Encrypted Analytics Space ($randomSuffix)",
+                spaceIntro = "intro",
+                spaceDescription = "description",
+                spaceAvatarId = spaceOwner.avatarId,
+            )
+
+        val taskId =
+            createTask(
+                token = ownerToken,
+                name = "Encrypted Task ($randomSuffix)",
+                submitterType = TaskSubmitterType.USER,
+                deadline =
+                    LocalDateTime.now()
+                        .plusDays(7)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli(),
+                defaultDeadline = 7L,
+                resubmittable = true,
+                editable = true,
+                intro = "intro",
+                description = "description",
+                submissionSchema =
+                    listOf(TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT)),
+                spaceId = spaceId,
+                categoryId = defaultCategoryId,
+            )
+
+        approveTask(taskId, ownerToken)
+        val membershipId = addParticipantUser(ownerToken, taskId, participant.userId)
+        approveTaskParticipant(ownerToken, taskId, membershipId)
+        val taskKey = encryptionService.getOrCreateKey(KeyPurpose.TASK_REAL_NAME, taskId)
+        val encryptedRealName = encryptionService.encryptData("Carol", taskKey.id)
+        markMembershipEncryptedRealNameInfo(
+            keyId = taskKey.id,
+            membershipId = membershipId,
+            realName = "Carol",
+            studentId = "20260003",
+            grade = "2026",
+            major = "Physics",
+            className = "Physics-1",
+        )
+
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceId/analytics/participants")
+            .header("Authorization", "Bearer $ownerToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.data.studentMetrics.studentsWithRealNameCount")
+            .isEqualTo(1)
+            .jsonPath("$.data.distributions.byGrade.items[0].label")
+            .isEqualTo("2026")
+            .jsonPath("$.data.distributions.byMajor.items[0].label")
+            .isEqualTo("Physics")
+
+        val participantsCsv =
+            getAnalyticsCsv("/spaces/$spaceId/analytics/participants/export", ownerToken)
+        assertTrue(participantsCsv.contains("Carol"))
+        assertTrue(participantsCsv.contains("20260003"))
+        assertTrue(!participantsCsv.contains(encryptedRealName))
+    }
+
     private fun createSpace(
         creatorToken: String,
         spaceName: String,
@@ -884,6 +957,33 @@ constructor(private val userCreatorService: UserCreatorService) {
             grade,
             major,
             className,
+            membershipId,
+        )
+    }
+
+    private fun markMembershipEncryptedRealNameInfo(
+        keyId: String,
+        membershipId: IdType,
+        realName: String,
+        studentId: String,
+        grade: String,
+        major: String,
+        className: String,
+    ) {
+        jdbcTemplate.update(
+            """
+                UPDATE task_membership
+                SET real_name = ?, student_id = ?, grade = ?, major = ?, class_name = ?,
+                    encrypted = true, encryption_key_id = ?
+                WHERE id = ?
+            """
+                .trimIndent(),
+            encryptionService.encryptData(realName, keyId),
+            encryptionService.encryptData(studentId, keyId),
+            encryptionService.encryptData(grade, keyId),
+            encryptionService.encryptData(major, keyId),
+            encryptionService.encryptData(className, keyId),
+            keyId,
             membershipId,
         )
     }

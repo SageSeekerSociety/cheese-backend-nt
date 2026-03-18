@@ -6,6 +6,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import java.time.LocalDateTime
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -22,6 +23,8 @@ import org.rucca.cheese.task.TaskSubmission
 import org.rucca.cheese.task.TaskSubmissionRepository
 import org.rucca.cheese.task.TaskSubmissionReviewRepository
 import org.rucca.cheese.task.TeamMemberRealNameInfo
+import org.rucca.cheese.task.convert
+import org.rucca.cheese.task.service.TaskMembershipSnapshotService
 import org.rucca.cheese.user.User
 
 @ExtendWith(MockKExtension::class)
@@ -30,6 +33,7 @@ class SpaceAnalyticsQueryServiceTest {
     private lateinit var taskMembershipRepository: TaskMembershipRepository
     private lateinit var taskSubmissionRepository: TaskSubmissionRepository
     private lateinit var taskSubmissionReviewRepository: TaskSubmissionReviewRepository
+    private lateinit var taskMembershipSnapshotService: TaskMembershipSnapshotService
     private lateinit var queryService: SpaceAnalyticsQueryService
 
     @BeforeEach
@@ -38,12 +42,21 @@ class SpaceAnalyticsQueryServiceTest {
         taskMembershipRepository = mockk()
         taskSubmissionRepository = mockk()
         taskSubmissionReviewRepository = mockk()
+        taskMembershipSnapshotService = mockk()
+        every { taskMembershipSnapshotService.getRealNameInfoFromMembership(any()) } answers
+            {
+                firstArg<TaskMembership>().realNameInfo?.convert()
+            }
+        every {
+            taskMembershipSnapshotService.getRealNameInfoForTeamMemberSnapshot(any(), any())
+        } answers { secondArg<TeamMemberRealNameInfo>().realNameInfo.convert() }
         queryService =
             SpaceAnalyticsQueryService(
                 taskRepository = taskRepository,
                 taskMembershipRepository = taskMembershipRepository,
                 taskSubmissionRepository = taskSubmissionRepository,
                 taskSubmissionReviewRepository = taskSubmissionReviewRepository,
+                taskMembershipSnapshotService = taskMembershipSnapshotService,
             )
     }
 
@@ -138,5 +151,103 @@ class SpaceAnalyticsQueryServiceTest {
         verify(exactly = 1) { taskSubmissionRepository.findAllByMembershipIdIn(listOf(11L, 12L)) }
         verify(exactly = 0) { taskMembershipRepository.findAllByTaskId(any()) }
         verify(exactly = 0) { taskSubmissionRepository.findAllByMembershipId(any()) }
+    }
+
+    @Test
+    fun `participant analytics export should use decrypted real name snapshots`() {
+        val spaceId = 1L
+        val now = LocalDateTime.now()
+        val space = mockk<Space>()
+        every { space.id } returns spaceId
+
+        val category = mockk<SpaceCategory>()
+        every { category.id } returns 101
+        every { category.name } returns "Research"
+        every { category.space } returns space
+
+        val publisher = mockk<User>()
+        every { publisher.id } returns 201
+        every { publisher.username } returns "teacher-a"
+
+        val task = mockk<Task>(relaxed = true)
+        every { task.id } returns 1L
+        every { task.name } returns "Task 1"
+        every { task.creator } returns publisher
+        every { task.category } returns category
+        every { task.createdAt } returns now.minusDays(1)
+        every { task.approved } returns ApproveType.APPROVED
+
+        val membership = mockk<TaskMembership>(relaxed = true)
+        every { membership.id } returns 11L
+        every { membership.task } returns task
+        every { membership.isTeam } returns false
+        every { membership.memberId } returns 301L
+        every { membership.approved } returns ApproveType.APPROVED
+        every { membership.completionStatus } returns TaskCompletionStatus.SUCCESS
+        every { membership.createdAt } returns now.minusHours(6)
+        every { membership.updatedAt } returns now.minusHours(1)
+        every { membership.realNameInfo } returns
+            RealNameInfo(
+                realName = "qlb3tfP/n5aQX3KkQ2ZD6Q==",
+                studentId = "D6HzNrxCEyUGihv4I9y7og==",
+                grade = "NBGLsUojrFAyWmwtq5oENQ==",
+                major = "0Cuz9jqedN1v2JXqlJqYCw==",
+                className = "cipher-class",
+                encrypted = true,
+            )
+        every { membership.teamMembersRealNameInfo } returns mutableListOf()
+        every { taskMembershipSnapshotService.getRealNameInfoFromMembership(membership) } returns
+            RealNameInfo(
+                    realName = "Alice",
+                    studentId = "20260001",
+                    grade = "2026",
+                    major = "CS",
+                    className = "CS-1",
+                    encrypted = false,
+                )
+                .convert()
+
+        every { taskRepository.findAnalyticsTasks(spaceId, null, null, null, null, null) } returns
+            listOf(task)
+        every { taskMembershipRepository.findAllByTaskIdIn(listOf(1L)) } returns listOf(membership)
+        every { taskSubmissionRepository.findAllByMembershipIdIn(listOf(11L)) } returns emptyList()
+
+        val analytics =
+            queryService.getParticipants(
+                spaceId = spaceId,
+                from = null,
+                to = null,
+                categoryId = null,
+                publisherId = null,
+                taskApproved = null,
+                participationApproved = null,
+                completionStatus = null,
+                realName = "",
+                groupBy = "day",
+            )
+        val csv =
+            queryService.exportParticipantsCsv(
+                spaceId = spaceId,
+                from = null,
+                to = null,
+                categoryId = null,
+                publisherId = null,
+                taskApproved = null,
+                participationApproved = null,
+                completionStatus = null,
+                realName = "",
+            )
+
+        assertEquals(1, analytics.studentMetrics.studentsWithRealNameCount)
+        assertEquals("2026", analytics.distributions.byGrade!!.items!!.first().label)
+        assertEquals("CS", analytics.distributions.byMajor!!.items!!.first().label)
+        assertEquals("CS-1", analytics.distributions.byClassName!!.items!!.first().label)
+        assertTrue(csv.contains("Alice"))
+        assertTrue(csv.contains("20260001"))
+        assertTrue(!csv.contains("qlb3tfP/n5aQX3KkQ2ZD6Q=="))
+
+        verify(atLeast = 1) {
+            taskMembershipSnapshotService.getRealNameInfoFromMembership(membership)
+        }
     }
 }
