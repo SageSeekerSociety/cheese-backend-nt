@@ -4531,6 +4531,7 @@ components:
       type: string
       enum:
         - TASK
+        - SPACE
     UserIdentityAccessType:
       title: UserIdentityAccessType
       type: string
