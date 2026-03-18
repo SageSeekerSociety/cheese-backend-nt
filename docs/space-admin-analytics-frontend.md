@@ -407,6 +407,9 @@
 - 导出时不需要额外请求 analytics JSON 接口后前端拼 CSV
 - 直接下载后端返回的 `text/csv`
 - 页面上应明确提示“导出内容口径与当前筛选一致”
+- `GET /spaces/{spaceId}/analytics/participants/export`
+  - 包含实名信息列
+  - 后端会对每个被导出的用户记录一条实名导出审计
 
 ## 7. 新旧接口迁移说明
 

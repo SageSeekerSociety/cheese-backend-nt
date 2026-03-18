@@ -13,8 +13,12 @@ import org.rucca.cheese.task.TaskMembershipRepository
 import org.rucca.cheese.task.TaskRepository
 import org.rucca.cheese.task.TaskSubmissionRepository
 import org.rucca.cheese.task.TaskSubmissionReviewRepository
+import org.rucca.cheese.task.TeamMemberRealNameInfo
 import org.rucca.cheese.task.service.TaskMembershipSnapshotService
 import org.rucca.cheese.user.UserRepository
+import org.rucca.cheese.user.models.AccessModuleType
+import org.rucca.cheese.user.models.AccessType
+import org.rucca.cheese.user.services.UserRealNameService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -27,6 +31,7 @@ class SpaceAnalyticsService(
     private val taskSubmissionReviewRepository: TaskSubmissionReviewRepository,
     private val userRepository: UserRepository,
     private val taskMembershipSnapshotService: TaskMembershipSnapshotService,
+    private val userRealNameService: UserRealNameService,
     private val queryService: SpaceAnalyticsQueryService =
         SpaceAnalyticsQueryService(
             taskRepository = taskRepository,
@@ -149,6 +154,7 @@ class SpaceAnalyticsService(
         queryService.getAlerts(spaceId)
 
     fun exportSpaceAnalyticsParticipants(
+        accessorId: IdType,
         spaceId: IdType,
         from: Long?,
         to: Long?,
@@ -159,17 +165,34 @@ class SpaceAnalyticsService(
         completionStatus: String?,
         realName: String,
     ): String =
-        queryService.exportParticipantsCsv(
-            spaceId = spaceId,
-            from = from,
-            to = to,
-            categoryId = categoryId,
-            publisherId = publisherId,
-            taskApproved = taskApproved,
-            participationApproved = participationApproved,
-            completionStatus = completionStatus,
-            realName = realName,
-        )
+        queryService
+            .exportParticipantsCsv(
+                spaceId = spaceId,
+                from = from,
+                to = to,
+                categoryId = categoryId,
+                publisherId = publisherId,
+                taskApproved = taskApproved,
+                participationApproved = participationApproved,
+                completionStatus = completionStatus,
+                realName = realName,
+            )
+            .also { exportPayload ->
+                auditSpaceParticipantExport(
+                    accessorId = accessorId,
+                    spaceId = spaceId,
+                    memberships = exportPayload.memberships,
+                    from = from,
+                    to = to,
+                    categoryId = categoryId,
+                    publisherId = publisherId,
+                    taskApproved = taskApproved,
+                    participationApproved = participationApproved,
+                    completionStatus = completionStatus,
+                    realName = realName,
+                )
+            }
+            .csv
 
     fun exportSpaceAnalyticsTasks(
         spaceId: IdType,
@@ -553,4 +576,70 @@ class SpaceAnalyticsService(
         } else {
             taskMembershipSnapshotService.getRealNameInfoFromMembership(membership)
         }
+
+    private fun auditSpaceParticipantExport(
+        accessorId: IdType,
+        spaceId: IdType,
+        memberships: List<TaskMembership>,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        publisherId: Long?,
+        taskApproved: String?,
+        participationApproved: String?,
+        completionStatus: String?,
+        realName: String,
+    ) {
+        val accessReason =
+            buildParticipantExportAccessReason(
+                from = from,
+                to = to,
+                categoryId = categoryId,
+                publisherId = publisherId,
+                taskApproved = taskApproved,
+                participationApproved = participationApproved,
+                completionStatus = completionStatus,
+                realName = realName,
+            )
+        memberships.flatMap(::exportedUserIdsOf).distinct().forEach { targetUserId ->
+            userRealNameService.logAccess(
+                accessorId = accessorId,
+                targetId = targetUserId,
+                accessReason = accessReason,
+                accessType = AccessType.EXPORT,
+                moduleType = AccessModuleType.SPACE,
+                moduleEntityId = spaceId,
+            )
+        }
+    }
+
+    private fun exportedUserIdsOf(membership: TaskMembership): List<IdType> =
+        if (membership.isTeam) {
+            membership.teamMembersRealNameInfo.map(TeamMemberRealNameInfo::memberId)
+        } else {
+            listOfNotNull(membership.memberId)
+        }
+
+    private fun buildParticipantExportAccessReason(
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        publisherId: Long?,
+        taskApproved: String?,
+        participationApproved: String?,
+        completionStatus: String?,
+        realName: String,
+    ): String =
+        "Export space analytics participants with filters: " +
+            listOf(
+                    "from=$from",
+                    "to=$to",
+                    "categoryId=$categoryId",
+                    "publisherId=$publisherId",
+                    "taskApproved=${taskApproved ?: ""}",
+                    "participationApproved=${participationApproved ?: ""}",
+                    "completionStatus=${completionStatus ?: ""}",
+                    "realName=$realName",
+                )
+                .joinToString(",")
 }

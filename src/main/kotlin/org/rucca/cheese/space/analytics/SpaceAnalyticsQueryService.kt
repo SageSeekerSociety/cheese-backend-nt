@@ -101,6 +101,8 @@ class SpaceAnalyticsQueryService(
         val submissionsByMembershipId: Map<IdType, List<TaskSubmission>>,
     )
 
+    data class ParticipantExportPayload(val csv: String, val memberships: List<TaskMembership>)
+
     fun getOverview(
         spaceId: IdType,
         from: Long?,
@@ -518,7 +520,7 @@ class SpaceAnalyticsQueryService(
         participationApproved: String?,
         completionStatus: String?,
         realName: String,
-    ): String {
+    ): ParticipantExportPayload {
         val scope =
             loadParticipantAnalyticsScope(
                 spaceId = spaceId,
@@ -590,7 +592,10 @@ class SpaceAnalyticsQueryService(
                 )
             }
         }
-        return rows.joinToString("\n", postfix = "\n")
+        return ParticipantExportPayload(
+            csv = rows.joinToString("\n", postfix = "\n"),
+            memberships = scope.memberships,
+        )
     }
 
     fun exportTasksCsv(

@@ -3,6 +3,7 @@ package org.rucca.cheese.space.analytics
 import io.mockk.every
 import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
+import io.mockk.verify
 import java.time.LocalDateTime
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -16,6 +17,9 @@ import org.rucca.cheese.task.*
 import org.rucca.cheese.task.service.TaskMembershipSnapshotService
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.UserRepository
+import org.rucca.cheese.user.models.AccessModuleType
+import org.rucca.cheese.user.models.AccessType
+import org.rucca.cheese.user.services.UserRealNameService
 
 @ExtendWith(MockKExtension::class)
 class SpaceAnalyticsServiceTest {
@@ -25,6 +29,7 @@ class SpaceAnalyticsServiceTest {
     private lateinit var taskSubmissionReviewRepository: TaskSubmissionReviewRepository
     private lateinit var userRepository: UserRepository
     private lateinit var taskMembershipSnapshotService: TaskMembershipSnapshotService
+    private lateinit var userRealNameService: UserRealNameService
     private lateinit var service: SpaceAnalyticsService
 
     @BeforeEach
@@ -35,6 +40,7 @@ class SpaceAnalyticsServiceTest {
         taskSubmissionReviewRepository = mockk()
         userRepository = mockk()
         taskMembershipSnapshotService = mockk()
+        userRealNameService = mockk(relaxed = true)
         every { taskMembershipSnapshotService.getRealNameInfoFromMembership(any()) } answers
             {
                 firstArg<TaskMembership>().realNameInfo?.convert()
@@ -50,6 +56,7 @@ class SpaceAnalyticsServiceTest {
                 taskSubmissionReviewRepository,
                 userRepository,
                 taskMembershipSnapshotService,
+                userRealNameService,
             )
     }
 
@@ -818,6 +825,104 @@ class SpaceAnalyticsServiceTest {
         assertTrue(csv.contains("Alice"))
         assertTrue(csv.contains("20260001"))
         assertFalse(csv.contains("cipher-name"))
+    }
+
+    @Test
+    fun `exportSpaceAnalyticsParticipants should audit each exported user`() {
+        val queryService = mockk<SpaceAnalyticsQueryService>()
+        val auditService =
+            SpaceAnalyticsService(
+                taskRepository,
+                taskMembershipRepository,
+                taskSubmissionRepository,
+                taskSubmissionReviewRepository,
+                userRepository,
+                taskMembershipSnapshotService,
+                userRealNameService,
+                queryService,
+            )
+
+        val task = mockk<Task>(relaxed = true)
+        every { task.id } returns 1L
+
+        val singleMembership = mockk<TaskMembership>(relaxed = true)
+        every { singleMembership.id } returns 11L
+        every { singleMembership.task } returns task
+        every { singleMembership.isTeam } returns false
+        every { singleMembership.memberId } returns 101L
+        every { singleMembership.teamMembersRealNameInfo } returns mutableListOf()
+
+        val teamMembership = mockk<TaskMembership>(relaxed = true)
+        every { teamMembership.id } returns 12L
+        every { teamMembership.task } returns task
+        every { teamMembership.isTeam } returns true
+        every { teamMembership.memberId } returns 999L
+        every { teamMembership.teamMembersRealNameInfo } returns
+            mutableListOf(
+                TeamMemberRealNameInfo(201L, realNameInfo = RealNameInfo(realName = "A")),
+                TeamMemberRealNameInfo(202L, realNameInfo = RealNameInfo(realName = "B")),
+            )
+
+        every {
+            queryService.exportParticipantsCsv(
+                spaceId = 52L,
+                from = 100L,
+                to = 200L,
+                categoryId = 3L,
+                publisherId = 4L,
+                taskApproved = "APPROVED",
+                participationApproved = "APPROVED",
+                completionStatus = "SUCCESS",
+                realName = "with",
+            )
+        } returns
+            SpaceAnalyticsQueryService.ParticipantExportPayload(
+                csv = "csv-content\n",
+                memberships = listOf(singleMembership, teamMembership),
+            )
+        val exportedTargetIds = mutableListOf<Long>()
+        val accessReasons = mutableListOf<String>()
+        every { userRealNameService.logAccess(any(), any(), any(), any(), any(), any()) } answers
+            {
+                exportedTargetIds.add(secondArg())
+                accessReasons.add(thirdArg())
+                Unit
+            }
+
+        val csv =
+            auditService.exportSpaceAnalyticsParticipants(
+                accessorId = 7L,
+                spaceId = 52L,
+                from = 100L,
+                to = 200L,
+                categoryId = 3L,
+                publisherId = 4L,
+                taskApproved = "APPROVED",
+                participationApproved = "APPROVED",
+                completionStatus = "SUCCESS",
+                realName = "with",
+            )
+
+        assertEquals("csv-content\n", csv)
+        verify(exactly = 3) {
+            userRealNameService.logAccess(
+                accessorId = 7L,
+                targetId = any(),
+                accessReason = any(),
+                accessType = AccessType.EXPORT,
+                moduleType = AccessModuleType.SPACE,
+                moduleEntityId = 52L,
+            )
+        }
+        assertEquals(listOf(101L, 201L, 202L), exportedTargetIds.sorted())
+        assertTrue(accessReasons.all { it.contains("from=100") })
+        assertTrue(accessReasons.all { it.contains("to=200") })
+        assertTrue(accessReasons.all { it.contains("categoryId=3") })
+        assertTrue(accessReasons.all { it.contains("publisherId=4") })
+        assertTrue(accessReasons.all { it.contains("taskApproved=APPROVED") })
+        assertTrue(accessReasons.all { it.contains("participationApproved=APPROVED") })
+        assertTrue(accessReasons.all { it.contains("completionStatus=SUCCESS") })
+        assertTrue(accessReasons.all { it.contains("realName=with") })
     }
 
     @Test

@@ -225,7 +225,7 @@ class SpaceAnalyticsQueryServiceTest {
                 realName = "",
                 groupBy = "day",
             )
-        val csv =
+        val exportPayload =
             queryService.exportParticipantsCsv(
                 spaceId = spaceId,
                 from = null,
@@ -242,9 +242,10 @@ class SpaceAnalyticsQueryServiceTest {
         assertEquals("2026", analytics.distributions.byGrade!!.items!!.first().label)
         assertEquals("CS", analytics.distributions.byMajor!!.items!!.first().label)
         assertEquals("CS-1", analytics.distributions.byClassName!!.items!!.first().label)
-        assertTrue(csv.contains("Alice"))
-        assertTrue(csv.contains("20260001"))
-        assertTrue(!csv.contains("qlb3tfP/n5aQX3KkQ2ZD6Q=="))
+        assertEquals(1, exportPayload.memberships.size)
+        assertTrue(exportPayload.csv.contains("Alice"))
+        assertTrue(exportPayload.csv.contains("20260001"))
+        assertTrue(!exportPayload.csv.contains("qlb3tfP/n5aQX3KkQ2ZD6Q=="))
 
         verify(atLeast = 1) {
             taskMembershipSnapshotService.getRealNameInfoFromMembership(membership)

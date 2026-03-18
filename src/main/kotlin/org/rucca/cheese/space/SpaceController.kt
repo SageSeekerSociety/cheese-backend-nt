@@ -555,9 +555,11 @@ class SpaceController(
         completionStatus: String?,
         realName: String,
     ): ResponseEntity<String> {
+        val currentUserId = jwtService.getCurrentUserId()
         val csv =
             withContext(Dispatchers.IO) {
                 spaceAnalyticsService.exportSpaceAnalyticsParticipants(
+                    accessorId = currentUserId,
                     spaceId = spaceId,
                     from = from,
                     to = to,
