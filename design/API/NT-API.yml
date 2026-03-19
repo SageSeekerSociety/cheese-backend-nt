@@ -942,6 +942,97 @@ paths:
                 userId:
                   type: integer
                   format: int64
+  /spaces/{spaceId}/me/publishing:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      summary: Get Space My Publishing Overview
+      operationId: getSpaceMePublishing
+      tags: [ Spaces ]
+      responses:
+        "200":
+          description: Space member publisher overview data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/SpaceMyPublishingOverview"
+                  message:
+                    type: string
+  /spaces/{spaceId}/me/publishedTasks:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      summary: Get Space My Published Tasks
+      operationId: getSpaceMePublishedTasks
+      tags: [ Spaces ]
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: integer
+            format: int64
+          description: Start timestamp for filtering tasks
+        - name: to
+          in: query
+          schema:
+            type: integer
+            format: int64
+          description: End timestamp for filtering tasks
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+            format: int64
+          description: Filter by category ID
+        - name: approved
+          in: query
+          schema:
+            type: string
+            enum: [ NONE, APPROVED, DISAPPROVED ]
+          description: Filter by task approval status
+        - name: hasPendingParticipantApproval
+          in: query
+          schema:
+            type: boolean
+          description: Filter to tasks with pending participant approvals
+        - name: hasPendingReview
+          in: query
+          schema:
+            type: boolean
+          description: Filter to tasks with pending reviews
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [ createdAt, participantCount, pendingReviewCount, successRate ]
+            default: createdAt
+          description: Sort field
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [ asc, desc ]
+            default: desc
+          description: Sort order
+      responses:
+        "200":
+          description: Space member published tasks data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/SpaceMyPublishedTasks"
+                  message:
+                    type: string
   /spaces/{spaceId}/analytics/tasks:
     parameters:
       - $ref: "#/components/parameters/SpaceId"
@@ -6334,6 +6425,121 @@ components:
         personalAdvantage:
           type: string
         remark:
+          type: string
+    SpaceMyPublishingOverview:
+      type: object
+      required:
+        - spaceId
+        - taskCount
+        - approvedTaskCount
+        - pendingTaskApprovalCount
+        - disapprovedTaskCount
+        - participantCount
+        - approvedParticipantCount
+        - pendingParticipantApprovalCount
+        - submittedParticipantCount
+        - pendingReviewCount
+        - successfulParticipantCount
+      properties:
+        spaceId:
+          type: integer
+          format: int64
+        taskCount:
+          type: integer
+        approvedTaskCount:
+          type: integer
+        pendingTaskApprovalCount:
+          type: integer
+        disapprovedTaskCount:
+          type: integer
+        participantCount:
+          type: integer
+        approvedParticipantCount:
+          type: integer
+        pendingParticipantApprovalCount:
+          type: integer
+        submittedParticipantCount:
+          type: integer
+        pendingReviewCount:
+          type: integer
+        successfulParticipantCount:
+          type: integer
+    SpaceMyPublishedTasks:
+      type: object
+      required:
+        - tasks
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpaceMyPublishedTask"
+    SpaceMyPublishedTask:
+      type: object
+      required:
+        - taskId
+        - taskName
+        - category
+        - approved
+        - createdAt
+        - participantCount
+        - approvedParticipantCount
+        - pendingParticipantApprovalCount
+        - submittedParticipantCount
+        - pendingReviewCount
+        - successfulParticipantCount
+        - failedParticipantCount
+        - submissionConversionRate
+        - successRate
+      properties:
+        taskId:
+          type: integer
+          format: int64
+        taskName:
+          type: string
+        category:
+          $ref: "#/components/schemas/SpaceMyPublishedTaskCategory"
+        approved:
+          $ref: "#/components/schemas/ApproveType"
+        createdAt:
+          type: integer
+          format: int64
+        deadline:
+          type: integer
+          format: int64
+        participantCount:
+          type: integer
+        approvedParticipantCount:
+          type: integer
+        pendingParticipantApprovalCount:
+          type: integer
+        submittedParticipantCount:
+          type: integer
+        pendingReviewCount:
+          type: integer
+        successfulParticipantCount:
+          type: integer
+        failedParticipantCount:
+          type: integer
+        submissionConversionRate:
+          type: number
+          format: double
+        successRate:
+          type: number
+          format: double
+        latestSubmissionAt:
+          type: integer
+          format: int64
+          nullable: true
+    SpaceMyPublishedTaskCategory:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
           type: string
     SpaceTaskAnalytics:
       type: object

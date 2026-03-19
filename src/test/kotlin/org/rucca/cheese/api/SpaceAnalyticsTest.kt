@@ -139,6 +139,99 @@ constructor(private val userCreatorService: UserCreatorService) {
     }
 
     @Test
+    fun `space member publisher endpoints should expose overview and list wrappers`() {
+        val (spaceId, defaultCategoryId) =
+            createSpace(
+                creatorToken = ownerToken,
+                spaceName = "Publisher Self Space ($randomSuffix)",
+                spaceIntro = "intro",
+                spaceDescription = "description",
+                spaceAvatarId = spaceOwner.avatarId,
+            )
+
+        val taskId =
+            createTask(
+                token = ownerToken,
+                name = "Publisher Self Task ($randomSuffix)",
+                submitterType = TaskSubmitterType.USER,
+                deadline =
+                    LocalDateTime.now()
+                        .plusDays(7)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli(),
+                defaultDeadline = 7L,
+                resubmittable = true,
+                editable = true,
+                intro = "intro",
+                description = "description",
+                submissionSchema =
+                    listOf(TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT)),
+                spaceId = spaceId,
+                categoryId = defaultCategoryId,
+            )
+        approveTask(taskId, ownerToken)
+
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceId/me/publishing")
+            .header("Authorization", "Bearer $ownerToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.code")
+            .isEqualTo(200)
+            .jsonPath("$.data.spaceId")
+            .isEqualTo(spaceId.toInt())
+            .jsonPath("$.data.taskCount")
+            .isNumber
+            .jsonPath("$.data.approvedTaskCount")
+            .isNumber
+            .jsonPath("$.data.pendingTaskApprovalCount")
+            .isNumber
+            .jsonPath("$.data.disapprovedTaskCount")
+            .isNumber
+            .jsonPath("$.data.participantCount")
+            .isNumber
+            .jsonPath("$.data.pendingReviewCount")
+            .isNumber
+            .jsonPath("$.data.successfulParticipantCount")
+            .isNumber
+            .jsonPath("$.message")
+            .isEqualTo("OK")
+
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceId/me/publishedTasks")
+            .header("Authorization", "Bearer $ownerToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.code")
+            .isEqualTo(200)
+            .jsonPath("$.data.tasks")
+            .isArray
+            .jsonPath("$.data.tasks[0].taskId")
+            .isNumber
+            .jsonPath("$.data.tasks[0].taskName")
+            .isString
+            .jsonPath("$.data.tasks[0].approved")
+            .isString
+            .jsonPath("$.data.tasks[0].participantCount")
+            .isNumber
+            .jsonPath("$.data.tasks[0].pendingReviewCount")
+            .isNumber
+            .jsonPath("$.data.tasks[0].submissionConversionRate")
+            .isNumber
+            .jsonPath("$.data.tasks[0].successRate")
+            .isNumber
+            .jsonPath("$.message")
+            .isEqualTo("OK")
+    }
+
+    @Test
     fun `space analytics publishers should aggregate by publisher and support sorting and date filters`() {
         val teacherB = userCreatorService.createUser()
         val teacherBToken = userCreatorService.login(teacherB.username, teacherB.password)
