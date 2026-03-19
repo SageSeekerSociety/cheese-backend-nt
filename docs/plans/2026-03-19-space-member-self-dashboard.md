@@ -29,7 +29,7 @@ Verify the response wrapper shape and core business fields.
 
 Run: `./mvnw -q -Dtest=SpaceAnalyticsTest test`
 
-Expected: FAIL because the new routes and DTOs do not exist yet.
+Expected: FAIL because the new endpoints are not implemented yet.
 
 **Step 3: Add the new endpoint contracts**
 

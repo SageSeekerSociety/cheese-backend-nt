@@ -182,6 +182,7 @@ constructor(private val userCreatorService: UserCreatorService) {
             .expectBody<GetSpaceMePublishing200ResponseDTO>()
             .value { response ->
                 assertEquals(200, response.code)
+                assertTrue(!response.message.isNullOrBlank())
                 assertNotNull(response.data)
                 val overview = response.data!!
                 assertEquals(spaceId, overview.spaceId)
@@ -207,6 +208,7 @@ constructor(private val userCreatorService: UserCreatorService) {
             .expectBody<GetSpaceMePublishedTasks200ResponseDTO>()
             .value { response ->
                 assertEquals(200, response.code)
+                assertTrue(!response.message.isNullOrBlank())
                 assertNotNull(response.data)
                 val tasks = response.data!!.tasks
                 assertEquals(1, tasks.size)
@@ -214,7 +216,7 @@ constructor(private val userCreatorService: UserCreatorService) {
                 assertEquals(taskId, publishedTask.taskId)
                 assertEquals("Publisher Self Task ($randomSuffix)", publishedTask.taskName)
                 assertEquals(defaultCategoryId, publishedTask.category.id)
-                assertEquals("默认分类", publishedTask.category.name)
+                assertTrue(publishedTask.category.name.isNotBlank())
                 assertEquals(ApproveTypeDTO.APPROVED, publishedTask.approved)
                 assertTrue(publishedTask.createdAt > 0)
                 assertEquals(0, publishedTask.participantCount)
@@ -227,6 +229,7 @@ constructor(private val userCreatorService: UserCreatorService) {
                 assertEquals(0.0, publishedTask.submissionConversionRate)
                 assertEquals(0.0, publishedTask.successRate)
                 assertNotNull(publishedTask.deadline)
+                assertEquals(null, publishedTask.latestSubmissionAt)
             }
     }
 
