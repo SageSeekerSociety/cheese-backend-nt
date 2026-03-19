@@ -32,6 +32,18 @@ class SpacePublisherViewService(
     private val taskSubmissionRepository: TaskSubmissionRepository,
     private val taskSubmissionReviewRepository: TaskSubmissionReviewRepository,
 ) {
+    private enum class PublishedTaskSortBy {
+        CREATED_AT,
+        PARTICIPANT_COUNT,
+        PENDING_REVIEW_COUNT,
+        SUCCESS_RATE,
+    }
+
+    private enum class SortOrder {
+        ASC,
+        DESC,
+    }
+
     private data class PublisherTaskContext(
         val tasks: List<Task>,
         val membershipsByTaskId: Map<IdType, List<TaskMembership>>,
@@ -114,16 +126,20 @@ class SpacePublisherViewService(
                             (summary.pendingReviewCount > 0) == hasPendingReview)
                 }
 
+        val parsedSortBy = parseSortBy(sortBy)
+        val parsedSortOrder = parseSortOrder(sortOrder)
         val comparator =
-            when (sortBy) {
-                "participantCount" -> compareBy<TaskSummary> { it.participantCount }
-                "pendingReviewCount" -> compareBy<TaskSummary> { it.pendingReviewCount }
-                "successRate" -> compareBy<TaskSummary> { it.successRate }
-                else -> compareBy { it.task.createdAt }
+            when (parsedSortBy) {
+                PublishedTaskSortBy.PARTICIPANT_COUNT ->
+                    compareBy<TaskSummary> { it.participantCount }
+                PublishedTaskSortBy.PENDING_REVIEW_COUNT ->
+                    compareBy<TaskSummary> { it.pendingReviewCount }
+                PublishedTaskSortBy.SUCCESS_RATE -> compareBy<TaskSummary> { it.successRate }
+                PublishedTaskSortBy.CREATED_AT -> compareBy { it.task.createdAt }
             }
 
         val sortedSummaries =
-            if (sortOrder.equals("asc", ignoreCase = true)) {
+            if (parsedSortOrder == SortOrder.ASC) {
                 summaries.sortedWith(comparator)
             } else {
                 summaries.sortedWith(comparator.reversed())
@@ -265,6 +281,22 @@ class SpacePublisherViewService(
     private fun parseApproveType(value: String): ApproveType =
         runCatching { ApproveType.valueOf(value) }
             .getOrElse { throw BadRequestError("Invalid approved: $value") }
+
+    private fun parseSortBy(value: String): PublishedTaskSortBy =
+        when (value) {
+            "createdAt" -> PublishedTaskSortBy.CREATED_AT
+            "participantCount" -> PublishedTaskSortBy.PARTICIPANT_COUNT
+            "pendingReviewCount" -> PublishedTaskSortBy.PENDING_REVIEW_COUNT
+            "successRate" -> PublishedTaskSortBy.SUCCESS_RATE
+            else -> throw BadRequestError("Invalid sortBy: $value")
+        }
+
+    private fun parseSortOrder(value: String): SortOrder =
+        when (value.lowercase()) {
+            "asc" -> SortOrder.ASC
+            "desc" -> SortOrder.DESC
+            else -> throw BadRequestError("Invalid sortOrder: $value")
+        }
 
     private fun toUtcLocalDateTime(epochMilli: Long): LocalDateTime =
         LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMilli), ZoneOffset.UTC)

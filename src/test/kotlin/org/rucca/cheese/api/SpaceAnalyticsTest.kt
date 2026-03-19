@@ -322,7 +322,59 @@ constructor(private val userCreatorService: UserCreatorService) {
                 assertEquals(1.0, ownerApprovedTask.submissionConversionRate)
                 assertEquals(0.0, ownerApprovedTask.successRate)
                 assertNotNull(ownerApprovedTask.deadline)
+                assertNotNull(ownerApprovedTask.latestSubmissionAt)
+                assertTrue(ownerApprovedTask.latestSubmissionAt!! > 0)
             }
+
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceId/me/publishing")
+            .header("Authorization", "Bearer $teacherBToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<GetSpaceMePublishing200ResponseDTO>()
+            .value { response ->
+                assertEquals(200, response.code)
+                assertNotNull(response.data)
+                val overview = response.data!!
+                assertEquals(spaceId, overview.spaceId)
+                assertEquals(1, overview.taskCount)
+                assertEquals(1, overview.approvedTaskCount)
+                assertEquals(1, overview.participantCount)
+            }
+
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceId/me/publishing/tasks?sortBy=createdAt&sortOrder=desc")
+            .header("Authorization", "Bearer $teacherBToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<GetSpaceMePublishedTasks200ResponseDTO>()
+            .value { response ->
+                assertEquals(200, response.code)
+                assertNotNull(response.data)
+                val tasks = response.data!!.tasks
+                assertEquals(1, tasks.size)
+                assertEquals(teacherTaskId, tasks.first().taskId)
+            }
+
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceId/me/publishing/tasks?sortBy=bad")
+            .header("Authorization", "Bearer $ownerToken")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceId/me/publishing/tasks?sortOrder=sideways")
+            .header("Authorization", "Bearer $ownerToken")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
     }
 
     @Test
