@@ -179,56 +179,55 @@ constructor(private val userCreatorService: UserCreatorService) {
             .exchange()
             .expectStatus()
             .isOk
-            .expectBody()
-            .jsonPath("$.code")
-            .isEqualTo(200)
-            .jsonPath("$.data.spaceId")
-            .isEqualTo(spaceId.toInt())
-            .jsonPath("$.data.taskCount")
-            .isNumber
-            .jsonPath("$.data.approvedTaskCount")
-            .isNumber
-            .jsonPath("$.data.pendingTaskApprovalCount")
-            .isNumber
-            .jsonPath("$.data.disapprovedTaskCount")
-            .isNumber
-            .jsonPath("$.data.participantCount")
-            .isNumber
-            .jsonPath("$.data.pendingReviewCount")
-            .isNumber
-            .jsonPath("$.data.successfulParticipantCount")
-            .isNumber
-            .jsonPath("$.message")
-            .isEqualTo("OK")
+            .expectBody<GetSpaceMePublishing200ResponseDTO>()
+            .value { response ->
+                assertEquals(200, response.code)
+                assertNotNull(response.data)
+                val overview = response.data!!
+                assertEquals(spaceId, overview.spaceId)
+                assertEquals(1, overview.taskCount)
+                assertEquals(1, overview.approvedTaskCount)
+                assertEquals(0, overview.pendingTaskApprovalCount)
+                assertEquals(0, overview.disapprovedTaskCount)
+                assertEquals(0, overview.participantCount)
+                assertEquals(0, overview.approvedParticipantCount)
+                assertEquals(0, overview.pendingParticipantApprovalCount)
+                assertEquals(0, overview.submittedParticipantCount)
+                assertEquals(0, overview.pendingReviewCount)
+                assertEquals(0, overview.successfulParticipantCount)
+            }
 
         webTestClient
             .get()
-            .uri("/spaces/$spaceId/me/publishedTasks")
+            .uri("/spaces/$spaceId/me/publishing/tasks")
             .header("Authorization", "Bearer $ownerToken")
             .exchange()
             .expectStatus()
             .isOk
-            .expectBody()
-            .jsonPath("$.code")
-            .isEqualTo(200)
-            .jsonPath("$.data.tasks")
-            .isArray
-            .jsonPath("$.data.tasks[0].taskId")
-            .isNumber
-            .jsonPath("$.data.tasks[0].taskName")
-            .isString
-            .jsonPath("$.data.tasks[0].approved")
-            .isString
-            .jsonPath("$.data.tasks[0].participantCount")
-            .isNumber
-            .jsonPath("$.data.tasks[0].pendingReviewCount")
-            .isNumber
-            .jsonPath("$.data.tasks[0].submissionConversionRate")
-            .isNumber
-            .jsonPath("$.data.tasks[0].successRate")
-            .isNumber
-            .jsonPath("$.message")
-            .isEqualTo("OK")
+            .expectBody<GetSpaceMePublishedTasks200ResponseDTO>()
+            .value { response ->
+                assertEquals(200, response.code)
+                assertNotNull(response.data)
+                val tasks = response.data!!.tasks
+                assertEquals(1, tasks.size)
+                val publishedTask = tasks.first()
+                assertEquals(taskId, publishedTask.taskId)
+                assertEquals("Publisher Self Task ($randomSuffix)", publishedTask.taskName)
+                assertEquals(defaultCategoryId, publishedTask.category.id)
+                assertEquals("默认分类", publishedTask.category.name)
+                assertEquals(ApproveTypeDTO.APPROVED, publishedTask.approved)
+                assertTrue(publishedTask.createdAt > 0)
+                assertEquals(0, publishedTask.participantCount)
+                assertEquals(0, publishedTask.approvedParticipantCount)
+                assertEquals(0, publishedTask.pendingParticipantApprovalCount)
+                assertEquals(0, publishedTask.submittedParticipantCount)
+                assertEquals(0, publishedTask.pendingReviewCount)
+                assertEquals(0, publishedTask.successfulParticipantCount)
+                assertEquals(0, publishedTask.failedParticipantCount)
+                assertEquals(0.0, publishedTask.submissionConversionRate)
+                assertEquals(0.0, publishedTask.successRate)
+                assertNotNull(publishedTask.deadline)
+            }
     }
 
     @Test

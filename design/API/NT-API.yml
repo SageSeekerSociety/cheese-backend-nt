@@ -963,7 +963,7 @@ paths:
                     $ref: "#/components/schemas/SpaceMyPublishingOverview"
                   message:
                     type: string
-  /spaces/{spaceId}/me/publishedTasks:
+  /spaces/{spaceId}/me/publishing/tasks:
     parameters:
       - $ref: "#/components/parameters/SpaceId"
     get:

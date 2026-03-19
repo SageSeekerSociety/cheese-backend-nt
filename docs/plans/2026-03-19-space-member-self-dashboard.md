@@ -21,7 +21,7 @@
 Add or extend API tests so the suite expects:
 
 - `GET /spaces/{spaceId}/me/publishing`
-- `GET /spaces/{spaceId}/me/publishedTasks`
+- `GET /spaces/{spaceId}/me/publishing/tasks`
 
 Verify the response wrapper shape and core business fields.
 
@@ -36,7 +36,7 @@ Expected: FAIL because the new routes and DTOs do not exist yet.
 Update `design/API/NT-API.yml` with:
 
 - path entries for both endpoints
-- query parameters for `publishedTasks`
+- query parameters for the publishing task list endpoint
 - schemas for publisher overview and publisher task row DTOs
 
 Keep the new shapes independent from admin analytics schemas unless a schema is truly identical.

@@ -47,11 +47,12 @@ This keeps the first phase aligned with the existing space-scoped admin analytic
 ### Publisher resources
 
 - `GET /spaces/{spaceId}/me/publishing`
-- `GET /spaces/{spaceId}/me/publishedTasks`
+- `GET /spaces/{spaceId}/me/publishing/tasks`
 
 `/publishing` returns the overview cards for the current user as a publisher in the given space.
 
-`/publishedTasks` returns the list view for tasks created by the current user in the given space.
+`/publishing/tasks` returns the list view for tasks created by the current user in the given
+space.
 
 ### Participant resources
 
@@ -82,7 +83,7 @@ Recommended fields:
 
 This resource is a lightweight overview and should not contain task rows.
 
-### `GET /spaces/{spaceId}/me/publishedTasks`
+### `GET /spaces/{spaceId}/me/publishing/tasks`
 
 Recommended filters:
 
