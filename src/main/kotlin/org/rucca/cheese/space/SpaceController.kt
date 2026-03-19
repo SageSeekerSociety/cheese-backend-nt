@@ -27,6 +27,7 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.analytics.SpaceAnalyticsService
 import org.rucca.cheese.space.option.SpaceQueryOptions
+import org.rucca.cheese.space.view.SpacePublisherViewService
 import org.rucca.cheese.task.service.TaskTopicsService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
@@ -39,6 +40,7 @@ class SpaceController(
     private val authorizationService: AuthorizationService,
     private val jwtService: JwtService,
     private val spaceAnalyticsService: SpaceAnalyticsService,
+    private val spacePublisherViewService: SpacePublisherViewService,
     private val taskTopicsService: TaskTopicsService,
 ) : SpacesApi {
     @PostConstruct
@@ -358,6 +360,56 @@ class SpaceController(
                 CreateSpaceCategory201ResponseDataDTO(unarchivedCategory),
                 "OK",
             )
+        )
+    }
+
+    @Guard("query", "space")
+    override suspend fun getSpaceMePublishedTasks(
+        @ResourceId spaceId: Long,
+        from: Long?,
+        to: Long?,
+        categoryId: Long?,
+        approved: String?,
+        hasPendingParticipantApproval: Boolean?,
+        hasPendingReview: Boolean?,
+        sortBy: String,
+        sortOrder: String,
+    ): ResponseEntity<GetSpaceMePublishedTasks200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+        val tasks =
+            withContext(Dispatchers.IO) {
+                spacePublisherViewService.getPublishedTasks(
+                    spaceId = spaceId,
+                    currentUserId = currentUserId,
+                    from = from,
+                    to = to,
+                    categoryId = categoryId,
+                    approved = approved,
+                    hasPendingParticipantApproval = hasPendingParticipantApproval,
+                    hasPendingReview = hasPendingReview,
+                    sortBy = sortBy,
+                    sortOrder = sortOrder,
+                )
+            }
+        return ResponseEntity.ok(
+            GetSpaceMePublishedTasks200ResponseDTO(code = 200, data = tasks, message = "OK")
+        )
+    }
+
+    @Guard("query", "space")
+    override suspend fun getSpaceMePublishing(
+        @ResourceId spaceId: Long
+    ): ResponseEntity<GetSpaceMePublishing200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+        val overview =
+            withContext(Dispatchers.IO) {
+                spacePublisherViewService.getOverview(
+                    spaceId = spaceId,
+                    currentUserId = currentUserId,
+                )
+            }
+        return ResponseEntity.ok(
+            GetSpaceMePublishing200ResponseDTO(code = 200, data = overview, message = "OK")
         )
     }
 

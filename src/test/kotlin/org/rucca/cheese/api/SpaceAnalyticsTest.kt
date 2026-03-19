@@ -139,7 +139,12 @@ constructor(private val userCreatorService: UserCreatorService) {
     }
 
     @Test
-    fun `space member publisher endpoints should expose overview and list wrappers`() {
+    fun `space member publisher endpoints should return caller scoped metrics and tasks`() {
+        val teacherB = userCreatorService.createUser()
+        val teacherBToken = userCreatorService.login(teacherB.username, teacherB.password)
+        val studentB = userCreatorService.createUser()
+        val studentBToken = userCreatorService.login(studentB.username, studentB.password)
+
         val (spaceId, defaultCategoryId) =
             createSpace(
                 creatorToken = ownerToken,
@@ -148,11 +153,12 @@ constructor(private val userCreatorService: UserCreatorService) {
                 spaceDescription = "description",
                 spaceAvatarId = spaceOwner.avatarId,
             )
+        addSpaceAdmin(ownerToken, spaceId, teacherB.userId)
 
-        val taskId =
+        val ownerApprovedTaskId =
             createTask(
                 token = ownerToken,
-                name = "Publisher Self Task ($randomSuffix)",
+                name = "Owner Approved Task ($randomSuffix)",
                 submitterType = TaskSubmitterType.USER,
                 deadline =
                     LocalDateTime.now()
@@ -170,7 +176,88 @@ constructor(private val userCreatorService: UserCreatorService) {
                 spaceId = spaceId,
                 categoryId = defaultCategoryId,
             )
-        approveTask(taskId, ownerToken)
+        val ownerPendingTaskId =
+            createTask(
+                token = ownerToken,
+                name = "Owner Pending Task ($randomSuffix)",
+                submitterType = TaskSubmitterType.USER,
+                deadline =
+                    LocalDateTime.now()
+                        .plusDays(7)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli(),
+                defaultDeadline = 7L,
+                resubmittable = true,
+                editable = true,
+                intro = "intro",
+                description = "description",
+                submissionSchema =
+                    listOf(TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT)),
+                spaceId = spaceId,
+                categoryId = defaultCategoryId,
+            )
+        val ownerDisapprovedTaskId =
+            createTask(
+                token = ownerToken,
+                name = "Owner Disapproved Task ($randomSuffix)",
+                submitterType = TaskSubmitterType.USER,
+                deadline =
+                    LocalDateTime.now()
+                        .plusDays(7)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli(),
+                defaultDeadline = 7L,
+                resubmittable = true,
+                editable = true,
+                intro = "intro",
+                description = "description",
+                submissionSchema =
+                    listOf(TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT)),
+                spaceId = spaceId,
+                categoryId = defaultCategoryId,
+            )
+        val teacherTaskId =
+            createTask(
+                token = teacherBToken,
+                name = "Teacher Task ($randomSuffix)",
+                submitterType = TaskSubmitterType.USER,
+                deadline =
+                    LocalDateTime.now()
+                        .plusDays(7)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli(),
+                defaultDeadline = 7L,
+                resubmittable = true,
+                editable = true,
+                intro = "intro",
+                description = "description",
+                submissionSchema =
+                    listOf(TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT)),
+                spaceId = spaceId,
+                categoryId = defaultCategoryId,
+            )
+        approveTask(ownerApprovedTaskId, ownerToken)
+        disapproveTask(ownerDisapprovedTaskId, ownerToken)
+        approveTask(teacherTaskId, ownerToken)
+
+        val ownerMembershipId =
+            addParticipantUser(ownerToken, ownerApprovedTaskId, participant.userId)
+        approveTaskParticipant(ownerToken, ownerApprovedTaskId, ownerMembershipId)
+        submitTask(ownerApprovedTaskId, ownerMembershipId, participantToken)
+
+        val teacherMembershipId = addParticipantUser(teacherBToken, teacherTaskId, studentB.userId)
+        approveTaskParticipant(teacherBToken, teacherTaskId, teacherMembershipId)
+        val teacherSubmissionId = submitTask(teacherTaskId, teacherMembershipId, studentBToken)
+        reviewTaskSubmission(
+            teacherBToken,
+            teacherTaskId,
+            teacherMembershipId,
+            teacherSubmissionId,
+            true,
+        )
 
         webTestClient
             .get()
@@ -186,21 +273,21 @@ constructor(private val userCreatorService: UserCreatorService) {
                 assertNotNull(response.data)
                 val overview = response.data!!
                 assertEquals(spaceId, overview.spaceId)
-                assertEquals(1, overview.taskCount)
+                assertEquals(3, overview.taskCount)
                 assertEquals(1, overview.approvedTaskCount)
-                assertEquals(0, overview.pendingTaskApprovalCount)
-                assertEquals(0, overview.disapprovedTaskCount)
-                assertEquals(0, overview.participantCount)
-                assertEquals(0, overview.approvedParticipantCount)
+                assertEquals(1, overview.pendingTaskApprovalCount)
+                assertEquals(1, overview.disapprovedTaskCount)
+                assertEquals(1, overview.participantCount)
+                assertEquals(1, overview.approvedParticipantCount)
                 assertEquals(0, overview.pendingParticipantApprovalCount)
-                assertEquals(0, overview.submittedParticipantCount)
-                assertEquals(0, overview.pendingReviewCount)
+                assertEquals(1, overview.submittedParticipantCount)
+                assertEquals(1, overview.pendingReviewCount)
                 assertEquals(0, overview.successfulParticipantCount)
             }
 
         webTestClient
             .get()
-            .uri("/spaces/$spaceId/me/publishing/tasks")
+            .uri("/spaces/$spaceId/me/publishing/tasks?sortBy=createdAt&sortOrder=desc")
             .header("Authorization", "Bearer $ownerToken")
             .exchange()
             .expectStatus()
@@ -211,25 +298,30 @@ constructor(private val userCreatorService: UserCreatorService) {
                 assertTrue(!response.message.isNullOrBlank())
                 assertNotNull(response.data)
                 val tasks = response.data!!.tasks
-                assertEquals(1, tasks.size)
-                val publishedTask = tasks.first()
-                assertEquals(taskId, publishedTask.taskId)
-                assertEquals("Publisher Self Task ($randomSuffix)", publishedTask.taskName)
-                assertEquals(defaultCategoryId, publishedTask.category.id)
-                assertTrue(publishedTask.category.name.isNotBlank())
-                assertEquals(ApproveTypeDTO.APPROVED, publishedTask.approved)
-                assertTrue(publishedTask.createdAt > 0)
-                assertEquals(0, publishedTask.participantCount)
-                assertEquals(0, publishedTask.approvedParticipantCount)
-                assertEquals(0, publishedTask.pendingParticipantApprovalCount)
-                assertEquals(0, publishedTask.submittedParticipantCount)
-                assertEquals(0, publishedTask.pendingReviewCount)
-                assertEquals(0, publishedTask.successfulParticipantCount)
-                assertEquals(0, publishedTask.failedParticipantCount)
-                assertEquals(0.0, publishedTask.submissionConversionRate)
-                assertEquals(0.0, publishedTask.successRate)
-                assertNotNull(publishedTask.deadline)
-                assertEquals(null, publishedTask.latestSubmissionAt)
+                assertEquals(3, tasks.size)
+                val taskIds = tasks.map { it.taskId }.toSet()
+                assertEquals(
+                    setOf(ownerApprovedTaskId, ownerPendingTaskId, ownerDisapprovedTaskId),
+                    taskIds,
+                )
+                assertTrue(tasks.none { it.taskId == teacherTaskId })
+
+                val ownerApprovedTask = tasks.first { it.taskId == ownerApprovedTaskId }
+                assertEquals("Owner Approved Task ($randomSuffix)", ownerApprovedTask.taskName)
+                assertEquals(defaultCategoryId, ownerApprovedTask.category.id)
+                assertTrue(ownerApprovedTask.category.name.isNotBlank())
+                assertEquals(ApproveTypeDTO.APPROVED, ownerApprovedTask.approved)
+                assertTrue(ownerApprovedTask.createdAt > 0)
+                assertEquals(1, ownerApprovedTask.participantCount)
+                assertEquals(1, ownerApprovedTask.approvedParticipantCount)
+                assertEquals(0, ownerApprovedTask.pendingParticipantApprovalCount)
+                assertEquals(1, ownerApprovedTask.submittedParticipantCount)
+                assertEquals(1, ownerApprovedTask.pendingReviewCount)
+                assertEquals(0, ownerApprovedTask.successfulParticipantCount)
+                assertEquals(0, ownerApprovedTask.failedParticipantCount)
+                assertEquals(1.0, ownerApprovedTask.submissionConversionRate)
+                assertEquals(0.0, ownerApprovedTask.successRate)
+                assertNotNull(ownerApprovedTask.deadline)
             }
     }
 
@@ -858,6 +950,18 @@ constructor(private val userCreatorService: UserCreatorService) {
             .header("Authorization", "Bearer $token")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(PatchTaskRequestDTO(approved = ApproveTypeDTO.APPROVED))
+            .exchange()
+            .expectStatus()
+            .isOk
+    }
+
+    private fun disapproveTask(taskId: IdType, token: String) {
+        webTestClient
+            .patch()
+            .uri("/tasks/$taskId")
+            .header("Authorization", "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(PatchTaskRequestDTO(approved = ApproveTypeDTO.DISAPPROVED))
             .exchange()
             .expectStatus()
             .isOk
