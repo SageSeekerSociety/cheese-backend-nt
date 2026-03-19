@@ -378,6 +378,178 @@ constructor(private val userCreatorService: UserCreatorService) {
     }
 
     @Test
+    fun `space member participant endpoints should return caller scoped metrics and participations`() {
+        val otherParticipant = userCreatorService.createUser()
+        val otherParticipantToken =
+            userCreatorService.login(otherParticipant.username, otherParticipant.password)
+
+        val (spaceId, defaultCategoryId) =
+            createSpace(
+                creatorToken = ownerToken,
+                spaceName = "Participant Self Space ($randomSuffix)",
+                spaceIntro = "intro",
+                spaceDescription = "description",
+                spaceAvatarId = spaceOwner.avatarId,
+            )
+
+        val successTaskId =
+            createTask(
+                token = ownerToken,
+                name = "Success Task ($randomSuffix)",
+                submitterType = TaskSubmitterType.USER,
+                deadline =
+                    LocalDateTime.now()
+                        .plusDays(7)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli(),
+                defaultDeadline = 7L,
+                resubmittable = true,
+                editable = true,
+                intro = "intro",
+                description = "description",
+                submissionSchema =
+                    listOf(TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT)),
+                spaceId = spaceId,
+                categoryId = defaultCategoryId,
+            )
+        val pendingApprovalTaskId =
+            createTask(
+                token = ownerToken,
+                name = "Pending Approval Task ($randomSuffix)",
+                submitterType = TaskSubmitterType.USER,
+                deadline =
+                    LocalDateTime.now()
+                        .plusDays(7)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli(),
+                defaultDeadline = 7L,
+                resubmittable = true,
+                editable = true,
+                intro = "intro",
+                description = "description",
+                submissionSchema =
+                    listOf(TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT)),
+                spaceId = spaceId,
+                categoryId = defaultCategoryId,
+            )
+        val awaitingSubmissionTaskId =
+            createTask(
+                token = ownerToken,
+                name = "Awaiting Submission Task ($randomSuffix)",
+                submitterType = TaskSubmitterType.USER,
+                deadline =
+                    LocalDateTime.now()
+                        .plusDays(7)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli(),
+                defaultDeadline = 7L,
+                resubmittable = true,
+                editable = true,
+                intro = "intro",
+                description = "description",
+                submissionSchema =
+                    listOf(TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT)),
+                spaceId = spaceId,
+                categoryId = defaultCategoryId,
+            )
+        val otherUsersTaskId =
+            createTask(
+                token = ownerToken,
+                name = "Other User Task ($randomSuffix)",
+                submitterType = TaskSubmitterType.USER,
+                deadline =
+                    LocalDateTime.now()
+                        .plusDays(7)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli(),
+                defaultDeadline = 7L,
+                resubmittable = true,
+                editable = true,
+                intro = "intro",
+                description = "description",
+                submissionSchema =
+                    listOf(TaskSubmissionSchemaEntryDTO("Text Entry", TaskSubmissionTypeDTO.TEXT)),
+                spaceId = spaceId,
+                categoryId = defaultCategoryId,
+            )
+        approveTask(successTaskId, ownerToken)
+        approveTask(pendingApprovalTaskId, ownerToken)
+        approveTask(awaitingSubmissionTaskId, ownerToken)
+        approveTask(otherUsersTaskId, ownerToken)
+
+        val successMembershipId = addParticipantUser(ownerToken, successTaskId, participant.userId)
+        approveTaskParticipant(ownerToken, successTaskId, successMembershipId)
+        val successSubmissionId = submitTask(successTaskId, successMembershipId, participantToken)
+        reviewTaskSubmission(
+            ownerToken,
+            successTaskId,
+            successMembershipId,
+            successSubmissionId,
+            true,
+        )
+
+        addParticipantUser(ownerToken, pendingApprovalTaskId, participant.userId)
+
+        val awaitingMembershipId =
+            addParticipantUser(ownerToken, awaitingSubmissionTaskId, participant.userId)
+        approveTaskParticipant(ownerToken, awaitingSubmissionTaskId, awaitingMembershipId)
+
+        val otherMembershipId =
+            addParticipantUser(ownerToken, otherUsersTaskId, otherParticipant.userId)
+        approveTaskParticipant(ownerToken, otherUsersTaskId, otherMembershipId)
+        submitTask(otherUsersTaskId, otherMembershipId, otherParticipantToken)
+
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceId/me/participating")
+            .header("Authorization", "Bearer $participantToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<GetSpaceMeParticipating200ResponseDTO>()
+            .value { response ->
+                assertEquals(200, response.code)
+                assertNotNull(response.data)
+                val overview = response.data!!
+                assertEquals(spaceId, overview.spaceId)
+                assertEquals(3, overview.participationCount)
+                assertEquals(2, overview.approvedParticipationCount)
+                assertEquals(1, overview.pendingApprovalCount)
+                assertEquals(1, overview.awaitingSubmissionCount)
+                assertEquals(1, overview.successfulCount)
+            }
+
+        webTestClient
+            .get()
+            .uri("/spaces/$spaceId/me/participations")
+            .header("Authorization", "Bearer $participantToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<GetSpaceMeParticipations200ResponseDTO>()
+            .value { response ->
+                assertEquals(200, response.code)
+                assertNotNull(response.data)
+                val participations = response.data!!.participations
+                assertEquals(3, participations.size)
+                assertTrue(participations.none { it.taskId == otherUsersTaskId })
+
+                val successParticipation = participations.first { it.taskId == successTaskId }
+                assertEquals(TaskCompletionStatusDTO.SUCCESS, successParticipation.completionStatus)
+                assertEquals(true, successParticipation.latestReviewAccepted)
+                assertNotNull(successParticipation.latestReviewScore)
+
+                val awaitingParticipation =
+                    participations.first { it.taskId == awaitingSubmissionTaskId }
+                assertEquals(true, awaitingParticipation.canSubmit)
+            }
+    }
+
+    @Test
     fun `space analytics publishers should aggregate by publisher and support sorting and date filters`() {
         val teacherB = userCreatorService.createUser()
         val teacherBToken = userCreatorService.login(teacherB.username, teacherB.password)

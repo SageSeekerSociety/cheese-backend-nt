@@ -27,6 +27,7 @@ import org.rucca.cheese.common.persistent.IdType
 import org.rucca.cheese.model.*
 import org.rucca.cheese.space.analytics.SpaceAnalyticsService
 import org.rucca.cheese.space.option.SpaceQueryOptions
+import org.rucca.cheese.space.view.SpaceParticipantViewService
 import org.rucca.cheese.space.view.SpacePublisherViewService
 import org.rucca.cheese.task.service.TaskTopicsService
 import org.springframework.http.ResponseEntity
@@ -41,6 +42,7 @@ class SpaceController(
     private val jwtService: JwtService,
     private val spaceAnalyticsService: SpaceAnalyticsService,
     private val spacePublisherViewService: SpacePublisherViewService,
+    private val spaceParticipantViewService: SpaceParticipantViewService,
     private val taskTopicsService: TaskTopicsService,
 ) : SpacesApi {
     @PostConstruct
@@ -410,6 +412,54 @@ class SpaceController(
             }
         return ResponseEntity.ok(
             GetSpaceMePublishing200ResponseDTO(code = 200, data = overview, message = "OK")
+        )
+    }
+
+    @Guard("query", "space")
+    override suspend fun getSpaceMeParticipating(
+        @ResourceId spaceId: Long
+    ): ResponseEntity<GetSpaceMeParticipating200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+        val overview =
+            withContext(Dispatchers.IO) {
+                spaceParticipantViewService.getOverview(
+                    spaceId = spaceId,
+                    currentUserId = currentUserId,
+                )
+            }
+        return ResponseEntity.ok(
+            GetSpaceMeParticipating200ResponseDTO(code = 200, data = overview, message = "OK")
+        )
+    }
+
+    @Guard("query", "space")
+    override suspend fun getSpaceMeParticipations(
+        @ResourceId spaceId: Long,
+        approved: String?,
+        completionStatus: TaskCompletionStatusDTO?,
+        identityType: TaskSubmitterTypeDTO?,
+        sortBy: String,
+        sortOrder: String,
+    ): ResponseEntity<GetSpaceMeParticipations200ResponseDTO> {
+        val currentUserId = jwtService.getCurrentUserId()
+        val participations =
+            withContext(Dispatchers.IO) {
+                spaceParticipantViewService.getParticipations(
+                    spaceId = spaceId,
+                    currentUserId = currentUserId,
+                    approved = approved,
+                    completionStatus = completionStatus,
+                    identityType = identityType,
+                    sortBy = sortBy,
+                    sortOrder = sortOrder,
+                )
+            }
+        return ResponseEntity.ok(
+            GetSpaceMeParticipations200ResponseDTO(
+                code = 200,
+                data = participations,
+                message = "OK",
+            )
         )
     }
 

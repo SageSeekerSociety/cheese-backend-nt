@@ -10,6 +10,11 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 
 interface TaskMembershipRepository : JpaRepository<TaskMembership, IdType> {
+    fun findAllByTaskSpaceIdAndMemberIdIn(
+        spaceId: IdType,
+        memberIds: Collection<IdType>,
+    ): List<TaskMembership>
+
     fun findAllByTaskId(taskId: IdType): List<TaskMembership>
 
     fun findAllByTaskIdIn(taskIds: Collection<IdType>): List<TaskMembership>

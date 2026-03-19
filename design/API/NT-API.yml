@@ -1033,6 +1033,79 @@ paths:
                     $ref: "#/components/schemas/SpaceMyPublishedTasks"
                   message:
                     type: string
+  /spaces/{spaceId}/me/participating:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      summary: Get Space My Participating Overview
+      operationId: getSpaceMeParticipating
+      tags: [ Spaces ]
+      responses:
+        "200":
+          description: Space member participant overview data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/SpaceMyParticipatingOverview"
+                  message:
+                    type: string
+  /spaces/{spaceId}/me/participations:
+    parameters:
+      - $ref: "#/components/parameters/SpaceId"
+    get:
+      summary: Get Space My Participations
+      operationId: getSpaceMeParticipations
+      tags: [ Spaces ]
+      parameters:
+        - name: approved
+          in: query
+          schema:
+            type: string
+            enum: [ NONE, APPROVED, DISAPPROVED ]
+          description: Filter by participation approval status
+        - name: completionStatus
+          in: query
+          schema:
+            $ref: "#/components/schemas/TaskCompletionStatus"
+          description: Filter by participation completion status
+        - name: identityType
+          in: query
+          schema:
+            $ref: "#/components/schemas/TaskSubmitterType"
+          description: Filter by participation identity type
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [ joinedAt, deadline, latestSubmissionAt, completionStatus ]
+            default: joinedAt
+          description: Sort field
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [ asc, desc ]
+            default: desc
+          description: Sort order
+      responses:
+        "200":
+          description: Space member participations data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: "#/components/schemas/SpaceMyParticipations"
+                  message:
+                    type: string
   /spaces/{spaceId}/analytics/tasks:
     parameters:
       - $ref: "#/components/parameters/SpaceId"
@@ -6531,6 +6604,124 @@ components:
           format: int64
           nullable: true
     SpaceMyPublishedTaskCategory:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+    SpaceMyParticipatingOverview:
+      type: object
+      required:
+        - spaceId
+        - participationCount
+        - approvedParticipationCount
+        - pendingApprovalCount
+        - awaitingSubmissionCount
+        - pendingReviewCount
+        - resubmittableCount
+        - successfulCount
+        - failedCount
+      properties:
+        spaceId:
+          type: integer
+          format: int64
+        participationCount:
+          type: integer
+        approvedParticipationCount:
+          type: integer
+        pendingApprovalCount:
+          type: integer
+        awaitingSubmissionCount:
+          type: integer
+        pendingReviewCount:
+          type: integer
+        resubmittableCount:
+          type: integer
+        successfulCount:
+          type: integer
+        failedCount:
+          type: integer
+    SpaceMyParticipations:
+      type: object
+      required:
+        - participations
+      properties:
+        participations:
+          type: array
+          items:
+            $ref: "#/components/schemas/SpaceMyParticipation"
+    SpaceMyParticipation:
+      type: object
+      required:
+        - taskId
+        - taskName
+        - publisher
+        - category
+        - participationId
+        - identityType
+        - approved
+        - completionStatus
+        - canSubmit
+        - joinedAt
+      properties:
+        taskId:
+          type: integer
+          format: int64
+        taskName:
+          type: string
+        publisher:
+          $ref: "#/components/schemas/SpaceMyParticipationPublisher"
+        category:
+          $ref: "#/components/schemas/SpaceMyParticipationCategory"
+        participationId:
+          type: integer
+          format: int64
+        identityType:
+          $ref: "#/components/schemas/TaskSubmitterType"
+        teamName:
+          type: string
+          nullable: true
+        approved:
+          $ref: "#/components/schemas/ApproveType"
+        completionStatus:
+          $ref: "#/components/schemas/TaskCompletionStatus"
+        canSubmit:
+          type: boolean
+        joinedAt:
+          type: integer
+          format: int64
+        deadline:
+          type: integer
+          format: int64
+          nullable: true
+        latestSubmissionAt:
+          type: integer
+          format: int64
+          nullable: true
+        latestReviewAccepted:
+          type: boolean
+          nullable: true
+        latestReviewScore:
+          type: number
+          format: double
+          nullable: true
+    SpaceMyParticipationPublisher:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+    SpaceMyParticipationCategory:
       type: object
       required:
         - id
