@@ -20,6 +20,18 @@ enum class NotificationType(@JsonValue val type: String) {
     REACTION("reaction"),
     PROJECT_INVITE("project_invite"),
     DEADLINE_REMIND("deadline_remind"),
+    TASK_PENDING_APPROVAL("task_pending_approval"),
+    TASK_APPROVED("task_approved"),
+    TASK_REJECTED("task_rejected"),
+    TASK_RESUBMITTED("task_resubmitted"),
+    TASK_PARTICIPANT_APPLIED("task_participant_applied"),
+    TASK_PARTICIPANT_APPROVED("task_participant_approved"),
+    TASK_PARTICIPANT_REJECTED("task_participant_rejected"),
+    TASK_PARTICIPANT_AUTO_REJECTED("task_participant_auto_rejected"),
+    TASK_SUBMISSION_CREATED("task_submission_created"),
+    TASK_SUBMISSION_UPDATED("task_submission_updated"),
+    TASK_SUBMISSION_APPROVED("task_submission_approved"),
+    TASK_SUBMISSION_REJECTED("task_submission_rejected"),
 
     // --- Team Membership Application Types ---
     /** When a user requests to join a team (Sent to Admins/Owners) */

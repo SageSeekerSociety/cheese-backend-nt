@@ -37,6 +37,7 @@ import org.rucca.cheese.task.error.TaskSubmissionNotEditableError
 import org.rucca.cheese.task.error.TaskSubmissionNotMatchSchemaError
 import org.rucca.cheese.task.error.TaskVersionNotSubmittedYetError
 import org.rucca.cheese.task.event.TaskMembershipStatusUpdateEvent
+import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.user.User
 import org.rucca.cheese.user.services.UserService
 import org.slf4j.LoggerFactory
@@ -54,6 +55,8 @@ class TaskSubmissionService(
     private val taskSubmissionReviewService: TaskSubmissionReviewService,
     private val taskMembershipService: TaskMembershipService,
     private val eventPublisher: ApplicationEventPublisher,
+    private val teamService: TeamService,
+    private val taskNotificationService: TaskNotificationService,
 ) {
     private val log = LoggerFactory.getLogger(TaskSubmissionService::class.java)
 
@@ -121,6 +124,7 @@ class TaskSubmissionService(
         participant: TaskMembership,
         submitterId: IdType,
         version: Int,
+        notificationType: org.rucca.cheese.notification.models.NotificationType,
         submissions: List<TaskSubmissionEntry>,
         schema: List<TaskSubmissionSchema>? = null,
     ): TaskSubmissionDTO {
@@ -165,6 +169,8 @@ class TaskSubmissionService(
             log.warn("Saved TaskSubmission {} has no associated membership ID.", savedSubmission.id)
         }
 
+        publishSubmissionNotification(savedSubmission, participant, submitterId, notificationType)
+
         return submission.toTaskSubmissionDTO(entries, schema)
     }
 
@@ -201,7 +207,13 @@ class TaskSubmissionService(
             throw TaskNotResubmittableError(taskId)
         }
         val newVersion = oldVersion + 1
-        return createTaskSubmission(participant, submitterId, newVersion, submission)
+        return createTaskSubmission(
+            participant,
+            submitterId,
+            newVersion,
+            org.rucca.cheese.notification.models.NotificationType.TASK_SUBMISSION_CREATED,
+            submission,
+        )
     }
 
     fun modifySubmission(
@@ -220,7 +232,13 @@ class TaskSubmissionService(
             throw TaskSubmissionNotEditableError(taskId)
         }
         deleteTaskSubmission(participant, version)
-        return createTaskSubmission(participant, submitterId, version, submission)
+        return createTaskSubmission(
+            participant,
+            submitterId,
+            version,
+            org.rucca.cheese.notification.models.NotificationType.TASK_SUBMISSION_UPDATED,
+            submission,
+        )
     }
 
     enum class TaskSubmissionSortBy {
@@ -372,6 +390,45 @@ class TaskSubmissionService(
         return taskSubmissionRepository.findById(submissionId).orElseThrow {
             NotFoundError("task submission", submissionId)
         }
+    }
+
+    private fun publishSubmissionNotification(
+        submission: TaskSubmission,
+        membership: TaskMembership,
+        submitterId: IdType,
+        type: org.rucca.cheese.notification.models.NotificationType,
+    ) {
+        val task = membership.task ?: return
+        val memberId = membership.memberId ?: return
+        val submitterName = userService.getUserDto(submitterId).username
+        val participantName =
+            if (membership.isTeam) teamService.getTeamSummaryDTO(memberId).name
+            else userService.getUserDto(memberId).username
+        val payload =
+            taskNotificationService.buildSubmissionPayload(
+                taskId = task.id!!,
+                taskName = task.name,
+                spaceId = task.space.id!!,
+                spaceName = task.space.name!!,
+                membershipId = membership.id!!,
+                participantId = memberId,
+                participantName = participantName,
+                participantType = if (membership.isTeam) "team" else "user",
+                submissionId = submission.id!!,
+                submissionVersion = submission.version!!,
+                submitterId = submitterId,
+                submitterName = submitterName,
+                teamId = memberId.takeIf { membership.isTeam },
+                teamName = participantName.takeIf { membership.isTeam },
+                actorId = submitterId,
+                actorName = submitterName,
+            )
+        taskNotificationService.publishNotification(
+            recipientIds = setOf(task.creator.id!!.toLong()),
+            type = type,
+            payload = payload,
+            actorId = submitterId,
+        )
     }
 }
 

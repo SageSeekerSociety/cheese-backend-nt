@@ -32,6 +32,7 @@ class TaskMembershipEligibilityService(
     private val userRealNameService: UserRealNameService,
     private val spaceUserRankService: SpaceUserRankService,
     private val applicationConfig: ApplicationConfig,
+    private val taskNotificationService: TaskNotificationService,
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -406,6 +407,35 @@ class TaskMembershipEligibilityService(
                                 "Automatically rejected: Task participant limit reached."
                         }
                         taskMembershipRepository.saveAll(participantsToReject)
+                        participantsToReject.forEach { participant ->
+                            val memberId = participant.memberId ?: return@forEach
+                            val participantName =
+                                if (participant.isTeam) teamService.getTeamSummaryDTO(memberId).name
+                                else userService.getUserDto(memberId).username
+                            val payload =
+                                taskNotificationService.buildMembershipPayload(
+                                    taskId = task.id!!,
+                                    taskName = task.name,
+                                    spaceId = task.space.id!!,
+                                    spaceName = task.space.name!!,
+                                    membershipId = participant.id!!,
+                                    participantId = memberId,
+                                    participantName = participantName,
+                                    participantType = if (participant.isTeam) "team" else "user",
+                                    teamId = memberId.takeIf { participant.isTeam },
+                                    teamName = participantName.takeIf { participant.isTeam },
+                                    extraFields =
+                                        mapOf("rejectReason" to (participant.rejectReason ?: "")),
+                                )
+                            taskNotificationService.publishToParticipantOrTeamOwners(
+                                memberId = memberId,
+                                isTeam = participant.isTeam,
+                                type =
+                                    org.rucca.cheese.notification.models.NotificationType
+                                        .TASK_PARTICIPANT_AUTO_REJECTED,
+                                payload = payload,
+                            )
+                        }
                     }
                 }
             }

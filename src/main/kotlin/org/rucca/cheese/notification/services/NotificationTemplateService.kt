@@ -1,10 +1,9 @@
-package org.rucca.cheese.notification.services // Corrected package name convention
+package org.rucca.cheese.notification.services
 
-// package exists
 import java.util.Locale
 import org.rucca.cheese.notification.config.NotificationProperties
-import org.rucca.cheese.notification.models.NotificationChannel // Ensure correct import if models
-import org.rucca.cheese.notification.models.NotificationType // Ensure correct import
+import org.rucca.cheese.notification.models.NotificationChannel
+import org.rucca.cheese.notification.models.NotificationType
 import org.rucca.cheese.team.TeamService
 import org.rucca.cheese.user.services.UserService
 import org.slf4j.LoggerFactory
@@ -18,6 +17,7 @@ class NotificationTemplateService(
     private val notificationProperties: NotificationProperties,
     private val userService: UserService,
     private val teamService: TeamService,
+    private val notificationEmailBodyRenderer: NotificationEmailBodyRenderer,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -39,17 +39,14 @@ class NotificationTemplateService(
     /** Renders the body for a notification using indexed arguments. */
     fun renderBody(
         type: NotificationType,
-        channel: NotificationChannel, // Check for channel-specific keys like '.html'
+        channel: NotificationChannel,
         payload: Map<String, Any>,
         locale: Locale,
     ): String {
-        val channelSuffix =
-            if (channel == NotificationChannel.EMAIL) ".html" else "" // Keep suffix logic if needed
-        val messageKey = "notification.${type.name.lowercase()}.body$channelSuffix"
-        // Build the ordered argument array based on the type
-        val argsArray = buildArgumentsArray(type, payload, "body")
-        // Use the standard getMessage method with the arguments array
-        return getMessage(messageKey, argsArray, locale, "Default Body: ${type.name}")
+        return when (channel) {
+            NotificationChannel.EMAIL -> renderEmailBody(type, payload, locale)
+            else -> renderTextBody(type, payload, locale)
+        }
     }
 
     /** Renders the title for an aggregated notification using indexed arguments. */
@@ -96,6 +93,24 @@ class NotificationTemplateService(
         }
     }
 
+    private fun renderTextBody(
+        type: NotificationType,
+        payload: Map<String, Any>,
+        locale: Locale,
+    ): String {
+        val messageKey = "notification.${type.name.lowercase()}.body"
+        val argsArray = buildArgumentsArray(type, payload, "body")
+        return getMessage(messageKey, argsArray, locale, "Default Body: ${type.name}")
+    }
+
+    private fun renderEmailBody(
+        type: NotificationType,
+        payload: Map<String, Any>,
+        locale: Locale,
+    ): String {
+        return notificationEmailBodyRenderer.render(type, payload, locale)
+    }
+
     /**
      * Builds the ordered argument array for standard notifications. The order MUST match the
      * placeholders {0}, {1} etc. in the properties file for the given type.
@@ -130,9 +145,52 @@ class NotificationTemplateService(
                 )
             // Args: {0}=taskName, {1}=projectName
             NotificationType.DEADLINE_REMIND ->
+                arrayOf(getString(payload, "taskName"), getString(payload, "projectName"))
+            NotificationType.TASK_PENDING_APPROVAL ->
                 arrayOf(
-                    payload["taskName"], // Assuming taskName is directly in payload
-                    payload["projectName"],
+                    getString(payload, "taskName"),
+                    getString(payload, "spaceName"),
+                    getString(payload, "taskCreatorName") ?: getString(payload, "actorName"),
+                )
+            NotificationType.TASK_APPROVED -> arrayOf(getString(payload, "taskName"))
+            NotificationType.TASK_REJECTED ->
+                arrayOf(getString(payload, "taskName"), getString(payload, "rejectReason"))
+            NotificationType.TASK_RESUBMITTED ->
+                arrayOf(
+                    getString(payload, "taskName"),
+                    getString(payload, "spaceName"),
+                    getString(payload, "taskCreatorName") ?: getString(payload, "actorName"),
+                )
+            NotificationType.TASK_PARTICIPANT_APPLIED ->
+                arrayOf(getString(payload, "participantName"), getString(payload, "taskName"))
+            NotificationType.TASK_PARTICIPANT_APPROVED -> arrayOf(getString(payload, "taskName"))
+            NotificationType.TASK_PARTICIPANT_REJECTED ->
+                arrayOf(getString(payload, "taskName"), getString(payload, "rejectReason"))
+            NotificationType.TASK_PARTICIPANT_AUTO_REJECTED ->
+                arrayOf(getString(payload, "taskName"))
+            NotificationType.TASK_SUBMISSION_CREATED ->
+                arrayOf(
+                    getString(payload, "submitterName"),
+                    getString(payload, "submissionVersion"),
+                    getString(payload, "taskName"),
+                )
+            NotificationType.TASK_SUBMISSION_UPDATED ->
+                arrayOf(
+                    getString(payload, "submitterName"),
+                    getString(payload, "submissionVersion"),
+                    getString(payload, "taskName"),
+                )
+            NotificationType.TASK_SUBMISSION_APPROVED ->
+                arrayOf(
+                    getString(payload, "taskName"),
+                    getString(payload, "submissionVersion"),
+                    getString(payload, "comment"),
+                )
+            NotificationType.TASK_SUBMISSION_REJECTED ->
+                arrayOf(
+                    getString(payload, "taskName"),
+                    getString(payload, "submissionVersion"),
+                    getString(payload, "comment"),
                 )
 
             // --- Team Notifications ---
@@ -256,5 +314,15 @@ class NotificationTemplateService(
                 null // Return null on error
             }
         } ?: defaultName.takeIf { teamId == null } // Return default only if ID itself was null
+    }
+
+    private fun getString(payload: Map<String, Any>, key: String): String? {
+        return when (val value = payload[key]) {
+            null -> null
+            is String -> value
+            is Number -> value.toString()
+            is Boolean -> value.toString()
+            else -> value.toString()
+        }
     }
 }

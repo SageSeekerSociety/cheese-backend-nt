@@ -139,6 +139,15 @@ class SpaceService(
         return spaceAdminRelation.user!!.id!!.toLong()
     }
 
+    fun getSpaceAdminAndOwnerIds(spaceId: IdType): Set<Long> {
+        return spaceAdminRelationRepository
+            .findAllBySpaceIdFetchUser(spaceId)
+            .asSequence()
+            .filter { it.role == SpaceAdminRole.OWNER || it.role == SpaceAdminRole.ADMIN }
+            .mapNotNull { it.user?.id?.toLong() }
+            .toSet()
+    }
+
     fun isSpaceAdmin(spaceId: IdType, userId: IdType): Boolean {
         return spaceAdminRelationRepository.existsBySpaceIdAndUserId(spaceId, userId)
     }

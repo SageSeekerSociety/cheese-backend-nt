@@ -14,6 +14,8 @@ import org.rucca.cheese.auth.core.PermissionEvaluator
 import org.rucca.cheese.auth.core.ResourceType
 import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.model.*
+import org.rucca.cheese.notification.config.NotificationProperties
+import org.rucca.cheese.notification.models.NotificationChannel
 import org.rucca.cheese.notification.models.NotificationType
 import org.rucca.cheese.notification.models.toDTO
 import org.rucca.cheese.notification.models.toEnum
@@ -28,6 +30,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.client.MockMvcWebTestClient
+import org.yaml.snakeyaml.Yaml
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
@@ -40,6 +43,8 @@ class NotificationTest {
     private lateinit var webTestClient: WebTestClient
 
     @Autowired private lateinit var userCreatorService: UserCreatorService
+
+    @Autowired private lateinit var notificationProperties: NotificationProperties
 
     @MockkBean private lateinit var notificationQueryService: NotificationQueryService
 
@@ -60,6 +65,67 @@ class NotificationTest {
         val userDetails = userCreatorService.createUser()
         userToken = userCreatorService.login(userDetails.username, userDetails.password)
         currentUserId = userDetails.userId
+    }
+
+    @Test
+    fun `task notification contract should include backend enum openapi schema and channel mappings`() {
+        val expectedTaskTypes =
+            listOf(
+                NotificationType.TASK_PENDING_APPROVAL,
+                NotificationType.TASK_APPROVED,
+                NotificationType.TASK_REJECTED,
+                NotificationType.TASK_RESUBMITTED,
+                NotificationType.TASK_PARTICIPANT_APPLIED,
+                NotificationType.TASK_PARTICIPANT_APPROVED,
+                NotificationType.TASK_PARTICIPANT_REJECTED,
+                NotificationType.TASK_PARTICIPANT_AUTO_REJECTED,
+                NotificationType.TASK_SUBMISSION_CREATED,
+                NotificationType.TASK_SUBMISSION_UPDATED,
+                NotificationType.TASK_SUBMISSION_APPROVED,
+                NotificationType.TASK_SUBMISSION_REJECTED,
+            )
+
+        assertThat(NotificationType.entries.map { it.name })
+            .containsAll(expectedTaskTypes.map { it.name })
+
+        val openApiNotificationTypeEnumValues = readNotificationTypeEnumValues()
+
+        assertThat(openApiNotificationTypeEnumValues).containsAll(expectedTaskTypes.map { it.name })
+
+        expectedTaskTypes.forEach { type ->
+            assertThat(notificationProperties.typeChannels[type])
+                .describedAs("channel mapping for $type")
+                .containsExactly(NotificationChannel.IN_APP, NotificationChannel.EMAIL)
+        }
+    }
+
+    private fun readNotificationTypeEnumValues(): List<String> {
+        val yaml = Yaml()
+        val document = yaml.load<Any>(java.io.File("design/API/NT-API.yml").inputStream())
+        val root = requireMap(document, "root")
+        val components = requireMap(root["components"], "components")
+        val schemas = requireMap(components["schemas"], "components.schemas")
+        val notificationTypeSchema =
+            requireMap(schemas["NotificationType"], "components.schemas.NotificationType")
+        val enumValues =
+            requireList(notificationTypeSchema["enum"], "components.schemas.NotificationType.enum")
+
+        return enumValues.map { value ->
+            assertThat(value)
+                .describedAs("NotificationType enum values must be strings")
+                .isInstanceOf(String::class.java)
+            value as String
+        }
+    }
+
+    private fun requireMap(value: Any?, path: String): Map<*, *> {
+        assertThat(value).describedAs("$path must exist").isInstanceOf(Map::class.java)
+        return value as Map<*, *>
+    }
+
+    private fun requireList(value: Any?, path: String): List<*> {
+        assertThat(value).describedAs("$path must exist").isInstanceOf(List::class.java)
+        return value as List<*>
     }
 
     private fun createSampleNotificationDTO(

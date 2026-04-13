@@ -19,6 +19,8 @@ import org.rucca.cheese.task.*
 import org.rucca.cheese.task.error.TaskSubmissionAlreadyReviewedError
 import org.rucca.cheese.task.error.TaskSubmissionNotReviewedYetError
 import org.rucca.cheese.task.event.TaskMembershipStatusUpdateEvent
+import org.rucca.cheese.team.TeamService
+import org.rucca.cheese.user.services.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -31,6 +33,9 @@ class TaskSubmissionReviewService(
     private val taskSubmissionReviewRepository: TaskSubmissionReviewRepository,
     private val spaceUserRankService: SpaceUserRankService,
     private val eventPublisher: ApplicationEventPublisher,
+    private val taskNotificationService: TaskNotificationService,
+    private val userService: UserService,
+    private val teamService: TeamService,
 ) {
     private val log = LoggerFactory.getLogger(TaskSubmissionReviewService::class.java)
 
@@ -72,12 +77,16 @@ class TaskSubmissionReviewService(
         accepted: Boolean,
         score: Int,
         comment: String,
+        currentUserId: IdType,
     ): Boolean {
-        ensureSubmissionExists(submissionId)
+        val submission =
+            taskSubmissionRepository.findById(submissionId).orElseThrow {
+                NotFoundError("task submission", submissionId)
+            }
         ensureReviewNotExist(submissionId)
         val review =
             TaskSubmissionReview(
-                    submission = TaskSubmission().apply { id = submissionId },
+                    submission = submission,
                     accepted = accepted,
                     score = score,
                     comment = comment,
@@ -102,8 +111,13 @@ class TaskSubmissionReviewService(
     /*
      * @Returns Has upgraded submitter's rank
      */
-    fun updateReviewAccepted(submissionId: IdType, accepted: Boolean): Boolean {
+    fun updateReviewAccepted(
+        submissionId: IdType,
+        accepted: Boolean,
+        currentUserId: IdType,
+    ): Boolean {
         val review = getTaskSubmissionReview(submissionId)
+        val previousAccepted = review.accepted
         review.accepted = accepted
         val savedReview = taskSubmissionReviewRepository.save(review)
         publishMembershipStatusUpdate(savedReview.id, submissionId)
@@ -155,5 +169,52 @@ class TaskSubmissionReviewService(
                 task.rank!!,
             )
         } else return false
+    }
+
+    private fun publishReviewNotification(
+        review: TaskSubmissionReview,
+        submission: TaskSubmission,
+        currentUserId: IdType,
+    ) {
+        val membership = submission.membership ?: return
+        val task = membership.task ?: return
+        val memberId = membership.memberId ?: return
+        val reviewerName =
+            currentUserId.takeIf { it > 0 }?.let { userService.getUserDto(it).username }
+        val participantName =
+            if (membership.isTeam) teamService.getTeamSummaryDTO(memberId).name
+            else userService.getUserDto(memberId).username
+        val payload =
+            taskNotificationService.buildReviewPayload(
+                taskId = task.id!!,
+                taskName = task.name,
+                spaceId = task.space.id!!,
+                spaceName = task.space.name!!,
+                membershipId = membership.id!!,
+                participantId = memberId,
+                participantName = participantName,
+                participantType = if (membership.isTeam) "team" else "user",
+                submissionId = submission.id!!,
+                submissionVersion = submission.version!!,
+                accepted = review.accepted ?: false,
+                score = review.score ?: 0,
+                comment = review.comment ?: "",
+                teamId = memberId.takeIf { membership.isTeam },
+                teamName = participantName.takeIf { membership.isTeam },
+                reviewerId = currentUserId.takeIf { it > 0 },
+                reviewerName = reviewerName,
+                actorId = currentUserId.takeIf { it > 0 },
+                actorName = reviewerName,
+            )
+        taskNotificationService.publishToParticipantOrTeamOwners(
+            memberId = memberId,
+            isTeam = membership.isTeam,
+            type =
+                if (review.accepted == true)
+                    org.rucca.cheese.notification.models.NotificationType.TASK_SUBMISSION_APPROVED
+                else org.rucca.cheese.notification.models.NotificationType.TASK_SUBMISSION_REJECTED,
+            payload = payload,
+            actorId = currentUserId.takeIf { it > 0 },
+        )
     }
 }
