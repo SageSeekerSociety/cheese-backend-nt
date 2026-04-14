@@ -304,6 +304,7 @@ class UserRealNameService(
         }
         return when (moduleType) {
             AccessModuleType.TASK -> taskInfoProvider.getTaskNameById(moduleEntityId)
+            AccessModuleType.SPACE -> "Space $moduleEntityId"
         }
     }
 

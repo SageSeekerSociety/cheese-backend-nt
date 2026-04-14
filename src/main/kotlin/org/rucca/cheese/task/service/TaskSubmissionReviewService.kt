@@ -24,8 +24,10 @@ import org.rucca.cheese.user.services.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional
 class TaskSubmissionReviewService(
     private val taskSubmissionRepository: TaskSubmissionRepository,
     private val taskSubmissionReviewRepository: TaskSubmissionReviewRepository,
@@ -90,18 +92,7 @@ class TaskSubmissionReviewService(
                     comment = comment,
                 )
                 .let { taskSubmissionReviewRepository.save(it) }
-        val membershipId = review.submission?.membership?.id
-        if (membershipId != null) {
-            eventPublisher.publishEvent(TaskMembershipStatusUpdateEvent(this, membershipId))
-            log.debug(
-                "Published status update event after saving/updating review {} for membership {}",
-                review.id,
-                membershipId,
-            )
-        } else {
-            log.warn("Saved TaskSubmissionReview {} has no associated membership ID.", review.id)
-        }
-        publishReviewNotification(review, submission, currentUserId)
+        publishMembershipStatusUpdate(review.id, submissionId)
         return tryUpdateParticipantRank(review)
     }
 
@@ -129,29 +120,7 @@ class TaskSubmissionReviewService(
         val previousAccepted = review.accepted
         review.accepted = accepted
         val savedReview = taskSubmissionReviewRepository.save(review)
-        val membershipId = savedReview.submission?.membership?.id
-        if (membershipId != null) {
-            eventPublisher.publishEvent(TaskMembershipStatusUpdateEvent(this, membershipId))
-            log.debug(
-                "Published status update event after saving/updating review {} for membership {}",
-                savedReview.id,
-                membershipId,
-            )
-        } else {
-            log.warn(
-                "Saved TaskSubmissionReview {} has no associated membership ID.",
-                savedReview.id,
-            )
-        }
-        if (previousAccepted != accepted) {
-            publishReviewNotification(
-                savedReview,
-                taskSubmissionRepository.findById(submissionId).orElseThrow {
-                    NotFoundError("task submission", submissionId)
-                },
-                currentUserId = currentUserId,
-            )
-        }
+        publishMembershipStatusUpdate(savedReview.id, submissionId)
         return tryUpdateParticipantRank(review)
     }
 
@@ -159,39 +128,28 @@ class TaskSubmissionReviewService(
         val review = getTaskSubmissionReview(submissionId)
         review.score = score
         val savedReview = taskSubmissionReviewRepository.save(review)
-        val membershipId = savedReview.submission?.membership?.id
-        if (membershipId != null) {
-            eventPublisher.publishEvent(TaskMembershipStatusUpdateEvent(this, membershipId))
-            log.debug(
-                "Published status update event after saving/updating review {} for membership {}",
-                savedReview.id,
-                membershipId,
-            )
-        } else {
-            log.warn(
-                "Saved TaskSubmissionReview {} has no associated membership ID.",
-                savedReview.id,
-            )
-        }
+        publishMembershipStatusUpdate(savedReview.id, submissionId)
     }
 
     fun updateReviewComment(submissionId: IdType, comment: String) {
         val review = getTaskSubmissionReview(submissionId)
         review.comment = comment
         val savedReview = taskSubmissionReviewRepository.save(review)
-        val membershipId = savedReview.submission?.membership?.id
+        publishMembershipStatusUpdate(savedReview.id, submissionId)
+    }
+
+    private fun publishMembershipStatusUpdate(reviewId: IdType?, submissionId: IdType) {
+        val membershipId =
+            taskSubmissionRepository.findById(submissionId).orElse(null)?.membership?.id
         if (membershipId != null) {
             eventPublisher.publishEvent(TaskMembershipStatusUpdateEvent(this, membershipId))
             log.debug(
                 "Published status update event after saving/updating review {} for membership {}",
-                savedReview.id,
+                reviewId,
                 membershipId,
             )
         } else {
-            log.warn(
-                "Saved TaskSubmissionReview {} has no associated membership ID.",
-                savedReview.id,
-            )
+            log.warn("Saved TaskSubmissionReview {} has no associated membership ID.", reviewId)
         }
     }
 

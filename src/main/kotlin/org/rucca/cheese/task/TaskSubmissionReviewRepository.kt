@@ -7,5 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 interface TaskSubmissionReviewRepository : JpaRepository<TaskSubmissionReview, IdType> {
     fun findBySubmissionId(submissionId: IdType): Optional<TaskSubmissionReview>
 
+    fun findAllBySubmissionIdIn(submissionIds: Collection<IdType>): List<TaskSubmissionReview>
+
     fun existsBySubmissionId(submissionId: IdType): Boolean
 }
