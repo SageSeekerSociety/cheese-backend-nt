@@ -63,7 +63,7 @@ class DomainRoleProviderRegistryTest {
             .thenReturn(providers)
 
         // Act
-        registry.initialize()
+        registry.afterSingletonsInstantiated()
 
         // Assert
         assertThat(registry.getProvider(testDomain1.name)).isEqualTo(provider1)

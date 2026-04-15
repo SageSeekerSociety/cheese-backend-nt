@@ -13,7 +13,8 @@ enum class AccessType {
 }
 
 enum class AccessModuleType {
-    TASK
+    TASK,
+    SPACE,
 }
 
 @Entity

@@ -2,9 +2,16 @@ package org.rucca.cheese.common.pagination.spec
 
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
+import jakarta.persistence.criteria.Path
 import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
 import java.io.Serializable
+import java.sql.Timestamp
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.Date
 import kotlin.reflect.KProperty1
 import org.rucca.cheese.common.pagination.model.Cursor
 import org.rucca.cheese.common.pagination.model.CursorValue
@@ -12,6 +19,8 @@ import org.rucca.cheese.common.pagination.model.SimpleCursor
 import org.rucca.cheese.common.pagination.model.TypedCompositeCursor
 import org.rucca.cheese.common.pagination.util.JpaUtils
 import org.rucca.cheese.common.pagination.util.ReflectionUtils
+import org.rucca.cheese.common.persistent.spec.SpecContext
+import org.rucca.cheese.common.persistent.spec.spec
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.data.jpa.repository.JpaRepository
@@ -218,16 +227,17 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
             override fun toPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                cb: CriteriaBuilder,
+                criteriaBuilder: CriteriaBuilder,
             ): Predicate {
-                return baseSpec.toPredicate(root, query, cb) ?: cb.conjunction()
+                return baseSpec.toPredicate(root, query, criteriaBuilder)
+                    ?: criteriaBuilder.conjunction()
             }
 
             @Suppress("UNCHECKED_CAST")
             override fun toCursorPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                cb: CriteriaBuilder,
+                criteriaBuilder: CriteriaBuilder,
                 cursor: SimpleCursor<T, *>?,
             ): Predicate? {
                 if (cursor == null) return null
@@ -237,8 +247,8 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                 val path = JpaUtils.getPath<Comparable<Any>>(root, cursorPath) // Use helper
 
                 return when (direction) {
-                    Sort.Direction.ASC -> cb.greaterThanOrEqualTo(path, cursorValue)
-                    Sort.Direction.DESC -> cb.lessThanOrEqualTo(path, cursorValue)
+                    Sort.Direction.ASC -> criteriaBuilder.greaterThan(path, cursorValue)
+                    Sort.Direction.DESC -> criteriaBuilder.lessThan(path, cursorValue)
                 }
             }
 
@@ -264,15 +274,16 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
             override fun toPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                cb: CriteriaBuilder,
+                criteriaBuilder: CriteriaBuilder,
             ): Predicate {
-                return baseSpec.toPredicate(root, query, cb) ?: cb.conjunction()
+                return baseSpec.toPredicate(root, query, criteriaBuilder)
+                    ?: criteriaBuilder.conjunction()
             }
 
             override fun toCursorPredicate(
                 root: Root<T>,
                 query: CriteriaQuery<*>,
-                cb: CriteriaBuilder,
+                criteriaBuilder: CriteriaBuilder,
                 cursor: TypedCompositeCursor<T>?,
             ): Predicate? {
                 if (cursor == null) return null
@@ -290,20 +301,21 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                 // Build OR conditions based on sort properties (paths)
                 for (i in sortProperties.indices) {
                     val (propPath, direction) = sortProperties[i]
-                    val cursorValue =
-                        cursorValues[propPath]
-                            ?: continue // Skip if cursor doesn't have value for this sort path
+                    val pathExpression = JpaUtils.getPath<Any>(root, propPath)
+                    val cursorValue = cursorValues[propPath] ?: continue
+                    val convertedValue = convertForPath(pathExpression, cursorValue)
 
                     // Equal conditions for preceding sort properties
                     val equalPredicates =
                         (0 until i).mapNotNull { j ->
                             val (prevPropPath, _) = sortProperties[j]
-                            val prevValue = cursorValues[prevPropPath] // Get value using path
+                            val prevPath = JpaUtils.getPath<Any>(root, prevPropPath)
+                            val prevValue = cursorValues[prevPropPath]
                             if (prevValue == null) {
-                                // If previous cursor value is null, equality check is IS NULL
-                                cb.isNull(JpaUtils.getPath<Any>(root, prevPropPath))
+                                criteriaBuilder.isNull(prevPath)
                             } else {
-                                cb.equal(JpaUtils.getPath<Any>(root, prevPropPath), prevValue)
+                                val convertedPrev = convertForPath(prevPath, prevValue)
+                                criteriaBuilder.equal(prevPath, convertedPrev)
                             }
                             // Note: If a previous required cursor value is missing entirely from
                             // cursorValues map,
@@ -312,23 +324,15 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                         }
 
                     // Comparison condition for the current sort property
-                    val currentPath =
-                        JpaUtils.getPath<Comparable<Any>>(root, propPath) // Use helper
+                    @Suppress("UNCHECKED_CAST")
+                    val currentPath = pathExpression as Path<Comparable<Any>>
+                    val comparableValue = convertedValue as? Comparable<Any> ?: continue
                     val compPredicate =
-                        try {
-                            when (direction) {
-                                Sort.Direction.ASC ->
-                                    cb.greaterThan(currentPath, cursorValue as Comparable<Any>)
-                                Sort.Direction.DESC ->
-                                    cb.lessThan(currentPath, cursorValue as Comparable<Any>)
-                            }
-                        } catch (e: ClassCastException) {
-                            // Handle case where cursor value is not comparable (should not happen
-                            // if used correctly)
-                            throw IllegalArgumentException(
-                                "Property '$propPath' value in cursor is not comparable.",
-                                e,
-                            )
+                        when (direction) {
+                            Sort.Direction.ASC ->
+                                criteriaBuilder.greaterThan(currentPath, comparableValue)
+                            Sort.Direction.DESC ->
+                                criteriaBuilder.lessThan(currentPath, comparableValue)
                         }
 
                     // Combine equal predicates and comparison predicate
@@ -336,7 +340,7 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                         if (equalPredicates.isEmpty()) {
                             compPredicate
                         } else {
-                            cb.and(*equalPredicates.toTypedArray(), compPredicate)
+                            criteriaBuilder.and(*equalPredicates.toTypedArray(), compPredicate)
                         }
                     predicates.add(combined)
                 }
@@ -346,11 +350,13 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                 // This is crucial for >= / <= logic in cursor pagination
                 val allEqualPredicates =
                     sortProperties.mapNotNull { (propPath, _) ->
+                        val pathExpression = JpaUtils.getPath<Any>(root, propPath)
                         val value = cursorValues[propPath]
                         if (value == null) {
-                            cb.isNull(JpaUtils.getPath<Any>(root, propPath))
+                            criteriaBuilder.isNull(pathExpression)
                         } else {
-                            cb.equal(JpaUtils.getPath<Any>(root, propPath), value)
+                            val converted = convertForPath(pathExpression, value)
+                            criteriaBuilder.equal(pathExpression, converted)
                         }
                     }
 
@@ -359,10 +365,11 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
                         allEqualPredicates.size == sortProperties.size
                 ) {
                     // Only add if all sort properties could be evaluated for equality
-                    predicates.add(cb.and(*allEqualPredicates.toTypedArray()))
+                    predicates.add(criteriaBuilder.and(*allEqualPredicates.toTypedArray()))
                 }
 
-                return if (predicates.isEmpty()) null else cb.or(*predicates.toTypedArray())
+                return if (predicates.isEmpty()) null
+                else criteriaBuilder.or(*predicates.toTypedArray())
             }
 
             override fun getSort(): Sort {
@@ -388,6 +395,105 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
 
                 return TypedCompositeCursor(values)
             }
+        }
+    }
+
+    private fun convertForPath(path: Path<*>, value: Any?): Any? {
+        if (value == null) return null
+
+        val targetType = path.javaType
+        if (targetType.isInstance(value)) {
+            return value
+        }
+
+        return when {
+            Number::class.java.isAssignableFrom(targetType) -> convertNumber(targetType, value)
+            targetType == LocalDateTime::class.java ->
+                when (value) {
+                    is LocalDateTime -> value
+                    is LocalDate -> value.atStartOfDay()
+                    is Instant -> LocalDateTime.ofInstant(value, ZoneId.systemDefault())
+                    is Number ->
+                        LocalDateTime.ofInstant(
+                            Instant.ofEpochMilli(value.toLong()),
+                            ZoneId.systemDefault(),
+                        )
+                    is Timestamp -> value.toLocalDateTime()
+                    is Date -> LocalDateTime.ofInstant(value.toInstant(), ZoneId.systemDefault())
+                    is String -> LocalDateTime.parse(value)
+                    else -> value
+                }
+            targetType == LocalDate::class.java ->
+                when (value) {
+                    is LocalDate -> value
+                    is LocalDateTime -> value.toLocalDate()
+                    is Instant -> value.atZone(ZoneId.systemDefault()).toLocalDate()
+                    is Number ->
+                        Instant.ofEpochMilli(value.toLong())
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                    is Date -> value.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                    is String -> LocalDate.parse(value)
+                    else -> value
+                }
+            targetType == Instant::class.java ->
+                when (value) {
+                    is Instant -> value
+                    is LocalDateTime -> value.atZone(ZoneId.systemDefault()).toInstant()
+                    is LocalDate -> value.atStartOfDay(ZoneId.systemDefault()).toInstant()
+                    is Number -> Instant.ofEpochMilli(value.toLong())
+                    is Date -> value.toInstant()
+                    is Timestamp -> value.toInstant()
+                    else -> value
+                }
+            targetType == Date::class.java ->
+                when (value) {
+                    is Date -> value
+                    is Instant -> Date.from(value)
+                    is Number -> Date(value.toLong())
+                    is LocalDateTime -> Date.from(value.atZone(ZoneId.systemDefault()).toInstant())
+                    is LocalDate ->
+                        Date.from(value.atStartOfDay(ZoneId.systemDefault()).toInstant())
+                    is Timestamp -> Date(value.time)
+                    else -> value
+                }
+            targetType == Timestamp::class.java ->
+                when (value) {
+                    is Timestamp -> value
+                    is Instant -> Timestamp.from(value)
+                    is LocalDateTime -> Timestamp.valueOf(value)
+                    is LocalDate ->
+                        Timestamp.from(value.atStartOfDay(ZoneId.systemDefault()).toInstant())
+                    is Number -> Timestamp(value.toLong())
+                    is Date -> Timestamp(value.time)
+                    else -> value
+                }
+            else -> value
+        }
+    }
+
+    private fun convertNumber(targetType: Class<*>, value: Any): Any? {
+        val number: Number =
+            when (value) {
+                is Number -> value
+                is String -> value.toDoubleOrNull() ?: return value
+                else -> return value
+            }
+
+        return when (targetType) {
+            java.lang.Byte::class.java,
+            Byte::class.java -> number.toInt().toByte()
+            java.lang.Short::class.java,
+            Short::class.java -> number.toInt().toShort()
+            java.lang.Integer::class.java,
+            Int::class.java -> number.toInt()
+            java.lang.Long::class.java,
+            Long::class.java -> number.toLong()
+            java.lang.Float::class.java,
+            Float::class.java -> number.toFloat()
+            java.lang.Double::class.java,
+            Double::class.java -> number.toDouble()
+            else -> value
         }
     }
 
@@ -427,6 +533,12 @@ private constructor(private val cursorType: Class<C>, vararg cursorBy: String) {
             )
         }
     }
+}
+
+inline fun <reified T : Any, C : Cursor<T>> CursorSpecificationBuilder<T, C>.specification(
+    noinline block: SpecContext<T>.() -> Unit
+): CursorSpecificationBuilder<T, C> {
+    return this.specification(spec<T>(block))
 }
 
 /** Extension function to create simple cursor specification builder. */

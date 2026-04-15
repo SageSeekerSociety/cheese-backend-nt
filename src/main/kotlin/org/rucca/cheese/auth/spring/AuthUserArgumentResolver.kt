@@ -1,9 +1,10 @@
 package org.rucca.cheese.auth.spring
 
-import jakarta.servlet.http.HttpServletRequest
+import org.rucca.cheese.auth.core.Role
 import org.rucca.cheese.auth.model.AuthUserInfo
 import org.rucca.cheese.common.persistent.IdType
 import org.springframework.core.MethodParameter
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
@@ -15,8 +16,14 @@ import org.springframework.web.method.support.ModelAndViewContainer
  * attributes.
  */
 @Component
-class AuthUserArgumentResolver(private val userSecurityService: UserSecurityService) :
-    HandlerMethodArgumentResolver {
+class AuthUserArgumentResolver : HandlerMethodArgumentResolver {
+    private fun getCurrentUserPrincipalAuthentication(): UserPrincipalAuthenticationToken {
+        val authentication = SecurityContextHolder.getContext().authentication
+        return authentication as? UserPrincipalAuthenticationToken
+            ?: throw IllegalStateException(
+                "Authentication object in SecurityContextHolder is not UserPrincipalAuthenticationToken or is null. Found: ${authentication?.javaClass?.name}"
+            )
+    }
 
     /** Determines if this resolver supports the parameter. */
     override fun supportsParameter(parameter: MethodParameter): Boolean {
@@ -31,15 +38,11 @@ class AuthUserArgumentResolver(private val userSecurityService: UserSecurityServ
         webRequest: NativeWebRequest,
         binderFactory: WebDataBinderFactory?,
     ): Any? {
-        val request =
-            webRequest.getNativeRequest(HttpServletRequest::class.java)
-                ?: throw IllegalStateException("Request is not an HttpServletRequest")
+        val currentAuth = getCurrentUserPrincipalAuthentication()
 
-        // Get user ID from request attribute (set by JWT interceptor)
-        val userId =
-            request.getAttribute("userId") as? IdType
-                ?: throw IllegalStateException("User ID not found in request")
+        val userId: IdType = currentAuth.userId
+        val systemRoles: Set<Role> = currentAuth.systemRoles
 
-        return AuthUserInfo(userId, userSecurityService.getUserRoles(userId))
+        return AuthUserInfo(userId, systemRoles)
     }
 }

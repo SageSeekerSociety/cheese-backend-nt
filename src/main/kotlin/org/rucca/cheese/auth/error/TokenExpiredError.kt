@@ -12,4 +12,5 @@ package org.rucca.cheese.auth.error
 import org.rucca.cheese.common.error.BaseError
 import org.springframework.http.HttpStatus
 
-class TokenExpiredError : BaseError(HttpStatus.UNAUTHORIZED, "Token has expired")
+class TokenExpiredError(message: String = "Token has expired") :
+    BaseError(HttpStatus.UNAUTHORIZED, message)

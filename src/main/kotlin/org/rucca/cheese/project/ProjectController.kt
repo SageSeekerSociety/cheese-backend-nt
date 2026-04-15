@@ -1,5 +1,7 @@
 package org.rucca.cheese.project
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.hibernate.query.SortDirection
 import org.rucca.cheese.api.ProjectsApi
 import org.rucca.cheese.auth.annotation.UseNewAuth
@@ -16,29 +18,31 @@ import org.springframework.web.bind.annotation.RestController
 @UseNewAuth
 class ProjectController(private val projectService: ProjectService) : ProjectsApi {
     @Auth("project:create:project")
-    override fun createProject(
+    override suspend fun createProject(
         @AuthContext("teamId", field = "teamId") createProjectRequestDTO: CreateProjectRequestDTO
     ): ResponseEntity<CreateProject201ResponseDTO> {
         val projectDTO =
-            projectService.createProject(
-                name = createProjectRequestDTO.name,
-                description = createProjectRequestDTO.description,
-                colorCode = createProjectRequestDTO.colorCode,
-                startDate = createProjectRequestDTO.startDate.toOffsetDateTime(),
-                endDate = createProjectRequestDTO.endDate.toOffsetDateTime(),
-                teamId = createProjectRequestDTO.teamId,
-                leaderId = createProjectRequestDTO.leaderId,
-                parentId = createProjectRequestDTO.parentId,
-                externalTaskId = createProjectRequestDTO.externalTaskId,
-                githubRepo = createProjectRequestDTO.githubRepo,
-            )
+            withContext(Dispatchers.IO) {
+                projectService.createProject(
+                    name = createProjectRequestDTO.name,
+                    description = createProjectRequestDTO.description,
+                    colorCode = createProjectRequestDTO.colorCode,
+                    startDate = createProjectRequestDTO.startDate.toOffsetDateTime(),
+                    endDate = createProjectRequestDTO.endDate.toOffsetDateTime(),
+                    teamId = createProjectRequestDTO.teamId,
+                    leaderId = createProjectRequestDTO.leaderId,
+                    parentId = createProjectRequestDTO.parentId,
+                    externalTaskId = createProjectRequestDTO.externalTaskId,
+                    githubRepo = createProjectRequestDTO.githubRepo,
+                )
+            }
         return ResponseEntity.ok(
             CreateProject201ResponseDTO(data = CreateProject201ResponseDataDTO(projectDTO))
         )
     }
 
     @Auth("project:enumerate:project")
-    override fun getProjects(
+    override suspend fun getProjects(
         @AuthContext("teamId") teamId: Long,
         @AuthContext("parentId") parentId: Long?,
         leaderId: Long?,
@@ -65,24 +69,29 @@ class ProjectController(private val projectService: ProjectService) : ProjectsAp
     }
 
     @Auth("project:update:project")
-    override fun patchProject(
+    override suspend fun patchProject(
         @ResourceId projectId: Long,
         patchProjectRequestDTO: PatchProjectRequestDTO,
     ): ResponseEntity<GetProject200ResponseDTO> {
-        val projectDTO = projectService.patchProject(projectId, patchProjectRequestDTO)
+        val projectDTO =
+            withContext(Dispatchers.IO) {
+                projectService.patchProject(projectId, patchProjectRequestDTO)
+            }
         return ResponseEntity.ok(
             GetProject200ResponseDTO(data = CreateProject201ResponseDataDTO(projectDTO))
         )
     }
 
     @Auth("project:delete:project")
-    override fun deleteProject(@ResourceId projectId: Long): ResponseEntity<Unit> {
-        projectService.deleteProject(projectId)
+    override suspend fun deleteProject(@ResourceId projectId: Long): ResponseEntity<Unit> {
+        withContext(Dispatchers.IO) { projectService.deleteProject(projectId) }
         return ResponseEntity.noContent().build()
     }
 
     @Auth("project:view:project")
-    override fun getProject(@ResourceId projectId: Long): ResponseEntity<GetProject200ResponseDTO> {
+    override suspend fun getProject(
+        @ResourceId projectId: Long
+    ): ResponseEntity<GetProject200ResponseDTO> {
         val projectDTO = projectService.getProject(projectId)
         return ResponseEntity.ok(
             GetProject200ResponseDTO(
@@ -94,7 +103,7 @@ class ProjectController(private val projectService: ProjectService) : ProjectsAp
     }
 
     @Auth("project:enumerate:membership")
-    override fun getProjectMembers(
+    override suspend fun getProjectMembers(
         @AuthContext("projectId") projectId: Long,
         pageStart: Long?,
         pageSize: Int,
@@ -117,7 +126,7 @@ class ProjectController(private val projectService: ProjectService) : ProjectsAp
         }
 
     @Auth("project:create:membership")
-    override fun postProjectMember(
+    override suspend fun postProjectMember(
         projectId: Long,
         postProjectMemberRequestDTO: PostProjectMemberRequestDTO,
     ): ResponseEntity<PostProjectMember201ResponseDTO> {
@@ -139,7 +148,7 @@ class ProjectController(private val projectService: ProjectService) : ProjectsAp
     }
 
     @Auth("project:delete:membership")
-    override fun deleteProjectMember(projectId: Long, userId: Long): ResponseEntity<Unit> {
+    override suspend fun deleteProjectMember(projectId: Long, userId: Long): ResponseEntity<Unit> {
         projectService.removeMember(projectId, userId)
         return ResponseEntity.noContent().build()
     }

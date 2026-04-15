@@ -6,14 +6,14 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.4</version>
+        <version>3.5.5</version>
         <relativePath/>
     </parent>
 
     <!-- Project Info -->
     <groupId>org.rucca</groupId>
     <artifactId>cheese</artifactId>
-    <version>0.13.0</version>
+    <version>0.14.0</version>
     <name>backend</name>
     <description>Backend for Cheese Web Application</description>
     <url/>
@@ -31,27 +31,50 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <kotlin.version>2.1.20</kotlin.version>
-        <serialization.version>1.8.0</serialization.version>
+
+        <kotlin.version>2.2.10</kotlin.version>
+        <kotlinx.coroutines.version>1.10.2</kotlinx.coroutines.version>
+        <kotlinx.serialization.version>1.9.0</kotlinx.serialization.version>
+
+        <assertj.version>3.27.4</assertj.version>
+        <springmockk.version>4.0.2</springmockk.version>
+
+        <hypersistence.version>3.10.3</hypersistence.version>
+        <java-jwt.version>4.5.0</java-jwt.version>
+
+        <swagger-annotations.version>2.2.36</swagger-annotations.version>
+        <openapi-client.version>4.0.5</openapi-client.version>
+        <ktor.version>3.2.3</ktor.version>
+
+        <flyway.locations>classpath:db/migration</flyway.locations>
+        <flyway.schemas>public</flyway.schemas>
+        <flyway.encoding>UTF-8</flyway.encoding>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kotlinx-coroutines-bom</artifactId>
+                <version>${kotlinx.coroutines.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kotlinx-serialization-bom</artifactId>
+                <version>${kotlinx.serialization.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <!-- Project Dependencies -->
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-reflect</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -60,24 +83,16 @@
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-reflect</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test-junit5</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
@@ -97,67 +112,25 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-            <version>2.5</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>javax.validation</groupId>
-            <artifactId>validation-api</artifactId>
-            <version>2.0.1.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.annotation</groupId>
-            <artifactId>javax.annotation-api</artifactId>
-            <version>1.3.2</version>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations</artifactId>
-            <version>2.2.29</version>
-        </dependency>
-        <dependency>
-            <groupId>io.swagger.core.v3</groupId>
-            <artifactId>swagger-models</artifactId>
-            <version>2.2.29</version>
+            <version>${swagger-annotations.version}</version>
         </dependency>
         <dependency>
             <groupId>com.ninja-squad</groupId>
             <artifactId>springmockk</artifactId>
-            <version>4.0.2</version>
+            <version>${springmockk.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>at.favre.lib</groupId>
-            <artifactId>bcrypt</artifactId>
-            <version>0.10.2</version>
         </dependency>
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
-            <version>4.5.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.core</groupId>
-            <artifactId>jersey-client</artifactId>
-            <version>3.1.10</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.media</groupId>
-            <artifactId>jersey-media-json-jackson</artifactId>
-            <version>3.1.10</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.media</groupId>
-            <artifactId>jersey-media-multipart</artifactId>
-            <version>3.1.10</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.inject</groupId>
-            <artifactId>jersey-hk2</artifactId>
-            <version>3.1.10</version>
+            <version>${java-jwt.version}</version>
         </dependency>
         <dependency>
             <groupId>org.parboiled</groupId>
@@ -165,6 +138,10 @@
             <version>1.4.1</version>
         </dependency>
         <dependency>
+            <!--
+            DO NOT remove this!!! It will override the ASM version
+             used by parboiled-java, which does not support Java 21
+            -->
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
             <version>9.8</version>
@@ -172,12 +149,12 @@
         <dependency>
             <groupId>top.huanchengfly.openai</groupId>
             <artifactId>openai-client-jvm</artifactId>
-            <version>4.0.5</version>
+            <version>${openapi-client.version}</version>
         </dependency>
         <dependency>
             <groupId>io.ktor</groupId>
             <artifactId>ktor-client-java-jvm</artifactId>
-            <version>3.1.2</version>
+            <version>${ktor.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -195,26 +172,31 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
             <artifactId>kotlinx-coroutines-reactor</artifactId>
-            <version>1.10.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-coroutines-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
             <artifactId>kotlinx-serialization-json</artifactId>
-            <version>${serialization.version}</version>
         </dependency>
         <dependency>
             <groupId>io.hypersistence</groupId>
             <artifactId>hypersistence-utils-hibernate-63</artifactId>
-            <version>3.9.9</version>
+            <version>${hypersistence.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -231,6 +213,31 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-freemarker</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
     </dependencies>
 
@@ -275,7 +282,7 @@
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>7.10.0</version>
+                <version>7.17.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -287,14 +294,17 @@
                             <skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>
                             <modelNameSuffix>DTO</modelNameSuffix>
                             <templateDirectory>./specs/template</templateDirectory>
+                            <enablePostProcessFile>true</enablePostProcessFile>
                             <configOptions>
-                                <java8>true</java8>
                                 <interfaceOnly>true</interfaceOnly>
                                 <modelPackage>org.rucca.cheese.model</modelPackage>
                                 <apiPackage>org.rucca.cheese.api</apiPackage>
+                                <useSpringBoot3>true</useSpringBoot3>
                                 <useBeanValidation>true</useBeanValidation>
                                 <exceptionHandler>false</exceptionHandler>
                                 <serializableModel>true</serializableModel>
+                                <reactive>true</reactive>
+                                <useTags>true</useTags>
                             </configOptions>
                             <importMappings>
                                 <importMapping>AuthUserInfo=org.rucca.cheese.auth.model.AuthUserInfo</importMapping>
@@ -306,69 +316,41 @@
             <plugin>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
-                <version>11.5.0</version>
+                <version>11.15.0</version>
+
+                <configuration>
+                    <url>${flyway.url}</url>
+                    <user>${flyway.user}</user>
+                    <password>${flyway.password}</password>
+
+                    <locations>
+                        <location>${flyway.locations}</location>
+                    </locations>
+                    <schemas>
+                        <schema>${flyway.schemas}</schema>
+                    </schemas>
+
+                    <!-- 可选：把 Spring 的迁移开关对齐 -->
+                    <baselineOnMigrate>${flyway.baselineOnMigrate}</baselineOnMigrate>
+                    <cleanDisabled>${flyway.cleanDisabled}</cleanDisabled>
+                    <validateOnMigrate>${flyway.validateOnMigrate}</validateOnMigrate>
+                </configuration>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.1</version>
                 <executions>
                     <execution>
-                        <id>delete-create-sql</id>
+                        <id>add-source</id>
                         <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <target>
-                                <!-- Delete the old CREATE.sql file and create a new one. -->
-                                <delete file="design/DB/CREATE.sql"/>
-                                <echo append="true" file="design/DB/CREATE.sql">---------------------------------------------------------------------------${line.separator}</echo>
-                                <echo append="true" file="design/DB/CREATE.sql">--                        DO NOT MODIFY THIS FILE                        --${line.separator}</echo>
-                                <echo append="true" file="design/DB/CREATE.sql">--                                                                       --${line.separator}</echo>
-                                <echo append="true" file="design/DB/CREATE.sql">-- The following content is generated by JPA according to entity classes --${line.separator}</echo>
-                                <echo append="true" file="design/DB/CREATE.sql">---------------------------------------------------------------------------${line.separator}</echo>
-                                <java failonerror="true" fork="true" jar="target/${project.build.finalName}.jar">
-                                    <!-- Set the profile to "test". -->
-                                    <arg value="--spring.profiles.active=test"/>
-                                    <!-- Disable web application type to avoid port conflict. -->
-                                    <arg value="--spring.main.web-application-type=NONE"/>
-                                    <!-- See: https://www.datanucleus.org/products/accessplatform_6_0/jakarta/persistence.html#schema-generation -->
-                                    <arg value="--spring.jpa.properties.jakarta.persistence.schema-generation.scripts.action=create"/>
-                                    <arg value="--spring.jpa.properties.jakarta.persistence.schema-generation.scripts.create-target=design/DB/CREATE.sql"/>
-                                    <arg value="--spring.jpa.properties.jakarta.persistence.schema-generation.scripts.create-source=metadata"/>
-                                    <!-- Stop application after creating the CREATE.sql file. -->
-                                    <arg value="--application.shutdown-on-startup=true"/>
-                                    <!-- Avoid long logs -->
-                                    <arg value="--logging.level.root=WARN"/>
-                                </java>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-generated-api</id>
-                        <goals>
-                            <goal>run</goal>
+                            <goal>add-source</goal>
                         </goals>
                         <phase>generate-sources</phase>
                         <configuration>
-                            <target>
-                                <!-- Copy the generated API files to the correct package. -->
-                                <delete dir="src/main/kotlin/org/rucca/cheese/api"/>
-                                <delete dir="src/main/kotlin/org/rucca/cheese/model"/>
-                                <copy todir="src/main/kotlin/org/rucca/cheese/api">
-                                    <fileset dir="target/generated-sources/openapi/src/main/kotlin/org/rucca/cheese/api"/>
-                                </copy>
-                                <copy todir="src/main/kotlin/org/rucca/cheese/model">
-                                    <fileset dir="target/generated-sources/openapi/src/main/kotlin/org/rucca/cheese/model"/>
-                                </copy>
-                                <delete file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md"/>
-                                <echo append="true" file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md"># All files in this directory are generated!${line.separator}${line.separator}</echo>
-                                <echo append="true" file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md">All files in this directory are generated, including this markdown, so DO NOT MODIFY them!${line.separator}${line.separator}</echo>
-                                <echo append="true" file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md">If you want to modify the API, modify the OpenAPI specification file and run ```./mvnw install``` again.${line.separator}${line.separator}</echo>
-                                <copy file="src/main/kotlin/org/rucca/cheese/model/000_IMPORTANT_NOTICE.md" todir="src/main/kotlin/org/rucca/cheese/api"/>
-                                <delete dir="target/generated-sources/openapi"/>
-                            </target>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/openapi/src/main/kotlin</source>
+                            </sources>
                         </configuration>
                     </execution>
                 </executions>
@@ -379,7 +361,6 @@
                 <version>3.5.3</version>
                 <configuration>
                     <systemPropertyVariables>
-                        <spring.jpa.hibernate.ddl-auto>update</spring.jpa.hibernate.ddl-auto>
                         <spring.jpa.show-sql>false</spring.jpa.show-sql>
                         <application.warn-audit-failure>false</application.warn-audit-failure>
                         <logging.level.root>WARN</logging.level.root>
@@ -390,7 +371,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.44.2</version>
+                <version>3.0.0</version>
                 <configuration>
                     <java>
                         <googleJavaFormat/>
@@ -402,7 +383,7 @@
                             <blockIndent>4</blockIndent>
                             <continuationIndent>4</continuationIndent>
                             <removeUnusedImports>true</removeUnusedImports>
-                            <manageTrailingCommas>true</manageTrailingCommas>
+                            <trailingCommaManagementStrategy>COMPLETE</trailingCommaManagementStrategy>
                         </ktfmt>
                     </kotlin>
                     <pom>
@@ -425,25 +406,18 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>Format generated sources</id>
+                        <id>spotless-check</id>
                         <goals>
-                            <goal>apply</goal>
+                            <goal>check</goal>
                         </goals>
-                        <phase>generate-sources</phase>
-                    </execution>
-                    <execution>
-                        <id>Format design/DB/CREATE.sql</id>
-                        <goals>
-                            <goal>apply</goal>
-                        </goals>
-                        <phase>package</phase>
+                        <phase>validate</phase>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.12</version>
+                <version>0.8.13</version>
                 <executions>
                     <execution>
                         <id>default-prepare-agent</id>
@@ -459,9 +433,73 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>com.rudikershaw.gitbuildhook</groupId>
+                <artifactId>git-build-hook-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <gitConfig>
+                        <core.hooksPath>${project.basedir}/.githooks</core.hooksPath>
+                    </gitConfig>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>configure-git-hooks</id>
+                        <goals>
+                            <goal>configure</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
         <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
         <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
     </build>
 
+    <profiles>
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <flyway.url>jdbc:postgresql://localhost:5432/postgres</flyway.url>
+                <flyway.user>postgres</flyway.user>
+                <flyway.password>postgres</flyway.password>
+
+                <flyway.baselineOnMigrate>false</flyway.baselineOnMigrate>
+                <flyway.cleanDisabled>true</flyway.cleanDisabled>
+                <flyway.validateOnMigrate>true</flyway.validateOnMigrate>
+            </properties>
+        </profile>
+
+        <!-- test -->
+        <profile>
+            <id>test</id>
+            <properties>
+                <flyway.url>jdbc:postgresql://localhost:5433/postgres</flyway.url>
+                <flyway.user>postgres</flyway.user>
+                <flyway.password>postgres</flyway.password>
+
+                <flyway.baselineOnMigrate>false</flyway.baselineOnMigrate>
+                <flyway.cleanDisabled>false</flyway.cleanDisabled>
+                <flyway.validateOnMigrate>true</flyway.validateOnMigrate>
+            </properties>
+        </profile>
+
+        <!-- prod -->
+        <profile>
+            <id>prod</id>
+            <properties>
+                <flyway.url>jdbc:postgresql://${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}?currentSchema=${env.DB_SCHEMA}</flyway.url>
+                <flyway.user>${env.DB_USER}</flyway.user>
+                <flyway.password>${env.DB_PASSWORD}</flyway.password>
+
+                <flyway.baselineOnMigrate>true</flyway.baselineOnMigrate>
+                <flyway.cleanDisabled>true</flyway.cleanDisabled>
+                <flyway.validateOnMigrate>true</flyway.validateOnMigrate>
+            </properties>
+        </profile>
+    </profiles>
 </project>

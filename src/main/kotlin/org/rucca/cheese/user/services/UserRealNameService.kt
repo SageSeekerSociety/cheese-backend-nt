@@ -6,15 +6,12 @@ import org.rucca.cheese.common.error.NotFoundError
 import org.rucca.cheese.common.pagination.model.SimpleCursor
 import org.rucca.cheese.common.pagination.model.toPageDTO
 import org.rucca.cheese.common.pagination.spec.simpleCursorSpec
+import org.rucca.cheese.common.pagination.spec.specification
 import org.rucca.cheese.common.pagination.util.desc
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.common.persistent.getProperty
 import org.rucca.cheese.model.*
-import org.rucca.cheese.task.TaskService
-import org.rucca.cheese.user.UserService
+import org.rucca.cheese.task.support.TaskInfoProvider
 import org.rucca.cheese.user.models.*
-import org.springframework.context.annotation.Lazy
-import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
@@ -26,7 +23,7 @@ class UserRealNameService(
     private val userRealNameAccessLogRepository: UserRealNameAccessLogRepository,
     private val encryptionService: EncryptionService,
     private val userService: UserService,
-    @Lazy private val taskService: TaskService,
+    private val taskInfoProvider: TaskInfoProvider,
 ) {
     /** Get user real name identity information */
     @Transactional
@@ -271,15 +268,11 @@ class UserRealNameService(
         pageSize: Int,
         pageStart: IdType?,
     ): Pair<List<UserIdentityAccessLogDTO>, PageDTO> {
-        val spec =
-            Specification.where { root, _, cb ->
-                cb.equal(root.getProperty(UserRealNameAccessLog::targetId), targetUserId)
-            }
         val cursorSpec =
             userRealNameAccessLogRepository
                 .simpleCursorSpec(UserRealNameAccessLog::id)
                 .sortBy(UserRealNameAccessLog::id.desc())
-                .specification(spec)
+                .specification { where { UserRealNameAccessLog::targetId eq targetUserId } }
                 .build()
         val (result, page) =
             userRealNameAccessLogRepository.findAllWithCursor(
@@ -310,7 +303,8 @@ class UserRealNameService(
             return null
         }
         return when (moduleType) {
-            AccessModuleType.TASK -> taskService.getTaskDto(moduleEntityId).name
+            AccessModuleType.TASK -> taskInfoProvider.getTaskNameById(moduleEntityId)
+            AccessModuleType.SPACE -> "Space $moduleEntityId"
         }
     }
 
@@ -336,5 +330,9 @@ class UserRealNameService(
             accessType = accessTypeDto,
             ipAddress = log.ipAddress,
         )
+    }
+
+    fun hasUserIdentity(userId: IdType): Boolean {
+        return userRealNameIdentityRepository.existsByUserId(userId)
     }
 }

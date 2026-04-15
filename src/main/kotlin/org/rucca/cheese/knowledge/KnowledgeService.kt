@@ -8,8 +8,13 @@ import org.rucca.cheese.common.helper.EntityPatcher
 import org.rucca.cheese.common.pagination.model.toPageDTO
 import org.rucca.cheese.common.pagination.repository.findAllWithIdCursor
 import org.rucca.cheese.common.pagination.repository.idSeekSpec
+import org.rucca.cheese.common.pagination.repository.specification
 import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.IdType
+import org.rucca.cheese.common.persistent.spec.div
+import org.rucca.cheese.common.query.internal.spec.col
+import org.rucca.cheese.common.query.internal.spec.exists
+import org.rucca.cheese.common.query.internal.spec.parent
 import org.rucca.cheese.discussion.DiscussionRepository
 import org.rucca.cheese.material.MaterialRepository
 import org.rucca.cheese.material.toMaterialDTO
@@ -20,8 +25,7 @@ import org.rucca.cheese.model.UpdateKnowledgeRequestDTO
 import org.rucca.cheese.team.Team
 import org.rucca.cheese.team.TeamRepository
 import org.rucca.cheese.user.UserRepository
-import org.rucca.cheese.user.UserService
-import org.springframework.data.jpa.domain.Specification
+import org.rucca.cheese.user.services.UserService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -109,12 +113,13 @@ class KnowledgeService(
                     sourceType = sourceType,
                     createdBy = userRepository.getReferenceById(userId.toInt()),
                 )
+                .apply {
+                    labels?.forEach { label ->
+                        this.knowledgeLabels.add(KnowledgeLabelEntity(this, label))
+                    }
+                }
                 .let { knowledgeRepository.save(it) }
 
-        labels?.forEach {
-            val knowledgeLabel = KnowledgeLabelEntity(knowledge = knowledge, label = it)
-            knowledgeLabelRepository.save(knowledgeLabel)
-        }
         return knowledge.toKnowledgeDTO()
     }
 
@@ -149,72 +154,42 @@ class KnowledgeService(
         sortOrder: SortDirection = SortDirection.DESCENDING,
     ): Pair<List<KnowledgeDTO>, PageDTO> {
         val direction = sortOrder.toJpaDirection()
-
-        // 构建查询规范
-        val spec =
-            Specification.where<Knowledge> { root, _, cb ->
-                // 必须匹配团队ID
-                cb.equal(root.get<Team>("team").get<Long>("id"), teamId)
-            }
-
-        // 添加项目ID筛选条件（如果提供）
-        val withProjectId =
-            if (projectId != null) {
-                spec.and { root, _, cb -> cb.equal(root.get<Long>("projectId"), projectId) }
-            } else {
-                spec
-            }
-
-        // 添加类型筛选条件（如果提供）
-        val withType =
-            if (type != null) {
-                withProjectId.and { root, _, cb -> cb.equal(root.get<KnowledgeType>("type"), type) }
-            } else {
-                withProjectId
-            }
-
-        // 添加查询关键词筛选条件（如果提供）
-        val withQuery =
-            if (!query.isNullOrBlank()) {
-                withType.and { root, _, cb ->
-                    val nameLike = cb.like(cb.lower(root.get("name")), "%${query.lowercase()}%")
-                    val descLike =
-                        cb.like(cb.lower(root.get("description")), "%${query.lowercase()}%")
-                    cb.or(nameLike, descLike)
-                }
-            } else {
-                withType
-            }
-
-        // 添加标签筛选条件（如果提供）
-        val finalSpec =
-            if (!labels.isNullOrEmpty()) {
-                withQuery.and { root, query, cb ->
-                    val join = root.join<Knowledge, KnowledgeLabelEntity>("knowledgeLabels")
-                    join.get<String>("label").`in`(labels)
-                }
-            } else {
-                withQuery
-            }
-
-        // 设置排序属性
         val sortProperty =
             when (sortBy) {
                 KnowledgeSortBy.CREATED_AT -> Knowledge::createdAt
                 KnowledgeSortBy.UPDATED_AT -> Knowledge::updatedAt
             }
 
-        // 构建游标规范
         val cursorSpec =
             knowledgeRepository
                 .idSeekSpec(Knowledge::id, sortProperty = sortProperty, direction = direction)
-                .specification(finalSpec)
+                .specification {
+                    where {
+                        Knowledge::team / Team::id eq teamId
+
+                        projectId?.let { Knowledge::projectId eq it }
+                        type?.let { Knowledge::type eq it }
+
+                        if (!query.isNullOrBlank()) {
+                            or {
+                                val pattern = "%${query.lowercase()}%"
+                                Knowledge::name ilike pattern
+                                Knowledge::description ilike pattern
+                            }
+                        }
+
+                        if (!labels.isNullOrEmpty()) {
+                            exists<KnowledgeLabelEntity> {
+                                col(KnowledgeLabelEntity::knowledge / Knowledge::id) eq
+                                    parent(Knowledge::id)
+                                KnowledgeLabelEntity::label inList labels
+                            }
+                        }
+                    }
+                }
                 .build()
 
-        // 执行查询
         val result = knowledgeRepository.findAllWithIdCursor(cursorSpec, pageStart, pageSize)
-
-        // 转换为DTO
         val knowledgeDTOs = result.content.map { it.toKnowledgeDTO() }
 
         return Pair(knowledgeDTOs, result.pageInfo.toPageDTO())

@@ -41,7 +41,7 @@ inline fun <T : Domain, R : ResourceType> buildResourceContext(
     domain: T,
     resourceType: R,
     resourceId: IdType?,
-    crossinline block: ContextBuilder.() -> Unit,
+    crossinline block: ContextBuilder.() -> Unit = {},
 ): Map<String, Any> {
     return buildContext {
         // Add domain and resource info

@@ -19,7 +19,7 @@ class WebConfig(private val applicationConfig: ApplicationConfig) : WebMvcConfig
         registry
             .addMapping("/**") // Allow all paths
             .allowedOrigins(
-                applicationConfig.corsOrigin
+                *applicationConfig.corsOrigins.toTypedArray()
             ) // Allow the origin from the application config
             .allowedMethods("*") // Allow all methods
             .allowedHeaders("*") // Allow all headers

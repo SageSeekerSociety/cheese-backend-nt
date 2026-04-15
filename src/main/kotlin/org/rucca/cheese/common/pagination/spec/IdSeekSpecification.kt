@@ -61,19 +61,19 @@ class IdSeekSpecification<T, ID : Comparable<ID>, P : Comparable<P>>(
         return when (direction) {
             Sort.Direction.ASC -> {
                 criteriaBuilder.or(
-                    criteriaBuilder.greaterThanOrEqualTo(sortPath, sortValue),
+                    criteriaBuilder.greaterThan(sortPath, sortValue),
                     criteriaBuilder.and(
                         criteriaBuilder.equal(sortPath, sortValue),
-                        criteriaBuilder.greaterThanOrEqualTo(idPath, cursorId),
+                        criteriaBuilder.greaterThan(idPath, cursorId),
                     ),
                 )
             }
             Sort.Direction.DESC -> {
                 criteriaBuilder.or(
-                    criteriaBuilder.lessThanOrEqualTo(sortPath, sortValue),
+                    criteriaBuilder.lessThan(sortPath, sortValue),
                     criteriaBuilder.and(
                         criteriaBuilder.equal(sortPath, sortValue),
-                        criteriaBuilder.greaterThanOrEqualTo(idPath, cursorId),
+                        criteriaBuilder.greaterThan(idPath, cursorId),
                     ),
                 )
             }

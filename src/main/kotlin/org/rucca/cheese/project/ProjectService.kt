@@ -11,8 +11,7 @@ import org.rucca.cheese.common.helper.EntityPatcher
 import org.rucca.cheese.common.helper.toEpochMilli
 import org.rucca.cheese.common.pagination.util.toJpaDirection
 import org.rucca.cheese.common.persistent.IdType
-import org.rucca.cheese.common.persistent.buildSpecification
-import org.rucca.cheese.common.persistent.getProperty
+import org.rucca.cheese.common.persistent.spec.*
 import org.rucca.cheese.discussion.DiscussionReactionRepository
 import org.rucca.cheese.discussion.DiscussionRepository
 import org.rucca.cheese.model.*
@@ -22,7 +21,7 @@ import org.rucca.cheese.project.models.ProjectMembership
 import org.rucca.cheese.project.repositories.ProjectMembershipRepository
 import org.rucca.cheese.project.repositories.ProjectRepository
 import org.rucca.cheese.team.TeamService
-import org.rucca.cheese.user.UserService
+import org.rucca.cheese.user.services.UserService
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.data.domain.Sort
 import org.springframework.data.repository.findByIdOrNull
@@ -246,20 +245,15 @@ class ProjectService(
         sortBy: ProjectsSortBy,
         sortOrder: SortDirection,
     ): List<ProjectDTO> {
-        val spec = buildSpecification {
-            where { root, _, cb -> cb.equal(root.getProperty(Project::teamId), teamId) }
-            if (parentId != null) {
-                and { root, _, cb ->
-                    cb.equal(root.getProperty(Project::parent).getProperty(Project::id), parentId)
+        val spec =
+            spec<Project> {
+                where {
+                    Project::teamId eq teamId
+                    parentId?.let { Project::parent / Project::id eq it }
+                    leaderId?.let { Project::leaderId eq it }
+                    archived?.let { Project::archived eq it }
                 }
             }
-            if (leaderId != null) {
-                and { root, _, cb -> cb.equal(root.getProperty(Project::leaderId), leaderId) }
-            }
-            if (archived != null) {
-                and { root, _, cb -> cb.equal(root.getProperty(Project::archived), archived) }
-            }
-        }
         val sortProperty =
             when (sortBy) {
                 ProjectsSortBy.CREATED_AT -> Project::createdAt

@@ -8,10 +8,13 @@
  */
 
 package org.rucca.cheese.space.option
-data class SpaceQueryOptions(val queryMyRank: Boolean) {
+data class SpaceQueryOptions(
+    val queryMyRank: Boolean = false,
+    val queryCategories: Boolean = false,
+) {
     companion object {
-        val MINIMUM = SpaceQueryOptions(queryMyRank = false)
+        val MINIMUM = SpaceQueryOptions()
 
-        val MAXIMUM = SpaceQueryOptions(queryMyRank = true)
+        val MAXIMUM = SpaceQueryOptions(queryMyRank = true, queryCategories = true)
     }
 }

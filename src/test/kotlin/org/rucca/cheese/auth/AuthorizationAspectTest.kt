@@ -30,7 +30,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 
 @Disabled("Disabled to speed up tests")
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 class AuthorizationAspectTest

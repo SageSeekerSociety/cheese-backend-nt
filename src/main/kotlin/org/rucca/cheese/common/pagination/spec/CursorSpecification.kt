@@ -1,9 +1,12 @@
 package org.rucca.cheese.common.pagination.spec
 
+import jakarta.persistence.Tuple
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery
+import jakarta.persistence.criteria.Order
 import jakarta.persistence.criteria.Predicate
 import jakarta.persistence.criteria.Root
+import jakarta.persistence.criteria.Selection
 import org.rucca.cheese.common.pagination.model.Cursor
 import org.springframework.data.domain.Sort
 
@@ -62,3 +65,31 @@ interface CursorSpecification<T, C : Cursor<T>> {
      */
     fun extractCursor(entity: T): C?
 }
+
+/**
+ * Optional extension that allows a [CursorSpecification] to supply custom selections for the query
+ * (e.g. computed columns) and bespoke cursor extraction logic.
+ *
+ * Implementations can request a tuple-based query projection by returning the selections that
+ * should be applied in addition to the root entity (which the repository injects automatically).
+ * These extra selections can expose computed values (such as relevance scores) that need to be
+ * encoded into cursors.
+ */
+interface CursorProjectionSupport<T, C : Cursor<T>> {
+    /** Provide the selections and extractors required to hydrate entities and cursors. */
+    fun buildProjection(
+        root: Root<T>,
+        query: CriteriaQuery<Tuple>,
+        criteriaBuilder: CriteriaBuilder,
+    ): CursorProjection<T, C>
+
+    /** Supply JPA orders without relying on property paths (useful for computed expressions). */
+    fun toJpaOrders(root: Root<T>, criteriaBuilder: CriteriaBuilder): List<Order>
+}
+
+/** Container describing how to project tuples into entities and cursors. */
+data class CursorProjection<T, C : Cursor<T>>(
+    val additionalSelections: List<Selection<*>>, // selections besides the entity itself
+    val entityExtractor: (Tuple) -> T,
+    val cursorExtractor: (Tuple) -> C?,
+)
