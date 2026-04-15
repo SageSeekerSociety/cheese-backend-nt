@@ -436,7 +436,7 @@
             <plugin>
                 <groupId>com.rudikershaw.gitbuildhook</groupId>
                 <artifactId>git-build-hook-maven-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>3.6.0</version>
                 <configuration>
                     <gitConfig>
                         <core.hooksPath>${project.basedir}/.githooks</core.hooksPath>
