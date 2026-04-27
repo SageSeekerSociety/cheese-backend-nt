@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 RUN apk add --no-cache curl
 RUN addgroup -g 1000 -S app && adduser -u 1000 -S app -G app
 WORKDIR /app
